@@ -132,6 +132,27 @@ G.HUD = (() => {
       ctx.restore();
     }
 
+    // ---------- grupo (no PK): compañeros caídos, para ir a levantarlos ----------
+    // En pantalla: "¡Ayúdame!" latiendo encima. (Fuera de la pantalla ya está la flecha
+    // de drawCoop, que parpadea en rojo con "¡X necesita ayuda! · N m".)
+    if (G.Coop.active && !G.PvP.on) {
+      for (const p of G.Coop.puppets()) {
+        if (!p.dead) continue;
+        const sx = (p.x - cam.left()) * cam.scale, sy = (p.y - cam.top()) * cam.scale;
+        ctx.save();
+        ctx.textAlign = 'center';
+        if (sx > 0 && sx < w && sy > 0 && sy < h) {
+          ctx.globalAlpha = pulse;
+          ctx.font = F(800, 13);
+          ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.8)';
+          const ty = sy - (p.bodyH + 34) * cam.scale;
+          ctx.strokeText(G.T('¡Ayúdame!'), sx, ty);
+          ctx.fillStyle = '#ff5f6d'; ctx.fillText(G.T('¡Ayúdame!'), sx, ty);
+        }
+        ctx.restore();
+      }
+    }
+
     // Poder de altar activo.
     if (pl.power) {
       const pw = pl.power, txt = pw.def.name.toUpperCase() + ' ' + Math.ceil(pw.t) + 's';

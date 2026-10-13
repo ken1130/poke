@@ -591,7 +591,15 @@ G.Game = (() => {
     if (picking) pl.invuln = Math.max(pl.invuln || 0, 0.25);   // eligiendo cartas: no te pegan
     pl.update(dt);
     if (coop) {
-      for (const p of G.Coop.puppets()) { p.netUpdate(dt); G.Combat.ghostOrbit(p, dt, time); }
+      for (const p of G.Coop.puppets()) {
+        p.netUpdate(dt); G.Combat.ghostOrbit(p, dt, time);
+        // Grupo (no PK): aviso cuando cae un compañero (la flecha la pinta hud.js).
+        if (p.dead && !p.downTold && !G.PvP.on) {
+          p.downTold = true;
+          G.Spawner.say(G.I18n.f('¡{x} ha caído! Ve a levantarle', p.tag), 3.2, true);
+          G.Audio.sfx('error');
+        } else if (!p.dead) p.downTold = false;
+      }
       if (pl.dead) reviveTick(dt);
     }
     G.Camera.follow(pl.x, pl.y, dt);

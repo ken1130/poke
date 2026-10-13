@@ -1686,4 +1686,5 @@ G.I18n.add({
   'Tramposo': '作弊大師',
   'Juega en los 26 escenarios.': '在全部 26 種場景都玩過。',
   '¡{x} va a embestir sin parar!': '{x} 要開始橫衝直撞了！',
+  '¡Ayúdame!': '救我！', '{x} casillas': '{x} 格', '¡{x} ha caído! Ve a levantarle': '{x} 倒下了！快去救他',
 }, 'zh');
