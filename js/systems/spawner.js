@@ -146,7 +146,7 @@ G.Spawner = (() => {
     // --- goteo normal ---
     const cap = capNow();
     if (G.EnemyMgr.count < cap) {
-      acc += rate(t) * G.Modes.countMul() * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * dt;
+      acc += rate(t) * G.Modes.countMul() * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * (G.PvP.on ? 0.5 : 1) * dt;
       let n = Math.floor(acc);
       acc -= n;
       while (n-- > 0 && G.EnemyMgr.count < cap) spawnOne(anchor(), t);

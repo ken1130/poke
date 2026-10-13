@@ -192,6 +192,16 @@
       if (!room) return;
       const ms = room.members;
       $('lobby-code').textContent = room.id;
+      // Modo: el anfitrión lo cambia; los demás lo ven.
+      $('lobby-mode').querySelectorAll('[data-mode]').forEach(b => {
+        const on = b.dataset.mode === room.mode;
+        b.classList.toggle('gold', on);
+        b.disabled = !room.isHost && !on;
+        b.onclick = () => { if (room.isHost && !on) G.Social.setMode(b.dataset.mode); };
+      });
+      $('lobby-mode-desc').textContent = G.T(room.mode === 'pvp'
+        ? 'PK: os podéis atacar entre vosotros. Gana el último en pie.'
+        : 'Equipo: jugáis juntos contra los Pokémon salvajes.');
       $('lobby-copy').onclick = () => G.Modes.copy(room.id);
       $('lobby-sub').textContent = room.isHost
         ? 'Eres el anfitrión. Pasa el código a tus amigos (hasta ' + G.Social.MAX_PLAYERS + ') y empezad cuando estéis.'
@@ -260,7 +270,7 @@
       const room = G.Social.room;
       if (!room || !room.isHost || room.members.length < 2) return;
       const cfg = {
-        k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host,
+        k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: room.mode === 'pvp',
         members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny }))
       };
       G.Social.setOpen(false);

@@ -373,7 +373,10 @@ G.Player = class Player {
             || G.Projectiles.nearest(all, this.x, this.y, 520)
             || G.World.nearestBreakable(this.x, this.y, 200);
     this.target = tg;
-    if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);
+    // PK: un rival a tiro tiene prioridad (sólo se apunta; el daño lo decide él en su pantalla).
+    const foe = G.PvP.on ? G.PvP.foe(this, 420) : null;
+    if (foe) this.aim = Math.atan2(foe.y - this.y, foe.x - this.x);
+    else if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);
     else if (this.walking) this.aim = this.moveAngle;
 
     // --- animación: mira al objetivo al atacar, si no a donde camina ---

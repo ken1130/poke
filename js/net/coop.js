@@ -63,8 +63,12 @@ G.Coop = (() => {
     mates.clear();
     outEv = []; flushT = 0; waiting = new Set(); holds = new Set();
     hostAway = false; stalled = false; lastHostAt = performance.now();
+    G.PvP.begin(cfg);
     cfg.members.forEach((m, i) => {
-      const x = (i - (cfg.members.length - 1) / 2) * 34, y = 0;
+      // PK: repartidos en un círculo, lejos unos de otros. Equipo: juntos.
+      const ang = (i / cfg.members.length) * 6.2832;
+      const x = cfg.pvp ? Math.round(Math.cos(ang) * 260) : (i - (cfg.members.length - 1) / 2) * 34;
+      const y = cfg.pvp ? Math.round(Math.sin(ang) * 180) : 0;
       if (m.uid === me) { pl.x = x; pl.y = y; pl.uid = me; pl.coopHost = host; pl.tagColor = COLORS[i]; return; }
       const mon = G.DEX_BY[m.dex] || G.DEX_BY[25];
       const p = new G.Player(mon, {}, !!m.shiny);

@@ -1631,4 +1631,13 @@ G.I18n.add({
   'Esperando a que alguien entre con el código…': '等待朋友用邀請碼加入…',
   'El código tiene 6 letras o números.': '邀請碼是 6 個英文字母或數字。',
   'No hay ninguna sala con ese código.': '找不到這個邀請碼的房間。',
+  // ---------------- PK ----------------
+  'Equipo': '組隊',
+  'PK: os podéis atacar entre vosotros. Gana el último en pie.': 'PK：玩家之間可以互相攻擊，最後存活的人獲勝。',
+  'Equipo: jugáis juntos contra los Pokémon salvajes.': '組隊：大家一起對抗野生寶可夢。',
+  '¡PK! Gana el último en pie. Tenéis 15 s para prepararos…': 'PK 開始！最後存活的人獲勝，15 秒後開打…',
+  '¡A luchar!': '開打！',
+  '¡Empate!': '平手！',
+  '¡Has ganado el PK!': '你贏得了這場 PK！',
+  '¡{x} ha ganado el PK!': '{x} 贏得了這場 PK！',
 }, 'zh');

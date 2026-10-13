@@ -215,6 +215,7 @@ G.Game = (() => {
     resume() { G.RunUI.closeLevelUp(); if (state === 'levelup') state = 'playing'; },
     shiny(dex) { G.onShinyCaught({ dex, name: (G.DEX_BY[dex] || {}).name || '' }); },
     over(d) {
+      if (d && 'pvpWin' in d) G.PvP.setWinner(d.pvpWin);
       if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, level: Math.max(pl.level, d.lv || 1), t1: d.t1 || pl.t1, t10: d.t10 || pl.t10 });
       if (d && d.t) time = d.t;
       if (d && d.why === 'host') G.UI.toast('El anfitrión ha terminado la partida', 3200);
@@ -323,6 +324,7 @@ G.Game = (() => {
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
     G.Modes.afterRun({ time, level: pl.level, kills: pl.kills, dex: pl.dex });
+    G.PvP.afterRun();
   }
 
   // ---------------- subida de nivel ----------------
@@ -605,17 +607,38 @@ G.Game = (() => {
     if (!coop || G.Coop.isHost) maybeLevelUp();
     if (pl.bonds > 0) offerBond(true);
     if (G.Coop.isHost) checkAllDown(dt);
+    G.PvP.tick();
   }
 
   /** Caído en grupo: un compañero a tu lado te va levantando. */
   function reviveTick(dt) {
+    if (G.PvP.on) return;                         // en PK no se revive
     const helper = G.Coop.puppets().some(p => !p.dead && G.U.dist2(p.x, p.y, pl.x, pl.y) < 56 * 56);
     pl.reviveT = helper ? (pl.reviveT || 0) + dt : Math.max(0, (pl.reviveT || 0) - dt * 0.5);
     if (pl.reviveT >= G.Player.REVIVE_TIME) pl.revive(0.5);
   }
 
+  let pvpLast = null;   // PK: quién seguía en pie cuando quedó uno
+
   /** Anfitrión: si caéis todos, se acaba (tras ver caer al último). */
   function checkAllDown(dt) {
+    if (G.PvP.on) {
+      // PK: se acaba cuando queda uno en pie (o ninguno).
+      const ps = G.Coop.players(), alive = ps.filter(p => !p.dead);
+      if (alive.length > 1) { deathT = 0; pvpLast = null; return; }
+      // El ganador es el que quedaba en pie al caer el penúltimo (aunque luego caiga él).
+      if (deathT === 0) pvpLast = alive[0] || null;
+      deathT += dt;
+      if (deathT > 1.6) {
+        deathT = 0;
+        const w = pvpLast; pvpLast = null;
+        const name = !w ? null : w === pl ? (G.Social.me ? G.Social.me.name : G.DB.user) : w.tag;
+        G.PvP.setWinner(name);
+        G.Coop.over(Object.assign(summary(), { pvpWin: name }));
+        endRun(pl.dead);
+      }
+      return;
+    }
     if (G.Rift.inArena || !G.Coop.players().every(p => p.dead)) { deathT = 0; return; }
     deathT += dt;
     if (deathT > 1.6) {

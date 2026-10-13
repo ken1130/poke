@@ -350,7 +350,7 @@ G.Social = (() => {
   }
 
   function enterRoom(id, host) {
-    room = { id, host, isHost: host === uid, members: [], open: true };
+    room = { id, host, isHost: host === uid, members: [], open: true, mode: 'coop' };
     watchRoomDisconnect();
     const mref = fb.rtdb.ref('rooms/' + id + '/m');
     mref.on('value', s => {
@@ -365,7 +365,10 @@ G.Social = (() => {
     href.on('value', s => { if (room && room.id === id && !s.val()) closedRoom(); }, () => closedRoom());
     const oref = fb.rtdb.ref('rooms/' + id + '/open');
     oref.on('value', s => { if (room && room.id === id) { room.open = s.val() === true; emit('room'); } }, () => {});
-    roomRefs = [mref, href, oref];
+    // Modo de la sala: 'coop' (equipo) o 'pvp' (PK). Lo elige el anfitrión.
+    const dref = fb.rtdb.ref('rooms/' + id + '/mode');
+    dref.on('value', s => { if (room && room.id === id) { room.mode = s.val() === 'pvp' ? 'pvp' : 'coop'; emit('room'); } }, () => {});
+    roomRefs = [mref, href, oref, dref];
     writeStatus();
     emit('room');
   }
@@ -404,6 +407,11 @@ G.Social = (() => {
     writeStatus();
     rtOff();
     emit('room');
+  }
+
+  /** El anfitrión elige el modo de la sala: 'coop' o 'pvp'. */
+  function setMode(mode) {
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mode').set(mode === 'pvp' ? 'pvp' : 'coop').catch(() => {});
   }
 
   /** El anfitrión cierra la sala a nuevos jugadores al empezar la partida. */
@@ -529,7 +537,7 @@ G.Social = (() => {
 
   return {
     start, startLite, joinByCode, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, refreshMember, setPlaying, refreshPresence,
+    createRoom, joinRoom, leaveRoom, setOpen, setMode, refreshMember, setPlaying, refreshPresence,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

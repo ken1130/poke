@@ -30,7 +30,8 @@ G.Combat = (() => {
     m.t -= dt;
     if (m.t > 0) return;
     // Los ataques que necesitan blanco esperan a tenerlo (no gastes animación al aire).
-    if (needsTarget(m) && !(pl.target && G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))) {
+    if (needsTarget(m) && !(pl.target && G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))
+        && !(G.PvP.on && G.PvP.foe(pl, reach(m)))) {
       m.t = 0.05;
       return;
     }
@@ -129,7 +130,7 @@ G.Combat = (() => {
     const col = G.U.TYPE_COLOR[m.type];
     const half = Math.min(m.arc, 6.2832) / 2;
     G.FX.slash(pl.x, pl.y - G.LIFT * 0.5, pl.aim, m.radius, m.arc, col, G.VFX.forMove(m));
-    if (ghost) return;
+    if (ghost) { G.PvP.arc(pl, pl.x, pl.y, m.radius, pl.aim, half, m.dmg * pl.atk, m.type); return; }
 
     for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, m.radius)) {
       if (!inArc(pl.x, pl.y, e.x, e.y, pl.aim, half)) continue;
@@ -151,7 +152,7 @@ G.Combat = (() => {
       if (G.World.isWall(pl.x + ca * d, pl.y + sa * d)) { len = d; break; }
     }
     G.FX.beam(pl.x, pl.y - G.LIFT, pl.aim, len, w, col, G.VFX.forMove(m));
-    if (ghost) return;
+    if (ghost) { G.PvP.seg(pl, pl.x, pl.y, pl.x + ca * len, pl.y + sa * len, w, m.dmg * pl.atk, m.type); return; }
     G.Camera.kick(0.08);
 
     const mx = pl.x + ca * len / 2, my = pl.y + sa * len / 2;
@@ -185,7 +186,7 @@ G.Combat = (() => {
           spin: G.VFX.spins(vis.aura) ? G.U.rand(-6, 6) : 0 });
       }
     }
-    if (ghost) return;
+    if (ghost) { G.PvP.circle(pl, pl.x, pl.y, m.radius, m.dmg * pl.atk, m.type); return; }
     let healed = 0;
     for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, m.radius)) {
       hit(pl, e, m.dmg * pl.atk, col, e.x - pl.x, e.y - pl.y, 0, m);
@@ -305,7 +306,7 @@ G.Combat = (() => {
     // Estela: varias copias del golpe a lo largo del recorrido.
     for (let d = 0; d <= len; d += 22) G.FX.sp(vis.proj || 'streak', vis.pal, sx + ca * d, sy + sa * d - G.LIFT * 0.6, { life: 0.22, angle: pl.aim });
     G.FX.slash(sx + ca * len, sy + sa * len - G.LIFT * 0.5, pl.aim, 34, 2.2, col, vis);
-    if (ghost) return;
+    if (ghost) { G.PvP.seg(pl, sx, sy, sx + ca * len, sy + sa * len, m.width || 34, m.dmg * pl.atk, m.type); return; }
     pl.x = sx + ca * len; pl.y = sy + sa * len;
     G.World.collide(pl);
     pl.invuln = Math.max(pl.invuln || 0, 0.3);
@@ -352,7 +353,7 @@ G.Combat = (() => {
 
   /** Daño de un campo (mina, meteoro, charco) a todo lo que hay en su círculo. */
   function blast(f, r, k = 1) {
-    if (f.ghost) return;
+    if (f.ghost) { G.PvP.circle(f.owner, f.x, f.y, r, f.dmg * k, f.m.type); return; }
     const pl = f.owner, m = f.m;
     for (const e of G.EnemyMgr.queryCircle(f.x, f.y, r)) hit(pl, e, f.dmg * k, f.col, e.x - f.x, e.y - f.y, m.knock || 0, m);
     for (const p of G.World.propsInCircle(f.x, f.y, r)) G.World.damageProp(p, f.dmg * k, f.col);
@@ -571,8 +572,14 @@ G.Combat = (() => {
       }
 
       // --- disparos de jugadores ---
-      // Orbes de un compañero: sólo se ven.
-      if (p.orb && p.ghost) continue;
+      // Orbes de un compañero: sólo se ven (en PK, te golpean).
+      if (p.orb && p.ghost) { if (G.PvP.on) G.PvP.orb(p, now); continue; }
+      // PK: el disparo de otro jugador te da a ti.
+      if (p.ghost && !p.orb && G.PvP.on && G.PvP.projectile(p)) {
+        G.FX.burst(p.x, p.y - G.LIFT, p.color, 6, 90);
+        projectiles.splice(i, 1);
+        continue;
+      }
       if (!p.orb) {
         const block = G.World.projectileBlock(p.x, p.y, p.r);
         if (block === 'wall' || (block && !block.destructible)) {
