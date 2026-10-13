@@ -293,6 +293,46 @@ G.MenuUI = (() => {
       if (u.id === 'ban' && lvl > 0 && banOpen) box.appendChild(banPicker(lvl));
     }
     box.appendChild(bindPanel());
+    allButton();
+  }
+
+  /** Botón "Mejorar todo": compra niveles, del más barato al más caro, mientras alcancen las monedas. */
+  function allButton() {
+    const btn = $('upg-all');
+    const levels = G.DB.upgradesOf(upgDex);
+    let total = 0;
+    for (const u of G.Upgrades.LIST) for (let l = levels[u.id] || 0; l < u.max; l++) total += G.Upgrades.cost(u.id, l);
+    btn.disabled = total === 0 || G.DB.save.coins < cheapestNext(levels);
+    btn.innerHTML = total === 0 ? 'Todo al máximo' : `Mejorar todo · <span class="coin"></span> ${total}`;
+    btn.onclick = () => {
+      const sv = G.DB.save, lv = G.DB.upgradesOf(upgDex), mon = G.DEX_BY[upgDex];
+      let bought = 0;
+      for (;;) {
+        let best = null;
+        for (const u of G.Upgrades.LIST) {
+          const now = lv[u.id] || 0;
+          if (now >= u.max) continue;
+          const price = G.Upgrades.cost(u.id, now);
+          if (price <= sv.coins && (!best || price < best.price)) best = { u, price };
+        }
+        if (!best) break;
+        sv.coins -= best.price;
+        lv[best.u.id] = (lv[best.u.id] || 0) + 1;
+        bought++;
+      }
+      if (!bought) { renderUpgrades(); return; }
+      G.DB.commit(true);
+      G.Audio.sfx('buy');
+      G.UI.refreshCoins();
+      G.UI.toast(G.I18n.f('{x}: +{x} niveles de mejora', G.T(mon.name), bought));
+      renderUpgrades();
+    };
+  }
+
+  function cheapestNext(levels) {
+    let min = Infinity;
+    for (const u of G.Upgrades.LIST) { const l = levels[u.id] || 0; if (l < u.max) min = Math.min(min, G.Upgrades.cost(u.id, l)); }
+    return min;
   }
 
   // ---------------- atajos: hueco fijo para cada movimiento ----------------

@@ -546,7 +546,8 @@ G.I18n.add({
 
   // ---------------- trucos ----------------
   'Trucos': 'Cheats', 'Introduce un código secreto': 'Enter a secret code', 'Código': 'Code', 'Usar': 'Use',
-  'Código incorrecto': 'Wrong code', 'Borrar toda la partida': 'Delete all progress',
+  'Código incorrecto': 'Wrong code',
+  'Mejorar todo': 'Upgrade all', 'Todo al máximo': 'All maxed', '{x}: +{x} niveles de mejora': '{x}: +{x} upgrade levels', 'Borrar toda la partida': 'Delete all progress',
   'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.': 'This browser cannot save data (incognito mode?): open the game in a normal window.',
   'Los trucos sólo funcionan en modo local (abre index.html con doble clic)': 'Cheats only work in local mode (double-click index.html)',
   '¡Truco activado! Pokédex y Pokémon desbloqueados · 9.999.999 monedas y tickets': 'Cheat activated! Pokédex and Pokémon unlocked · 9,999,999 coins and tickets'

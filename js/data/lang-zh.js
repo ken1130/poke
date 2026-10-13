@@ -1526,4 +1526,6 @@ G.I18n.add({
   'Código incorrecto': '密技錯誤',
   'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.': '這個瀏覽器無法儲存資料（是不是無痕模式？）：請用一般視窗開啟遊戲。',
   'Borrar toda la partida': '清除所有進度',
+  'Mejorar todo': '一鍵強化', 'Todo al máximo': '已全部強化至最高', '{x}: +{x} niveles de mejora': '{x}：強化等級 +{x}',
+  'niveles': '級',
 }, 'zh');
