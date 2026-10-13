@@ -1747,4 +1747,6 @@ G.I18n.add({
   'Toca «Cambiar» para ver a otro': '點「切換」看其他人',
   'Tab / Espacio: ver a otro': 'Tab／空白鍵：切換觀戰對象',
   'Cada equipo necesita al menos a una persona.': '每隊至少要有一個人才能開始。',
+  'Has caído: estás fuera del PK': '你倒下了：已退出這場 PK',
+  'Tu equipo ha caído…': '你的隊伍全滅了…',
 }, 'zh');

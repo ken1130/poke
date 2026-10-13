@@ -413,8 +413,21 @@ G.Player = class Player {
     if (!n) return;
     if (this.flash > 0) this.flash -= dt;
     if (this.attackFace > 0) this.attackFace -= dt;
-    if (G.U.dist2(this.x, this.y, n.x, n.y) > 300 * 300) { this.x = n.x; this.y = n.y; }
-    else { this.x = G.U.damp(this.x, n.x, 14, dt); this.y = G.U.damp(this.y, n.y, 14, dt); }
+    // Predicción: entre paquete y paquete sigue andando a la velocidad que llevaba
+    // (si no, se ve a los demás siempre un poco por detrás y a saltos).
+    this.netAge = (this.netAge || 0) + dt;
+    if (n !== this.netPrev) {
+      const p = this.netPrev, gap = this.netAge;
+      if (p && gap > 0.01 && n.walk && !n.dead) { this.netVx = (n.x - p.x) / gap; this.netVy = (n.y - p.y) / gap; }
+      else { this.netVx = 0; this.netVy = 0; }
+      const vmax = 900;   // un salto (teletransporte, revivir) no es velocidad
+      if (this.netVx * this.netVx + this.netVy * this.netVy > vmax * vmax) { this.netVx = 0; this.netVy = 0; }
+      this.netPrev = n; this.netAge = 0;
+    }
+    const lead = n.walk ? Math.min(this.netAge, 0.25) : 0;
+    const tx = n.x + (this.netVx || 0) * lead, ty = n.y + (this.netVy || 0) * lead;
+    if (G.U.dist2(this.x, this.y, tx, ty) > 300 * 300) { this.x = tx; this.y = ty; }
+    else { this.x = G.U.damp(this.x, tx, 18, dt); this.y = G.U.damp(this.y, ty, 18, dt); }
     if (n.hp < this.hp - 0.5 && !n.dead) this.flash = 0.14;
     this.hp = n.hp; this.maxHp = n.maxHp;
     this.magnet = n.mag || this.magnet;
@@ -497,7 +510,9 @@ G.Player = class Player {
       ctx.strokeText(this.tag, this.x, y);
       ctx.fillStyle = this.dead ? '#ff8a96' : this.tagColor || '#fff';
       ctx.fillText(this.tag, this.x, y);
-      if (this.dead) {
+      // "Quédate a su lado" sólo si se le puede levantar (en PK, sólo los de tu equipo).
+      const me = G.Coop.local;
+      if (this.dead && (!G.PvP.on || (G.PvP.teams && me && this.team === me.team))) {
         ctx.font = '700 6px Pixelify,"Segoe UI",sans-serif';
         ctx.strokeText(this.revLabel || '', this.x, y - 8);
         ctx.fillText(this.revLabel || '', this.x, y - 8);

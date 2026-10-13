@@ -745,6 +745,8 @@ G.I18n.add({
   'Toca «Cambiar» para ver a otro': 'Tap “Switch” to watch someone else',
   'Tab / Espacio: ver a otro': 'Tab / Space: watch someone else',
   'Cada equipo necesita al menos a una persona.': 'Each team needs at least one player.',
+  'Has caído: estás fuera del PK': 'You fell: you are out of the PvP',
+  'Tu equipo ha caído…': 'Your team has fallen…',
   'Mejorar todo': 'Upgrade all', 'Todo al máximo': 'All maxed', '{x}: +{x} niveles de mejora': '{x}: +{x} upgrade levels', 'Borrar toda la partida': 'Delete all progress',
   'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.': 'This browser cannot save data (incognito mode?): open the game in a normal window.',
   'Los trucos sólo funcionan en modo local (abre index.html con doble clic)': 'Cheats only work in local mode (double-click index.html)',
