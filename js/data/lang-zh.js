@@ -1533,4 +1533,8 @@ G.I18n.add({
   'Modo shiny activado: todos los Pokémon salvajes saldrán shiny': '異色模式已開啟：所有野生寶可夢都會是異色',
   'Modo shiny desactivado': '異色模式已關閉',
   'Elegir de compañero': '設為夥伴',
+  // ---------------- modo jefes ----------------
+  'Modo jefes': '頭目模式', 'Activado: sólo salen jefes': '開啟中：只會出現頭目',
+  'Modo jefes activado: en el mapa sólo saldrán jefes': '頭目模式已開啟：地圖上只會出現頭目',
+  'Modo jefes desactivado': '頭目模式已關閉',
 }, 'zh');

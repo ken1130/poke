@@ -25,7 +25,13 @@ G.Spawner = (() => {
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
 
+  // Modo jefes (ajuste bossMode): sólo salen jefes, uno cada BOSS_EVERY s,
+  // con un tope a la vez que sube cada 3 min (1 -> 4).
+  const BOSS_EVERY = 20;
+  let bossModeT = 0;
+
   function reset() {
+    bossModeT = BOSS_EVERY - 3;
     acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
     G.Enemies.rollRun();
     G.Sprites.preload(G.Enemies.upcomingDex(0, 80));
@@ -123,6 +129,8 @@ G.Spawner = (() => {
     const lf = G.Enemies.LATE_FROM * 60;
     if (t >= lf && t - dt < lf) { say('¡Los Pokémon salvajes se vuelven cada vez más fuertes!', 3.6); G.Audio.sfx('boss'); }
 
+    if (G.Settings.get('bossMode')) { bossModeUpdate(dt, t); return; }
+
     // --- jefes ---
     const b = G.Enemies.BOSSES[bossIdx];
     if (b && t >= b.at) { spawnBoss(anchor(), t, b); bossIdx++; }
@@ -152,8 +160,22 @@ G.Spawner = (() => {
     }
   }
 
+  function bossModeUpdate(dt, t) {
+    bossModeT += dt;
+    const alive = G.EnemyMgr.all().filter(e => e.boss && !e.dead).length;
+    if (bossModeT < (alive ? BOSS_EVERY : 4)) return;          // sin ninguno, el siguiente enseguida
+    if (alive >= Math.min(4, 1 + Math.floor(t / 180))) return;
+    const target = anchor();
+    if (!target) return;
+    bossModeT = 0;
+    const def = G.Enemies.bossAt(t);
+    G.Sprites.preload([def.dex]);
+    spawnBoss(target, t, def);
+  }
+
   /** Unos cuantos de golpe desde un lado (al empezar una horda). */
   function burst(n) {
+    if (G.Settings.get('bossMode')) return;   // modo jefes: sin hordas
     const base = Math.random() * 6.2832, target = anchor() || G.Game.player, t = G.Game.st.time;
     for (let i = 0; i < n && G.EnemyMgr.count < CAP + 10; i++) spawnOne(target, t, base + G.U.rand(-0.6, 0.6));
   }

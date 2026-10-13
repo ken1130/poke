@@ -5,7 +5,7 @@ G.MenuUI = (() => {
   let dexFilter = 'all', dexGen = 1, dexSel = null;
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', shiny: 'shiny', cheat: 'star', settings: 'gear' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', shiny: 'shiny', boss: 'crown', cheat: 'star', settings: 'gear' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -20,6 +20,12 @@ G.MenuUI = (() => {
           const on = !G.Settings.get('shinyMode');
           G.Settings.set('shinyMode', on);
           G.UI.toast(on ? 'Modo shiny activado: todos los Pokémon salvajes saldrán shiny' : 'Modo shiny desactivado');
+          shinyLine();
+        }
+        else if (go === 'boss') {
+          const on = !G.Settings.get('bossMode');
+          G.Settings.set('bossMode', on);
+          G.UI.toast(on ? 'Modo jefes activado: en el mapa sólo saldrán jefes' : 'Modo jefes desactivado');
           shinyLine();
         }
         else if (go === 'cheat') G.Cheat.openPrompt();
@@ -95,6 +101,9 @@ G.MenuUI = (() => {
     const on = !!G.Settings.get('shinyMode');
     $('menu-shiny-sub').textContent = on ? 'Activado: sólo salen shinies' : 'Desactivado';
     $('menu-shiny-sub').classList.toggle('gold', on);
+    const boss = !!G.Settings.get('bossMode');
+    $('menu-boss-sub').textContent = boss ? 'Activado: sólo salen jefes' : 'Desactivado';
+    $('menu-boss-sub').classList.toggle('gold', boss);
   }
 
   /** Texto bajo "Amigos" y "Jugar": quién está en línea, solicitudes, sala. */

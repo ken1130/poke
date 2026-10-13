@@ -549,6 +549,8 @@ G.I18n.add({
   'Código incorrecto': 'Wrong code',
   'Modo shiny': 'Shiny mode', 'Desactivado': 'Off', 'Activado: sólo salen shinies': 'On: only shinies appear',
   'Modo shiny activado: todos los Pokémon salvajes saldrán shiny': 'Shiny mode on: every wild Pokémon will be shiny', 'Modo shiny desactivado': 'Shiny mode off',
+  'Modo jefes': 'Boss mode', 'Activado: sólo salen jefes': 'On: only bosses appear',
+  'Modo jefes activado: en el mapa sólo saldrán jefes': 'Boss mode on: only bosses will appear on the map', 'Modo jefes desactivado': 'Boss mode off',
   'Mejorar todo': 'Upgrade all', 'Todo al máximo': 'All maxed', '{x}: +{x} niveles de mejora': '{x}: +{x} upgrade levels', 'Borrar toda la partida': 'Delete all progress',
   'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.': 'This browser cannot save data (incognito mode?): open the game in a normal window.',
   'Los trucos sólo funcionan en modo local (abre index.html con doble clic)': 'Cheats only work in local mode (double-click index.html)',

@@ -153,22 +153,34 @@ G.Enemies = (() => {
       if (r) { r.behavior = 'runner'; r.spd = Math.round(r.spd * 1.6); r.hp = Math.round(r.hp * 0.7); }
     }
     const used = new Set();
-    bosses = BOSS_SLOTS.map(slot => {
-      const ok = p => !p.leg && G.SPRITE_META[p.dex] && !used.has(p.dex);
-      let pool = G.DEX.filter(p => ok(p) && p.bst >= slot.bst[0] && p.bst <= slot.bst[1]);
-      if (!pool.length) pool = G.DEX.filter(p => ok(p) && p.bst >= 580);
-      const p = G.U.pick(pool);
-      used.add(p.dex);
-      return {
-        at: slot.at, dex: p.dex, name: p.name,
-        // (Desde 2026-10-10 más duros: ×1,35 de vida y ×1,2 de daño.)
-        hp: Math.round(slot.hp * 1.35), spd: Math.round(G.U.clamp(40 + baseSpd(p) * 0.5, 40, 100)),
-        dmg: Math.round(slot.dmg * 1.2), xp: slot.xp,
-        behavior: behaviorOf(p) === 'ranged' ? 'ranged' : (baseSpd(p) > 90 ? 'charger' : 'chase'),
-        shotDmg: Math.round(slot.dmg * 0.55), shotCd: 1.1, range: 260
-      };
-    });
+    bosses = BOSS_SLOTS.map(slot => bossFromSlot(slot, used));
     return { cast, bosses };
+  }
+
+  /** Jefe de un hueco de BOSS_SLOTS (sin repetir los de `used`). */
+  function bossFromSlot(slot, used = new Set(), hpMul = 1) {
+    const ok = p => !p.leg && G.SPRITE_META[p.dex] && !used.has(p.dex);
+    let pool = G.DEX.filter(p => ok(p) && p.bst >= slot.bst[0] && p.bst <= slot.bst[1]);
+    if (!pool.length) pool = G.DEX.filter(p => ok(p) && p.bst >= 580);
+    const p = G.U.pick(pool);
+    used.add(p.dex);
+    return {
+      at: slot.at, dex: p.dex, name: p.name,
+      // (Desde 2026-10-10 más duros: ×1,35 de vida y ×1,2 de daño.)
+      hp: Math.round(slot.hp * 1.35 * hpMul), spd: Math.round(G.U.clamp(40 + baseSpd(p) * 0.5, 40, 100)),
+      dmg: Math.round(slot.dmg * 1.2), xp: slot.xp,
+      behavior: behaviorOf(p) === 'ranged' ? 'ranged' : (baseSpd(p) > 90 ? 'charger' : 'chase'),
+      shotDmg: Math.round(slot.dmg * 0.55), shotCd: 1.1, range: 260
+    };
+  }
+
+  /**
+   * Modo jefes: un jefe al azar para el segundo `t`. Sube un hueco de
+   * BOSS_SLOTS cada 2 min; los primeros minutos con menos vida (empiezas a nivel 1).
+   */
+  function bossAt(t) {
+    const slot = BOSS_SLOTS[Math.min(BOSS_SLOTS.length - 1, Math.floor(t / 120))];
+    return bossFromSlot(slot, new Set(), 0.4 + Math.min(0.6, t / 600));
   }
 
   function scale(t) {
@@ -234,7 +246,7 @@ G.Enemies = (() => {
   }
 
   return {
-    TIERS, BOSS_SLOTS, LATE_FROM, rollRun, scale, bossScale, late, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
+    TIERS, BOSS_SLOTS, LATE_FROM, rollRun, bossAt, scale, bossScale, late, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }
   };
