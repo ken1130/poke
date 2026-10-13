@@ -1568,7 +1568,7 @@ G.I18n.add({
   'jefes': '頭目',
   'extremo': '極限',
   'dificultad a medida': '自訂難度',
-  'PokéSurvivor · Reto diario {x} · {x} · {x} · Nv. {x} · {x} derrotados': 'PokéSurvivor 每日挑戰 {x} · {x} · 存活 {x} · Lv {x} · 擊倒 {x}',
+  'PokéSurvivor · Reto diario {x} · {x} · {x} · Lv {x} · {x} derrotados': 'PokéSurvivor 每日挑戰 {x} · {x} · 存活 {x} · Lv {x} · 擊倒 {x}',
   'Copiar resultado': '複製成績',
   'Copiado': '已複製',
   'Invencible el resto de la partida (úsalo jugando)': '這一局剩下的時間無敵（遊戲中使用）',

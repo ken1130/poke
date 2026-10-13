@@ -77,7 +77,7 @@ G.LevelUp = (() => {
       out.push({
         w: 8, type: 'up', key: 'up:' + m.id,
         icon: 'move:' + m.id, color: G.U.TYPE_COLOR[m.type],
-        tag: 'Nv.' + m.lvl + ' > ' + (m.lvl + 1),
+        tag: 'Lv.' + m.lvl + ' > ' + (m.lvl + 1),
         title: m.name, desc: txt,
         apply: () => G.Moves.levelUp(m)
       });

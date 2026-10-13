@@ -82,7 +82,7 @@ G.Modes = (() => {
     let html = '';
     if (run === 'daily') {
       const mon = G.T(G.DEX_BY[r.dex].name);
-      const line = G.I18n.f('PokéSurvivor · Reto diario {x} · {x} · {x} · Nv. {x} · {x} derrotados',
+      const line = G.I18n.f('PokéSurvivor · Reto diario {x} · {x} · {x} · Lv {x} · {x} derrotados',
         today(), mon, G.U.mmss(r.time), r.level, r.kills);
       const best = dailyBest();
       const better = !best || r.time > best.time;

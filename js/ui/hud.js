@@ -49,7 +49,7 @@ G.HUD = (() => {
 
     ctx.font = F(700, 11);
     ctx.fillStyle = '#ffcb3d';
-    ctx.fillText('Nv. ' + pl.level, px, py + 26);
+    ctx.fillText('Lv. ' + pl.level, px, py + 26);
 
     bar(ctx, px + 48, py + 17, 168, 11, pl.hp / pl.maxHp, '#ff5f6d');
     ctx.font = F(700, 10);

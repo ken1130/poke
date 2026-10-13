@@ -576,7 +576,7 @@ G.I18n.add({
   'Cantidad de enemigos': 'Enemy count',
   'Velocidad de los enemigos': 'Enemy speed',
   'Restablecer (100%)': 'Reset (100%)',
-  'PokéSurvivor · Reto diario {x} · {x} · {x} · Nv. {x} · {x} derrotados': 'PokéSurvivor · Daily challenge {x} · {x} · {x} · Lv {x} · {x} defeated',
+  'PokéSurvivor · Reto diario {x} · {x} · {x} · Lv {x} · {x} derrotados': 'PokéSurvivor · Daily challenge {x} · {x} · {x} · Lv {x} · {x} defeated',
   'Copiar resultado': 'Copy result',
   'Copiado': 'Copied',
   'Invencible el resto de la partida (úsalo jugando)': 'Invincible for the rest of the run (use while playing)',
