@@ -2,7 +2,7 @@
 G.MenuUI = (() => {
   const $ = G.UI.$;
   const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
-  let dexFilter = 'all', dexGen = 1, dexSel = null;
+  let dexFilter = 'all', dexGen = 1, dexSel = null, dexQuery = '';
 
   function init() {
     const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', party: 'friends', modes: 'crown', cheat: 'star', settings: 'gear' };
@@ -142,16 +142,28 @@ G.MenuUI = (() => {
       c.onclick = () => { dexFilter = k; openDex(); };
       fb.appendChild(c);
     }
+    // Buscador: por nombre (traducido o no) o número, en todas las regiones.
+    const search = $('dex-search');
+    search.value = dexQuery;
+    search.oninput = () => { dexQuery = search.value; tabs.classList.toggle('dim', !!dexQuery.trim()); renderGrid(); };
+    tabs.classList.toggle('dim', !!dexQuery.trim());
     renderGrid();
     showDetail(dexSel);
+  }
+
+  /** ¿Coincide el Pokémon con lo buscado? Nombre (como se ve o el original) o número. */
+  function matches(p, q) {
+    if (/^\d+$/.test(q)) return p.dex === +q;   // número exacto: 25 o 025 -> Pikachu
+    return p.name.toLowerCase().includes(q) || G.T(p.name).toLowerCase().includes(q);
   }
 
   function renderGrid() {
     const s = G.DB.save;
     const grid = $('dex-grid');
     grid.innerHTML = '';
+    const q = dexQuery.trim().toLowerCase();
     for (const p of G.DEX) {
-      if (p.gen !== dexGen) continue;
+      if (q ? !matches(p, q) : p.gen !== dexGen) continue;
       const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
       if (dexFilter === 'own' && !own) continue;
       if (dexFilter === 'miss' && own) continue;

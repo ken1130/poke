@@ -1371,7 +1371,7 @@ G.I18n.add({
   'Pantalla completa': '全螢幕', 'Sin barras del navegador.': '隱藏瀏覽器工具列。', 'Activar': '開啟', 'Sí': '是', 'No': '否',
   'Idioma': '語言', 'El juego se recarga al cambiarlo.': '變更後遊戲會重新載入。',
   'En móvil o tablet': '手機或平板', 'En PC': '電腦', 'Tamaño del joystick': '搖桿大小', 'Cuánto hay que arrastrar el dedo.': '手指需要拖曳多遠。',
-  'Pequeño': '小', 'Normal': '中', 'Grande': '大', 'o flechas': '或方向鍵', 'moverse': '移動', 'o clic en el icono': '或點擊圖示', 'elegir ataque': '選擇招式',
+  'Pequeño': '小', 'Normal': '一般', 'Grande': '大', 'o flechas': '或方向鍵', 'moverse': '移動', 'o clic en el icono': '或點擊圖示', 'elegir ataque': '選擇招式',
   'ataque anterior / siguiente': '上一個 / 下一個招式', 'elegir carta al subir de nivel': '升級時選擇卡片',
   'Pon el dedo en cualquier parte y arrastra para moverte: el joystick aparece donde tocas. Toca un ataque de abajo para cambiarlo y el botón de arriba a la derecha para pausar. Se juega en horizontal.': '將手指放在任意位置並拖曳即可移動：搖桿會出現在你觸碰的地方。點擊下方的招式即可切換，點擊右上角按鈕可暫停。請橫向遊玩。',
   'Apodo': '暱稱', 'Es único y no se puede cambiar.': '暱稱是唯一的，且無法變更。', 'Tipo de cuenta': '帳號類型', 'Partida': '存檔',
@@ -1643,4 +1643,5 @@ G.I18n.add({
   '¡Victoria!': '勝利！', 'Derrota…': '落敗…',
   // desglose de monedas del resumen (game.js: tiempo · derrotados · jefes · recogidas)
   'recogidas': '拾取', 'derrotados': '擊倒',
+  'Buscar Pokémon (nombre o número)': '搜尋寶可夢（名稱或編號）',
 }, 'zh');
