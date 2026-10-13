@@ -17,6 +17,10 @@
  *   dash        cruzas hacia el enemigo golpeando todo el camino (sin recibir daño)
  *   trail       vas dejando charcos que dañan a lo que los pisa
  *   cone        muchos disparos cortos en abanico (aliento, chorro...)
+ *   ---- de esta versión (números por nivel en TABLE, no por escalera) ----
+ *   flameshield PASIVO: quema a los que se acercan (sigue un rato aunque se alejen)
+ *   lightning   rayos que caen sobre enemigos al azar en un radio
+ *   drain       muerde a los N más cercanos y te cura (evolucionado: PASIVO)
  *
  * Sólo el movimiento ACTIVO se ejecuta. Se cambia con 1-4 / Q / E.
  *
@@ -112,6 +116,25 @@
       { t: '+40% daño',                     m: { dmg: 1.40 } },
       { t: '+30% alcance',                  m: { life: 1.30 } },
       { t: '+3 disparos y +1 perforación',  m: { count: 3, pierce: 1 } }
+    ],
+    // Los de esta versión: el texto describe la mejora; los números salen de TABLE.
+    flameshield: [
+      { t: '+4 de daño/s, +2 s y +0,5 casillas', m: {} },
+      { t: '+8 de daño/s, +3 s y +1 casilla',    m: {} },
+      { t: '+10 de daño/s y +8 s',               m: {} },
+      { t: '+13 de daño/s, +12 s y +1 casilla',  m: {} }
+    ],
+    lightning: [
+      { t: '+1 rayo',                                        m: {} },
+      { t: '+8 de daño por rayo',                            m: {} },
+      { t: '+2 rayos, +2 de daño y +2 casillas de alcance',  m: {} },
+      { t: '+3 rayos y +5 de daño',                          m: {} }
+    ],
+    drain: [
+      { t: '+3 de daño y +1 de curación',                              m: {} },
+      { t: '+3 objetivos, +8 de daño y +2 de curación',                m: {} },
+      { t: '+5 objetivos, +13 de daño, +2 de curación y +2 casillas',  m: {} },
+      { t: '+5 objetivos, +7 de daño y +2 de curación',                m: {} }
     ],
     buff: [
       { t: '+1 acumulación máxima',         m: { stacks: 1 } },
@@ -398,8 +421,45 @@
 
     { id: 'hex', name: 'Infortunio', type: 'ghost', kind: 'chain',
       desc: 'Maldición que salta entre enemigos. Mucho más daño si están quemados, envenenados o frenados.',
-      cd: 0.9, dmg: 17, count: 4, radius: 150, hex: 1.7 }
+      cd: 0.9, dmg: 17, count: 4, radius: 150, hex: 1.7 },
+
+    // ---------------- de esta versión (números en TABLE) ----------------
+    { id: 'flame-shield', name: 'Escudo de Llamas', type: 'fire', kind: 'flameshield',
+      desc: 'PASIVO: quema a los enemigos que se te acercan. Siguen ardiendo un rato aunque se alejen.',
+      cd: 0.5, dmg: 10, radius: 80 },
+    { id: 'thunder-strike', name: 'Caída de Rayo', type: 'electric', kind: 'lightning',
+      desc: 'Rayos que caen del cielo sobre enemigos cercanos al azar.',
+      cd: 1.17, dmg: 20, count: 4, radius: 256 },
+    { id: 'vampire-fang', name: 'Colmillo Vampiro', type: 'bug', kind: 'drain',
+      desc: 'Muerde a los enemigos más cercanos y te cura. Al evolucionar pasa a ser PASIVO.',
+      cd: 1.7, dmg: 14, count: 5, radius: 160 }
   ];
+
+  /*
+   * Números por nivel de los movimientos de esta versión: [Nv1..Nv5, evolucionado].
+   * Casilla = 32 unidades. (Equilibrados con los demás: ver el historial del proyecto.)
+   *   flame-shield    dps, dur (s), r (casillas); evolucionado: vuln (+% daño recibido)
+   *   thunder-strike  n rayos, dmg, r; evolucionado: link (daño/s de las descargas entre rayos)
+   *   vampire-fang    n objetivos, dmg, heal (curación total por golpe), r; evolucionado: cd y pasivo
+   */
+  const TABLE = {
+    'flame-shield': [
+      { dps: 10, dur: 5,  r: 2.5 }, { dps: 14, dur: 7,  r: 3 }, { dps: 22, dur: 10, r: 4 },
+      { dps: 32, dur: 18, r: 4 },   { dps: 45, dur: 30, r: 5 }, { dps: 60, dur: 50, r: 5, vuln: 0.15 }
+    ],
+    'thunder-strike': [
+      { n: 4, dmg: 20, r: 8 },  { n: 5, dmg: 20, r: 8 },  { n: 5, dmg: 28, r: 8 },
+      { n: 7, dmg: 30, r: 10 }, { n: 10, dmg: 35, r: 10 }, { n: 12, dmg: 40, r: 11, link: 50 }
+    ],
+    'vampire-fang': [
+      { n: 5, dmg: 14, heal: 2, r: 5 },  { n: 5, dmg: 17, heal: 3, r: 5 },  { n: 8, dmg: 25, heal: 5, r: 5 },
+      { n: 13, dmg: 38, heal: 7, r: 7 }, { n: 18, dmg: 45, heal: 9, r: 7 }, { n: 12, dmg: 35, heal: 8, r: 7, cd: 1.0, passive: true }
+    ]
+  };
+  /** Fila de TABLE para una instancia (según su nivel y si ha evolucionado). */
+  const stat = m => (TABLE[m.id] ? TABLE[m.id][m.evolved ? 5 : Math.max(0, Math.min(4, m.lvl - 1))] : null);
+  /** ¿Funciona aunque no sea el movimiento activo? */
+  const isPassive = m => m.kind === 'flameshield' || !!(m.evolved && stat(m) && stat(m).passive);
 
   // Cuerpo a cuerpo (12-10-2026): +20 % de daño y +25 % de alcance y de arco
   // (y -25 % de daño recibido mientras sea tu ataque activo, en player.js).
@@ -517,7 +577,9 @@
     'hail': ['Alud', 'cd'],                  'meteor-mash': ['Bomba Imán', 'atk'],
     'will-o-wisp': ['Infierno', 'cd'],       'substitute': ['Doble Equipo', 'def'],
     'aerial-ace': ['Acróbata', 'spd'],       'flame-wheel': ['Envite Ígneo', 'spd'],
-    'bubble-beam': ['Acua Cola', 'atk'],     'hex': ['Poltergeist', 'mag']
+    'bubble-beam': ['Acua Cola', 'atk'],     'hex': ['Poltergeist', 'mag'],
+    'flame-shield': ['Escudo Ígneo', 'def'], 'thunder-strike': ['Tormenta Eléctrica', 'atk'],
+    'vampire-fang': ['Colmillo Eterno', 'rgn']
   };
   // Lo que gana al evolucionar, según cómo funcione.
   const EVO_MODS = {
@@ -534,7 +596,10 @@
     turret:     { t: '×1,8 daño, +1 a la vez y dispara más rápido', m: { dmg: 1.8, count: 1, rate: 0.8 } },
     dash:       { t: '×1,9 daño, más distancia y menos recarga', m: { dmg: 1.9, radius: 1.25, cd: 0.8 } },
     trail:      { t: '×1,8 daño, charcos más grandes y duraderos', m: { dmg: 1.8, radius: 1.25, dur: 1.3 } },
-    cone:       { t: '×1,7 daño, +4 disparos y +1 perforación', m: { dmg: 1.7, count: 4, pierce: 1 } }
+    cone:       { t: '×1,7 daño, +4 disparos y +1 perforación', m: { dmg: 1.7, count: 4, pierce: 1 } },
+    flameshield: { t: '60 de daño/s durante 50 s; los quemados reciben +15% de daño', m: {} },
+    lightning:   { t: '12 rayos de 40 y descargas entre ellos (+50 de daño/s)', m: {} },
+    drain:       { t: 'Pasa a ser PASIVO: cada 1 s muerde a 12 (35 de daño) y te cura 8', m: {} }
   };
 
   /** ¿Puede evolucionar ya? → { name, needs, needName, text, ready } o null */
@@ -558,5 +623,5 @@
   }
 
   G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, instance, levelUp, nextUpText, startFor,
-              EVO, NEED_NAME, evoInfo, evolve };
+              EVO, NEED_NAME, evoInfo, evolve, TABLE, stat, isPassive };
 })();

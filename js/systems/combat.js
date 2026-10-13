@@ -21,7 +21,10 @@ G.Combat = (() => {
   function tick(dt, pl, now) {
     if (pl.dead) return;
     // Vínculos: todos los movimientos del hueco activo, cada uno con su recarga.
-    for (const m of pl.activeGroup()) tickMove(dt, pl, m, now);
+    const group = pl.activeGroup();
+    for (const m of group) tickMove(dt, pl, m, now);
+    // Pasivos (Escudo de Llamas, Colmillo Vampiro evolucionado): siempre, aunque no estén activos.
+    for (const m of pl.moves) if (!group.includes(m) && G.Moves.isPassive(m)) tickMove(dt, pl, m, now);
   }
 
   function tickMove(dt, pl, m, now) {
@@ -35,9 +38,13 @@ G.Combat = (() => {
       m.t = 0.05;
       return;
     }
-    m.t = Math.max(0.05, m.cd * pl.cdMul);
-    pl.cast(m);
-    if (G.Coop.active) G.Coop.cast(pl, m);
+    const row = G.Moves.stat(m);
+    m.t = Math.max(0.05, ((row && row.cd) || m.cd) * pl.cdMul);
+    // Los pasivos no hacen animación ni se mandan a los demás (sólo cuenta su efecto).
+    if (!G.Moves.isPassive(m)) {
+      pl.cast(m);
+      if (G.Coop.active) G.Coop.cast(pl, m);
+    }
     // Vínculo: su icono destella en el HUD al lanzarse (uno que explota pegado al
     // enemigo, como Ascuas tras Ataque Rápido, casi no se ve).
     m.castAt = performance.now();
@@ -61,10 +68,87 @@ G.Combat = (() => {
       case 'dash':       dash(pl, m); break;
       case 'trail':      trailPatch(pl, m); break;
       case 'cone':       cone(pl, m); break;
+      case 'flameshield': flameShield(pl, m); break;
+      case 'lightning':  lightning(pl, m); break;
+      case 'drain':      drain(pl, m); break;
     }
   }
 
-  const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone'];
+  // ---------------- movimientos de esta versión ----------------
+  const TILE = 32;
+
+  /**
+   * Escudo de Llamas (pasivo, cada 0,5 s): los enemigos a menos de `r` casillas
+   * quedan "en llamas" `dur` s (se renueva mientras sigan cerca) y pierden `dps`
+   * por segundo. Evolucionado: además reciben +vuln de daño de todo.
+   */
+  function flameShield(pl, m) {
+    if (ghost) return;
+    const row = G.Moves.stat(m), R = row.r * TILE, now = G.Game.st.time;
+    const col = G.U.TYPE_COLOR.fire;
+    const map = pl.fsMap || (pl.fsMap = new Map());
+    for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, R)) if (!e.dead) map.set(e, now + row.dur);
+    for (const [e, until] of map) {
+      if (e.dead || until < now || !G.EnemyMgr.get(e.id)) { map.delete(e); continue; }
+      if (row.vuln) e.vulnUntil = now + 0.6;
+      hit(pl, e, row.dps * 0.5 * pl.atk, col, 0, 0, 0, m);
+      if (Math.random() < 0.5 && G.Camera.sees(e.x, e.y, 20)) G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#ff8a3d', 2, 40);
+    }
+    // El aro de fuego a tu alrededor, de vez en cuando.
+    pl.fsRing = (pl.fsRing || 0) + 1;
+    if (pl.fsRing % 3 === 0) G.FX.ring(pl.x, pl.y, R * 0.55, R, col, 0.4, 2);
+  }
+
+  /** Un rayo que cae del cielo en (x, y). */
+  function boltFx(x, y, vis) {
+    G.FX.beam(x, y - 300, Math.PI / 2, 300, 7, '#ffe14d', vis);
+    G.FX.burst(x, y - 6, '#fff3a0', 10, 140);
+    G.FX.ring(x, y, 4, 26, '#ffe14d', 0.25, 3);
+  }
+
+  /**
+   * Caída de Rayo: `n` rayos sobre enemigos al azar a menos de `r` casillas (cada
+   * uno salpica 0,75 casillas). Evolucionado: descargas entre un rayo y el siguiente
+   * durante 1 s que hacen `link` de daño por segundo a lo que crucen.
+   */
+  function lightning(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE, vis = G.VFX.forMove(m), col = G.U.TYPE_COLOR.electric;
+    const pool = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead);
+    if (!pool.length) return;
+    const pts = [];
+    for (let i = 0; i < row.n; i++) {
+      // Sin repetir mientras haya enemigos distintos; si hay menos que rayos, repiten.
+      const k = i < pool.length ? i + Math.floor(Math.random() * (pool.length - i)) : Math.floor(Math.random() * pool.length);
+      if (i < pool.length) [pool[i], pool[k]] = [pool[k], pool[i]];
+      const t = pool[i < pool.length ? i : k];
+      pts.push({ x: t.x, y: t.y });
+      boltFx(t.x, t.y, vis);
+      if (!ghost) for (const e of G.EnemyMgr.queryCircle(t.x, t.y, TILE * 0.75)) if (!e.dead) hit(pl, e, row.dmg * pl.atk, col, 0, 0, 0, m);
+    }
+    if (G.Camera.sees(pl.x, pl.y, 0)) G.Audio.sfx('shot', { kind: 'beam', type: 'electric' });
+    if (row.link && pts.length > 1) fields.push({ kind: 'link', owner: pl, ghost, m, col, vis, pts, t: 0, life: 1.0, tick: 0,
+                                                  x: pts[0].x, y: pts[0].y, dmg: row.link * 0.2 * pl.atk });
+  }
+
+  /**
+   * Colmillo Vampiro: muerde a los `n` enemigos más cercanos a menos de `r` casillas
+   * y te cura `heal` en total (no por cada uno).
+   */
+  function drain(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE, vis = G.VFX.forMove(m), col = '#c47bff';
+    const list = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead)
+      .sort((a, b) => G.U.dist2(a.x, a.y, pl.x, pl.y) - G.U.dist2(b.x, b.y, pl.x, pl.y)).slice(0, row.n);
+    if (!list.length) return;
+    for (const e of list) {
+      const a = Math.atan2(pl.y - e.y, pl.x - e.x), d = Math.hypot(pl.x - e.x, pl.y - e.y);
+      if (G.Camera.sees(e.x, e.y, 20)) G.FX.beam(e.x, e.y - e.bodyH * 0.5, a, d, 3, col, vis);
+      if (!ghost) hit(pl, e, row.dmg * pl.atk, col, 0, 0, 0, m);
+    }
+    if (!ghost) pl.heal(row.heal);
+    G.FX.ring(pl.x, pl.y, pl.r, pl.r * 2.5, '#7dffb0', 0.3, 2);
+  }
+
+  const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone', 'lightning', 'drain'];
   function needsTarget(m) { return TARGETED.includes(m.kind); }
   function reach(m) {
     if (m.kind === 'melee') return m.radius + 30;
@@ -73,6 +157,7 @@ G.Combat = (() => {
     if (m.kind === 'chain') return 280;
     if (m.kind === 'meteor') return 340;
     if (m.kind === 'dash') return m.radius + 60;
+    if (m.kind === 'lightning' || m.kind === 'drain') return G.Moves.stat(m).r * 32;
     if (m.kind === 'cone') return m.speed * m.life + 30;
     return 520;
   }
@@ -399,6 +484,21 @@ G.Combat = (() => {
           }
         }
         if (f.kick > 0) f.kick -= dt;
+      } else if (f.kind === 'link') {
+        // Descargas entre los rayos (Tormenta Eléctrica): cada 0,2 s, a lo que esté en la línea.
+        f.tick -= dt;
+        if (f.tick <= 0) {
+          f.tick = 0.2;
+          for (let k = 1; k < f.pts.length; k++) {
+            const a = f.pts[k - 1], b = f.pts[k];
+            const len = Math.hypot(b.x - a.x, b.y - a.y);
+            if (G.Camera.sees(a.x, a.y, len)) G.FX.beam(a.x, a.y - 8, Math.atan2(b.y - a.y, b.x - a.x), len, 3, '#bfe8ff', f.vis);
+            if (f.ghost) continue;
+            for (const e of G.EnemyMgr.queryCircle((a.x + b.x) / 2, (a.y + b.y) / 2, len / 2 + 16)) {
+              if (!e.dead && segDist2(a.x, a.y, b.x, b.y, e.x, e.y) <= (14 + e.r) ** 2) hit(f.owner, e, f.dmg, f.col, 0, 0, 0, f.m);
+            }
+          }
+        }
       } else if (f.kind === 'patch') {
         f.tick -= dt;
         if (f.tick <= 0) { f.tick = 0.5; blast(f, f.r); }
