@@ -177,7 +177,7 @@ G.DB = (() => {
     }
     r.pupgDone = r.pupgDone || older.pupgDone;
     // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
-    for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
+    for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach', 'scenes']) {
       r[coll] = r[coll] || {};
       for (const k in older[coll] || {}) if (!r[coll][k]) r[coll][k] = older[coll][k];
     }

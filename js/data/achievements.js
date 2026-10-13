@@ -14,7 +14,9 @@ G.AchDefs = (() => {
   const count = k => s => Object.keys(s[k] || {}).length;
 
   const CATS = [['coleccion', 'Colección'], ['supervivencia', 'Supervivencia'], ['combate', 'Combate'],
-                ['grietas', 'Grietas'], ['legendarios', 'Legendarios'], ['otros', 'Misiones y más']];
+                ['grietas', 'Grietas'], ['legendarios', 'Legendarios'], ['modos', 'Modos y amigos'], ['otros', 'Misiones y más']];
+  // Una mejora del Pokémon `u` ({id -> nivel}) al máximo en todo.
+  const maxed = u => G.Upgrades.LIST.every(x => (u[x.id] || 0) >= x.max);
 
   const LIST = [
     // ---------- colección ----------
@@ -61,6 +63,23 @@ G.AchDefs = (() => {
     { id: 'leg10', cat: 'legendarios', tier: 2, name: 'Cazalegendarios', desc: 'Vence a 10 legendarios distintos.', value: legends, goal: 10, reward: { t10: 1 }, title: 'Cazalegendarios' },
     { id: 'leg30', cat: 'legendarios', tier: 3, name: 'Domador de mitos', desc: 'Vence a 30 legendarios distintos.', value: legends, goal: 30, reward: { t10: 2 } },
     { id: 'legAll', cat: 'legendarios', tier: 3, name: 'Leyenda', desc: 'Vence a todos los legendarios.', value: legends, goal: 87, reward: { t10: 5 }, title: 'Leyenda' },
+
+    // ---------- modos de juego, PK y más (esta versión) ----------
+    { id: 'daily1', cat: 'modos', tier: 1, name: 'Reto del día', desc: 'Completa un reto diario.', value: st('dailyRuns'), goal: 1, reward: { t1: 3 } },
+    { id: 'daily7', cat: 'modos', tier: 2, name: 'Retador constante', desc: 'Completa 7 retos diarios.', value: st('dailyRuns'), goal: 7, reward: { t10: 1 }, title: 'Retador diario' },
+    { id: 'rush3', cat: 'modos', tier: 1, name: 'Desafiante', desc: 'Vence a 3 legendarios seguidos en el Desafío legendario.', value: st('bestRush'), goal: 3, reward: { t10: 1 } },
+    { id: 'rush10', cat: 'modos', tier: 3, name: 'Leyenda de la arena', desc: 'Vence a 10 legendarios seguidos en el Desafío legendario.', value: st('bestRush'), goal: 10, reward: { t10: 3 }, title: 'Leyenda de la arena' },
+    { id: 'bossmode20', cat: 'modos', tier: 2, name: 'Rey de los jefes', desc: 'Derrota a 20 jefes en el Modo jefes.', value: st('bossModeBosses'), goal: 20, reward: { t10: 1 }, title: 'Rey de los jefes' },
+    { id: 'shinyrun', cat: 'modos', tier: 1, name: 'Mundo brillante', desc: 'Juega una partida en el Modo shiny.', value: st('shinyRuns'), goal: 1, reward: { t1: 3 } },
+    { id: 'extreme10', cat: 'modos', tier: 3, name: 'Al límite', desc: 'Aguanta 10 minutos en el Modo extremo.', value: s => Math.floor(st('bestExtremeTime')(s) / 60), goal: 10, reward: { t10: 2 }, title: 'Temerario' },
+    { id: 'pvp1', cat: 'modos', tier: 1, name: 'Primera victoria', desc: 'Gana un PK.', value: st('pvpWins'), goal: 1, reward: { t1: 5 } },
+    { id: 'pvp10', cat: 'modos', tier: 3, name: 'Campeón', desc: 'Gana 10 PK.', value: st('pvpWins'), goal: 10, reward: { t10: 3 }, title: 'Campeón' },
+    { id: 'maxmon', cat: 'modos', tier: 2, name: 'Al máximo', desc: 'Sube todas las mejoras de un Pokémon al máximo.', value: s => (Object.values(s.pupg || {}).some(maxed) ? 1 : 0), goal: 1, reward: { t10: 1 } },
+    { id: 'scenes5', cat: 'modos', tier: 1, name: 'Turista', desc: 'Juega en 5 escenarios distintos.', value: count('scenes'), goal: 5, reward: { t1: 5 } },
+    { id: 'scenesAll', cat: 'modos', tier: 3, name: 'Trotamundos', desc: 'Juega en los 26 escenarios.', value: count('scenes'), goal: 26, reward: { t10: 3 }, title: 'Trotamundos' },   // 26 = G.Tiles.SCENES (tiles.js carga después)
+    { id: 'cloud', cat: 'modos', tier: 1, name: 'En la nube', desc: 'Vincula tu cuenta de Google.', value: () => (G.DB.mode === 'cloud' && !G.DB.unbound && !G.DB.guest ? 1 : 0), goal: 1, reward: { t1: 3 } },
+    { id: 'rename', cat: 'modos', tier: 1, name: 'Nuevo nombre', desc: 'Cambia tu apodo.', value: st('renamed'), goal: 1, reward: { coins: 200 } },
+    { id: 'cheat', cat: 'modos', tier: 1, name: 'Truquero', desc: 'Usa un código de trucos.', value: st('cheats'), goal: 1, reward: { coins: 1 }, title: 'Tramposo' },
 
     // ---------- misiones y más ----------
     { id: 'mis10', cat: 'otros', tier: 1, name: 'Cumplidor', desc: 'Completa 10 misiones.', value: st('missionsDone'), goal: 10, reward: { t1: 3 } },

@@ -71,6 +71,9 @@ G.PvP = (() => {
     return best;
   }
 
+  /** ¿Has ganado tú el PK que acaba de terminar? */
+  function wonByMe() { return winner != null && !!G.Social.me && winner === G.Social.me.name; }
+
   /** Lo pone el anfitrión al acabar (o llega en el 'ov'): nombre del ganador, o null si nadie. */
   function setWinner(name) { winner = name; }
 
@@ -89,6 +92,6 @@ G.PvP = (() => {
     on = false; winner = undefined;
   }
 
-  return { begin, tick, foe, circle, arc, seg, projectile, orb, setWinner, afterRun, K, GRACE,
+  return { begin, tick, foe, wonByMe, circle, arc, seg, projectile, orb, setWinner, afterRun, K, GRACE,
            get on() { return on && G.Coop.active; } };
 })();

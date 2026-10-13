@@ -310,6 +310,16 @@ G.Game = (() => {
     if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
     save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
     save.stats.coinsEarned += coins;
+    // Estadísticas de los modos de esta versión (logros de "Modos y amigos").
+    const xs = save.stats, add = (k, n = 1) => { xs[k] = (xs[k] || 0) + n; };
+    if (G.Modes.run === 'daily') add('dailyRuns');
+    if (G.Modes.run === 'legend') xs.bestRush = Math.max(xs.bestRush || 0, G.Rift.rushWins);
+    if (G.Modes.on('boss')) add('bossModeBosses', pl.bosses);
+    if (G.Modes.on('shiny')) add('shinyRuns');
+    if (G.Modes.on('extreme')) xs.bestExtremeTime = Math.max(xs.bestExtremeTime || 0, Math.floor(time));
+    if (G.PvP.wonByMe()) add('pvpWins');
+    save.scenes = save.scenes || {};
+    if (G.Tiles.SCENES.includes(G.World.biome)) save.scenes[G.World.biome] = Date.now();
     G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
     G.Progress.checkAch();
     G.DB.commit();

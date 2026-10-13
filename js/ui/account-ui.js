@@ -32,6 +32,7 @@ G.AccountUI = (() => {
     if (n == null) return;
     const clean = n.replace(/[<>&"'`\\]/g, '').trim().slice(0, 16);
     if (!clean) { G.UI.toast(G.T('El apodo no puede estar vacío'), 2500); return; }
+    G.DB.save.stats.renamed = 1;   // logro "Nuevo nombre"
     G.DB.setName(clean);
     G.UI.refreshCoins();
     G.UI.toast(G.I18n.f('Ahora te llamas {x}', clean), 2500);

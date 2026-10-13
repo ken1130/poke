@@ -36,12 +36,16 @@ G.Cheat = (() => {
 
   /** Guarda, refresca lo que se ve y avisa. */
   function done(msg) {
+    count();
     G.DB.commit(true);
     G.UI.refreshCoins();
     if (G.Game.state === 'ui' && G.UI.isOpen('scr-menu')) G.MenuUI.open();
     G.Audio.sfx('confirm');
     G.UI.toast(msg, 4000);
   }
+
+  /** Para el logro "Truquero". */
+  function count() { const s = G.DB.save; if (s) s.stats.cheats = (s.stats.cheats || 0) + 1; }
 
   function greedIsGood() {
     const s = target();
@@ -80,6 +84,7 @@ G.Cheat = (() => {
     const pl = inRun();
     if (!pl) return;
     pl.god = true;
+    count();
     G.Audio.sfx('confirm');
     G.UI.toast('¡Truco activado! Invencible hasta el final de la partida', 3500);
   }
@@ -91,6 +96,7 @@ G.Cheat = (() => {
     const n = Math.max(0, 30 - pl.level);
     if (!n) { G.UI.toast('Ya estás en el nivel 30 o más', 2500); return; }
     for (let i = 0; i < n; i++) G.Game.debugLevelUp();
+    count();
     G.UI.toast(G.I18n.f('¡Truco activado! +{x} niveles: elige tus cartas', n), 3500);
   }
 
