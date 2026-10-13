@@ -100,6 +100,7 @@ G.Modes = (() => {
       const best = dailyBest();
       const better = !best || r.time > best.time;
       if (better) writeJSON(KEY_DAILY + today(), { time: Math.floor(r.time), level: r.level, kills: r.kills, dex: r.dex });
+      postDaily(r);
       html = `<div style="grid-column:1/-1" class="panel"><span>${G.T('Reto diario')} ${today()}</span>
         <p class="daily-line" style="margin:6px 0;font-size:14px;user-select:all">${line}</p>
         ${better ? `<div class="gold">${G.T('¡Tu mejor marca de hoy!')}</div>` : `<div style="color:var(--muted)">${G.I18n.f('Tu mejor marca de hoy: {x}', G.U.mmss(best.time))}</div>`}
@@ -116,6 +117,49 @@ G.Modes = (() => {
       box.insertAdjacentHTML('beforeend', html);
     }
     reset();
+  }
+
+  // ---------------- clasificación del reto diario (Firestore: daily/{fecha}/r/{uid}) ----------------
+
+  const dailyCol = () => G.DB.fb.fs.collection('daily').doc(today()).collection('r');
+
+  /** Sube tu marca de hoy si es mejor que la que había (sólo con cuenta de Google). */
+  async function postDaily(r) {
+    if (!G.DB.online) return;
+    try {
+      const ref = dailyCol().doc(G.DB.fb.uid);
+      const old = await ref.get();
+      if (old.exists && (old.data().t || 0) >= Math.floor(r.time)) return;
+      await ref.set({ name: String(G.DB.user || '').slice(0, 16), t: Math.floor(r.time), lv: r.level | 0, kills: r.kills | 0, dex: r.dex | 0,
+                      at: firebase.firestore.FieldValue.serverTimestamp() });
+    } catch (e) { console.warn('[Reto diario] no se pudo subir:', e.code || e.message); }
+  }
+
+  /** Ventana con la clasificación de hoy. */
+  async function openBoard() {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.7)';
+    ov.innerHTML = `<div class="box" style="width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
+      <div class="row between"><h3 style="margin:0">${G.T('Clasificación de hoy')} <small style="color:var(--muted)">${today()}</small></h3>
+      <button class="btn small ghost" data-close>${G.T('Volver')}</button></div><div id="db-list" style="margin-top:10px">${G.T('Cargando…')}</div></div>`;
+    ov.onclick = e => { if (e.target === ov) ov.remove(); };
+    ov.querySelector('[data-close]').onclick = () => ov.remove();
+    document.body.appendChild(ov);
+    const list = ov.querySelector('#db-list');
+    if (!G.DB.online) { list.textContent = G.T('Vincula tu cuenta de Google para salir en la clasificación y verla.'); return; }
+    try {
+      const snap = await dailyCol().orderBy('t', 'desc').limit(50).get();
+      const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const me = G.DB.fb.uid;
+      list.innerHTML = snap.empty ? G.T('Nadie ha jugado el reto de hoy todavía. ¡Sé el primero!')
+        : `<table style="width:100%;border-collapse:collapse;font-size:14px">` + snap.docs.map((d, i) => {
+            const v = d.data(), mon = G.DEX_BY[v.dex];
+            return `<tr${d.id === me ? ' class="gold"' : ''} style="border-bottom:1px solid #ffffff14">
+              <td style="padding:4px 6px">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</td>
+              <td translate="no">${esc(v.name)}</td><td>${mon ? G.T(mon.name) : ''}</td>
+              <td><b>${G.U.mmss(v.t)}</b></td><td>Lv ${v.lv}</td><td>${v.kills} ${G.T('derrotados')}</td></tr>`;
+          }).join('') + '</table>';
+    } catch (e) { list.textContent = G.T('No se pudo cargar la clasificación.'); console.warn(e); }
   }
 
   function copy(text) {
@@ -163,7 +207,8 @@ G.Modes = (() => {
             <div class="grow"><b>Reto diario</b> <small style="color:var(--muted)">${today()}</small>
               <div style="font-size:13px;color:var(--muted)">Mismo mapa y mismos enemigos para todos hoy (sin modos ni dificultad a medida). Comparte tu tiempo con tus amigos.</div>
               ${db ? `<div style="font-size:13px" class="gold">${G.I18n.f('Tu mejor marca de hoy: {x}', G.U.mmss(db.time))}</div>` : ''}</div>
-            <button class="btn gold" data-run="daily">Jugar</button>
+            <div style="display:flex;flex-direction:column;gap:6px"><button class="btn gold" data-run="daily">Jugar</button>
+              <button class="btn small" data-board>Clasificación</button></div>
           </div>
         </div>
 
@@ -199,6 +244,7 @@ G.Modes = (() => {
       </div>`;
     overlay.querySelector('[data-close]').onclick = closePanel;
     overlay.querySelectorAll('[data-run]').forEach(b => { b.onclick = () => start(b.dataset.run); });
+    overlay.querySelector('[data-board]').onclick = openBoard;
     overlay.querySelectorAll('[data-k]').forEach(b => {
       b.onclick = () => { S().set(b.dataset.k, !S().get(b.dataset.k)); G.Audio.sfx('click'); render(); };
     });
@@ -222,7 +268,7 @@ G.Modes = (() => {
   }
 
   return {
-    on, scene, scale, countMul, rewardMul, dailySeed, seeded, start, reset, setRoom, afterRun, openPanel, summary, copy,
+    openBoard, on, scene, scale, countMul, rewardMul, dailySeed, seeded, start, reset, setRoom, afterRun, openPanel, summary, copy,
     get run() { return run; }
   };
 })();

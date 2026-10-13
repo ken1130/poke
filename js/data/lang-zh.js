@@ -1733,4 +1733,9 @@ G.I18n.add({
   'Derribos': '擊倒',
   'Daño': '傷害',
   'Levantados': '救起隊友',
+  'Clasificación de hoy': '今日排行榜',
+  'Clasificación': '今日排行',
+  'Vincula tu cuenta de Google para salir en la clasificación y verla.': '綁定 Google 帳號才能上排行榜和查看排名。',
+  'Nadie ha jugado el reto de hoy todavía. ¡Sé el primero!': '今天還沒有人玩過每日挑戰，搶第一吧！',
+  'No se pudo cargar la clasificación.': '排行榜載入失敗。',
 }, 'zh');
