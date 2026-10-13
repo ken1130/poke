@@ -847,8 +847,10 @@ G.Flow = {
   },
   toLogin() {
     G.Audio.music('village');
-    // Sin nube no hay cuentas: se entra directamente con la partida de este navegador.
-    if (G.DB.autoLocal()) this.afterLogin(); else G.LoginUI.open();
+    // Sin nube, o si ya jugabas como invitado: directo con la partida de este navegador.
+    // Con nube y nada guardado aquí: pantalla para elegir invitado o Google.
+    if ((G.DB.mode !== 'cloud' || G.DB.hasLocal) && G.DB.autoLocal()) this.afterLogin();
+    else G.LoginUI.open();
   },
   afterLogin() {
     G.Audio.music('village');

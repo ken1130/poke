@@ -1,4 +1,7 @@
-/* ============ login.js — inicio: entrar o crear cuenta (sin modo invitado) ============ */
+/* ============ login.js — inicio ============
+ * Con la nube: elegir "Jugar como invitado" (partida en el navegador, se puede
+ * vincular Google más tarde) o "Entrar con Google". Sin nube no se ve (se entra directo).
+ */
 G.LoginUI = (() => {
   const $ = G.UI.$;
   let mode = 'login';
@@ -20,20 +23,13 @@ G.LoginUI = (() => {
       if (G.DB.adoptLocal()) G.UI.toast('Tu progreso de este dispositivo se ha pasado a tu cuenta', 4000);
       G.Flow.afterLogin();
     };
-    $('btn-google').onclick = async () => {
-      $('login-err').textContent = '';
-      $('btn-google').disabled = true;
-      const r = await G.DB.loginWithGoogle();
-      $('btn-google').disabled = false;
-      if (!r.ok) { $('login-err').textContent = r.error; return; }
-      if (G.DB.adoptLocal()) G.UI.toast('Tu progreso de este dispositivo se ha pasado a tu cuenta', 4000);
-      G.Flow.afterLogin();
-    };
+    $('btn-google').onclick = () => G.AccountUI.bind();
+    $('btn-guest').onclick = () => { if (G.DB.autoLocal()) G.Flow.afterLogin(); };
   }
 
   /** Explica dónde se guarda la partida según el modo de la base de datos. */
   function modeNote() {
-    if (G.DB.mode === 'cloud') return 'Tu partida se guarda en la nube: entra desde cualquier ordenador. Como invitado no se guarda.';
+    if (G.DB.mode === 'cloud') return 'Como invitado, tu progreso se guarda sólo en este dispositivo (puedes vincular Google más tarde). Con Google se guarda en la nube y lo recuperas en cualquier dispositivo.';
     const why = G.DB.localReason === 'file'
       ? 'Abierto desde un archivo: la partida sólo se guarda en este navegador. Para guardar en la nube, juega en la versión publicada.'
       : G.DB.localReason === 'config'
@@ -77,7 +73,12 @@ G.LoginUI = (() => {
     try { hasAccounts = Object.keys(JSON.parse(localStorage.getItem('ps.accounts') || '{}')).length > 0; } catch (e) { /* nada */ }
     setMode(hasAccounts ? 'login' : 'register');
     if (!G.DB.storageOk) $('login-err').textContent = 'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.';
-    $('btn-google').classList.toggle('hidden', G.DB.mode !== 'cloud');
+    // Con nube: sólo los dos botones (invitado / Google), sin nombre y contraseña.
+    const choice = G.DB.mode === 'cloud';
+    document.querySelector('#scr-login .tabs').classList.toggle('hidden', choice);
+    $('login-form').classList.toggle('hidden', choice);
+    $('btn-google').classList.toggle('hidden', !choice);
+    $('guest-row').classList.toggle('hidden', !choice);
     $('login-mode').textContent = modeNote();
     setTimeout(() => $('f-user').focus(), 50);
   }

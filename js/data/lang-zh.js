@@ -1611,4 +1611,10 @@ G.I18n.add({
   'El apodo no puede estar vacío': '暱稱不能空白',
   'Ahora te llamas {x}': '暱稱已改為 {x}',
   'La nube no está disponible.': '雲端目前無法使用。',
+  'Como invitado, tu progreso se guarda sólo en este dispositivo (puedes vincular Google más tarde). Con Google se guarda en la nube y lo recuperas en cualquier dispositivo.': '訪客的進度只存在這台裝置（之後隨時可以綁定 Google）。用 Google 登入的話，進度會存到雲端，換任何裝置都能接著玩。',
+  'Cambiar apodo': '修改暱稱',
+  '1-16 caracteres. Se ve arriba a la derecha.': '1～16 個字，會顯示在右上角。',
+  'Guardar': '儲存',
+  'Entendido': '知道了',
+  'Confirmar': '確認',
 }, 'zh');

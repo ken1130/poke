@@ -11,7 +11,7 @@ G.AccountUI = (() => {
 
   async function bind(onDone) {
     if (inAppBrowser()) {
-      alert(G.T('Google no deja iniciar sesión dentro de LINE u otras apps. Abre el juego en Chrome o Safari (menú ⋯ → Abrir en el navegador) y vincula desde allí.'));
+      await G.Dialog.alert('Google no deja iniciar sesión dentro de LINE u otras apps. Abre el juego en Chrome o Safari (menú ⋯ → Abrir en el navegador) y vincula desde allí.', 'Vincular con Google');
       return;
     }
     const btns = [$('btn-bind'), $('set-bind')].filter(Boolean);
@@ -26,9 +26,9 @@ G.AccountUI = (() => {
     if (G.Game.state === 'ui') G.Flow.afterLogin();
   }
 
-  function rename(onDone) {
+  async function rename(onDone) {
     const cur = G.DB.user || '';
-    const n = prompt(G.T('Nuevo apodo (1-16 caracteres):'), cur);
+    const n = await G.Dialog.prompt('Cambiar apodo', cur, { max: 16, text: '1-16 caracteres. Se ve arriba a la derecha.', ok: 'Guardar' });
     if (n == null) return;
     const clean = n.replace(/[<>&"'`\\]/g, '').trim().slice(0, 16);
     if (!clean) { G.UI.toast(G.T('El apodo no puede estar vacío'), 2500); return; }

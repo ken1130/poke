@@ -124,7 +124,10 @@ G.UI = (() => {
    * Devuelve { pass } o null si se cancela.
    */
   function confirmDelete() {
-    if (!G.DB.nameAccount) return Promise.resolve(confirm(G.T('Se borrarán tu cuenta y toda tu partida, para siempre. ¿Seguro?')) ? { pass: '' } : null);
+    if (!G.DB.nameAccount) {
+      return G.Dialog.confirm('Se borrarán tu cuenta y toda tu partida, para siempre. ¿Seguro?', { ok: 'Borrar para siempre', danger: true })
+        .then(ok => (ok ? { pass: '' } : null));
+    }
     return new Promise(done => {
       const el = document.createElement('section');
       el.className = 'scr dim';

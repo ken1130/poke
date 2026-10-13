@@ -799,6 +799,8 @@ G.DB = (() => {
     get mode() { return mode; },
     /** ¿Hay nube pero juegas sin vincular Google (partida sólo en este navegador)? */
     get unbound() { return unbound; },
+    /** ¿Ya hay una partida de invitado en este navegador? (entonces se entra sin preguntar) */
+    get hasLocal() { return Object.keys(read(K_ACC) || {}).length > 0; },
     get localReason() { return localReason; },
     get syncState() { return syncState; },
     get user() { return user; },

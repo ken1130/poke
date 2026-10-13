@@ -73,10 +73,10 @@ G.Backup = (() => {
       const f = e.target.files && e.target.files[0];
       if (f) f.text().then(t => { ta.value = t.trim(); });
     };
-    o.querySelector('[data-go]').onclick = () => {
+    o.querySelector('[data-go]').onclick = async () => {
       const obj = decode(ta.value);
       if (!obj) { o.querySelector('#bk-err').textContent = G.T('Código no válido'); G.Audio.sfx('error'); return; }
-      if (!confirm(G.T('Se sustituirá la partida de este dispositivo. ¿Seguro?'))) return;
+      if (!(await G.Dialog.confirm('Se sustituirá la partida de este dispositivo. ¿Seguro?', { ok: 'Importar', danger: true }))) return;
       if (!G.DB.importSave(obj)) { o.querySelector('#bk-err').textContent = G.T('Código no válido'); return; }
       G.UI.toast(G.T('Partida importada'), 2000);
       setTimeout(() => location.reload(), 800);
