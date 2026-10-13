@@ -24,7 +24,7 @@ G.LoginUI = (() => {
       G.Flow.afterLogin();
     };
     $('btn-google').onclick = () => G.AccountUI.bind();
-    $('btn-guest').onclick = () => { if (G.DB.autoLocal()) G.Flow.afterLogin(); };
+    $('btn-guest').onclick = () => { G.DB.chooseGuest(); if (G.DB.autoLocal()) G.Flow.afterLogin(); };
   }
 
   /** Explica dónde se guarda la partida según el modo de la base de datos. */

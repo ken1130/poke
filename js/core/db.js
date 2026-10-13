@@ -26,7 +26,7 @@
  */
 G.DB = (() => {
   const K_ACC = 'ps.accounts', K_SES = 'ps.session', K_SAVE = 'ps.save.';
-  const K_CLOUD = 'ps.cloud.', K_MIGRATED = 'ps.migrated.';
+  const K_CLOUD = 'ps.cloud.', K_MIGRATED = 'ps.migrated.', K_CHOICE = 'ps.choice';
   const VERSION = 3;
   const START_COINS = 500;
   const SDK = 'https://www.gstatic.com/firebasejs/13.0.0/';
@@ -310,13 +310,20 @@ G.DB = (() => {
    */
   async function bindGoogle() {
     if (mode !== 'cloud') return { ok: false, error: 'La nube no está disponible.' };
-    const localKey = unbound ? key : null;
-    const localSave = unbound && save ? plain(save) : null;
+    // La partida de invitado de este navegador: la abierta o, desde la pantalla de inicio, la guardada.
+    let localKey = unbound ? key : null;
+    let localSave = unbound && save ? plain(save) : null;
+    if (!localSave) {
+      localKey = Object.keys(read(K_ACC) || {})[0] || null;
+      localSave = localKey ? read(K_SAVE + localKey) : null;
+      if (!localSave) localKey = null;
+    }
     try {
       const cred = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
       await openCloud(cred.user, { name: localSave ? localSave.name : displayNameOf(cred.user),
                                    legacy: localSave ? { save: localSave, key: localKey } : null });
       unbound = false;
+      remove(K_CHOICE);
       if (localKey) {
         remove(K_SAVE + localKey); remove(K_SES);
         const accs = read(K_ACC) || {}; delete accs[localKey]; write(K_ACC, accs);
@@ -799,8 +806,13 @@ G.DB = (() => {
     get mode() { return mode; },
     /** ¿Hay nube pero juegas sin vincular Google (partida sólo en este navegador)? */
     get unbound() { return unbound; },
-    /** ¿Ya hay una partida de invitado en este navegador? (entonces se entra sin preguntar) */
-    get hasLocal() { return Object.keys(read(K_ACC) || {}).length > 0; },
+    /**
+     * ¿Se entra directamente como invitado? Sólo si hay partida en este navegador y
+     * el jugador eligió "invitado" en la pantalla de inicio (las creadas solas por
+     * versiones anteriores vuelven a preguntar una vez).
+     */
+    get guestChosen() { return Object.keys(read(K_ACC) || {}).length > 0 && read(K_CHOICE) === 'guest'; },
+    chooseGuest() { write(K_CHOICE, 'guest'); },
     get localReason() { return localReason; },
     get syncState() { return syncState; },
     get user() { return user; },
