@@ -1,12 +1,23 @@
 <!doctype html>
 <!-- dev.html: página fuente. Aquí se edita; index.html lo genera tools/build.js. -->
-<html lang="es">
+<html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>PokéSurvivor – Juego Pokémon gratis online estilo Survivor.io</title>
-<meta name="description" content="Sobrevive a hordas de Pokémon con tu compañero en este fan game gratis para navegador y móvil: 966 Pokémon, shinies, legendarios y cooperativo con amigos. Sin descargas ni anuncios.">
+<title>PokéSurvivor 繁體中文版 – 寶可夢生存遊戲</title>
+<meta name="description" content="和你的夥伴寶可夢一起在怪物大軍中生存！966 隻寶可夢、異色、傳說的寶可夢、頭目模式與每日挑戰，免安裝，電腦和手機都能玩。個人非商業粉絲作品。">
+<!-- Vista previa al compartir el enlace (LINE, Discord, Messenger...): la de esta versión -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PokéSurvivor 繁體中文版">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:url" content="https://ken1130.github.io/poke/">
+<meta property="og:title" content="PokéSurvivor 繁體中文版 – 寶可夢生存遊戲">
+<meta property="og:description" content="和夥伴寶可夢一起在怪物大軍中生存！免安裝，電腦和手機都能玩。">
+<meta property="og:image" content="https://ken1130.github.io/poke/assets/og-zh.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <!-- seo:begin -->
 <link rel="canonical" href="https://pokesurvivor.com/">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -178,8 +189,7 @@
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
         <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
-        <button class="menu-item" data-go="shiny">Modo shiny<small id="menu-shiny-sub">Desactivado</small></button>
-        <button class="menu-item" data-go="boss">Modo jefes<small id="menu-boss-sub">Desactivado</small></button>
+        <button class="menu-item" data-go="modes">Modos de juego<small id="menu-modes-sub">Reto diario, legendarios y más</small></button>
         <button class="menu-item" data-go="cheat">Trucos<small>Introduce un código secreto</small></button>
         <button class="menu-item" data-go="settings">Ajustes<small>Sonido, gráficos, controles y cuenta</small></button>
       </div>
@@ -516,6 +526,7 @@
     <div class="row" style="justify-content:center">
       <button id="btn-resume" class="btn gold">Continuar</button>
       <button id="btn-pause-settings" class="btn">Ajustes</button>
+      <button id="btn-pause-cheat" class="btn">Trucos</button>
       <button id="btn-quit" class="btn">Abandonar run</button>
     </div>
   </div>
@@ -580,6 +591,7 @@
 <script defer src="js/systems/pathing.js"></script>
 <script defer src="js/systems/progress.js"></script>
 <script defer src="js/systems/hazards.js"></script>
+<script defer src="js/systems/modes.js"></script>
 <script defer src="js/systems/cheat.js"></script>
 <!-- red: amigos, salas, cooperativo y ranking -->
 <script defer src="js/net/social.js"></script>
@@ -601,6 +613,7 @@
 <script defer src="js/ui/ranking-ui.js"></script>
 <script defer src="js/ui/goals-ui.js"></script>
 <script defer src="js/ui/settings-ui.js"></script>
+<script defer src="js/ui/backup-ui.js"></script>
 <script defer src="js/ui/support-ui.js"></script>
 <script defer src="js/ui/news-ui.js"></script>
 <script defer src="js/core/updater.js"></script>

@@ -93,14 +93,9 @@ G.RunUI = (() => {
    * Mensaje de apoyo (Ko-fi) al acabar: tras un récord o cada 10 partidas,
    * nunca en la primera y como mucho una vez al día. Se cierra con la X.
    */
-  function askSupport(r) {
-    if (!G.Funding || !G.Funding.url) return false;
-    const runs = (G.DB.save && G.DB.save.stats && G.DB.save.stats.runs) || 0;
-    if (runs < 2 || !(r.record || runs % 10 === 0)) return false;
-    const today = new Date().toISOString().slice(0, 10);
-    try { if (localStorage.getItem('ps.ask') === today) return false; localStorage.setItem('ps.ask', today); } catch (e) { return false; }
-    return true;
-  }
+  /** Esta versión no pide donaciones al acabar la run. */
+  function askSupport() { return false; }
+
 
   function showOver(r, onBack) {
     $('over-title').textContent = r.dead ? 'Has caído…' : 'Run terminada';
@@ -230,6 +225,7 @@ G.RunUI = (() => {
   function wirePause(onResume, onQuit) {
     $('btn-resume').onclick = onResume;
     $('btn-quit').onclick = onQuit;
+    $('btn-pause-cheat').onclick = () => G.Cheat.openPrompt();   // trucos de partida (invencible, nivel 30...)
   }
 
   return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };

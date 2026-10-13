@@ -98,18 +98,26 @@ G.Game = (() => {
     G.Combat.clearFields();
     G.EnemyMgr.clear();
     G.Pickups.clear();
-    G.Spawner.reset();
-    G.Rift.reset();
-    G.Events.reset();
-    G.Weather.reset();
-    G.Path.clear();
-    G.Hazards.clear();
-    G.World.reset(coop ? coop.seed : Math.floor(Math.random() * 1e6));
+    if (coop) G.Modes.reset();
+    // Reto diario: el mapa y el elenco de enemigos salen de la fecha (iguales para todos).
+    const daily = G.Modes.run === 'daily';
+    const prepare = () => {
+      G.Spawner.reset();
+      G.Rift.reset();
+      G.Events.reset();
+      G.Weather.reset();
+      G.Path.clear();
+      G.Hazards.clear();
+      G.World.reset(coop ? coop.seed : daily ? G.Modes.dailySeed() : Math.floor(Math.random() * 1e6));
+    };
+    if (daily) G.Modes.seeded(G.Modes.dailySeed(), prepare); else prepare();
     G.World.setBiome(0, true);
     biome = 0;
     time = 0; pendingLevels = 0;
 
     pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    // Modo extremo: más premio (XP y monedas).
+    pl.xpMul *= G.Modes.rewardMul(); pl.coinMul *= G.Modes.rewardMul();
     banked = { t1: 0, t10: 0 };
     caught = [];
     // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
@@ -262,7 +270,7 @@ G.Game = (() => {
     G.DB.save.stats.shinies++;
     G.DB.commit();
     // Modo shiny: todos lo son; sólo se avisa (y se apunta) el primero de cada Pokémon, sin monedas por repetidos.
-    if (!isNew && G.Settings.get('shinyMode')) return;
+    if (!isNew && G.Modes.on('shiny')) return;
     caught.push({ dex: e.dex, isNew });
     G.Spawner.say(isNew ? '¡Has conseguido a ' + e.name + ' shiny!' : '¡Otro ' + e.name + ' shiny! (+300 monedas)', 4);
     if (!isNew) pl.coins += 300;
@@ -314,6 +322,7 @@ G.Game = (() => {
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
+    G.Modes.afterRun({ time, level: pl.level, kills: pl.kills, dex: pl.dex });
   }
 
   // ---------------- subida de nivel ----------------
@@ -789,6 +798,8 @@ G.Game = (() => {
     togglePause,
     /** Abandona la partida en curso (p. ej. al cerrar sesión desde Ajustes). */
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
+    /** Acaba la run como si hubieras caído (Desafío legendario: pierdes en la arena). */
+    end() { if (state !== 'ui' && state !== 'over') endRun(true); },
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
     debugLevelUp() { pl.level++; pendingLevels++; },
     toUI() { state = 'ui'; Backdrop.restore(); },

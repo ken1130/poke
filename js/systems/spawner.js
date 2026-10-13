@@ -72,13 +72,16 @@ G.Spawner = (() => {
     return alive.length ? G.U.pick(alive) : players[0];
   }
 
-  function scaled(sc, k) { return k === 1 ? sc : Object.assign({}, sc, { hp: sc.hp * k }); }
+  // Con los modos de dificultad (modes.js) ya aplicados.
+  function scaled(sc, k) { return G.Modes.scale(k === 1 ? sc : Object.assign({}, sc, { hp: sc.hp * k })); }
+  /** Tope de enemigos con la "cantidad" a medida (como mucho el doble). */
+  const capNow = () => Math.round(CAP * G.U.clamp(G.Modes.countMul(), 0.5, 2));
 
   function isFlyer(def) { return G.Sprites.hovers(def.dex); }
 
   function rollShiny(dex) {
     if (!G.Sprites.hasShiny(dex)) return false;
-    if (G.Settings.get('shinyMode')) return true;
+    if (G.Modes.on('shiny')) return true;
     if (forceShiny > 0) { forceShiny--; return true; }
     return Math.random() < SHINY_RATE;
   }
@@ -90,8 +93,8 @@ G.Spawner = (() => {
     const shiny = rollShiny(def.dex);
     const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
     e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
-    if (G.EnemyMgr.count >= CAP * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
-    const shinyMode = G.Settings.get('shinyMode');
+    if (G.EnemyMgr.count >= capNow() * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
+    const shinyMode = G.Modes.on('shiny');
     if (shiny) e.makeShiny(!shinyMode);
     if (G.Events.golden) e.makeGolden();
     G.EnemyMgr.add(e);
@@ -105,7 +108,7 @@ G.Spawner = (() => {
   function spawnBoss(pl, t, b) {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
     const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1)), true);
-    if (rollShiny(b.dex)) e.makeShiny(!G.Settings.get('shinyMode'));
+    if (rollShiny(b.dex)) e.makeShiny(!G.Modes.on('shiny'));
     G.EnemyMgr.add(e);
     say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' salvaje apareció!', 3.2);
     G.Camera.kick(1.1);
@@ -118,7 +121,8 @@ G.Spawner = (() => {
     players = Array.isArray(who) ? who : [who];
     if (announceT > 0) announceT -= dt;
     // En la arena de la grieta no sale nada más (y el reloj de jefes espera).
-    if (G.Rift.inArena) return;
+    // En el Desafío legendario, nunca: todo pasa en la arena.
+    if (G.Rift.inArena || G.Modes.run === 'legend') return;
 
     // Precarga lo que va a salir en el próximo minuto.
     preloadT -= dt;
@@ -129,7 +133,7 @@ G.Spawner = (() => {
     const lf = G.Enemies.LATE_FROM * 60;
     if (t >= lf && t - dt < lf) { say('¡Los Pokémon salvajes se vuelven cada vez más fuertes!', 3.6); G.Audio.sfx('boss'); }
 
-    if (G.Settings.get('bossMode')) { bossModeUpdate(dt, t); return; }
+    if (G.Modes.on('boss')) { bossModeUpdate(dt, t); return; }
 
     // --- jefes ---
     const b = G.Enemies.BOSSES[bossIdx];
@@ -140,11 +144,12 @@ G.Spawner = (() => {
     const bossFight = G.EnemyMgr.bossAlive();
 
     // --- goteo normal ---
-    if (G.EnemyMgr.count < CAP) {
-      acc += rate(t) * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * dt;
+    const cap = capNow();
+    if (G.EnemyMgr.count < cap) {
+      acc += rate(t) * G.Modes.countMul() * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * dt;
       let n = Math.floor(acc);
       acc -= n;
-      while (n-- > 0 && G.EnemyMgr.count < CAP) spawnOne(anchor(), t);
+      while (n-- > 0 && G.EnemyMgr.count < cap) spawnOne(anchor(), t);
     }
 
     // --- marea ---
@@ -153,7 +158,7 @@ G.Spawner = (() => {
       surgeT = G.U.rand(38, 56);
       const base = Math.random() * 6.2832;
       const target = anchor();
-      const n = Math.min(CAP - G.EnemyMgr.count, Math.round((14 + Math.floor(t / 22)) * G.Coop.scaleRate(players.length) * 0.4));
+      const n = Math.min(cap - G.EnemyMgr.count, Math.round((14 + Math.floor(t / 22)) * G.Modes.countMul() * G.Coop.scaleRate(players.length) * 0.4));
       for (let i = 0; i < n; i++) spawnOne(target, t, base + G.U.rand(-0.55, 0.55));
       say('¡Marea de Pokémon!', 2.2);
       G.Audio.sfx('surge');
@@ -175,7 +180,7 @@ G.Spawner = (() => {
 
   /** Unos cuantos de golpe desde un lado (al empezar una horda). */
   function burst(n) {
-    if (G.Settings.get('bossMode')) return;   // modo jefes: sin hordas
+    if (G.Modes.on('boss') || G.Modes.run === 'legend') return;   // sin hordas
     const base = Math.random() * 6.2832, target = anchor() || G.Game.player, t = G.Game.st.time;
     for (let i = 0; i < n && G.EnemyMgr.count < CAP + 10; i++) spawnOne(target, t, base + G.U.rand(-0.6, 0.6));
   }

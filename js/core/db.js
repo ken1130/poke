@@ -297,6 +297,20 @@ G.DB = (() => {
     return true;
   }
 
+  /**
+   * Copia de seguridad (sólo modo local): sustituye la partida de este navegador
+   * por otra exportada (ui/backup-ui.js). Pasa por migrate, que arregla lo que falte
+   * y quita lo imposible.
+   */
+  function importSave(obj) {
+    if (mode !== 'local' || !key) return false;
+    if (!obj || typeof obj !== 'object' || typeof obj.owned !== 'object' || !Number.isFinite(+obj.coins)) return false;
+    save = migrate(obj, user);
+    save.name = user;
+    save.updated = Date.now();
+    return write(K_SAVE + key, save);
+  }
+
   /** Partida de una cuenta local antigua, si el nombre y la contraseña coinciden. */
   async function legacySave(name, pass) {
     const k = (name || '').toLowerCase();
@@ -715,7 +729,7 @@ G.DB = (() => {
   }
 
   return {
-    ready, register, login, loginWithGoogle, playAsGuest, autoLocal, logout, commit, deleteAccount, flush: pushNow,
+    ready, register, login, loginWithGoogle, playAsGuest, autoLocal, importSave, logout, commit, deleteAccount, flush: pushNow,
     owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },

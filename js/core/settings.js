@@ -9,13 +9,16 @@
  *   stick       0.8 | 1 | 1.25                    tamaño del joystick táctil
  *   shinyMode   true/false                        modo shiny: todos los enemigos salen shiny
  *   bossMode    true/false                        modo jefes: sólo salen jefes
+ *   extremeMode true/false                        modo extremo (ver systems/modes.js)
+ *   diffHp, diffCount, diffSpd  50..300           dificultad a medida, en %
  *
  *   G.Settings.get('quality')  ·  G.Settings.set('fps', true)  ·  G.Settings.on(fn)
  *   G.Settings.fx   nivel efectivo 0 (bajo) .. 2 (alto), ya resuelto el 'auto'
  */
 G.Settings = (() => {
   const KEY = 'ps.settings';
-  const DEF = { quality: 'auto', dmgNumbers: true, calm: false, fps: false, stick: 1, shinyMode: false, bossMode: false };
+  const DEF = { quality: 'auto', dmgNumbers: true, calm: false, fps: false, stick: 1, shinyMode: false, bossMode: false,
+               extremeMode: false, diffHp: 100, diffCount: 100, diffSpd: 100 };
   let s = Object.assign({}, DEF);
   try { Object.assign(s, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* nada */ }
   const fns = new Set();

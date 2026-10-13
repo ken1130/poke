@@ -26,14 +26,23 @@ G.Rift = (() => {
   let rift = null;          // { x, y, ttl, t }
   let arena = null;         // { tx, ty, r, dex, shiny, x, y, back, biome, t, phase, endT, bossId }
   let checkT = CHECK, asked = false, downT = 0, misses = 0;
+  // Desafío legendario (modes.js): una arena tras otra, sin grietas en el mapa.
+  let rushWins = 0, rushT = 0;
+  const rush = () => G.Modes.run === 'legend';
   const authority = () => !G.Coop.active || G.Coop.isHost;
   const TS = () => G.Tiles.T * G.Sprites.PX;
 
-  function reset() { rift = null; arena = null; checkT = CHECK; asked = false; downT = 0; misses = 0; }
+  function reset() { rift = null; arena = null; checkT = CHECK; asked = false; downT = 0; misses = 0; rushWins = 0; rushT = 0; }
 
   // ---------------- grieta en el mapa ----------------
 
   function update(dt, pl, time) {
+    if (rush()) {
+      // La siguiente arena, un momento después de volver (y de elegir el vínculo).
+      if (!arena && !pl.dead && G.Game.state === 'playing') { rushT += dt; if (rushT > 1.5) { rushT = 0; start(); } }
+      if (arena) arenaTick(dt, pl);
+      return;
+    }
     if (rift) {
       rift.t += dt;
       rift.ttl -= dt;
@@ -98,7 +107,7 @@ G.Rift = (() => {
     const mon = pool[mi];
     const cfg = {
       tx: 5000 + Math.floor(Math.random() * 3000), ty: 5000 + Math.floor(Math.random() * 3000), r: ARENA_R,
-      dex: mon.dex, shiny: G.Sprites.hasShiny(mon.dex) && (G.Settings.get('shinyMode') || Math.random() < 1 / 512),
+      dex: mon.dex, shiny: G.Sprites.hasShiny(mon.dex) && (G.Modes.on('shiny') || Math.random() < 1 / 512),
       // La arena es la de uno de sus tipos, al azar.
       type: forceType || G.U.pick(mon.types)
     };
@@ -142,7 +151,8 @@ G.Rift = (() => {
     const lk = G.Enemies.late(t);          // tiempo extra (ver data/enemies.js)
     const def = {
       dex: mon.dex, name: mon.name,
-      hp: Math.round((3200 + t * 9) * lk * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1)),
+      // Desafío legendario: el primero más flojo (empiezas a nivel 1) y cada vez más duros.
+      hp: Math.round((3200 + t * 9) * lk * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1) * (rush() ? Math.min(1.3, 0.3 + rushWins * 0.15) : 1)),
       spd: Math.round(G.U.clamp(48 + (mon.spd - 78) * 0.6, 48, 105)),
       dmg: Math.round((36 + t / 20) * Math.pow(lk, 0.7)), xp: Math.round(500 + t * 1.2),
       behavior: mon.types.some(x => ['psychic', 'electric', 'ghost', 'fairy', 'fire', 'water', 'ice', 'dragon'].includes(x)) ? 'ranged' : 'charger',
@@ -153,7 +163,7 @@ G.Rift = (() => {
     // Choca con las paredes y columnas como tú: si volara por encima de las
     // rocas, tus disparos no podrían alcanzarle (bug de Celebi).
     e.flying = false;
-    if (arena.shiny) e.makeShiny(!G.Settings.get('shinyMode'));
+    if (arena.shiny) e.makeShiny(!G.Modes.on('shiny'));
     G.EnemyMgr.add(e);
     arena.bossId = e.id;
     G.Spawner.say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' te esperaba en la grieta!', 3.2);
@@ -190,6 +200,7 @@ G.Rift = (() => {
   function won() {
     if (!arena || arena.phase !== 'fight') return;
     arena.phase = 'won'; arena.endT = 5;
+    if (rush()) rushWins++;
     G.Progress.event('rift', { type: arena.type });
     G.Pickups.pullAll();
     G.Spawner.say('¡Has vencido a ' + G.DEX_BY[arena.dex].name + '! Recoge el premio…', 3.4, true);
@@ -222,6 +233,8 @@ G.Rift = (() => {
     G.Hazards.clear();
     for (const p of G.Game.everyone()) { p.x = a.back.x; p.y = a.back.y; }
     pl.x = a.back.x; pl.y = a.back.y;
+    // Desafío legendario: perder en la arena acaba la run.
+    if (rush() && a.phase === 'lost') { G.Game.end(); return; }
     if (pl.dead) pl.revive(0.3);
     G.Camera.x = pl.x; G.Camera.y = pl.y;
     G.Game.flash('#c9a6ff', 0.8);
@@ -268,6 +281,7 @@ G.Rift = (() => {
     reset, update, drawable, onEvent, enterRequest() { if (!arena) start(); },
     get rift() { return rift; }, get arena() { return arena; },
     get inArena() { return !!arena; },
+    get rushWins() { return rushWins; },
     get timeLeft() { return arena ? Math.max(0, ARENA_TIME - arena.t) : 0; },
     debugOpen() { open(); },
     /** Para pruebas: arena de un tipo ya. */

@@ -5,7 +5,7 @@ G.MenuUI = (() => {
   let dexFilter = 'all', dexGen = 1, dexSel = null;
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', shiny: 'shiny', boss: 'crown', cheat: 'star', settings: 'gear' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', modes: 'crown', cheat: 'star', settings: 'gear' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -16,18 +16,7 @@ G.MenuUI = (() => {
         else if (go === 'upgrades') openUpgrades();
         else if (go === 'gacha') G.GachaUI.open();
         else if (go === 'goals') G.GoalsUI.open();
-        else if (go === 'shiny') {
-          const on = !G.Settings.get('shinyMode');
-          G.Settings.set('shinyMode', on);
-          G.UI.toast(on ? 'Modo shiny activado: todos los Pokémon salvajes saldrán shiny' : 'Modo shiny desactivado');
-          shinyLine();
-        }
-        else if (go === 'boss') {
-          const on = !G.Settings.get('bossMode');
-          G.Settings.set('bossMode', on);
-          G.UI.toast(on ? 'Modo jefes activado: en el mapa sólo saldrán jefes' : 'Modo jefes desactivado');
-          shinyLine();
-        }
+        else if (go === 'modes') G.Modes.openPanel();
         else if (go === 'cheat') G.Cheat.openPrompt();
         else if (go === 'settings') G.SettingsUI.open();
       };
@@ -69,8 +58,8 @@ G.MenuUI = (() => {
       };
     });
 
-    $('btn-logout').classList.toggle('hidden', G.DB.mode === 'local');
-    shinyLine();   // sin cuentas, no hay sesión que cerrar
+    $('btn-logout').classList.toggle('hidden', G.DB.mode === 'local');   // sin cuentas, no hay sesión que cerrar
+    modesLine();
     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
     const shinies = Object.keys(s.shiny || {}).length;
     $('menu-dex-count').textContent = `${owned} / ${G.DEX.length}` + (shinies ? ` · ${shinies} shiny` : '');
@@ -97,13 +86,11 @@ G.MenuUI = (() => {
     G.InvitePop.refresh();
   }
 
-  function shinyLine() {
-    const on = !!G.Settings.get('shinyMode');
-    $('menu-shiny-sub').textContent = on ? 'Activado: sólo salen shinies' : 'Desactivado';
-    $('menu-shiny-sub').classList.toggle('gold', on);
-    const boss = !!G.Settings.get('bossMode');
-    $('menu-boss-sub').textContent = boss ? 'Activado: sólo salen jefes' : 'Desactivado';
-    $('menu-boss-sub').classList.toggle('gold', boss);
+  /** Bajo "Modos de juego": los que tienes activos. */
+  function modesLine() {
+    const sub = $('menu-modes-sub');
+    sub.textContent = G.Modes.summary();
+    sub.classList.toggle('gold', /shiny|jefes|extremo|medida/.test(sub.textContent));
   }
 
   /** Texto bajo "Amigos" y "Jugar": quién está en línea, solicitudes, sala. */

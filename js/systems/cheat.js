@@ -7,16 +7,25 @@
  *                          y todos los Pokémon para jugar.
  *   allmoneybackmyhome ->  9.999.999 monedas.
  *   allcoupon          ->  99.999.999 tickets del gacha (x1 y x10).
+ *   whosyourdaddy      ->  invencible el resto de la run (en partida).
+ *   iamlevel30         ->  sube hasta el nivel 30 (en partida; eliges las cartas).
+ *   allshiny           ->  todos los shinies (y sus Pokémon).
+ *   maxpower           ->  todas las mejoras al máximo en todos los Pokémon.
  * Sólo en modo local: la partida en la nube y el ranking online no se tocan.
  */
 G.Cheat = (() => {
   const AMOUNT = 9999999, TICKETS = 99999999;
-  const CODES = { greedisgood: greedIsGood, allmoneybackmyhome: allMoney, allcoupon: allCoupon };
+  const CODES = { greedisgood: greedIsGood, allmoneybackmyhome: allMoney, allcoupon: allCoupon,
+                  whosyourdaddy: godMode, iamlevel30: level30, allshiny: allShiny, maxpower: maxPower };
   // Lista que se enseña en la ventana de Trucos (lo que hace cada uno).
   const HELP = [
     ['greedisgood', 'Toda la Pokédex y todos los Pokémon, 9.999.999 monedas y 9.999.999 tickets (×1 y ×10)'],
     ['allmoneybackmyhome', '9.999.999 monedas'],
-    ['allcoupon', '99.999.999 tickets del gacha (×1 y ×10)']
+    ['allcoupon', '99.999.999 tickets del gacha (×1 y ×10)'],
+    ['whosyourdaddy', 'Invencible el resto de la partida (úsalo jugando)'],
+    ['iamlevel30', 'Subes al nivel 30 y eliges las cartas (úsalo jugando)'],
+    ['allshiny', 'Todos los Pokémon shiny para tu colección'],
+    ['maxpower', 'Todas las mejoras al máximo en todos tus Pokémon']
   ];
   const MAX_LEN = Math.max(...Object.keys(CODES).map(c => c.length));
   let buffer = '';
@@ -63,6 +72,52 @@ G.Cheat = (() => {
     if (!s) return;
     s.tickets = { t1: TICKETS, t10: TICKETS };
     done('¡Truco activado! 99.999.999 tickets del gacha (×1 y ×10)');
+  }
+
+  /** El jugador de la partida en curso, o null (avisa) si no estás jugando. */
+  function inRun() {
+    const pl = G.Game.player;
+    if (pl && !pl.dead && G.Game.state !== 'ui' && G.Game.state !== 'over') return pl;
+    G.UI.toast('Este truco se usa durante la partida', 3000);
+    G.Audio.sfx('error');
+    return null;
+  }
+
+  function godMode() {
+    if (!target()) return;
+    const pl = inRun();
+    if (!pl) return;
+    pl.god = true;
+    G.Audio.sfx('confirm');
+    G.UI.toast('¡Truco activado! Invencible hasta el final de la partida', 3500);
+  }
+
+  function level30() {
+    if (!target()) return;
+    const pl = inRun();
+    if (!pl) return;
+    const n = Math.max(0, 30 - pl.level);
+    if (!n) { G.UI.toast('Ya estás en el nivel 30 o más', 2500); return; }
+    for (let i = 0; i < n; i++) G.Game.debugLevelUp();
+    G.UI.toast(G.I18n.f('¡Truco activado! +{x} niveles: elige tus cartas', n), 3500);
+  }
+
+  function allShiny() {
+    const s = target();
+    if (!s) return;
+    let n = 0;
+    for (const mon of G.DEX) if (G.Sprites.hasShiny(mon.dex) && G.DB.grantShiny(mon.dex, 'gacha')) n++;
+    done(G.I18n.f('¡Truco activado! {x} shinies nuevos', n));
+  }
+
+  function maxPower() {
+    const s = target();
+    if (!s) return;
+    for (const mon of G.DEX) {
+      const lv = G.DB.upgradesOf(mon.dex);
+      for (const u of G.Upgrades.LIST) lv[u.id] = u.max;
+    }
+    done('¡Truco activado! Todas las mejoras al máximo en todos los Pokémon');
   }
 
   /** Aplica un código. Devuelve false si no existe. */

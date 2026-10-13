@@ -224,7 +224,7 @@ G.Player = class Player {
   // ---------------- daño y curación ----------------
   /** @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual */
   hurt(amount, type = null) {
-    if (this.invuln > 0 || this.dead) return;
+    if (this.invuln > 0 || this.dead || this.god) return;   // god: truco de invencible
     let eff = null;
     if (type) {
       const k = G.Types.mult(type, this.mon.types);
