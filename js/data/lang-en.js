@@ -554,6 +554,7 @@ G.I18n.add({
   '¡Truco activado! 9.999.999 monedas': 'Cheat activated! 9,999,999 coins', '¡Truco activado! 99.999.999 tickets del gacha (×1 y ×10)': 'Cheat activated! 99,999,999 gacha tickets (×1 and ×10)',
   'Toda la Pokédex y todos los Pokémon, 9.999.999 monedas y 9.999.999 tickets (×1 y ×10)': 'Whole Pokédex and every Pokémon, 9,999,999 coins and 9,999,999 tickets (×1 and ×10)',
   '9.999.999 monedas': '9,999,999 coins', '99.999.999 tickets del gacha (×1 y ×10)': '99,999,999 gacha tickets (×1 and ×10)', 'Copiar': 'Copy', 'Copiado: {x}': 'Copied: {x}',
+  'Anticura': 'Heal Block', '-15% curación de los enemigos': '-15% enemy healing',
   'Mejorar todo': 'Upgrade all', 'Todo al máximo': 'All maxed', '{x}: +{x} niveles de mejora': '{x}: +{x} upgrade levels', 'Borrar toda la partida': 'Delete all progress',
   'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.': 'This browser cannot save data (incognito mode?): open the game in a normal window.',
   'Los trucos sólo funcionan en modo local (abre index.html con doble clic)': 'Cheats only work in local mode (double-click index.html)',

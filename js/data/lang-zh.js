@@ -1542,4 +1542,5 @@ G.I18n.add({
   'Toda la Pokédex y todos los Pokémon, 9.999.999 monedas y 9.999.999 tickets (×1 y ×10)': '解鎖全部寶可夢圖鑑與所有寶可夢，金幣 9,999,999、抽獎券 9,999,999 張（×1 與 ×10）',
   '9.999.999 monedas': '金幣 9,999,999', '99.999.999 tickets del gacha (×1 y ×10)': '扭蛋券 99,999,999 張（×1 與 ×10）',
   'Copiar': '複製', 'Copiado: {x}': '已複製：{x}',
+  'Anticura': '回復封鎖', '-15% curación de los enemigos': '敵人治療量 -15%',
 }, 'zh');
