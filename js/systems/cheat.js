@@ -3,32 +3,66 @@
  *   - Menú > Trucos: ventana con un campo de texto (también en móvil).
  *   - Escribirlo con el teclado en cualquier pantalla (no dentro de un campo).
  * Códigos:
- *   greedisgood  ->  9.999.999 monedas y tickets (x1 y x10), toda la Pokédex
- *                    y todos los Pokémon para jugar.
+ *   greedisgood        ->  9.999.999 monedas y tickets (x1 y x10), toda la Pokédex
+ *                          y todos los Pokémon para jugar.
+ *   allmoneybackmyhome ->  9.999.999 monedas.
+ *   allcoupon          ->  99.999.999 tickets del gacha (x1 y x10).
  * Sólo en modo local: la partida en la nube y el ranking online no se tocan.
  */
 G.Cheat = (() => {
-  const AMOUNT = 9999999;
-  const CODES = { greedisgood: greedIsGood };
+  const AMOUNT = 9999999, TICKETS = 99999999;
+  const CODES = { greedisgood: greedIsGood, allmoneybackmyhome: allMoney, allcoupon: allCoupon };
+  // Lista que se enseña en la ventana de Trucos (lo que hace cada uno).
+  const HELP = [
+    ['greedisgood', 'Toda la Pokédex y todos los Pokémon, 9.999.999 monedas y 9.999.999 tickets (×1 y ×10)'],
+    ['allmoneybackmyhome', '9.999.999 monedas'],
+    ['allcoupon', '99.999.999 tickets del gacha (×1 y ×10)']
+  ];
   const MAX_LEN = Math.max(...Object.keys(CODES).map(c => c.length));
   let buffer = '';
   let overlay = null;
 
-  function greedIsGood() {
+  /** La partida a modificar, o null si no se puede (sin partida o en la nube). */
+  function target() {
     const s = G.DB.save;
-    if (!s) return;
+    if (!s) return null;
     if (G.DB.mode === 'cloud' && !G.DB.guest) {
       G.UI.toast('Los trucos sólo funcionan en modo local (abre index.html con doble clic)', 4000);
-      return;
+      return null;
     }
-    s.coins = AMOUNT;
-    s.tickets = { t1: AMOUNT, t10: AMOUNT };
-    for (const mon of G.DEX) G.DB.grant(mon.dex, 'gacha');
+    return s;
+  }
+
+  /** Guarda, refresca lo que se ve y avisa. */
+  function done(msg) {
     G.DB.commit(true);
     G.UI.refreshCoins();
     if (G.Game.state === 'ui' && G.UI.isOpen('scr-menu')) G.MenuUI.open();
     G.Audio.sfx('confirm');
-    G.UI.toast('¡Truco activado! Pokédex y Pokémon desbloqueados · 9.999.999 monedas y tickets', 4000);
+    G.UI.toast(msg, 4000);
+  }
+
+  function greedIsGood() {
+    const s = target();
+    if (!s) return;
+    s.coins = AMOUNT;
+    s.tickets = { t1: AMOUNT, t10: AMOUNT };
+    for (const mon of G.DEX) G.DB.grant(mon.dex, 'gacha');
+    done('¡Truco activado! Pokédex y Pokémon desbloqueados · 9.999.999 monedas y tickets');
+  }
+
+  function allMoney() {
+    const s = target();
+    if (!s) return;
+    s.coins = AMOUNT;
+    done('¡Truco activado! 9.999.999 monedas');
+  }
+
+  function allCoupon() {
+    const s = target();
+    if (!s) return;
+    s.tickets = { t1: TICKETS, t10: TICKETS };
+    done('¡Truco activado! 99.999.999 tickets del gacha (×1 y ×10)');
   }
 
   /** Aplica un código. Devuelve false si no existe. */
@@ -50,8 +84,18 @@ G.Cheat = (() => {
     overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;z-index:66;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.7)';
     overlay.innerHTML = `
-      <form class="box" style="width:min(360px,calc(100% - 32px));padding:20px 22px" autocomplete="off">
+      <form class="box" style="width:min(440px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;padding:20px 22px" autocomplete="off">
         <h3>Trucos</h3>
+        <div class="cheat-list" style="display:flex;flex-direction:column;gap:8px;margin:8px 0 14px">
+          ${HELP.map(([code, what]) => `
+          <div class="panel" style="display:flex;align-items:center;gap:10px;padding:8px 10px">
+            <div style="flex:1;min-width:0">
+              <code translate="no" style="font:700 15px monospace;color:var(--gold);user-select:all">${code}</code>
+              <div style="font-size:13px;color:var(--muted)">${what}</div>
+            </div>
+            <button type="button" class="btn small" data-copy="${code}">Copiar</button>
+          </div>`).join('')}
+        </div>
         <label for="cheat-code">Código</label>
         <input id="cheat-code" class="field" maxlength="32" spellcheck="false" autocapitalize="off" style="width:100%;margin:6px 0 4px">
         <p id="cheat-err" class="err"></p>
@@ -63,6 +107,17 @@ G.Cheat = (() => {
     overlay.onclick = e => { if (e.target === overlay) closePrompt(); };
     overlay.querySelector('[data-cancel]').onclick = closePrompt;
     const input = overlay.querySelector('#cheat-code');
+    // Copiar: al portapapeles y, de paso, al campo (basta con pulsar Usar).
+    overlay.querySelectorAll('[data-copy]').forEach(b => {
+      b.onclick = () => {
+        const code = b.dataset.copy;
+        input.value = code;
+        overlay.querySelector('#cheat-err').textContent = '';
+        const ok = () => { G.UI.toast('Copiado: ' + code, 1800); G.Audio.sfx('click'); };
+        if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(code).then(ok, ok);
+        else { input.select(); try { document.execCommand('copy'); } catch (e) { /* nada */ } ok(); }
+      };
+    });
     overlay.querySelector('form').onsubmit = e => {
       e.preventDefault();
       if (redeem(input.value)) { closePrompt(); return; }
@@ -72,7 +127,7 @@ G.Cheat = (() => {
     };
     overlay.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closePrompt(); } });
     document.body.appendChild(overlay);
-    setTimeout(() => input.focus(), 30);
+    if (!G.Settings.touch) setTimeout(() => input.focus(), 30);   // en móvil, sin teclado de golpe
   }
 
   // ---------------- escribirlo con el teclado ----------------

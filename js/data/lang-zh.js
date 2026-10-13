@@ -1537,4 +1537,9 @@ G.I18n.add({
   'Modo jefes': '頭目模式', 'Activado: sólo salen jefes': '開啟中：只會出現頭目',
   'Modo jefes activado: en el mapa sólo saldrán jefes': '頭目模式已開啟：地圖上只會出現頭目',
   'Modo jefes desactivado': '頭目模式已關閉',
+  '¡Truco activado! 9.999.999 monedas': '金手指已啟用！金幣 9,999,999',
+  '¡Truco activado! 99.999.999 tickets del gacha (×1 y ×10)': '金手指已啟用！扭蛋券 99,999,999 張（×1 與 ×10）',
+  'Toda la Pokédex y todos los Pokémon, 9.999.999 monedas y 9.999.999 tickets (×1 y ×10)': '解鎖全部寶可夢圖鑑與所有寶可夢，金幣 9,999,999、抽獎券 9,999,999 張（×1 與 ×10）',
+  '9.999.999 monedas': '金幣 9,999,999', '99.999.999 tickets del gacha (×1 y ×10)': '扭蛋券 99,999,999 張（×1 與 ×10）',
+  'Copiar': '複製', 'Copiado: {x}': '已複製：{x}',
 }, 'zh');
