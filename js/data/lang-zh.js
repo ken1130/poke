@@ -1685,4 +1685,5 @@ G.I18n.add({
   'Usa un código de trucos.': '使用一次金手指。',
   'Tramposo': '作弊大師',
   'Juega en los 26 escenarios.': '在全部 26 種場景都玩過。',
+  '¡{x} va a embestir sin parar!': '{x} 要開始橫衝直撞了！',
 }, 'zh');

@@ -425,9 +425,11 @@
       //   espinas (荊棘)        Planta, Veneno, Tierra, Roca
       if (has('steel', 'bug', 'dark', 'fighting')) ranged[1] = 'blades';
       if (has('grass', 'poison', 'ground', 'rock')) { if (ranged[1] === 'blades') ranged.push('thorns'); else ranged[1] = 'thorns'; }
+      //   carga de tren        Normal, Fuego, Eléctrico, Dragón — sólo enfurecido (rampage)
+      const ramp = has('normal', 'fire', 'electric', 'dragon');
       const far = this.behavior === 'ranged';
       this.ai = { melee, ranged, farLike: far ? 0.65 : 0.35, mode: far ? 'far' : 'close', modeT: G.U.rand(6, 8),
-                  cd: 1.6, cast: null, fury: false, side: Math.random() < 0.5 ? -1 : 1 };
+                  cd: 1.6, cast: null, fury: false, side: Math.random() < 0.5 ? -1 : 1, ramp, rampT: 0 };
     }
 
     bossMove(dt, pl, dist, dx, dy, spd) {
@@ -448,6 +450,12 @@
       if (ai.mode === 'far') {
         if (dist < 170) { vx = -ddx * spd; vy = -ddy * spd; }
         else if (dist < 300) { vx = -ddy * spd * 0.55 * ai.side; vy = ddx * spd * 0.55 * ai.side; }   // te rodea
+      }
+      // Enfurecido: carga de tren en cuanto puede, y luego cada ~14 s.
+      if (ai.fury && ai.ramp && ai.cd <= 0 && (ai.rampT -= dt) <= 0) {
+        ai.rampT = 14;
+        this.bossStart('rampage', pl);
+        return [0, 0, 'Idle'];
       }
       if (ai.cd <= 0) {
         let id = null;
@@ -514,6 +522,14 @@
           c.wind = 1.0; c.after = 0.25; this.anim.play('Charge', { speed: 1.1 });
           break;
         }
+        case 'rampage':    // carga de tren: rebota contra lo que choque (ver bossCast)
+          c.wind = 1.0; c.dir = ang; c.hits = 0;
+          G.Hazards.add({ kind: 'beam', x: this.x, y: this.y, angle: ang, len: 420, w: this.r * 2 + 16,
+                          delay: c.wind, dmg: this.dmg * 1.2, type, color: '#ff4a4a' });
+          G.FX.ring(this.x, this.y, this.r, this.r * 4, '#ff4a4a', c.wind, 4);
+          this.anim.play('Charge', { speed: 1.5 });
+          G.Spawner.say('¡' + this.name + ' va a embestir sin parar!', 2.2);
+          break;
         case 'blades':     // 8 cuchillas giratorias en espiral
           c.wind = 0.8 * f; c.after = 0.4;
           this.anim.play('Charge', { speed: 1.2 });
@@ -537,6 +553,7 @@
     bossCast(dt, pl) {
       const ai = this.ai, c = ai.cast;
       c.t += dt;
+      if (c.id === 'rampage' && c.t >= c.wind) return this.rampage(dt, pl, c);
       if (c.id === 'dash' && c.t >= c.wind) {
         if (!c.go) { c.go = true; this.anim.play('Attack', { speed: 1.6 }); }
         if (c.t >= c.wind + c.dur) return this.bossEnd();
@@ -598,6 +615,39 @@
         G.Hazards.add(Object.assign(o, { kind: 'thorn', len: across, w, delay: wind + 0.5, grow: 0.35, stay: 0.5,
                                           dmg: this.shotDmg() * THORN_DMG, type, color: col }));
       }
+    }
+
+    /**
+     * Carga de tren (como la definitiva de Sion): a toda velocidad en línea recta;
+     * al chocar con una pared, árbol o roca, o con el borde de la pantalla, gira
+     * 45° en el sentido de las agujas del reloj (más si sigue bloqueado). Para tras
+     * RAMP_HITS choques. Mientras carga, su golpe por contacto hace ×1,5.
+     */
+    rampage(dt, pl, c) {
+      const RAMP_HITS = 5, SPEED = 480;
+      // El borde de la pantalla (alrededor de ti) también cuenta como obstáculo: rebota dentro de lo que ves.
+      const BOUND_X = G.Camera.w / 2 - this.r - 24, BOUND_Y = G.Camera.h / 2 - this.r - 24;
+      if (!c.go) { c.go = true; c.dmg0 = this.dmg; this.dmg *= 1.5; this.anim.play('Attack', { speed: 1.8 }); }
+      const blocked = a => {
+        const ahead = this.r + SPEED * dt + 6;
+        const nx = this.x + Math.cos(a) * ahead, ny = this.y + Math.sin(a) * ahead;
+        return !G.World.isFree(nx, ny, this.r * 0.6, true) || Math.abs(nx - pl.x) > BOUND_X || Math.abs(ny - pl.y) > BOUND_Y;
+      };
+      if (blocked(c.dir)) {
+        // Choques seguidos (en una esquina) cuentan como uno: así recorre la pantalla.
+        if (c.t - (c.lastHit || -9) > 0.35) c.hits++;
+        c.lastHit = c.t;
+        G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#ffd23f', 14, 200);
+        G.FX.ring(this.x, this.y, this.r, this.r * 3, '#ff4a4a', 0.35, 4);
+        if (G.Camera.sees(this.x, this.y, 60)) { G.Audio.sfx('break'); G.Camera.kick(0.35); }
+        // Sentido de las agujas del reloj en pantalla (la y crece hacia abajo): +45°.
+        for (let k = 0; k < 8; k++) { c.dir += Math.PI / 4; if (!blocked(c.dir)) break; }
+      }
+      if (c.hits >= RAMP_HITS || c.t > c.wind + 9) {
+        this.dmg = c.dmg0;
+        return this.bossEnd();
+      }
+      return [Math.cos(c.dir) * SPEED, Math.sin(c.dir) * SPEED, 'Walk'];
     }
 
     bossEnd() {
