@@ -426,6 +426,13 @@ G.Social = (() => {
     if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mode').set(mode === 'pvp' ? 'pvp' : 'coop').catch(() => {});
   }
 
+  /** PK por equipos: el equipo de cada uno (el que eligió, o 1.º/3.º rojo y 2.º/4.º azul). */
+  function teamOf(m, i) { return m.team === 0 || m.team === 1 ? m.team : i % 2; }
+  /** Te cambias de equipo (0 rojo, 1 azul). */
+  function setTeam(t) {
+    if (room && me) fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update({ team: t ? 1 : 0 }).catch(() => {});
+  }
+
   /** El anfitrión activa o quita el PK por equipos. */
   function setTeams(on) {
     if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/teams').set(!!on).catch(() => {});
@@ -569,7 +576,7 @@ G.Social = (() => {
 
   return {
     start, startLite, joinByCode, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setScene, setMods, setTeams, refreshMember, setPlaying, refreshPresence,
+    createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setScene, setMods, setTeams, setTeam, teamOf, refreshMember, setPlaying, refreshPresence,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

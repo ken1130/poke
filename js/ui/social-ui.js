@@ -226,17 +226,23 @@
         b.onclick = () => { if (room.isHost) G.Social.setMods(Object.assign({}, room.mods, { [b.dataset.mod]: !on })); };
       });
 
-      // PK por equipos: 1.º y 3.º rojo, 2.º y 4.º azul (por orden de llegada).
+      // PK por equipos: cada uno elige el suyo (si no, 1.º y 3.º rojo, 2.º y 4.º azul).
       $('lobby-teams').classList.toggle('hidden', room.mode !== 'pvp');
       const tb = $('lobby-teams-btn');
       tb.textContent = G.T(room.teams ? 'Sí' : 'No');
       tb.classList.toggle('gold', !!room.teams);
       tb.disabled = !room.isHost;
       tb.onclick = () => { if (room.isHost) G.Social.setTeams(!room.teams); };
-      const names = t => ms.filter((m, i) => i % 2 === t).map(m => esc(m.name)).join('、') || '—';
-      $('lobby-teams-list').innerHTML = room.teams
-        ? `<b style="color:${G.PvP.TEAM_COLORS[0]}">${G.T('Equipo rojo')}</b>: <span translate="no">${names(0)}</span> · <b style="color:${G.PvP.TEAM_COLORS[1]}">${G.T('Equipo azul')}</b>: <span translate="no">${names(1)}</span>`
+      const myTeam = (() => { const i = ms.findIndex(m => m.uid === G.Social.uid); return i < 0 ? -1 : G.Social.teamOf(ms[i], i); })();
+      const names = t => ms.filter((m, i) => G.Social.teamOf(m, i) === t).map(m => esc(m.name)).join('、') || '—';
+      const side = t => `<b style="color:${G.PvP.TEAM_COLORS[t]}">${G.T(G.PvP.TEAM_NAMES[t])}</b>: <span translate="no">${names(t)}</span>` +
+        (myTeam === t ? '' : ` <button class="btn small" data-team="${t}" style="margin-left:4px">${G.T('Unirme')}</button>`);
+      const tl = $('lobby-teams-list');
+      tl.innerHTML = room.teams ? `<div style="flex-basis:100%;text-align:center;margin-top:4px">${side(0)}</div><div style="flex-basis:100%;text-align:center;margin-top:4px">${side(1)}</div>`
         : G.T('Todos contra todos.');
+      tl.style.flexBasis = room.teams ? '100%' : '';
+      tl.querySelectorAll('[data-team]').forEach(b => { b.onclick = () => G.Social.setTeam(+b.dataset.team); });
+      const teamsOk = !(room.mode === 'pvp' && room.teams) || (names(0) !== '—' && names(1) !== '—');
 
       // PK: personaje al azar (el anfitrión lo activa).
       $('lobby-rand').classList.toggle('hidden', room.mode !== 'pvp');
@@ -304,10 +310,11 @@
       btn.classList.toggle('hidden', !room.isHost);
       const connecting = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'connecting');
       const failed = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'failed');
-      btn.disabled = !room.isHost || ms.length < 2 || connecting || failed;
+      btn.disabled = !room.isHost || ms.length < 2 || connecting || failed || !teamsOk;
       btn.textContent = 'Empezar partida (' + ms.length + '/' + G.Social.MAX_PLAYERS + ')';
       $('lobby-note').textContent = !room.isHost ? 'Cuando el anfitrión empiece, entraréis todos a la vez.'
         : ms.length < 2 ? 'Esperando a que alguien entre con el código…'
+        : !teamsOk ? 'Cada equipo necesita al menos a una persona.'
         : failed ? 'No se puede conectar con algún amigo: su red (o la tuya) no deja jugar en grupo. Probad con otra wifi o datos móviles; se reintenta solo.'
         : connecting ? 'Conectando con tus amigos…' : 'La partida empieza para todos a la vez.';
     }
@@ -323,7 +330,7 @@
         k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: room.mode === 'pvp', scene: G.Modes.scene(), rand,
         mods: room.mode === 'pvp' ? {} : { boss: !!(room.mods || {}).boss, shiny: !!(room.mods || {}).shiny, rush: !!(room.mods || {}).rush },
         teams: room.mode === 'pvp' && !!room.teams,
-        members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny, team: i % 2 }))
+        members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny, team: G.Social.teamOf(m, i) }))
       };
       G.Social.setOpen(false);
       G.Net.broadcast(cfg);

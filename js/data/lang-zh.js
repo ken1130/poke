@@ -1746,4 +1746,5 @@ G.I18n.add({
   'Observando a {x}': '觀戰中：{x}',
   'Toca «Cambiar» para ver a otro': '點「切換」看其他人',
   'Tab / Espacio: ver a otro': 'Tab／空白鍵：切換觀戰對象',
+  'Cada equipo necesita al menos a una persona.': '每隊至少要有一個人才能開始。',
 }, 'zh');
