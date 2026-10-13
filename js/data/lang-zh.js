@@ -1542,7 +1542,7 @@ G.I18n.add({
   'Toda la Pokédex y todos los Pokémon, 9.999.999 monedas y 9.999.999 tickets (×1 y ×10)': '解鎖全部寶可夢圖鑑與所有寶可夢，金幣 9,999,999、抽獎券 9,999,999 張（×1 與 ×10）',
   '9.999.999 monedas': '金幣 9,999,999', '99.999.999 tickets del gacha (×1 y ×10)': '扭蛋券 99,999,999 張（×1 與 ×10）',
   'Copiar': '複製', 'Copiado: {x}': '已複製：{x}',
-  'Anticura': '回復封鎖', '-15% curación de los enemigos': '敵人治療量 -15%',
+  'Anticura': '回復封鎖', '-11% curación de los enemigos': '敵人治療量 -11%（滿級 -99%）',
   // ---------------- modos, reto diario, copia de seguridad y más trucos ----------------
   'Modos de juego': '遊戲模式',
   'Reto diario, legendarios y más': '每日挑戰、傳說連戰等',
@@ -1596,4 +1596,5 @@ G.I18n.add({
   'Código no válido': '代碼無效',
   'Se sustituirá la partida de este dispositivo. ¿Seguro?': '這會取代這台裝置目前的存檔，確定嗎？',
   'Partida importada': '存檔已匯入',
+  'Rompescudos': '破盾', 'Tus golpes atraviesan y rompen los escudos enemigos': '你的攻擊無視並直接擊碎敵人的護盾',
 }, 'zh');

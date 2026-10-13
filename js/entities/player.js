@@ -53,6 +53,7 @@ G.Player = class Player {
     this.rerollBonus = perks.rerolls || 0;   // cambios comprados en Mejoras (más el gratis)
     this.critChance = perks.crit || 0;       // probabilidad de golpe crítico (Mejoras)
     this.healCut = perks.healCut || 0;       // Anticura: cuánto menos curan los curanderos enemigos
+    this.shieldBreak = !!perks.shieldBreak;  // Rompescudos: los escudos enemigos no paran nada
     this.banned = new Set();                 // movimientos vetados (Mejoras → Veto): no salen en las cartas
     this.bind = {};                          // movimiento -> hueco fijo (0-3), elegido en Mejoras
     this.coins = 0;            // monedas recogidas en esta run

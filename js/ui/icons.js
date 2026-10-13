@@ -51,6 +51,10 @@ G.Icons = (() => {
     shield: { pal: { s: '#9fb1c9', d: '#5d6f8c', w: '#e6eef8', r: '#4fb4ff' }, rows: [
       '............', '.kkkkkkkkkk.', '.kwwsssssdk.', '.kwssrrssdk.', '.kwssrrssdk.', '.kssrrrrsdk.',
       '.kssrrrrsdk.', '..kssrrsdk..', '..kssssddk..', '...ksssdk...', '....kddk....', '.....kk.....'] },
+    // Rompescudos (mejora): el escudo partido por una grieta roja.
+    shieldbreak: { pal: { s: '#9fb1c9', d: '#5d6f8c', w: '#e6eef8', r: '#4fb4ff', x: '#ff2a3a' }, rows: [
+      '............', '.kkkkkxkkkk.', '.kwwssxssdk.', '.kwssxrssdk.', '.kwssxrssdk.', '.kssrrxrsdk.',
+      '.kssrrrxsdk.', '..kssrxsdk..', '..kssxsddk..', '...ksxsdk...', '....kdxk....', '.....kk.....'] },
     sprout: { pal: { g: '#5fe08a', d: '#2f9a52', b: '#8a5a2b' }, rows: [
       '............', '..kkk..kkk..', '.kgggk.kgggk', '.kggggkgggdk', '..kdggkggdk.', '...kkdgdkk..',
       '.....kgk....', '.....kgk....', '...kkkdkkk..', '..kbbbbbbbk.', '..kbbbbbbbk.', '...kkkkkkk..'] },

@@ -110,6 +110,11 @@
         this.showHurt(d, color, dirX, dirY, eff);
         return;
       }
+      // Rompescudos (Mejoras): el escudo se rompe sin absorber nada.
+      if (this.shield > 0 && G.Game.everyone().some(p => p.shieldBreak)) {
+        this.shield = 0; this.shieldT = 0;
+        G.FX.ring(this.x, this.y, this.r, this.r * 2.4, '#9fd8ff', 0.35, 3);
+      }
       // Escudo: absorbe primero.
       if (this.shield > 0) {
         const a = Math.min(this.shield, d);
@@ -596,7 +601,7 @@
       const pow = Math.max(1, ...G.Game.everyone().map(p => (p.atk > 0 && p.baseAtk > 0 ? p.atk / p.baseAtk : 1)));
       // Anticura (Mejoras): cuenta la del jugador que más tenga.
       const cut = Math.max(0, ...G.Game.everyone().map(p => p.healCut || 0));
-      const k = 0.07 * Math.min(2.5, Math.pow(pow, 0.35)) * (1 - Math.min(0.75, cut));
+      const k = 0.07 * Math.min(2.5, Math.pow(pow, 0.35)) * (1 - Math.min(0.99, cut));
       let n = 0;
       for (const e of G.EnemyMgr.queryCircle(this.x, this.y, 150)) {
         if (e.dead || e.hp >= e.maxHp) continue;
