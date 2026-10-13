@@ -720,6 +720,7 @@ G.I18n.add({
   '+1 perforación, +8 al primero y +5 a los demás': '+1 pierce, +8 to the first and +5 to the rest',
   '+6 de daño al primero y +4 a los demás': '+6 damage to the first and +4 to the rest',
   'Todos reciben 34, +1 flecha, +1 perforación y puede volver a perforar al mismo': 'All take 34, +1 arrow, +1 pierce and it can pierce the same one again',
+  'Personaje al azar': 'Random character', 'Cada uno juega con un Pokémon al azar, sin mejoras.': 'Everyone plays a random Pokémon, without upgrades.',
   'Mejorar todo': 'Upgrade all', 'Todo al máximo': 'All maxed', '{x}: +{x} niveles de mejora': '{x}: +{x} upgrade levels', 'Borrar toda la partida': 'Delete all progress',
   'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.': 'This browser cannot save data (incognito mode?): open the game in a normal window.',
   'Los trucos sólo funcionan en modo local (abre index.html con doble clic)': 'Cheats only work in local mode (double-click index.html)',

@@ -1720,4 +1720,5 @@ G.I18n.add({
   '+1 perforación, +8 al primero y +5 a los demás': '穿透 +1、第一隻傷害 +8、穿透後傷害 +5',
   '+6 de daño al primero y +4 a los demás': '第一隻傷害 +6、穿透後傷害 +4',
   'Todos reciben 34, +1 flecha, +1 perforación y puede volver a perforar al mismo': '全部 34 傷害、箭矢 +1、穿透 +1，可以重複穿透同一隻',
+  'Personaje al azar': '隨機角色', 'Cada uno juega con un Pokémon al azar, sin mejoras.': '每個人隨機分配一隻寶可夢，不套用強化。',
 }, 'zh');

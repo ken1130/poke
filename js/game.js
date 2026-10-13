@@ -88,8 +88,10 @@ G.Game = (() => {
   function startRun(coop = null) {
     holdBy = []; awayBy = null;
     const save = G.DB.save;
-    const mon = G.DEX_BY[save.partner];
-    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
+    // PK con personaje al azar: el Pokémon que le ha tocado a cada uno (cfg.members), sin mejoras.
+    const randomMe = coop && coop.rand ? (coop.members.find(m => m.uid === G.Net.uid) || {}).dex : null;
+    const mon = G.DEX_BY[randomMe || save.partner];
+    const perks = G.Upgrades.perks(randomMe ? {} : G.DB.upgradesOf(mon.dex));
 
     G.UI.hideAll();
     G.UI.chrome(false);
@@ -118,7 +120,7 @@ G.Game = (() => {
     biome = 0;
     time = 0; pendingLevels = 0; coopCards = [];
 
-    pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    pl = new G.Player(mon, perks, !randomMe && !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
     // Modo extremo: más premio (XP y monedas).
     pl.xpMul *= G.Modes.rewardMul(); pl.coinMul *= G.Modes.rewardMul();
     banked = { t1: 0, t10: 0 };

@@ -368,7 +368,13 @@ G.Social = (() => {
     // Modo de la sala: 'coop' (equipo) o 'pvp' (PK). Lo elige el anfitrión.
     const dref = fb.rtdb.ref('rooms/' + id + '/mode');
     dref.on('value', s => { if (room && room.id === id) { room.mode = s.val() === 'pvp' ? 'pvp' : 'coop'; emit('room'); } }, () => {});
-    roomRefs = [mref, href, oref, dref];
+    // PK con personaje al azar (lo elige el anfitrión).
+    const rref = fb.rtdb.ref('rooms/' + id + '/rand');
+    rref.on('value', s => { if (room && room.id === id) { room.rand = s.val() === true; emit('room'); } }, () => {});
+    // Escenario de la partida (lo elige el anfitrión; null = turno normal).
+    const sref = fb.rtdb.ref('rooms/' + id + '/scene');
+    sref.on('value', s => { if (room && room.id === id) { const v = s.val(); room.scene = Number.isInteger(v) ? v : null; emit('room'); } }, () => {});
+    roomRefs = [mref, href, oref, dref, rref, sref];
     writeStatus();
     emit('room');
   }
@@ -412,6 +418,16 @@ G.Social = (() => {
   /** El anfitrión elige el modo de la sala: 'coop' o 'pvp'. */
   function setMode(mode) {
     if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mode').set(mode === 'pvp' ? 'pvp' : 'coop').catch(() => {});
+  }
+
+  /** El anfitrión elige el escenario (índice de bioma o null). */
+  function setScene(v) {
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/scene').set(Number.isInteger(v) ? v : null).catch(() => {});
+  }
+
+  /** El anfitrión activa o quita "personaje al azar" para el PK. */
+  function setRand(on) {
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/rand').set(!!on).catch(() => {});
   }
 
   /** El anfitrión cierra la sala a nuevos jugadores al empezar la partida. */
@@ -537,7 +553,7 @@ G.Social = (() => {
 
   return {
     start, startLite, joinByCode, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, setMode, refreshMember, setPlaying, refreshPresence,
+    createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setScene, refreshMember, setPlaying, refreshPresence,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

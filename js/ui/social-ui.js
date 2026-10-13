@@ -199,6 +199,30 @@
         b.disabled = !room.isHost && !on;
         b.onclick = () => { if (room.isHost && !on) G.Social.setMode(b.dataset.mode); };
       });
+      // Escenario: el anfitrión lo elige aquí mismo (es su ajuste de Modos de juego); los demás lo ven.
+      const sel = $('lobby-scene');
+      if (!sel.options.length) {
+        sel.innerHTML = `<option value="">${G.T('Turno normal')}</option>` +
+          G.Tiles.SCENES.map(i => `<option value="${i}">${G.T(G.Tiles.BIOMES[i].name)}</option>`).join('');
+      }
+      const mine = G.Modes.scene();
+      if (room.isHost && room.scene !== mine && sel.dataset.synced !== room.id) { sel.dataset.synced = room.id; G.Social.setScene(mine); }
+      const shown = room.isHost ? mine : room.scene;
+      sel.value = shown == null ? '' : String(shown);
+      sel.disabled = !room.isHost;
+      sel.onchange = () => {
+        const v = sel.value === '' ? null : +sel.value;
+        G.Settings.set('scene', v);
+        G.Social.setScene(v);
+      };
+
+      // PK: personaje al azar (el anfitrión lo activa).
+      $('lobby-rand').classList.toggle('hidden', room.mode !== 'pvp');
+      const rb = $('lobby-rand-btn');
+      rb.textContent = G.T(room.rand ? 'Sí' : 'No');
+      rb.classList.toggle('gold', !!room.rand);
+      rb.disabled = !room.isHost;
+      rb.onclick = () => { if (room.isHost) G.Social.setRand(!room.rand); };
       $('lobby-mode-desc').textContent = G.T(room.mode === 'pvp'
         ? 'PK: os podéis atacar entre vosotros. Gana el último en pie.'
         : 'Equipo: jugáis juntos contra los Pokémon salvajes.');
@@ -269,9 +293,13 @@
     function start() {
       const room = G.Social.room;
       if (!room || !room.isHost || room.members.length < 2) return;
+      // PK con personaje al azar: a cada uno un Pokémon distinto (no legendario, con sprites).
+      const rand = room.mode === 'pvp' && !!room.rand;
+      const pool = rand ? G.DEX.filter(p => !p.leg && G.SPRITE_META[p.dex]) : [];
+      const picks = rand ? G.U.pickN(pool, room.members.length) : [];
       const cfg = {
-        k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: room.mode === 'pvp', scene: G.Modes.scene(),
-        members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny }))
+        k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: room.mode === 'pvp', scene: G.Modes.scene(), rand,
+        members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny }))
       };
       G.Social.setOpen(false);
       G.Net.broadcast(cfg);
