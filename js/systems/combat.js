@@ -71,6 +71,7 @@ G.Combat = (() => {
       case 'flameshield': flameShield(pl, m); break;
       case 'lightning':  lightning(pl, m); break;
       case 'drain':      drain(pl, m); break;
+      case 'psyarrow':   psyArrows(pl, m); break;
     }
   }
 
@@ -131,6 +132,56 @@ G.Combat = (() => {
   }
 
   /**
+   * Flecha Psíquica: `n` flechas, cada una a un enemigo distinto (de los más cercanos,
+   * a menos de `r` casillas). Al dar, salta al siguiente más cercano sin golpear
+   * (evolucionado: también a uno ya golpeado, salvo el de ahora) hasta `pierce` saltos.
+   * El vuelo lo mueve updateFields ('arrow').
+   */
+  const ARROW_HOP = 8 * TILE;   // hasta dónde busca al siguiente
+  function psyArrows(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE;
+    const near = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead)
+      .sort((a, b) => G.U.dist2(a.x, a.y, pl.x, pl.y) - G.U.dist2(b.x, b.y, pl.x, pl.y));
+    if (!near.length) return;
+    for (let i = 0; i < row.n; i++) {
+      const target = near[i % near.length];
+      fields.push({ kind: 'arrow', owner: pl, ghost, m, col: '#ff4f9a', x: pl.x, y: pl.y - G.LIFT * 0.5, t: 0, life: 6,
+                    target, hops: row.pierce, hit: new Set(), first: true, d1: row.d1, d2: row.d2, repeat: !!row.repeat,
+                    ang: Math.atan2(target.y - pl.y, target.x - pl.x), trail: [] });
+    }
+  }
+
+  /** Mueve una flecha; al llegar golpea y elige el siguiente. Devuelve false cuando acaba. */
+  function arrowStep(f, dt) {
+    const SPEED = 620;
+    let e = f.target;
+    if (!e || e.dead || !G.EnemyMgr.get(e.id)) { e = f.target = nextArrowTarget(f, f.x, f.y, null); if (!e) return false; }
+    const tx = e.x, ty = e.y - e.bodyH * 0.5;
+    const d = Math.hypot(tx - f.x, ty - f.y);
+    f.ang = Math.atan2(ty - f.y, tx - f.x);
+    f.trail.push([f.x, f.y]); if (f.trail.length > 6) f.trail.shift();
+    if (d > SPEED * dt + e.r * 0.5) { f.x += Math.cos(f.ang) * SPEED * dt; f.y += Math.sin(f.ang) * SPEED * dt; return true; }
+    // Llega: golpea y salta.
+    f.x = tx; f.y = ty;
+    if (!f.ghost) hit(f.owner, e, (f.first ? f.d1 : f.d2) * f.owner.atk, f.col, Math.cos(f.ang), Math.sin(f.ang), 0, f.m);
+    G.FX.burst(tx, ty, f.col, 6, 90);
+    f.hit.add(e.id); f.first = false;
+    if (f.hops-- <= 0) return false;
+    f.target = nextArrowTarget(f, e.x, e.y, e);
+    return !!f.target;
+  }
+
+  function nextArrowTarget(f, x, y, cur) {
+    let best = null, bd = ARROW_HOP * ARROW_HOP;
+    for (const e of G.EnemyMgr.queryCircle(x, y, ARROW_HOP)) {
+      if (e.dead || e === cur || (!f.repeat && f.hit.has(e.id))) continue;
+      const d = G.U.dist2(x, y, e.x, e.y);
+      if (d < bd) { bd = d; best = e; }
+    }
+    return best;
+  }
+
+  /**
    * Colmillo Vampiro: muerde a los `n` enemigos más cercanos a menos de `r` casillas
    * y te cura `heal` en total (no por cada uno).
    */
@@ -148,7 +199,7 @@ G.Combat = (() => {
     G.FX.ring(pl.x, pl.y, pl.r, pl.r * 2.5, '#7dffb0', 0.3, 2);
   }
 
-  const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone', 'lightning', 'drain'];
+  const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone', 'lightning', 'drain', 'psyarrow'];
   function needsTarget(m) { return TARGETED.includes(m.kind); }
   function reach(m) {
     if (m.kind === 'melee') return m.radius + 30;
@@ -157,7 +208,7 @@ G.Combat = (() => {
     if (m.kind === 'chain') return 280;
     if (m.kind === 'meteor') return 340;
     if (m.kind === 'dash') return m.radius + 60;
-    if (m.kind === 'lightning' || m.kind === 'drain') return G.Moves.stat(m).r * 32;
+    if (m.kind === 'lightning' || m.kind === 'drain' || m.kind === 'psyarrow') return G.Moves.stat(m).r * 32;
     if (m.kind === 'cone') return m.speed * m.life + 30;
     return 520;
   }
@@ -484,6 +535,8 @@ G.Combat = (() => {
           }
         }
         if (f.kick > 0) f.kick -= dt;
+      } else if (f.kind === 'arrow') {
+        if (!arrowStep(f, dt)) fields.splice(i, 1);
       } else if (f.kind === 'link') {
         // Descargas entre los rayos (Tormenta Eléctrica): cada 0,2 s, a lo que esté en la línea.
         f.tick -= dt;
@@ -552,6 +605,23 @@ G.Combat = (() => {
     const now = performance.now() / 1000;
     for (const f of fields) {
       if (!G.Camera.sees(f.x, f.y, 200)) continue;
+      if (f.kind === 'arrow') {
+        // Flecha rosa con estela.
+        ctx.save();
+        ctx.strokeStyle = f.col; ctx.lineCap = 'round';
+        f.trail.forEach(([x, y], k) => {
+          const [nx, ny] = f.trail[k + 1] || [f.x, f.y];
+          ctx.globalAlpha = 0.15 + 0.6 * (k / f.trail.length); ctx.lineWidth = 2 + k * 0.5;
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(nx, ny); ctx.stroke();
+        });
+        ctx.globalAlpha = 1;
+        ctx.translate(f.x, f.y); ctx.rotate(f.ang);
+        ctx.fillStyle = '#ffe8f3'; ctx.strokeStyle = f.col; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-8, -6); ctx.lineTo(-4, 0); ctx.lineTo(-8, 6); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+        continue;
+      }
       if (f.kind === 'meteor' && f.t > 0) {
         const k = G.U.clamp(f.t / f.fall, 0, 1);
         G.VFX.draw(ctx, f.vis.proj, f.vis.pal, f.x + (1 - k) * 40, f.y - (1 - k) * 170 - 6,

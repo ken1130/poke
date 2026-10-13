@@ -1712,4 +1712,12 @@ G.I18n.add({
   '60 de daño/s durante 50 s; los quemados reciben +15% de daño': '每秒 60 傷害、持續 50 秒；燃燒中的敵人受到的傷害 +15%',
   '12 rayos de 40 y descargas entre ellos (+50 de daño/s)': '12 道 40 傷害的閃電，閃電之間有電擊連結（每秒 +50 傷害）',
   'Pasa a ser PASIVO: cada 1 s muerde a 12 (35 de daño) y te cura 8': '變成被動技：每 1 秒咬 12 隻（35 傷害）並回 8 血',
+  'Flecha Psíquica': '念力追噬箭',
+  'Flecha que vuela a un enemigo y salta a los siguientes más cercanos.': '射出一支箭打中敵人後，穿透並轉向附近其他敵人。',
+  'Flecha Psíquica Eterna': '念力穿心箭',
+  '+6 de daño al primero y +3 a los demás': '第一隻傷害 +6、穿透後傷害 +3',
+  '+1 flecha': '箭矢 +1',
+  '+1 perforación, +8 al primero y +5 a los demás': '穿透 +1、第一隻傷害 +8、穿透後傷害 +5',
+  '+6 de daño al primero y +4 a los demás': '第一隻傷害 +6、穿透後傷害 +4',
+  'Todos reciben 34, +1 flecha, +1 perforación y puede volver a perforar al mismo': '全部 34 傷害、箭矢 +1、穿透 +1，可以重複穿透同一隻',
 }, 'zh');

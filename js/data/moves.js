@@ -21,6 +21,7 @@
  *   flameshield PASIVO: quema a los que se acercan (sigue un rato aunque se alejen)
  *   lightning   rayos que caen sobre enemigos al azar en un radio
  *   drain       muerde a los N más cercanos y te cura (evolucionado: PASIVO)
+ *   psyarrow    flechas que vuelan a un enemigo y saltan a los siguientes más cercanos
  *
  * Sólo el movimiento ACTIVO se ejecuta. Se cambia con 1-4 / Q / E.
  *
@@ -135,6 +136,12 @@
       { t: '+3 objetivos, +8 de daño y +2 de curación',                m: {} },
       { t: '+5 objetivos, +13 de daño, +2 de curación y +2 casillas',  m: {} },
       { t: '+5 objetivos, +7 de daño y +2 de curación',                m: {} }
+    ],
+    psyarrow: [
+      { t: '+6 de daño al primero y +3 a los demás',                 m: {} },
+      { t: '+1 flecha',                                              m: {} },
+      { t: '+1 perforación, +8 al primero y +5 a los demás',         m: {} },
+      { t: '+6 de daño al primero y +4 a los demás',                 m: {} }
     ],
     buff: [
       { t: '+1 acumulación máxima',         m: { stacks: 1 } },
@@ -432,7 +439,10 @@
       cd: 1.17, dmg: 20, count: 4, radius: 256 },
     { id: 'vampire-fang', name: 'Colmillo Vampiro', type: 'bug', kind: 'drain',
       desc: 'Muerde a los enemigos más cercanos y te cura. Al evolucionar pasa a ser PASIVO.',
-      cd: 1.7, dmg: 14, count: 5, radius: 160 }
+      cd: 1.7, dmg: 14, count: 5, radius: 160 },
+    { id: 'psy-arrow', name: 'Flecha Psíquica', type: 'psychic', kind: 'psyarrow',
+      desc: 'Flecha que vuela a un enemigo y salta a los siguientes más cercanos.',
+      cd: 1.2, dmg: 14, count: 1, radius: 512 }
   ];
 
   /*
@@ -454,6 +464,12 @@
     'vampire-fang': [
       { n: 5, dmg: 14, heal: 2, r: 5 },  { n: 5, dmg: 17, heal: 3, r: 5 },  { n: 8, dmg: 25, heal: 5, r: 5 },
       { n: 13, dmg: 38, heal: 7, r: 7 }, { n: 18, dmg: 45, heal: 9, r: 7 }, { n: 12, dmg: 35, heal: 8, r: 7, cd: 1.0, passive: true }
+    ],
+    // n flechas, d1 al primero, d2 a los perforados, pierce saltos, r alcance; evolucionado: repeat (puede volver a uno ya golpeado)
+    'psy-arrow': [
+      { n: 1, d1: 14, d2: 8, pierce: 4, r: 16 },  { n: 1, d1: 20, d2: 11, pierce: 4, r: 16 },
+      { n: 2, d1: 20, d2: 11, pierce: 4, r: 16 },  { n: 2, d1: 28, d2: 16, pierce: 5, r: 16 },
+      { n: 2, d1: 34, d2: 20, pierce: 5, r: 16 },  { n: 3, d1: 34, d2: 34, pierce: 6, r: 16, repeat: true }
     ]
   };
   /** Fila de TABLE para una instancia (según su nivel y si ha evolucionado). */
@@ -579,7 +595,7 @@
     'aerial-ace': ['Acróbata', 'spd'],       'flame-wheel': ['Envite Ígneo', 'spd'],
     'bubble-beam': ['Acua Cola', 'atk'],     'hex': ['Poltergeist', 'mag'],
     'flame-shield': ['Escudo Ígneo', 'def'], 'thunder-strike': ['Tormenta Eléctrica', 'atk'],
-    'vampire-fang': ['Colmillo Eterno', 'rgn']
+    'vampire-fang': ['Colmillo Eterno', 'rgn'], 'psy-arrow': ['Flecha Psíquica Eterna', 'cd']
   };
   // Lo que gana al evolucionar, según cómo funcione.
   const EVO_MODS = {
@@ -599,7 +615,8 @@
     cone:       { t: '×1,7 daño, +4 disparos y +1 perforación', m: { dmg: 1.7, count: 4, pierce: 1 } },
     flameshield: { t: '60 de daño/s durante 50 s; los quemados reciben +15% de daño', m: {} },
     lightning:   { t: '12 rayos de 40 y descargas entre ellos (+50 de daño/s)', m: {} },
-    drain:       { t: 'Pasa a ser PASIVO: cada 1 s muerde a 12 (35 de daño) y te cura 8', m: {} }
+    drain:       { t: 'Pasa a ser PASIVO: cada 1 s muerde a 12 (35 de daño) y te cura 8', m: {} },
+    psyarrow:    { t: 'Todos reciben 34, +1 flecha, +1 perforación y puede volver a perforar al mismo', m: {} }
   };
 
   /** ¿Puede evolucionar ya? → { name, needs, needName, text, ready } o null */
