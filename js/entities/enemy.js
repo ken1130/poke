@@ -420,6 +420,8 @@
                  : has('fairy', 'ghost', 'water', 'flying') ? 'nova' : 'volley';
       const others = ['rain', 'beam', 'nova', 'volley'].filter(x => x !== pref);
       const ranged = [pref, others[Math.floor(G.U.hash(this.dex, 5, 9) * 3) % 3]];
+      // Cuchillas giratorias (esta versión): los de Acero, Bicho, Planta, Siniestro y Lucha.
+      if (has('steel', 'bug', 'grass', 'dark', 'fighting')) ranged[1] = 'blades';
       const far = this.behavior === 'ranged';
       this.ai = { melee, ranged, farLike: far ? 0.65 : 0.35, mode: far ? 'far' : 'close', modeT: G.U.rand(6, 8),
                   cd: 1.6, cast: null, fury: false, side: Math.random() < 0.5 ? -1 : 1 };
@@ -509,6 +511,11 @@
           c.wind = 1.0; c.after = 0.25; this.anim.play('Charge', { speed: 1.1 });
           break;
         }
+        case 'blades':     // 8 cuchillas giratorias en espiral
+          c.wind = 0.8 * f; c.after = 0.4;
+          this.anim.play('Charge', { speed: 1.2 });
+          G.FX.ring(this.x, this.y, this.r, this.r * 3, '#e6edf5', c.wind, 3);
+          break;
         case 'volley':     // abanico de disparos
         case 'nova':       // anillo de disparos
           c.wind = (id === 'nova' ? 0.7 : 0.5) * f;
@@ -533,9 +540,27 @@
         if (c.id === 'volley') this.shoot(ax, ay, 1.1, ai.fury ? 9 : 7, 0.8);
         else if (c.id === 'nova') { const n = ai.fury ? 18 : 14; this.shoot(ax, ay, 6.2832 * (n - 1) / n, n, 0.7); }
         else if (c.id === 'slam') this.anim.play('Attack', { speed: 1.4 });
+        else if (c.id === 'blades') this.blades(c.ang, ai.fury);
       }
       if (c.t >= c.wind + c.after) return this.bossEnd();
       return [0, 0, 'Idle'];
+    }
+
+    /**
+     * Cuchillas: 8 direcciones (una hacia ti). Hoja de 0,5 × 2,5 casillas
+     * (16 × 80 unidades: una casilla son 32). Daño: BLADE_DMG × su disparo normal.
+     */
+    blades(ang, fury) {
+      const type = this.atkType, col = G.U.TYPE_COLOR[type] || '#ff7a9e';
+      const TILE = G.Tiles.T * G.Sprites.PX, BLADE_DMG = 1.1;
+      for (let i = 0; i < 8; i++) {
+        G.Hazards.add({ kind: 'blade', x: this.x, y: this.y, angle: ang + i * Math.PI / 4,
+                        dmg: this.shotDmg() * BLADE_DMG, type, color: col,
+                        sp: fury ? 165 : 135, life: 3.4, R: 24, om: fury ? 10 : 8.5, spin: 13,
+                        w: TILE * 0.5, len: TILE * 2.5 });
+      }
+      this.anim.play('Shoot', { speed: 1.2 });
+      if (G.Camera.sees(this.x, this.y, 100)) G.Audio.sfx('shot', { kind: 'beam', type });
     }
 
     bossEnd() {
