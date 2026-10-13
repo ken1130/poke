@@ -116,7 +116,7 @@ G.Game = (() => {
     fixedScene = coop ? (Number.isInteger(coop.scene) ? coop.scene : null) : G.Modes.scene();
     if (fixedScene != null) G.World.setBiome(fixedScene, true);
     biome = 0;
-    time = 0; pendingLevels = 0;
+    time = 0; pendingLevels = 0; coopCards = [];
 
     pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
     // Modo extremo: más premio (XP y monedas).
@@ -205,14 +205,9 @@ G.Game = (() => {
       bankTickets();
     },
     levelStart(level) {
-      state = 'levelup';
-      G.UI.hide('scr-pause');
-      G.Audio.sfx('levelup');
-      G.RunUI.showLevelUp(level, G.LevelUp.offer(pl), card => {
-        G.Audio.sfx('confirm');
-        card.apply(pl);
-        G.Coop.localPicked();
-      }, true);
+      // Sin esperar a nadie: las cartas se ponen en cola y se eligen una tras otra.
+      coopCards.push(level);
+      if (!G.UI.isOpen('scr-levelup')) nextCoopCard();
     },
     waiting(names) { G.RunUI.setWaiting(names); },
     resume() { G.RunUI.closeLevelUp(); if (state === 'levelup') state = 'playing'; },
@@ -289,6 +284,7 @@ G.Game = (() => {
     if (G.Coop.active) G.Coop.end();
     if (coop) G.Social.setPlaying(false);
     state = 'over';
+    if (coopCards.length || G.UI.isOpen('scr-levelup')) { coopCards = []; G.RunUI.closeLevelUp(); }
     G.Audio.music(null);
     G.Audio.sfx(dead ? 'gameover' : 'back');
     const save = G.DB.save;
@@ -345,7 +341,7 @@ G.Game = (() => {
   function maybeLevelUp() {
     if (pendingLevels <= 0 || state !== 'playing') return;
     if (G.Coop.active) {
-      // En grupo, las cartas salen a la vez para todos y se espera a que elijan.
+      // En grupo, las cartas salen a la vez para todos y cada uno elige sin esperar a los demás.
       if (G.Coop.players().every(p => p.dead)) return;
       pendingLevels--;
       G.Coop.levelStart(pl.level);
@@ -480,7 +476,7 @@ G.Game = (() => {
 
   function handleKeys() {
     if (G.SettingsUI.isOpen) { if (G.Input.tap('escape')) G.SettingsUI.close(); return; }
-    if (state === 'levelup') {
+    if (state === 'levelup' || (G.Coop.active && G.UI.isOpen('scr-levelup'))) {
       for (let i = 0; i < 3; i++) {
         if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pick(i);
       }
@@ -590,7 +586,9 @@ G.Game = (() => {
       G.FX.ring(pl.x, pl.y, 10, G.Camera.outerRadius(), '#ffffff', 0.7, 6);
     }
 
-    pl.frozen = coop && (G.UI.isOpen('scr-pause') || G.UI.isOpen('scr-item'));
+    const picking = coop && G.UI.isOpen('scr-levelup');
+    pl.frozen = coop && (G.UI.isOpen('scr-pause') || G.UI.isOpen('scr-item') || picking);
+    if (picking) pl.invuln = Math.max(pl.invuln || 0, 0.25);   // eligiendo cartas: no te pegan
     pl.update(dt);
     if (coop) {
       for (const p of G.Coop.puppets()) { p.netUpdate(dt); G.Combat.ghostOrbit(p, dt, time); }
@@ -632,6 +630,20 @@ G.Game = (() => {
   }
 
   let pvpLast = null;
+  let coopCards = [];      // grupo: subidas de nivel pendientes de elegir (en cola)
+
+  /** Grupo: abre las cartas de la siguiente subida de nivel de la cola. */
+  function nextCoopCard() {
+    const level = coopCards.shift();
+    if (level == null || !pl || state === 'over') return;
+    G.Audio.sfx('levelup');
+    G.RunUI.showLevelUp(level, G.LevelUp.offer(pl), card => {
+      G.Audio.sfx('confirm');
+      card.apply(pl);
+      G.Coop.localPicked();
+      nextCoopCard();
+    });
+  }
   let fixedScene = null;   // índice de bioma si se eligió escenario (no se va turnando)   // PK: quién seguía en pie cuando quedó uno
 
   /** Anfitrión: si caéis todos, se acaba (tras ver caer al último). */

@@ -398,13 +398,15 @@ G.Coop = (() => {
 
   // ---------------- subida de nivel compartida ----------------
 
+  /**
+   * Subida de nivel del equipo: cada uno elige sus cartas sin esperar a los demás
+   * (esta versión). La partida sigue; mientras eliges, tu Pokémon se queda quieto
+   * e invulnerable (game.js).
+   */
   function levelStart(level) {
-    waiting = new Set([me]);
-    for (const m of mates.values()) if (m.connected) waiting.add(m.uid);
     emit(['lu', level]);
     flushAll();
     api.levelStart(level);
-    sendWaiting();
   }
 
   function nameOf(u) { return u === me ? (G.Social.me ? G.Social.me.name : 'Tú') : (mates.get(u) || {}).name || '?'; }
