@@ -58,7 +58,8 @@ G.MenuUI = (() => {
       };
     });
 
-    $('btn-logout').classList.toggle('hidden', G.DB.mode === 'local');   // sin cuentas, no hay sesión que cerrar
+    $('btn-logout').classList.toggle('hidden', G.DB.mode === 'local' || G.DB.unbound);   // sin cuenta, no hay sesión que cerrar
+    G.AccountUI.refresh();
     modesLine();
     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
     const shinies = Object.keys(s.shiny || {}).length;
@@ -76,13 +77,8 @@ G.MenuUI = (() => {
     const pend = G.Progress.pending();
     $('menu-goals-sub').textContent = pend ? pend + (pend === 1 ? ' premio por recoger' : ' premios por recoger') : 'Misiones, logros y perfil';
     $('menu-goals-sub').classList.toggle('gold', pend > 0);
-    // Con cuenta en la nube: amigos en línea, invitaciones y (una vez) el apodo.
-    if (G.DB.online && !G.Social.started) {
-      G.Social.start().then(r => {
-        if (r === 'need-nick' && !G.NickUI.skipped && G.UI.isOpen('scr-menu')) G.NickUI.open();
-        socialLine();
-      });
-    }
+    // (Amigos, apodo y "en línea" desactivados en esta versión: sin Social.start
+    // no se pide apodo ni se escribe en la nube cada 10 min.)
     G.InvitePop.refresh();
   }
 

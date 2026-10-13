@@ -11,7 +11,7 @@
  *   iamlevel30         ->  sube hasta el nivel 30 (en partida; eliges las cartas).
  *   allshiny           ->  todos los shinies (y sus Pokémon).
  *   maxpower           ->  todas las mejoras al máximo en todos los Pokémon (Rompescudos y Anticura incluidas).
- * Sólo en modo local: la partida en la nube y el ranking online no se tocan.
+ * Funcionan también con la partida en la nube (proyecto de Firebase propio).
  */
 G.Cheat = (() => {
   const AMOUNT = 9999999, TICKETS = 99999999;
@@ -31,16 +31,8 @@ G.Cheat = (() => {
   let buffer = '';
   let overlay = null;
 
-  /** La partida a modificar, o null si no se puede (sin partida o en la nube). */
-  function target() {
-    const s = G.DB.save;
-    if (!s) return null;
-    if (G.DB.mode === 'cloud' && !G.DB.guest) {
-      G.UI.toast('Los trucos sólo funcionan en modo local (abre index.html con doble clic)', 4000);
-      return null;
-    }
-    return s;
-  }
+  /** La partida a modificar (también en la nube: el proyecto de Firebase es el de esta versión). */
+  function target() { return G.DB.save || null; }
 
   /** Guarda, refresca lo que se ve y avisa. */
   function done(msg) {

@@ -37,6 +37,9 @@ G.DB = (() => {
   let user = null;          // nombre visible
   let key = null;           // clave local (minúsculas) o uid de Firebase
   let guest = false;
+  // Con la nube disponible pero sin vincular Google: se juega con la partida de
+  // este navegador (como el modo local) hasta que vinculas (bindGoogle).
+  let unbound = false;
   let save = null;
   let storageOk = true;
 
@@ -288,27 +291,69 @@ G.DB = (() => {
    * navegador (se guarda como una cuenta local normal, sin contraseña).
    */
   function autoLocal() {
-    if (mode !== 'local') return false;
+    if (mode !== 'local' && !(mode === 'cloud' && !uid)) return false;
+    unbound = mode === 'cloud';
     const accs = read(K_ACC) || {};
     let k = Object.keys(accs)[0];   // si ya había una cuenta local, se sigue con ella
     if (!k) { k = 'local'; accs[k] = { name: G.T('Entrenador'), created: Date.now() }; write(K_ACC, accs); }
     beginLocal(k, accs[k].name);
+    user = save.name || user;       // el apodo que hayas puesto (setName)
     write(K_SAVE + k, save);
+    if (unbound) setSync('local');
     return true;
   }
 
   /**
-   * Copia de seguridad (sólo modo local): sustituye la partida de este navegador
-   * por otra exportada (ui/backup-ui.js). Pasa por migrate, que arregla lo que falte
-   * y quita lo imposible.
+   * Vincular con Google: la partida de este navegador pasa a la nube. Si esa
+   * cuenta de Google ya tenía partida (otro dispositivo), se FUSIONAN (merge:
+   * colecciones unidas, mejoras y estadísticas al máximo).
+   */
+  async function bindGoogle() {
+    if (mode !== 'cloud') return { ok: false, error: 'La nube no está disponible.' };
+    const localKey = unbound ? key : null;
+    const localSave = unbound && save ? plain(save) : null;
+    try {
+      const cred = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      await openCloud(cred.user, { name: localSave ? localSave.name : displayNameOf(cred.user),
+                                   legacy: localSave ? { save: localSave, key: localKey } : null });
+      unbound = false;
+      if (localKey) {
+        remove(K_SAVE + localKey); remove(K_SES);
+        const accs = read(K_ACC) || {}; delete accs[localKey]; write(K_ACC, accs);
+      }
+      return { ok: true, merged: !!localSave };
+    } catch (e) { return { ok: false, error: authError(e) }; }
+  }
+
+  /**
+   * Copia de seguridad: sustituye la partida actual por otra exportada
+   * (ui/backup-ui.js). Pasa por migrate, que arregla lo que falte y quita lo imposible.
+   * En la nube se sube enseguida.
    */
   function importSave(obj) {
-    if (mode !== 'local' || !key) return false;
+    if (guest || !key || !save) return false;
     if (!obj || typeof obj !== 'object' || typeof obj.owned !== 'object' || !Number.isFinite(+obj.coins)) return false;
-    save = migrate(obj, user);
-    save.name = user;
+    const fresh = migrate(obj, user);
+    fresh.name = user;
+    // En la nube, sustituir en sitio (la sincronización guarda la referencia a `save`).
+    if (mode === 'cloud' && !unbound) { for (const k of Object.keys(save)) delete save[k]; Object.assign(save, fresh); return commit(true); }
+    save = fresh;
     save.updated = Date.now();
     return write(K_SAVE + key, save);
+  }
+
+  /**
+   * Al crear o abrir por primera vez una cuenta en la nube: si en este navegador
+   * hay una partida del modo sin cuentas (ps.save.local) y la cuenta está vacía,
+   * se pasa a la cuenta. Devuelve true si la ha pasado.
+   */
+  function adoptLocal() {
+    if (mode !== 'cloud' || !save || save.partner) return false;
+    const old = read(K_SAVE + 'local');
+    if (!old || !old.partner) return false;
+    importSave(old);
+    remove(K_SAVE + 'local');
+    return true;
   }
 
   /** Partida de una cuenta local antigua, si el nombre y la contraseña coinciden. */
@@ -334,7 +379,10 @@ G.DB = (() => {
   // Tras tiradas y compras se sube a los 3 min (era 30 s: quien hacía muchas tiradas
   // guardaba 2 veces por minuto y eran millones de escrituras al día). Lo hecho sigue
   // en la copia del navegador al momento, y se sube al salir de la pestaña.
-  const PUSH_GAP = 30 * 60 * 1000, PUSH_GAP_URGENT = 3 * 60 * 1000, HIDE_GAP = 10 * 60 * 1000;
+  // Esta versión es para pocos jugadores (amigos): se sube mucho antes (1 min, o 5 s tras
+  // compras y trucos) y siempre al salir de la pestaña. Con 10 jugadores varias horas al
+  // día son unas pocas miles de escrituras, lejos de las 20.000 gratis del plan Spark.
+  const PUSH_GAP = 60 * 1000, PUSH_GAP_URGENT = 5 * 1000, HIDE_GAP = 0;
   let syncState = 'local';           // 'ok' | 'syncing' | 'pending' | 'offline' | 'local'
   const listeners = new Set();
 
@@ -389,7 +437,7 @@ G.DB = (() => {
   }
 
   function displayNameOf(u) {
-    const n = ((u && u.displayName) || 'Entrenador').trim().split(/\s+/)[0].replace(/[^A-Za-z0-9_ñÑáéíóúÁÉÍÓÚ]/g, '');
+    const n = ((u && u.displayName) || 'Entrenador').trim().split(/\s+/)[0].replace(/[^\p{L}\p{N}_]/gu, '');   // también chino
     return (n || 'Entrenador').slice(0, 16);
   }
 
@@ -410,11 +458,20 @@ G.DB = (() => {
       online = false;
     }
     let s = merge(cached && migrate(cached), remote && migrate(remote));
-    if (!s) s = newSave(opts.name || displayNameOf(u));
     if (opts.legacy) {
-      s = merge(s, opts.legacy.save);
+      const loc = migrate(opts.legacy.save);
+      if (!s) s = loc;            // cuenta nueva: la partida de este navegador tal cual
+      else {
+        // Vincular a una cuenta que ya tenía partida: fusión, pero sin perder monedas ni
+        // tickets (merge se queda con los de la copia más reciente) y con el apodo de la cuenta.
+        const name = s.name, coins = Math.max(s.coins, loc.coins);
+        const t1 = Math.max(s.tickets.t1, loc.tickets.t1), t10 = Math.max(s.tickets.t10, loc.tickets.t10);
+        s = merge(s, loc);
+        s.name = name; s.coins = coins; s.tickets = { t1, t10 };
+      }
       write(K_MIGRATED + opts.legacy.key, uid);
     }
+    if (!s) s = newSave(opts.name || displayNameOf(u));
     save = migrate(s, s.name);
     key = uid; user = save.name; guest = false;
     write(K_CLOUD + uid, save);
@@ -621,7 +678,7 @@ G.DB = (() => {
   function setName(n) {
     if (!save || guest) return;
     save.name = n; user = n;
-    commit();
+    commit(true);
   }
 
   function playAsGuest() {
@@ -638,7 +695,7 @@ G.DB = (() => {
   function commit(urgent = false) {
     if (guest || !key || !save) return false;
     save.updated = Date.now();
-    if (mode === 'local') return write(K_SAVE + key, save);
+    if (mode === 'local' || unbound) return write(K_SAVE + key, save);
     write(K_CLOUD + uid, save);
     pending = true;
     setSync('pending');
@@ -660,7 +717,7 @@ G.DB = (() => {
       remove(K_SES);
     }
     clearTimeout(pushT); clearTimeout(retryT);
-    user = key = save = uid = null; guest = false; pending = false;
+    user = key = save = uid = null; guest = false; pending = false; unbound = false;
     setSync(mode === 'cloud' ? 'ok' : 'local');
   }
 
@@ -672,7 +729,7 @@ G.DB = (() => {
    */
   async function deleteAccount(pass) {
     if (guest || !key) return { ok: false, error: 'No hay cuenta que borrar.' };
-    if (mode === 'local') {
+    if (mode === 'local' || unbound) {
       const accs = read(K_ACC) || {};
       delete accs[key];
       write(K_ACC, accs);
@@ -729,7 +786,7 @@ G.DB = (() => {
   }
 
   return {
-    ready, register, login, loginWithGoogle, playAsGuest, autoLocal, importSave, logout, commit, deleteAccount, flush: pushNow,
+    ready, register, login, loginWithGoogle, bindGoogle, playAsGuest, autoLocal, importSave, adoptLocal, logout, commit, deleteAccount, flush: pushNow,
     owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },
@@ -740,6 +797,8 @@ G.DB = (() => {
     /** ¿La cuenta es de usuario y contraseña (no de Google)? */
     get nameAccount() { return nameAccount(); },
     get mode() { return mode; },
+    /** ¿Hay nube pero juegas sin vincular Google (partida sólo en este navegador)? */
+    get unbound() { return unbound; },
     get localReason() { return localReason; },
     get syncState() { return syncState; },
     get user() { return user; },

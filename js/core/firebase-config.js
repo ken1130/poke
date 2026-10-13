@@ -11,9 +11,18 @@
 // Proyecto pokesurvivor-free (desde el 12-10-2026): autenticación normal de Firebase,
 // SIN Identity Platform, así las cuentas son gratis sin límite. ¡No pulsar nunca
 // "Actualizar a Identity Platform" en su consola! (El viejo era pokesurvivor-jpter.)
-// Esta copia NO usa la nube del proyecto original: la partida se guarda sólo
-// en el localStorage del navegador (modo local). Configuración original:
-/*
+// Esta copia usa su PROPIO proyecto de Firebase (plan Spark gratis, sin facturación):
+// cuentas con nombre + contraseña y partidas en Firestore. Sin Realtime Database
+// (no hay salas ni amigos en esta versión). La del proyecto original queda abajo.
+G.FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyCXgNrCpFERSABTTRJdMTi2E6JTEKkKnjQ',
+  authDomain: 'pokesurvivor-ken1130.firebaseapp.com',
+  projectId: 'pokesurvivor-ken1130',
+  storageBucket: 'pokesurvivor-ken1130.firebasestorage.app',
+  messagingSenderId: '486211038438',
+  appId: '1:486211038438:web:d80f4d9f57a84079dc9f27'
+};
+/* Proyecto original (no usar):
 G.FIREBASE_CONFIG = {
   apiKey: 'AIzaSyB1LpJcsnT7gj7c8cpRMGjhswLPr8-dnBw',
   authDomain: 'pokesurvivor-free.firebaseapp.com',
@@ -24,7 +33,6 @@ G.FIREBASE_CONFIG = {
   databaseURL: 'https://pokesurvivor-free-default-rtdb.europe-west1.firebasedatabase.app'
 };
 */
-G.FIREBASE_CONFIG = null;
 
 /* Ejemplo de cómo debe quedar:
 G.FIREBASE_CONFIG = {

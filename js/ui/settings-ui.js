@@ -131,19 +131,25 @@ G.SettingsUI = (() => {
         + `<button class="btn gold" id="set-login">Crear cuenta o entrar</button>`;
       return;
     }
-    const nick = G.Social.me ? G.Social.me.name : (G.DB.user || '');
-    const kind = G.DB.mode === 'local' ? 'Cuenta de este navegador' : G.DB.nameAccount ? 'Nombre y contraseña' : 'Google';
+    const nick = G.DB.user || '';
+    const onlyHere = G.DB.mode === 'local' || G.DB.unbound;     // partida sólo en este navegador
+    const kind = onlyHere ? 'Sin vincular (sólo este dispositivo)' : G.DB.nameAccount ? 'Nombre y contraseña' : 'Google';
     box.innerHTML = section('Cuenta')
-      + `<div class="set-row"><div class="grow"><b>Apodo</b><small>Es único y no se puede cambiar.</small></div><span class="gold" translate="no">${esc(nick)}</span></div>`
+      + `<div class="set-row"><div class="grow"><b>Apodo</b><small>El nombre que se ve arriba.</small></div>
+           <span class="gold" translate="no">${esc(nick)}</span><button class="btn small" id="set-nick">Cambiar</button></div>`
       + `<div class="set-row"><div class="grow"><b>Tipo de cuenta</b></div><span>${esc(kind)}</span></div>`
       + `<div class="set-row"><div class="grow"><b>Partida</b></div><span>${esc(SYNC[st] || st)}</span></div>`
+      + (G.DB.unbound ? `<div class="panel" style="padding:10px 12px;margin-top:10px">
+           <b>Guarda tu progreso en la nube</b>
+           <p class="sub" style="margin:4px 0 8px">Vincula tu cuenta de Google: tu partida se guarda en la nube y, entrando con la misma cuenta, la recuperas en cualquier móvil u ordenador.</p>
+           <button class="btn gold" id="set-bind">${G.Icons.html('user', 16)} Vincular con Google</button></div>` : '')
       + `<div class="row wrap" style="gap:8px;margin-top:12px">
-           ${G.DB.mode === 'local' ? '' : '<button class="btn" id="set-logout">Cerrar sesión</button>'}
-           <button class="btn danger" id="set-delete">${G.DB.mode === 'local' ? 'Borrar toda la partida' : 'Borrar cuenta'}</button>
+           ${onlyHere ? '' : '<button class="btn" id="set-logout">Cerrar sesión</button>'}
+           <button class="btn danger" id="set-delete">${onlyHere ? 'Borrar toda la partida' : 'Borrar cuenta'}</button>
          </div><p class="note" id="set-msg"></p>`
-      + (G.DB.mode === 'local' ? section('Copia de seguridad', 'Tu partida sólo está en este navegador: expórtala para pasarla a otro dispositivo o por si se borra.')
-         + `<div class="row wrap" style="gap:8px"><button class="btn gold" id="set-export">Exportar partida</button>
-            <button class="btn" id="set-import">Importar partida</button></div>` : '');
+      + section('Copia de seguridad', G.DB.mode === 'local' ? 'Tu partida sólo está en este navegador: expórtala para pasarla a otro dispositivo o por si se borra.' : 'Guarda una copia de tu partida o recupera una exportada.')
+      + `<div class="row wrap" style="gap:8px"><button class="btn gold" id="set-export">Exportar partida</button>
+            <button class="btn" id="set-import">Importar partida</button></div>`;
   }
 
   function wire(box) {
@@ -155,6 +161,8 @@ G.SettingsUI = (() => {
     box.querySelectorAll('[data-lang]').forEach(b => { b.onclick = () => { if (b.dataset.lang !== G.I18n.lang) G.I18n.set(b.dataset.lang); }; });
     const lo = $('set-login'); if (lo) lo.onclick = () => { close(); leave(); };
     const out = $('set-logout'); if (out) out.onclick = () => { close(); leave(); };
+    const nk = $('set-nick'); if (nk) nk.onclick = () => G.AccountUI.rename(render);
+    const bd = $('set-bind'); if (bd) bd.onclick = () => G.AccountUI.bind(() => { close(); });
     const exp = $('set-export'); if (exp) exp.onclick = () => G.Backup.openExport();
     const imp = $('set-import'); if (imp) imp.onclick = () => G.Backup.openImport();
     const del = $('set-delete');

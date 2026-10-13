@@ -16,6 +16,8 @@ G.LoginUI = (() => {
       $('btn-auth').disabled = false;
       if (!r.ok) { $('login-err').textContent = r.error; return; }
       $('f-pass').value = '';
+      // La partida que tenías sin cuenta en este navegador pasa a tu cuenta nueva.
+      if (G.DB.adoptLocal()) G.UI.toast('Tu progreso de este dispositivo se ha pasado a tu cuenta', 4000);
       G.Flow.afterLogin();
     };
     $('btn-google').onclick = async () => {
@@ -24,6 +26,7 @@ G.LoginUI = (() => {
       const r = await G.DB.loginWithGoogle();
       $('btn-google').disabled = false;
       if (!r.ok) { $('login-err').textContent = r.error; return; }
+      if (G.DB.adoptLocal()) G.UI.toast('Tu progreso de este dispositivo se ha pasado a tu cuenta', 4000);
       G.Flow.afterLogin();
     };
   }
