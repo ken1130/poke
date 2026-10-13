@@ -582,7 +582,7 @@ G.I18n.add({
   'Invencible el resto de la partida (úsalo jugando)': 'Invincible for the rest of the run (use while playing)',
   'Subes al nivel 30 y eliges las cartas (úsalo jugando)': 'Jump to level 30 and pick your cards (use while playing)',
   'Todos los Pokémon shiny para tu colección': 'Every shiny Pokémon for your collection',
-  'Todas las mejoras al máximo en todos tus Pokémon': 'Every upgrade maxed on all your Pokémon',
+  'Todas las mejoras al máximo en todos tus Pokémon (incluidas Rompescudos y Anticura -99%)': 'Every upgrade maxed on all your Pokémon (including Shield Breaker and Heal Block -99%)',
   'Este truco se usa durante la partida': 'Use this cheat during a run (Pause → Cheats)',
   '¡Truco activado! Invencible hasta el final de la partida': 'Cheat activated! Invincible until the run ends',
   'Ya estás en el nivel 30 o más': 'You are already level 30 or higher',

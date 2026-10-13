@@ -10,7 +10,7 @@
  *   whosyourdaddy      ->  invencible el resto de la run (en partida).
  *   iamlevel30         ->  sube hasta el nivel 30 (en partida; eliges las cartas).
  *   allshiny           ->  todos los shinies (y sus Pokémon).
- *   maxpower           ->  todas las mejoras al máximo en todos los Pokémon.
+ *   maxpower           ->  todas las mejoras al máximo en todos los Pokémon (Rompescudos y Anticura incluidas).
  * Sólo en modo local: la partida en la nube y el ranking online no se tocan.
  */
 G.Cheat = (() => {
@@ -25,7 +25,7 @@ G.Cheat = (() => {
     ['whosyourdaddy', 'Invencible el resto de la partida (úsalo jugando)'],
     ['iamlevel30', 'Subes al nivel 30 y eliges las cartas (úsalo jugando)'],
     ['allshiny', 'Todos los Pokémon shiny para tu colección'],
-    ['maxpower', 'Todas las mejoras al máximo en todos tus Pokémon']
+    ['maxpower', 'Todas las mejoras al máximo en todos tus Pokémon (incluidas Rompescudos y Anticura -99%)']
   ];
   const MAX_LEN = Math.max(...Object.keys(CODES).map(c => c.length));
   let buffer = '';

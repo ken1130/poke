@@ -1574,7 +1574,7 @@ G.I18n.add({
   'Invencible el resto de la partida (úsalo jugando)': '這一局剩下的時間無敵（遊戲中使用）',
   'Subes al nivel 30 y eliges las cartas (úsalo jugando)': '直接升到 30 級，再選升級卡片（遊戲中使用）',
   'Todos los Pokémon shiny para tu colección': '收藏全部異色寶可夢',
-  'Todas las mejoras al máximo en todos tus Pokémon': '所有寶可夢的強化全部升滿',
+  'Todas las mejoras al máximo en todos tus Pokémon (incluidas Rompescudos y Anticura -99%)': '所有寶可夢的強化全部升滿（包含破盾、回復封鎖 -99%）',
   'Este truco se usa durante la partida': '這個密技要在遊戲進行中使用（按暫停→金手指）',
   '¡Truco activado! Invencible hasta el final de la partida': '金手指已啟用！這一局無敵',
   'Ya estás en el nivel 30 o más': '你已經 30 級以上了',
