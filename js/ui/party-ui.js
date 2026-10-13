@@ -10,9 +10,11 @@ G.PartyUI = (() => {
 
   async function open() {
     if (!G.DB.online) {
-      const ok = await G.Dialog.confirm('Para jugar con amigos necesitas vincular tu cuenta de Google (así la sala sabe quién es cada uno). Tu progreso actual se conserva.',
-        { title: 'Jugar con amigos', ok: 'Vincular con Google' });
-      if (ok) G.AccountUI.bind();
+      // La ventana de Google se abre en el mismo clic de "Vincular" (si no, el navegador la bloquea);
+      // al terminar bien, se sigue directamente a "Jugar con amigos".
+      G.Dialog.confirm('Para jugar con amigos necesitas vincular tu cuenta de Google (así la sala sabe quién es cada uno). Tu progreso actual se conserva.',
+        { title: 'Jugar con amigos', ok: 'Vincular con Google',
+          onOk: () => G.AccountUI.bind().then(ok => { if (ok && G.DB.online) open(); }) });
       return;
     }
     G.Social.startLite();

@@ -7,7 +7,8 @@
 G.Dialog = (() => {
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  function open({ title = '', text = '', input = null, ok = 'Aceptar', cancel = null, danger = false }) {
+  /** onOk: se llama DENTRO del clic de aceptar (para lo que el navegador sólo deja hacer en un clic, como abrir la ventana de Google). */
+  function open({ title = '', text = '', input = null, ok = 'Aceptar', cancel = null, danger = false, onOk = null }) {
     return new Promise(done => {
       const el = document.createElement('section');
       el.className = 'scr dim';
@@ -24,7 +25,7 @@ G.Dialog = (() => {
       const inp = el.querySelector('input');
       if (inp) inp.value = input.value || '';
       const end = v => { el.remove(); done(v); };
-      const yes = () => end(inp ? inp.value : true);
+      const yes = () => { if (onOk) onOk(); end(inp ? inp.value : true); };
       const no = () => end(inp ? null : false);
       el.querySelector('[data-a=yes]').onclick = yes;
       const nb = el.querySelector('[data-a=no]'); if (nb) nb.onclick = no;
@@ -38,7 +39,7 @@ G.Dialog = (() => {
 
   return {
     alert: (text, title = '') => open({ title, text, ok: 'Entendido' }),
-    confirm: (text, opts = {}) => open({ title: opts.title || '', text, ok: opts.ok || 'Confirmar', cancel: opts.cancel || 'Cancelar', danger: !!opts.danger }),
+    confirm: (text, opts = {}) => open({ title: opts.title || '', text, ok: opts.ok || 'Confirmar', cancel: opts.cancel || 'Cancelar', danger: !!opts.danger, onOk: opts.onOk }),
     prompt: (title, value = '', opts = {}) => open({ title, text: opts.text || '', input: { value, max: opts.max }, ok: opts.ok || 'Confirmar', cancel: 'Cancelar' })
   };
 })();

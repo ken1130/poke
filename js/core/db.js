@@ -26,7 +26,7 @@
  */
 G.DB = (() => {
   const K_ACC = 'ps.accounts', K_SES = 'ps.session', K_SAVE = 'ps.save.';
-  const K_CLOUD = 'ps.cloud.', K_MIGRATED = 'ps.migrated.', K_CHOICE = 'ps.choice';
+  const K_CLOUD = 'ps.cloud.', K_MIGRATED = 'ps.migrated.', K_CHOICE = 'ps.choice', K_BIND = 'ps.bindPending';
   const VERSION = 3;
   const START_COINS = 500;
   const SDK = 'https://www.gstatic.com/firebasejs/13.0.0/';
@@ -318,18 +318,33 @@ G.DB = (() => {
       localSave = localKey ? read(K_SAVE + localKey) : null;
       if (!localSave) localKey = null;
     }
+    if (unbound && key && save) write(K_SAVE + key, save);    // lo último, también para la vuelta de Google
     try {
       const cred = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
       await openCloud(cred.user, { name: localSave ? localSave.name : displayNameOf(cred.user),
                                    legacy: localSave ? { save: localSave, key: localKey } : null });
       unbound = false;
-      remove(K_CHOICE);
-      if (localKey) {
-        remove(K_SAVE + localKey); remove(K_SES);
-        const accs = read(K_ACC) || {}; delete accs[localKey]; write(K_ACC, accs);
-      }
+      dropLocal(localKey);
       return { ok: true, merged: !!localSave };
-    } catch (e) { return { ok: false, error: authError(e) }; }
+    } catch (e) {
+      // El navegador bloqueó la ventana de Google (pasa en Safari, móviles o si no viene
+      // justo de un clic): se entra con la página entera de Google y, al volver, ready()
+      // pasa esta partida a la cuenta (ps.bindPending).
+      if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) {
+        write(K_BIND, { key: localKey, at: Date.now() });
+        try { await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); return { ok: false, redirect: true }; }
+        catch (e2) { remove(K_BIND); return { ok: false, error: authError(e2) }; }
+      }
+      return { ok: false, error: authError(e) };
+    }
+  }
+
+  /** Tras vincular: la partida de invitado de este navegador ya está en la nube. */
+  function dropLocal(localKey) {
+    remove(K_CHOICE);
+    if (!localKey) return;
+    remove(K_SAVE + localKey); remove(K_SES);
+    const accs = read(K_ACC) || {}; delete accs[localKey]; write(K_ACC, accs);
   }
 
   /**
@@ -630,7 +645,18 @@ G.DB = (() => {
       catch (e) { console.warn('[DB] sin nube:', e.message); localReason = 'error'; mode = 'local'; }
       if (mode === 'local') { setSync('local'); return restoreLocal(); }
       const u = await new Promise(res => { const off = auth.onAuthStateChanged(x => { off(); res(x); }); });
-      if (!u) return false;
+      if (!u) { remove(K_BIND); return false; }
+      // Vuelta de la página de Google (vincular sin ventana): se pasa la partida de invitado.
+      const pend = read(K_BIND);
+      if (pend) {
+        remove(K_BIND);
+        const loc = pend.key ? read(K_SAVE + pend.key) : null;
+        try {
+          await openCloud(u, loc ? { name: loc.name, legacy: { save: loc, key: pend.key } } : {});
+          dropLocal(pend.key);
+          return true;
+        } catch (e) { console.warn('[DB] no se pudo abrir la partida:', e.code || e.message); return false; }
+      }
       try { await openCloud(u); return true; }
       catch (e) { console.warn('[DB] no se pudo abrir la partida:', e.code || e.message); return false; }
     })();

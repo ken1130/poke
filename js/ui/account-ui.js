@@ -9,21 +9,23 @@ G.AccountUI = (() => {
   /** Navegadores dentro de apps (LINE, Facebook, Instagram...): Google no deja entrar desde ellos. */
   function inAppBrowser() { return /\bLine\/|FBAN|FBAV|Instagram|WebView|; wv\)/i.test(navigator.userAgent); }
 
+  /** Devuelve true si ha quedado vinculada. Llamarla directamente desde un clic (si no, el navegador bloquea la ventana). */
   async function bind(onDone) {
     if (inAppBrowser()) {
       await G.Dialog.alert('Google no deja iniciar sesión dentro de LINE u otras apps. Abre el juego en Chrome o Safari (menú ⋯ → Abrir en el navegador) y vincula desde allí.', 'Vincular con Google');
-      return;
+      return false;
     }
     const btns = [$('btn-bind'), $('set-bind')].filter(Boolean);
     btns.forEach(b => { b.disabled = true; });
     const r = await G.DB.bindGoogle();
     btns.forEach(b => { b.disabled = false; });
-    if (!r.ok) { if (r.error) G.UI.toast(r.error, 4000); return; }
+    if (!r.ok) { if (r.error) G.UI.toast(r.error, 4000); return false; }
     G.Audio.sfx('confirm');
     G.UI.toast(G.T('¡Cuenta de Google vinculada! Tu progreso se guarda en la nube'), 4000);
     refresh();
     if (onDone) onDone();
     if (G.Game.state === 'ui') G.Flow.afterLogin();
+    return true;
   }
 
   async function rename(onDone) {

@@ -588,7 +588,7 @@ G.Game = (() => {
 
     const picking = coop && G.UI.isOpen('scr-levelup');
     pl.frozen = coop && (G.UI.isOpen('scr-pause') || G.UI.isOpen('scr-item') || picking);
-    if (picking) pl.invuln = Math.max(pl.invuln || 0, 0.25);   // eligiendo cartas: no te pegan
+    pl.picking = picking;   // eligiendo cartas: nada te hace daño (Player.hurt)
     pl.update(dt);
     if (coop) {
       for (const p of G.Coop.puppets()) {
