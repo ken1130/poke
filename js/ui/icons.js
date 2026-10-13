@@ -69,6 +69,10 @@ G.Icons = (() => {
     berry: { pal: { r: '#ff7a9e', s: '#c23a6b', w: '#ffd3e0', g: '#5fe08a', d: '#2f9a52' }, rows: [
       '............', '.....kkk....', '....kgggk...', '..kkkgdkkk..', '.krrrkkrrrk.', 'krwwrrrrrrsk',
       'krwrrrrrrrsk', 'krrrrrrrrrsk', 'krrrrrrrrssk', '.krrrrrrssk.', '..kkssssskk.', '....kkkkk...'] },
+    // Anticura (mejora): la baya tachada con una raya roja.
+    healblock: { pal: { r: '#ff7a9e', s: '#c23a6b', w: '#ffd3e0', g: '#5fe08a', d: '#2f9a52', x: '#ff2a3a' }, rows: [
+      'xx..........', 'kxx..kkk....', '.kxxkgggk...', '..kxxgdkkk..', '.krkxxkrrrk.', 'krwwkxxrrrsk',
+      'krwrrkxxrrsk', 'krrrrrkxxrsk', 'krrrrrrkxxsk', '.krrrrrrkxx.', '..kkssssskxx', '....kkkkk.kx'] },
     bomb: { pal: { b: '#3a3a4a', w: '#8a8aa0', f: '#ffd23f', r: '#ff7b3d' }, rows: [
       '........r...', '.......rfr..', '......kfr...', '.....kfk....', '...kkkkkk...', '..kbbbbbbk..',
       '.kbwwbbbbbk.', '.kbwbbbbbbk.', '.kbbbbbbbbk.', '.kbbbbbbbbk.', '..kbbbbbbk..', '...kkkkkk...'] },
