@@ -1640,4 +1640,7 @@ G.I18n.add({
   '¡Empate!': '平手！',
   '¡Has ganado el PK!': '你贏得了這場 PK！',
   '¡{x} ha ganado el PK!': '{x} 贏得了這場 PK！',
+  '¡Victoria!': '勝利！', 'Derrota…': '落敗…',
+  // desglose de monedas del resumen (game.js: tiempo · derrotados · jefes · recogidas)
+  'recogidas': '拾取', 'derrotados': '擊倒',
 }, 'zh');

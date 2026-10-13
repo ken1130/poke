@@ -81,6 +81,9 @@ G.PvP = (() => {
     if (box && winner !== undefined) {
       const me = G.Social.me && G.Social.me.name;
       const txt = winner == null ? G.T('¡Empate!') : winner === me ? G.T('¡Has ganado el PK!') : G.I18n.f('¡{x} ha ganado el PK!', winner);
+      // El título de siempre ("Has caído…") no vale en PK: victoria, derrota o empate.
+      const title = document.getElementById('over-title');
+      if (title) title.textContent = G.T(winner == null ? '¡Empate!' : winner === me ? '¡Victoria!' : 'Derrota…');
       box.insertAdjacentHTML('afterbegin', `<div style="grid-column:1/-1;text-align:center" class="panel"><b class="gold" style="font-size:22px">🏆 ${txt}</b></div>`);
     }
     on = false; winner = undefined;
