@@ -1730,4 +1730,7 @@ G.I18n.add({
   '¡Vamos!': '衝啊！',
   'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa  ·  T mensajes': 'WASD 移動 · 1-4 / Q / E 或點擊招式切換 · Esc 暫停 · T 快捷訊息',
   'T mensajes': 'T 快捷訊息',
+  'Derribos': '擊倒',
+  'Daño': '傷害',
+  'Levantados': '救起隊友',
 }, 'zh');

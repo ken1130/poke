@@ -101,6 +101,7 @@
     /** @param eff  'super' | 'weak' | null (tabla de tipos, sólo para enseñarlo) */
     hurt(amount, color = '#fff', dirX = 0, dirY = 0, knock = 0, eff = null) {
       if (this.dead) return;
+      if (G.Coop.isHost) this.lastHitBy = G.Coop.hitter();
       // Escudo Ígneo (Escudo de Llamas evolucionado): mientras arde, recibe +15 % de todo.
       if (this.vulnUntil && G.Game.st.time < this.vulnUntil) amount *= 1.15;
       const d = Math.max(1, Math.round(amount));
@@ -163,6 +164,7 @@
     die() {
       if (this.dead) return;
       this.dead = true;
+      if (G.Coop.isHost) G.Coop.creditKill(this.lastHitBy);   // MVP: último golpe
       this.fade = 0.9;
       this.anim.play('Faint', { hold: true });
       const col = this.boss ? '#ffd95e' : '#ffffff';

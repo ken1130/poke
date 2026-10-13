@@ -40,6 +40,8 @@ G.Coop = (() => {
   let hostAway = false, stalled = false, lastHostAt = 0;
   const STALL_MS = 2500;
   let members = [];
+  // MVP (esta versión): quién derriba (último golpe, en el anfitrión) y quién levanta a quién.
+  const kills = new Map(), revives = new Map();
 
   // ---------------- escalado de dificultad ----------------
 
@@ -62,6 +64,7 @@ G.Coop = (() => {
     members = cfg.members;
     mates.clear();
     outEv = []; flushT = 0; waiting = new Set(); holds = new Set();
+    kills.clear(); revives.clear();
     hostAway = false; stalled = false; lastHostAt = performance.now();
     G.PvP.begin(cfg);
     cfg.members.forEach((m, i) => {
@@ -129,12 +132,12 @@ G.Coop = (() => {
     const m = g.find(x => x.kind === 'orbit') || g[0];
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
-            r2(local.reviveT || 0)];
+            r2(local.reviveT || 0), r1(local.dmgDealt || 0)];
   }
 
   function readState(a) {
     return { x: a[0], y: a[1], ang: a[2], walk: a[3], hp: a[4], maxHp: a[5], dead: a[6], mv: a[7], ml: a[8],
-             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12] };
+             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0 };
   }
 
   // ---------------- envío ----------------
@@ -272,6 +275,7 @@ G.Coop = (() => {
         case 're': G.Rift.enterRequest(); break;
         case 'bye': mateGone(from); break;
         case 'qc': G.Chat.show(from, ev[1]); emit(['qc', from, ev[1]], from); break;   // mensaje rápido
+        case 'rv': creditRevive(ev[1]); break;                                         // `from` fue levantado por ev[1]
       }
     }
   }
@@ -458,6 +462,25 @@ G.Coop = (() => {
     else { outEv.push(['lp']); flushClient(true); }
   }
 
+  // ---------------- MVP ----------------
+
+  /** Quién da el golpe que se está aplicando (anfitrión): un invitado ('h') o él mismo. */
+  function hitter() { return hitFrom || me; }
+  function creditKill(u) { if (active && host && u) kills.set(u, (kills.get(u) || 0) + 1); }
+  /** `helper` ha levantado a alguien. Lo apunta el anfitrión. */
+  function creditRevive(helper) {
+    if (!active || !helper) return;
+    if (host) revives.set(helper, (revives.get(helper) || 0) + 1);
+    else { outEv.push(['rv', helper]); flushClient(true); }
+  }
+  /** Anfitrión: estadísticas de cada uno para el resumen. */
+  function teamStats() {
+    const row = (uid, name, dmg) => ({ uid, name, kills: kills.get(uid) || 0, dmg: Math.round(dmg || 0), revives: revives.get(uid) || 0 });
+    const out = [row(me, nameOf(me), local ? local.dmgDealt : 0)];
+    for (const m of mates.values()) out.push(row(m.uid, m.name, m.pl.net ? m.pl.net.dmg : 0));
+    return out;
+  }
+
   /** Anfitrión: se acabó para todos. */
   function over(data) {
     emit(['ov', data]);
@@ -467,6 +490,7 @@ G.Coop = (() => {
 
   return {
     ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, scaleRate, scaleHp,
+    hitter, creditKill, creditRevive, teamStats,
     cast, hit, status, hurtShown, enemyAdded, enemyGone, enemyShot, pickupAdded, pickupGone, say,
     propBroken, collected, shinyCaught, levelStart, localPicked, over, holdStart, holdEnd,
     /** Anfitrión: evento para todos. Invitado: evento para el anfitrión. */
