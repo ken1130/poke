@@ -12,15 +12,17 @@
 // SIN Identity Platform, así las cuentas son gratis sin límite. ¡No pulsar nunca
 // "Actualizar a Identity Platform" en su consola! (El viejo era pokesurvivor-jpter.)
 // Esta copia usa su PROPIO proyecto de Firebase (plan Spark gratis, sin facturación):
-// cuentas con nombre + contraseña y partidas en Firestore. Sin Realtime Database
-// (no hay salas ni amigos en esta versión). La del proyecto original queda abajo.
+// cuentas (Google) y partidas en Firestore; salas por código en la Realtime Database.
+// La del proyecto original queda abajo.
 G.FIREBASE_CONFIG = {
   apiKey: 'AIzaSyCXgNrCpFERSABTTRJdMTi2E6JTEKkKnjQ',
   authDomain: 'pokesurvivor-ken1130.firebaseapp.com',
   projectId: 'pokesurvivor-ken1130',
   storageBucket: 'pokesurvivor-ken1130.firebasestorage.app',
   messagingSenderId: '486211038438',
-  appId: '1:486211038438:web:d80f4d9f57a84079dc9f27'
+  appId: '1:486211038438:web:d80f4d9f57a84079dc9f27',
+  // Realtime Database: sólo para las salas (código de invitación) y conectarse.
+  databaseURL: 'https://pokesurvivor-ken1130-default-rtdb.asia-southeast1.firebasedatabase.app'
 };
 /* Proyecto original (no usar):
 G.FIREBASE_CONFIG = {

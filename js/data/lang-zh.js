@@ -1617,4 +1617,18 @@ G.I18n.add({
   'Guardar': '儲存',
   'Entendido': '知道了',
   'Confirmar': '確認',
+  // ---------------- jugar con amigos (código) ----------------
+  'Jugar con amigos': '和朋友一起玩',
+  'Equipo o PK con código de invitación': '用邀請碼組隊或 PK',
+  'Para jugar con amigos necesitas vincular tu cuenta de Google (así la sala sabe quién es cada uno). Tu progreso actual se conserva.': '和朋友一起玩需要先綁定 Google 帳號（房間才認得每個人是誰）。你目前的進度會保留。',
+  'Equipo o PK, hasta 4 jugadores. Uno crea la sala y pasa el código a los demás.': '組隊或 PK，最多 4 人。一個人建立房間，把邀請碼傳給其他人。',
+  'Crear sala': '建立房間',
+  'Entrar con un código': '輸入邀請碼加入',
+  'Unirse': '加入',
+  'No se pudo crear la sala.': '房間建立失敗。',
+  'Código de la sala': '房間邀請碼',
+  'Eres el anfitrión. Pasa el código a tus amigos (hasta 4) y empezad cuando estéis.': '你是房主。把邀請碼傳給朋友（最多 4 人），人到齊就可以開始。',
+  'Esperando a que alguien entre con el código…': '等待朋友用邀請碼加入…',
+  'El código tiene 6 letras o números.': '邀請碼是 6 個英文字母或數字。',
+  'No hay ninguna sala con ese código.': '找不到這個邀請碼的房間。',
 }, 'zh');

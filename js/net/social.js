@@ -77,6 +77,30 @@ G.Social = (() => {
     return 'ok';
   }
 
+  /**
+   * Arranque ligero (esta versión): sólo salas por código. Sin apodo único,
+   * perfil público, amigos ni presencia: tu nombre en la sala es tu apodo.
+   */
+  function startLite() {
+    if (!G.DB.online) return false;
+    fb = G.DB.fb; uid = fb.uid;
+    me = { uid, name: G.DB.user || 'Entrenador' };
+    started = true;
+    return true;
+  }
+
+  // Código de sala: 6 letras y números sin los que se confunden (0/O, 1/I/L).
+  const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const newCode = () => Array.from({ length: 6 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+  const cleanCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+  /** Entra en una sala con su código (el de 6 letras que te pasa el anfitrión). */
+  function joinByCode(code) {
+    const c = cleanCode(code);
+    if (c.length !== 6) return Promise.resolve({ ok: false, error: 'El código tiene 6 letras o números.' });
+    return joinRoom(c);
+  }
+
   /** Reserva un apodo único y crea el perfil público. */
   async function claimNick(name) {
     name = (name || '').trim();
@@ -290,7 +314,13 @@ G.Social = (() => {
   async function createRoom() {
     if (room) return room;
     rtOn();
-    const id = fb.rtdb.ref('rooms').push().key;
+    // El id de la sala es el código de invitación (sin repetir uno que esté en uso).
+    let id = newCode();
+    for (let i = 0; i < 5; i++) {
+      const used = await fb.rtdb.ref('rooms/' + id + '/host').get().then(s => s.exists()).catch(() => false);
+      if (!used) break;
+      id = newCode();
+    }
     await fb.rtdb.ref('rooms/' + id).set({ host: uid, open: true, at: ts(), m: { [uid]: memberInfo() } });
     enterRoom(id, uid);
     return room;
@@ -305,7 +335,7 @@ G.Social = (() => {
       open = (await fb.rtdb.ref('rooms/' + id + '/open').get()).val();
       host = (await fb.rtdb.ref('rooms/' + id + '/host').get()).val();
     } catch (e) { /* sala borrada */ }
-    if (!host) { rtOff(); return { ok: false, error: 'Esa sala ya no existe.' }; }
+    if (!host) { rtOff(); return { ok: false, error: 'No hay ninguna sala con ese código.' }; }
     if (open !== true) { rtOff(); return { ok: false, error: 'La partida de esa sala ya ha empezado.' }; }
     try { await fb.rtdb.ref('rooms/' + id + '/m/' + uid).set(memberInfo()); }
     catch (e) { rtOff(); return { ok: false, error: 'No se pudo entrar en la sala.' }; }
@@ -498,7 +528,7 @@ G.Social = (() => {
   G.DB.onLeave(why => stop(why));
 
   return {
-    start, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
+    start, startLite, joinByCode, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
     createRoom, joinRoom, leaveRoom, setOpen, refreshMember, setPlaying, refreshPresence,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
