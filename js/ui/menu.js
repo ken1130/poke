@@ -87,7 +87,7 @@ G.MenuUI = (() => {
   function modesLine() {
     const sub = $('menu-modes-sub');
     sub.textContent = G.Modes.summary();
-    sub.classList.toggle('gold', /shiny|jefes|extremo|medida/.test(sub.textContent));
+    sub.classList.toggle('gold', G.Modes.summary() !== 'Reto diario, legendarios y más');   // algo activo
   }
 
   /** Texto bajo "Amigos" y "Jugar": quién está en línea, solicitudes, sala. */

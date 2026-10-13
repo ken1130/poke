@@ -27,6 +27,12 @@ G.Modes = (() => {
   const countMul = () => pct('diffCount');
   const rewardMul = () => (on('extreme') ? 2 : 1);
 
+  /** Escenario fijo elegido (índice de bioma) o null para el turno normal. El reto diario, siempre el normal. */
+  function scene() {
+    const v = S().get('scene');
+    return !fair() && Number.isInteger(v) && G.Tiles.SCENES.includes(v) ? v : null;
+  }
+
   /** Multiplicadores {hp, spd, dmg} de un enemigo, con los modos aplicados. */
   function scale(sc) {
     return Object.assign({}, sc, { hp: sc.hp * hpMul(), spd: (sc.spd || 1) * spdMul(), dmg: (sc.dmg || 1) * dmgMul() });
@@ -168,6 +174,15 @@ G.Modes = (() => {
           <div class="set-row"><div class="grow"><b>${name}</b><small>${desc}</small></div>
             <button class="btn small switch ${sw(k) ? 'gold' : ''}" data-k="${k}">${sw(k) ? 'Sí' : 'No'}</button></div>`).join('')}
 
+        <h3 class="set-h" style="margin-top:14px">Escenario</h3>
+        <p class="sub" style="margin:0 0 6px">Con uno elegido, toda la partida es en él (en grupo vale el del anfitrión).</p>
+        <div class="scene-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px">
+          <button class="btn small ${S().get('scene') == null ? 'gold' : ''}" data-scene="">Turno normal</button>
+          ${G.Tiles.SCENES.map(i => { const B = G.Tiles.BIOMES[i], on = S().get('scene') === i;
+            return `<button class="btn small ${on ? 'gold' : ''}" data-scene="${i}" style="display:flex;align-items:center;gap:6px;justify-content:flex-start">
+              <i style="flex:0 0 14px;height:14px;border-radius:3px;border:1px solid #0006;background:linear-gradient(135deg,${B.floor[0]} 50%,${B.leaf[2]} 50%)"></i>${B.name}</button>`; }).join('')}
+        </div>
+
         <h3 class="set-h" style="margin-top:14px">Dificultad a medida</h3>
         ${SLIDERS.map(([k, name]) => `
           <div class="set-row"><div class="grow"><b>${name}</b></div>
@@ -184,6 +199,9 @@ G.Modes = (() => {
       inp.oninput = () => { S().set(inp.dataset.s, +inp.value); overlay.querySelector(`[data-v="${inp.dataset.s}"]`).textContent = inp.value + '%'; };
     });
     overlay.querySelector('[data-reset]').onclick = () => { for (const [k] of SLIDERS) S().set(k, 100); render(); };
+    overlay.querySelectorAll('[data-scene]').forEach(b => {
+      b.onclick = () => { S().set('scene', b.dataset.scene === '' ? null : +b.dataset.scene); G.Audio.sfx('click'); render(); };
+    });
     if (G.I18n.walk) G.I18n.walk(overlay);
   }
 
@@ -191,11 +209,13 @@ G.Modes = (() => {
   function summary() {
     const act = TOGGLES.filter(([k]) => S().get(k)).map(([, n]) => n.replace('Modo ', ''));
     if (SLIDERS.some(([k]) => (S().get(k) || 100) !== 100)) act.push('dificultad a medida');
+    const sc = scene();
+    if (sc != null) act.push(G.Tiles.BIOMES[sc].name);
     return act.length ? act.join(' · ') : 'Reto diario, legendarios y más';
   }
 
   return {
-    on, scale, countMul, rewardMul, dailySeed, seeded, start, reset, afterRun, openPanel, summary, copy,
+    on, scene, scale, countMul, rewardMul, dailySeed, seeded, start, reset, afterRun, openPanel, summary, copy,
     get run() { return run; }
   };
 })();

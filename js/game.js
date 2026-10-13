@@ -112,6 +112,9 @@ G.Game = (() => {
     };
     if (daily) G.Modes.seeded(G.Modes.dailySeed(), prepare); else prepare();
     G.World.setBiome(0, true);
+    // Escenario elegido en Modos de juego (en grupo, el del anfitrión): toda la run en él.
+    fixedScene = coop ? (Number.isInteger(coop.scene) ? coop.scene : null) : G.Modes.scene();
+    if (fixedScene != null) G.World.setBiome(fixedScene, true);
     biome = 0;
     time = 0; pendingLevels = 0;
 
@@ -569,7 +572,7 @@ G.Game = (() => {
     time += dt;
 
     const b = Math.floor(time / 240);
-    if (b !== biome && !G.Rift.inArena) {
+    if (b !== biome && !G.Rift.inArena && fixedScene == null) {
       biome = b;
       G.World.setBiome(b);
       G.Audio.sfx('biome');
@@ -618,7 +621,8 @@ G.Game = (() => {
     if (pl.reviveT >= G.Player.REVIVE_TIME) pl.revive(0.5);
   }
 
-  let pvpLast = null;   // PK: quién seguía en pie cuando quedó uno
+  let pvpLast = null;
+  let fixedScene = null;   // índice de bioma si se eligió escenario (no se va turnando)   // PK: quién seguía en pie cuando quedó uno
 
   /** Anfitrión: si caéis todos, se acaba (tras ver caer al último). */
   function checkAllDown(dt) {

@@ -113,10 +113,10 @@ G.Tiles = (() => {
   }
 
   /** Paleta completa de bioma a partir de los pocos colores de una arena. */
-  function arenaBiome(th) {
+  function arenaBiome(th, prefix = 'Grieta · ') {
     const f = th.floor, w = th.wall, L = th.liq;
     return {
-      name: 'Grieta · ' + th.name, liquid: th.liquid,
+      name: prefix + th.name, liquid: th.liquid,
       floor: [f, shade(f, 0.05), shade(f, -0.06)], dirt: [shade(f, -0.16), shade(f, -0.12), shade(f, -0.2)],
       speck: shade(f, -0.25), light: shade(f, 0.22), flowers: th.flowers,
       wallTop: [w, shade(w, 0.07), shade(w, -0.07)], wallLight: shade(w, 0.32), wallEdge: shade(w, -0.7),
@@ -129,6 +129,24 @@ G.Tiles = (() => {
     };
   }
   for (const t of ARENA_TYPES) BIOMES.push(arenaBiome(ARENA_THEMES[t]));
+
+  // ---------------- escenarios para elegir al empezar (Modos de juego) ----------------
+  // Los 3 normales, los de las arenas (sin el "Grieta ·") y unos cuantos nuevos.
+  const EXTRA_THEMES = [
+    { name: 'Sendero de Cerezos', floor: '#7a9a5a', wall: '#9a7a7a', liquid: 'water', liq: '#7fc8ff', foam: '#ffffff', prop: 'tree',
+      leaf: '#ffb7d5', trunk: '#6b4a3a', flowers: ['#ffd1e6', '#ffffff', '#ff9ec4'], grass: '#8ab86a', rock: '#a09a9a' },
+    { name: 'Playa del Atardecer', floor: '#d9c08a', wall: '#b8935e', liquid: 'water', liq: '#3fa0d8', foam: '#ffffff', prop: 'tree',
+      leaf: '#4caa5a', trunk: '#8a6a3a', flowers: ['#ff9a5a', '#ffd25a', '#ffffff'], grass: '#c2b070', rock: '#b0a08a' },
+    { name: 'Pradera Estrellada', floor: '#1f3a3a', wall: '#2a2a4a', liquid: 'water', liq: '#3a5ad0', foam: '#c9e0ff', prop: 'crystal',
+      leaf: '#ffe14d', trunk: '#3a3a6a', flowers: ['#ffe14d', '#ffffff', '#9fd8ff'], grass: '#2f5a4a', rock: '#4a5070' },
+    { name: 'Bosque Otoñal', floor: '#6a5a2a', wall: '#7a5a3a', liquid: 'water', liq: '#4f8fd0', foam: '#d8ecff', prop: 'tree',
+      leaf: '#e0702a', trunk: '#5b3b22', flowers: ['#f4a03c', '#e05a3a', '#f4d65c'], grass: '#a0782a', rock: '#8a7a6a' },
+    { name: 'Ciudad Neón', floor: '#2e2e3e', wall: '#4a4a5e', liquid: 'water', liq: '#ff4fd8', foam: '#ffd0f4', prop: 'crystal',
+      leaf: '#4ff0ff', trunk: '#3a3a5a', flowers: ['#4ff0ff', '#ff4fd8', '#ffe14d'], grass: '#3a3a5a', rock: '#5a5a7a' }
+  ];
+  const SCENES = [0, 1, 2];
+  for (const t of ARENA_TYPES) { SCENES.push(BIOMES.length); BIOMES.push(arenaBiome(ARENA_THEMES[t], '')); }
+  for (const th of EXTRA_THEMES) { SCENES.push(BIOMES.length); BIOMES.push(arenaBiome(th, '')); }
 
   // ---------------- utilidades de color / píxel ----------------
 
@@ -620,7 +638,7 @@ G.Tiles = (() => {
 
   function clearProps() { propCache.clear(); }
 
-  return { T, BIOMES, NORMAL, ARENA, ARENA_THEMES, ARENA_TYPES, paintChunk, propSprite, clearProps,
+  return { T, BIOMES, NORMAL, ARENA, ARENA_THEMES, ARENA_TYPES, SCENES, paintChunk, propSprite, clearProps,
            /** Índice de bioma de la arena de un tipo. */
            arenaBiome: type => ARENA + Math.max(0, ARENA_TYPES.indexOf(type)) };
 })();

@@ -1644,4 +1644,9 @@ G.I18n.add({
   // desglose de monedas del resumen (game.js: tiempo · derrotados · jefes · recogidas)
   'recogidas': '拾取', 'derrotados': '擊倒',
   'Buscar Pokémon (nombre o número)': '搜尋寶可夢（名稱或編號）',
+  // ---------------- escenarios ----------------
+  'Escenario': '場景', 'Turno normal': '隨機輪換',
+  'Con uno elegido, toda la partida es en él (en grupo vale el del anfitrión).': '選了場景的話，整局都在那裡（組隊和 PK 以房主選的為準）。',
+  'Sendero de Cerezos': '櫻花小徑', 'Playa del Atardecer': '夕陽海灘', 'Pradera Estrellada': '星空草原',
+  'Bosque Otoñal': '楓紅森林', 'Ciudad Neón': '霓虹城市',
 }, 'zh');
