@@ -832,7 +832,11 @@ G.Flow = {
     el.addEventListener('click', go);
     addEventListener('keydown', go, true);
   },
-  toLogin() { G.Audio.music('village'); G.LoginUI.open(); },
+  toLogin() {
+    G.Audio.music('village');
+    // Sin nube no hay cuentas: se entra directamente con la partida de este navegador.
+    if (G.DB.autoLocal()) this.afterLogin(); else G.LoginUI.open();
+  },
   afterLogin() {
     G.Audio.music('village');
     if (!G.DB.save.partner) G.TestUI.start();

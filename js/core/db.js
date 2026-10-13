@@ -283,6 +283,20 @@ G.DB = (() => {
     return true;
   }
 
+  /**
+   * Modo local sin pantalla de inicio: entra solo, con una partida fija en este
+   * navegador (se guarda como una cuenta local normal, sin contraseña).
+   */
+  function autoLocal() {
+    if (mode !== 'local') return false;
+    const accs = read(K_ACC) || {};
+    let k = Object.keys(accs)[0];   // si ya había una cuenta local, se sigue con ella
+    if (!k) { k = 'local'; accs[k] = { name: G.T('Entrenador'), created: Date.now() }; write(K_ACC, accs); }
+    beginLocal(k, accs[k].name);
+    write(K_SAVE + k, save);
+    return true;
+  }
+
   /** Partida de una cuenta local antigua, si el nombre y la contraseña coinciden. */
   async function legacySave(name, pass) {
     const k = (name || '').toLowerCase();
@@ -701,7 +715,7 @@ G.DB = (() => {
   }
 
   return {
-    ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow,
+    ready, register, login, loginWithGoogle, playAsGuest, autoLocal, logout, commit, deleteAccount, flush: pushNow,
     owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
     onSync(fn) { listeners.add(fn); },
     onLeave(fn) { leaveHooks.push(fn); },

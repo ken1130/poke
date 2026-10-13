@@ -57,6 +57,7 @@ G.MenuUI = (() => {
       };
     });
 
+    $('btn-logout').classList.toggle('hidden', G.DB.mode === 'local');   // sin cuentas, no hay sesión que cerrar
     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
     const shinies = Object.keys(s.shiny || {}).length;
     $('menu-dex-count').textContent = `${owned} / ${G.DEX.length}` + (shinies ? ` · ${shinies} shiny` : '');

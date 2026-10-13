@@ -1525,4 +1525,5 @@ G.I18n.add({
   'Trucos': '金手指', 'Introduce un código secreto': '輸入密技', 'Código': '密技', 'Usar': '使用',
   'Código incorrecto': '密技錯誤',
   'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.': '這個瀏覽器無法儲存資料（是不是無痕模式？）：請用一般視窗開啟遊戲。',
+  'Borrar toda la partida': '清除所有進度',
 }, 'zh');

@@ -138,8 +138,8 @@ G.SettingsUI = (() => {
       + `<div class="set-row"><div class="grow"><b>Tipo de cuenta</b></div><span>${esc(kind)}</span></div>`
       + `<div class="set-row"><div class="grow"><b>Partida</b></div><span>${esc(SYNC[st] || st)}</span></div>`
       + `<div class="row wrap" style="gap:8px;margin-top:12px">
-           <button class="btn" id="set-logout">Cerrar sesión</button>
-           <button class="btn danger" id="set-delete">Borrar cuenta</button>
+           ${G.DB.mode === 'local' ? '' : '<button class="btn" id="set-logout">Cerrar sesión</button>'}
+           <button class="btn danger" id="set-delete">${G.DB.mode === 'local' ? 'Borrar toda la partida' : 'Borrar cuenta'}</button>
          </div><p class="note" id="set-msg"></p>`;
   }
 
