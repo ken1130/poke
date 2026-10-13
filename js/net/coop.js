@@ -271,6 +271,7 @@ G.Coop = (() => {
         case 'he': holdOff(from); break;
         case 're': G.Rift.enterRequest(); break;
         case 'bye': mateGone(from); break;
+        case 'qc': G.Chat.show(from, ev[1]); emit(['qc', from, ev[1]], from); break;   // mensaje rápido
       }
     }
   }
@@ -351,6 +352,7 @@ G.Coop = (() => {
       case 'ev': G.Events.onNet(ev); break;
       case 'hz': G.Hazards.add(ev[1], true); break;
       case 'fxr': G.FX.ring(ev[1], ev[2], 8, ev[3], ev[4], 0.5, 3); break;
+      case 'qc': G.Chat.show(ev[1], ev[2]); break;
     }
   }
 

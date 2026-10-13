@@ -286,6 +286,7 @@ G.Game = (() => {
     if (G.Coop.active) G.Coop.end();
     if (coop) G.Social.setPlaying(false);
     state = 'over';
+    G.Chat.close();
     if (coopCards.length || G.UI.isOpen('scr-levelup')) { coopCards = []; G.RunUI.closeLevelUp(); }
     G.Audio.music(null);
     G.Audio.sfx(dead ? 'gameover' : 'back');
@@ -503,6 +504,13 @@ G.Game = (() => {
           && document.getElementById('pull-fx').classList.contains('hidden')) G.MenuUI.open();
       return;
     }
+    // Mensajes rápidos (en grupo): T abre/cierra; con el menú abierto, 1-6 eligen.
+    if (G.Coop.active && G.Chat.isOpen()) {
+      for (let i = 0; i < 6; i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) { G.Chat.send(i); return; }
+      if (G.Input.tap('keyt') || G.Input.tap('escape')) G.Chat.close();
+      return;
+    }
+    if (G.Coop.active && G.Input.tap('keyt')) { G.Chat.open(); return; }
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
     if (state !== 'playing' || !pl) return;
     for (let i = 0; i < 4; i++) {

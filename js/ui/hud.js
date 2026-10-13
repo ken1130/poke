@@ -132,6 +132,14 @@ G.HUD = (() => {
       ctx.restore();
     }
 
+    // ---------- mensajes rápidos encima de cada jugador ----------
+    if (G.Coop.active) {
+      for (const p of [pl, ...G.Coop.puppets()]) {
+        if (!p.chat) continue;
+        G.Chat.draw(ctx, p, (p.x - cam.left()) * cam.scale, (p.y - cam.top()) * cam.scale, cam.scale, F);
+      }
+    }
+
     // ---------- grupo (no PK): compañeros caídos, para ir a levantarlos ----------
     // En pantalla: "¡Ayúdame!" latiendo encima. (Fuera de la pantalla ya está la flecha
     // de drawCoop, que parpadea en rojo con "¡X necesita ayuda! · N m".)
@@ -382,6 +390,16 @@ G.HUD = (() => {
       ctx.fillStyle = '#f4f8ff';
       ctx.fillRect(bx + 13, by + 11, 5, 18); ctx.fillRect(bx + 22, by + 11, 5, 18);
       G.Touch.addButton(bx, by, bs, bs, () => G.Game.togglePause(), 8);
+      // Mensajes rápidos (en grupo): botón 💬 a la izquierda de la pausa.
+      if (G.Coop.active) {
+        const cx = bx - bs - 8;
+        roundRect(ctx, cx, by, bs, bs, 10);
+        ctx.fillStyle = G.Chat.isOpen() ? 'rgba(255,210,63,.85)' : 'rgba(10,16,28,.7)'; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(244,248,255,.8)'; ctx.stroke();
+        ctx.font = F(400, 20); ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+        ctx.fillText('💬', cx + bs / 2, by + 27);
+        G.Touch.addButton(cx, by, bs, bs, () => G.Chat.toggle(), 8);
+      }
     }
 
     // pista de controles
@@ -390,7 +408,7 @@ G.HUD = (() => {
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(180,200,230,.55)';
       ctx.fillText(touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
-                         : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa', w / 2, h - 4);
+                         : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa' + (G.Coop.active ? '  ·  T mensajes' : ''), w / 2, h - 4);
     }
 
     ctx.restore();
