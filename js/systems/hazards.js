@@ -5,7 +5,9 @@
  *   zone  círculo (zonas de Tierra/Fuego/Veneno, explosiones, caídas de salto)
  *   beam  rayo recto desde el enemigo (Eléctrico, Psíquico, Dragón, Hielo)
  *   blade cuchilla giratoria que sale volando en espiral de muelle (jefes de
- *         Acero, Bicho, Planta, Siniestro y Lucha): sin aviso, se esquiva viéndola
+ *         Acero, Bicho, Siniestro y Lucha): sin aviso, se esquiva viéndola
+ *   thorn franja de aviso y luego un tallo de espinas que sale desde un borde y la
+ *         recorre (jefes de Planta, Veneno, Tierra y Roca: muchas a la vez)
  *
  * Cada ordenador dibuja los peligros y comprueba sólo SU Pokémon. En
  * cooperativo los crea el anfitrión y los manda con 'hz'.
@@ -20,6 +22,9 @@ G.Hazards = (() => {
     if (!fromNet && G.Coop.isHost && o.kind === 'blade') {
       G.Coop.broadcast(['hz', { kind: 'blade', x: Math.round(o.x), y: Math.round(o.y), angle: o.angle, dmg: Math.round(o.dmg), type: o.type,
                                 color: o.color, sp: o.sp, life: o.life, R: o.R, om: o.om, spin: o.spin, w: o.w, len: o.len }]);
+    } else if (!fromNet && G.Coop.isHost && o.kind === 'thorn') {
+      G.Coop.broadcast(['hz', { kind: 'thorn', x: Math.round(o.x), y: Math.round(o.y), angle: o.angle, len: o.len, w: o.w, delay: o.delay,
+                                grow: o.grow, stay: o.stay, dmg: Math.round(o.dmg), type: o.type, color: o.color }]);
     } else if (!fromNet && G.Coop.isHost) {
       G.Coop.broadcast(['hz', { kind: o.kind, x: Math.round(o.x), y: Math.round(o.y), r: o.r, angle: o.angle, len: o.len, w: o.w,
                                 delay: o.delay, dmg: Math.round(o.dmg), type: o.type, color: o.color }]);
@@ -58,11 +63,26 @@ G.Hazards = (() => {
     return G.U.dist2(ax + dx * t, ay + dy * t, x, y) <= (h.w / 2 + r * 0.7) ** 2;
   }
 
+  /** Largo de un tallo de espinas ahora (crece en `grow` s, se queda `stay` s y se retira). */
+  function thornLen(h) {
+    const a = h.t - h.delay;
+    if (a < 0) return 0;
+    if (a < h.grow) return h.len * a / h.grow;
+    if (a < h.grow + h.stay) return h.len;
+    return h.len * Math.max(0, 1 - (a - h.grow - h.stay) / 0.25);
+  }
+
   function update(dt) {
     const pl = G.Game.player;
     for (let i = list.length - 1; i >= 0; i--) {
       const h = list[i];
       h.t += dt;
+      if (h.kind === 'thorn') {
+        const len = thornLen(h);
+        if (!h.hit && len > 0 && pl && !pl.dead && inside(Object.assign({}, h, { len }), pl.x, pl.y, pl.r)) { h.hit = true; pl.hurt(h.dmg, h.type); }
+        if (h.t >= h.delay + h.grow + h.stay + 0.25) list.splice(i, 1);
+        continue;
+      }
       if (h.kind === 'blade') {
         if (!h.hit && pl && !pl.dead && bladeHits(h, pl.x, pl.y, pl.r)) { h.hit = true; pl.hurt(h.dmg, h.type); }
         if (h.t >= h.life) list.splice(i, 1);
@@ -123,11 +143,42 @@ G.Hazards = (() => {
     ctx.restore();
   }
 
+  /** Tallo de espinas: aviso en el suelo hasta que sale, luego el tallo con púas. */
+  function drawThorn(ctx, h, blink) {
+    ctx.save();
+    ctx.translate(h.x, h.y);
+    ctx.rotate(h.angle);
+    if (h.t < h.delay) {
+      const k = Math.min(1, h.t / h.delay);
+      ctx.globalAlpha = 0.16; ctx.fillStyle = h.color;
+      ctx.fillRect(0, -h.w / 2, h.len, h.w);
+      ctx.globalAlpha = 0.3;
+      ctx.fillRect(0, -h.w / 2, h.len * k, h.w);
+      ctx.globalAlpha = k > 0.75 && blink ? 0.95 : 0.55;
+      ctx.strokeStyle = h.color; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+      ctx.strokeRect(0, -h.w / 2, h.len, h.w);
+    } else {
+      const len = thornLen(h);
+      ctx.fillStyle = '#2f5a24';                           // tallo
+      ctx.fillRect(0, -h.w * 0.22, len, h.w * 0.44);
+      ctx.fillStyle = '#5a9a3a';
+      ctx.fillRect(0, -h.w * 0.22, len, h.w * 0.12);
+      ctx.fillStyle = h.color;                             // púas, alternando arriba y abajo
+      for (let d = 10, s = 1; d < len - 4; d += 14, s = -s) {
+        ctx.beginPath();
+        ctx.moveTo(d - 5, s * h.w * 0.2); ctx.lineTo(d + 5, s * h.w * 0.2); ctx.lineTo(d + 1, s * h.w * 0.75); ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
   /** Avisos en el suelo (debajo de los Pokémon). */
   function draw(ctx) {
     const blink = Math.sin(performance.now() / 60) > 0;
     for (const h of list) {
       if (h.kind === 'blade') { if (G.Camera.sees(h.x, h.y, 600)) drawBlade(ctx, h); continue; }
+      if (h.kind === 'thorn') { drawThorn(ctx, h, blink); continue; }
       if (h.hit) continue;
       const k = Math.min(1, h.t / h.delay);
       ctx.save();

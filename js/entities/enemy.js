@@ -420,8 +420,11 @@
                  : has('fairy', 'ghost', 'water', 'flying') ? 'nova' : 'volley';
       const others = ['rain', 'beam', 'nova', 'volley'].filter(x => x !== pref);
       const ranged = [pref, others[Math.floor(G.U.hash(this.dex, 5, 9) * 3) % 3]];
-      // Cuchillas giratorias (esta versión): los de Acero, Bicho, Planta, Siniestro y Lucha.
-      if (has('steel', 'bug', 'grass', 'dark', 'fighting')) ranged[1] = 'blades';
+      // Ataques de esta versión, sólo para algunos tipos:
+      //   cuchillas giratorias  Acero, Bicho, Siniestro, Lucha
+      //   espinas (荊棘)        Planta, Veneno, Tierra, Roca
+      if (has('steel', 'bug', 'dark', 'fighting')) ranged[1] = 'blades';
+      if (has('grass', 'poison', 'ground', 'rock')) { if (ranged[1] === 'blades') ranged.push('thorns'); else ranged[1] = 'thorns'; }
       const far = this.behavior === 'ranged';
       this.ai = { melee, ranged, farLike: far ? 0.65 : 0.35, mode: far ? 'far' : 'close', modeT: G.U.rand(6, 8),
                   cd: 1.6, cast: null, fury: false, side: Math.random() < 0.5 ? -1 : 1 };
@@ -516,6 +519,12 @@
           this.anim.play('Charge', { speed: 1.2 });
           G.FX.ring(this.x, this.y, this.r, this.r * 3, '#e6edf5', c.wind, 3);
           break;
+        case 'thorns':     // espinas por toda la pantalla (o media), con aviso
+          c.wind = 1.4 * f; c.after = 0.9;
+          this.anim.play('Charge', { speed: 0.9 });
+          G.FX.ring(this.x, this.y, this.r, this.r * 4, col, c.wind, 3);
+          this.thorns(pl, c.wind, ai.fury);
+          break;
         case 'volley':     // abanico de disparos
         case 'nova':       // anillo de disparos
           c.wind = (id === 'nova' ? 0.7 : 0.5) * f;
@@ -561,6 +570,34 @@
       }
       this.anim.play('Shoot', { speed: 1.2 });
       if (G.Camera.sees(this.x, this.y, 100)) G.Audio.sfx('shot', { kind: 'beam', type });
+    }
+
+    /**
+     * Espinas: tallos que salen desde los bordes de la pantalla, alternando lado,
+     * con 2 casillas libres entre uno y otro. Primero se ve la franja (aviso)
+     * mientras el jefe carga, y luego salen. Pantalla entera o la mitad (enfurecido:
+     * siempre entera). Horizontales o, a veces, verticales. Daño: THORN_DMG × su disparo.
+     */
+    thorns(pl, wind, fury) {
+      const type = this.atkType, col = G.U.TYPE_COLOR[type] || '#7ee07a';
+      const TILE = G.Tiles.T * G.Sprites.PX, THORN_DMG = 1.3;
+      const w = TILE * 0.5, step = TILE * 2 + w;          // 2 casillas libres entre espinas
+      const W = 1300, H = 800;                            // algo más que la pantalla
+      const vertical = Math.random() < 0.35;
+      const full = fury || Math.random() < 0.5;
+      const half = Math.random() < 0.5 ? -1 : 1;         // qué mitad, si es media pantalla
+      const span = vertical ? W : H, across = vertical ? H : W;
+      const off = Math.random() * step;
+      let k = 0;
+      for (let p = -span / 2 + off; p < span / 2; p += step, k++) {
+        if (!full && Math.sign(p || 1) !== half) continue;
+        const fromStart = k % 2 === 0;                   // alterna: izquierda/derecha (o arriba/abajo)
+        const o = vertical
+          ? { x: pl.x + p, y: pl.y + (fromStart ? -across / 2 : across / 2), angle: fromStart ? Math.PI / 2 : -Math.PI / 2 }
+          : { x: pl.x + (fromStart ? -across / 2 : across / 2), y: pl.y + p, angle: fromStart ? 0 : Math.PI };
+        G.Hazards.add(Object.assign(o, { kind: 'thorn', len: across, w, delay: wind + 0.5, grow: 0.35, stay: 0.5,
+                                          dmg: this.shotDmg() * THORN_DMG, type, color: col }));
+      }
     }
 
     bossEnd() {
