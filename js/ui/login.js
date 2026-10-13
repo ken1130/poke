@@ -1,4 +1,4 @@
-/* ============ login.js — inicio: entrar, crear cuenta o invitado ============ */
+/* ============ login.js — inicio: entrar o crear cuenta (sin modo invitado) ============ */
 G.LoginUI = (() => {
   const $ = G.UI.$;
   let mode = 'login';
@@ -18,7 +18,6 @@ G.LoginUI = (() => {
       $('f-pass').value = '';
       G.Flow.afterLogin();
     };
-    $('btn-guest').onclick = () => { G.DB.playAsGuest(); G.Flow.afterLogin(); };
     $('btn-google').onclick = async () => {
       $('login-err').textContent = '';
       $('btn-google').disabled = true;
@@ -70,7 +69,11 @@ G.LoginUI = (() => {
     if (G.DB.mode === 'cloud' && G.Signups) {
       if (G.Signups.closed) G.Signups.check().then(applySignups); else applySignups(true);
     }
-    if (!G.DB.storageOk) $('login-err').textContent = 'Este navegador no deja guardar datos: juega como invitado.';
+    // Primera visita (sin cuentas en este navegador): directamente a crear cuenta.
+    let hasAccounts = false;
+    try { hasAccounts = Object.keys(JSON.parse(localStorage.getItem('ps.accounts') || '{}')).length > 0; } catch (e) { /* nada */ }
+    setMode(hasAccounts ? 'login' : 'register');
+    if (!G.DB.storageOk) $('login-err').textContent = 'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.';
     $('btn-google').classList.toggle('hidden', G.DB.mode !== 'cloud');
     $('login-mode').textContent = modeNote();
     setTimeout(() => $('f-user').focus(), 50);

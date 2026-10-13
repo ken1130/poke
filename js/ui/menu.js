@@ -5,7 +5,7 @@ G.MenuUI = (() => {
   let dexFilter = 'all', dexGen = 1, dexSel = null;
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', friends: 'friends', rank: 'trophy', settings: 'gear' };
+    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', cheat: 'star', settings: 'gear' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -16,8 +16,7 @@ G.MenuUI = (() => {
         else if (go === 'upgrades') openUpgrades();
         else if (go === 'gacha') G.GachaUI.open();
         else if (go === 'goals') G.GoalsUI.open();
-        else if (go === 'friends') G.FriendsUI.open();
-        else if (go === 'rank') G.RankingUI.open();
+        else if (go === 'cheat') G.Cheat.openPrompt();
         else if (go === 'settings') G.SettingsUI.open();
       };
     });
@@ -95,8 +94,10 @@ G.MenuUI = (() => {
     const parts = [];
     if (on) parts.push(on + ' en línea');
     if (req) parts.push(req + (req === 1 ? ' solicitud' : ' solicitudes'));
-    $('menu-friends-sub').textContent = parts.length ? parts.join(' · ') : 'Juega en grupo, hasta 4';
-    $('menu-friends-sub').classList.toggle('gold', req > 0);
+    const sub = $('menu-friends-sub');   // el botón de Amigos puede no estar (versión sin online)
+    if (!sub) return;
+    sub.textContent = parts.length ? parts.join(' · ') : 'Juega en grupo, hasta 4';
+    sub.classList.toggle('gold', req > 0);
   }
 
   // ---------------- colección ----------------

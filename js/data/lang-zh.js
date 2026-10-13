@@ -1177,9 +1177,9 @@ G.I18n.add({
   'Juego de supervivencia con Pokémon, gratis en el navegador y en el móvil.': '寶可夢生存遊戲，可在瀏覽器和手機上免費遊玩。',
   'Cargando…': '載入中…', 'Guía': '指南', 'Aviso legal y privacidad': '法律聲明與隱私權',
   'Tu partida se guarda en la nube: entra desde cualquier ordenador. Como invitado no se guarda.': '你的進度會儲存在雲端：可從任何電腦登入。訪客的進度不會儲存。',
-  'Abierto desde un archivo: la partida sólo se guarda en este navegador. Para guardar en la nube, juega en la versión publicada.': '進度會儲存在這個瀏覽器裡。請註冊帳號遊玩，訪客模式不會存檔。',
+  'Abierto desde un archivo: la partida sólo se guarda en este navegador. Para guardar en la nube, juega en la versión publicada.': '進度會儲存在這個瀏覽器裡（換電腦或清除瀏覽器資料就會不見）。',
   'No se pudo conectar con la nube: la partida sólo se guarda en este navegador.': '無法連線至雲端：進度只會儲存在此瀏覽器。',
-  'Nube sin configurar: la partida sólo se guarda en este navegador.': '進度會儲存在這個瀏覽器裡。請註冊帳號遊玩，訪客模式不會存檔。',
+  'Nube sin configurar: la partida sólo se guarda en este navegador.': '進度會儲存在這個瀏覽器裡（換電腦或清除瀏覽器資料就會不見）。',
   'Este navegador no deja guardar datos: juega como invitado.': '此瀏覽器不允許儲存資料：請以訪客身分遊玩。',
   'Usuario o contraseña incorrectos.': '使用者名稱或密碼錯誤。', 'Ese nombre ya existe.': '此名稱已被使用。',
   'La contraseña debe tener al menos 6 caracteres.': '密碼至少需要 6 個字元。',
@@ -1521,4 +1521,8 @@ G.I18n.add({
   // ---------------- regiones (iguales en español e inglés) ----------------
   'Kanto': '關都', 'Johto': '城都', 'Hoenn': '豐緣', 'Sinnoh': '神奧', 'Kalos': '卡洛斯', 'Alola': '阿羅拉',
   'Galar': '伽勒爾', 'Paldea': '帕底亞', 'Shiny': '異色', 'shiny': '異色',
+  // ---------------- trucos (menú) y cuentas sin invitado ----------------
+  'Trucos': '金手指', 'Introduce un código secreto': '輸入密技', 'Código': '密技', 'Usar': '使用',
+  'Código incorrecto': '密技錯誤',
+  'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.': '這個瀏覽器無法儲存資料（是不是無痕模式？）：請用一般視窗開啟遊戲。',
 }, 'zh');
