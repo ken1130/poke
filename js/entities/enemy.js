@@ -80,12 +80,14 @@
 
     cy() { return this.y; }
 
-    /** Lo convierte en shiny: otro sprite, más aguante y mucha más XP. */
-    makeShiny() {
+    /**
+     * Lo convierte en shiny: otro sprite y, si `boost`, más aguante y mucha más XP
+     * (en el modo shiny salen todos shiny y sólo cambia el aspecto).
+     */
+    makeShiny(boost = true) {
       this.shiny = true;
       this.anim = new G.Sprites.Animator(this.dex, this.scale, true);
-      this.maxHp *= 2; this.hp = this.maxHp;
-      this.xp *= 5;
+      if (boost) { this.maxHp *= 2; this.hp = this.maxHp; this.xp *= 5; }
       G.Sprites.preload([this.dex], 4000, true);
     }
 

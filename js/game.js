@@ -261,6 +261,8 @@ G.Game = (() => {
     const isNew = G.DB.grantShiny(e.dex, 'wild');
     G.DB.save.stats.shinies++;
     G.DB.commit();
+    // Modo shiny: todos lo son; sólo se avisa (y se apunta) el primero de cada Pokémon, sin monedas por repetidos.
+    if (!isNew && G.Settings.get('shinyMode')) return;
     caught.push({ dex: e.dex, isNew });
     G.Spawner.say(isNew ? '¡Has conseguido a ' + e.name + ' shiny!' : '¡Otro ' + e.name + ' shiny! (+300 monedas)', 4);
     if (!isNew) pl.coins += 300;

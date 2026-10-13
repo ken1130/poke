@@ -122,6 +122,7 @@
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>9 regiones · Pokémon y shinies</small></button>
         <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
+        <button class="menu-item" data-go="shiny">Modo shiny<small id="menu-shiny-sub">Desactivado</small></button>
         <button class="menu-item" data-go="cheat">Trucos<small>Introduce un código secreto</small></button>
         <button class="menu-item" data-go="settings">Ajustes<small>Sonido, gráficos, controles y cuenta</small></button>
       </div>
@@ -136,8 +137,9 @@
   <div class="pill"><span class="coin"></span><span id="coins">0</span></div>
   <div class="pill" id="tickets-pill" title="Tickets del gacha"></div>
   <div class="pill" id="user-pill"></div>
-  <button id="btn-news" class="btn small ghost news-btn" title="Novedades"></button>
-  <button id="btn-support" class="btn small gold hidden" title="Apoyar el proyecto"></button>
+  <!-- Novedades y Apoyar: quitados de esta versión (los botones siguen para que su código no falle) -->
+  <button id="btn-news" class="btn small ghost news-btn" title="Novedades" style="display:none"></button>
+  <button id="btn-support" class="btn small gold hidden" title="Apoyar el proyecto" style="display:none"></button>
   <button id="btn-sound" class="btn small ghost" title="Sonido"></button>
   <button id="btn-full" class="btn small ghost hidden" title="Pantalla completa"></button>
   <button id="btn-settings" class="btn small ghost" title="Ajustes"></button>
@@ -468,6 +470,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=a2d6523525"></script>
+<script defer src="js/app.min.js?v=a96a7d7fde"></script>
 </body>
 </html>

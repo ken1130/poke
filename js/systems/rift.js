@@ -98,7 +98,7 @@ G.Rift = (() => {
     const mon = pool[mi];
     const cfg = {
       tx: 5000 + Math.floor(Math.random() * 3000), ty: 5000 + Math.floor(Math.random() * 3000), r: ARENA_R,
-      dex: mon.dex, shiny: G.Sprites.hasShiny(mon.dex) && Math.random() < 1 / 512,
+      dex: mon.dex, shiny: G.Sprites.hasShiny(mon.dex) && (G.Settings.get('shinyMode') || Math.random() < 1 / 512),
       // La arena es la de uno de sus tipos, al azar.
       type: forceType || G.U.pick(mon.types)
     };
@@ -153,7 +153,7 @@ G.Rift = (() => {
     // Choca con las paredes y columnas como tú: si volara por encima de las
     // rocas, tus disparos no podrían alcanzarle (bug de Celebi).
     e.flying = false;
-    if (arena.shiny) e.makeShiny();
+    if (arena.shiny) e.makeShiny(!G.Settings.get('shinyMode'));
     G.EnemyMgr.add(e);
     arena.bossId = e.id;
     G.Spawner.say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' te esperaba en la grieta!', 3.2);

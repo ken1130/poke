@@ -79,6 +79,22 @@ G.Sprites = (() => {
     }
   }
 
+  // Descargas que nadie está dibujando (cambiaste de pestaña en la colección,
+  // bajaste la lista...) se cancelan: así lo que se ve no espera en la cola
+  // detrás de cien hojas que ya no hacen falta. Las precargadas no se tocan.
+  const STALE_MS = 1500;
+  let sweptAt = 0;
+  function sweep(now) {
+    if (now - sweptAt < 500) return;
+    sweptAt = now;
+    for (const [k, s] of sheets) {
+      if (s.ready || s.failed || s.pre || now - s.at < STALE_MS) continue;
+      sheets.delete(k);
+      s.img.onload = s.img.onerror = null;
+      s.img.src = '';
+    }
+  }
+
   function sheet(dex, anim, shiny = false) {
     const m = meta(dex);
     shiny = shiny && !!(m && m.sh);
@@ -87,6 +103,7 @@ G.Sprites = (() => {
     const k = dex + '/' + name + (shiny ? '/s' : '');
     let s = sheets.get(k);
     const now = Date.now();
+    sweep(now);
     if (s) {
       s.at = now;
       // Si la descarga se cortó (red mala, servidor saturado), reintenta más tarde.
@@ -108,7 +125,7 @@ G.Sprites = (() => {
   /** Precarga todas las animaciones de esos Pokémon. */
   function preload(dexes, timeout = 8000, shiny = false) {
     const hs = [];
-    for (const d of dexes) for (const a of ANIMS) { const s = sheet(d, a, shiny); if (s) hs.push(s); }
+    for (const d of dexes) for (const a of ANIMS) { const s = sheet(d, a, shiny); if (s) { s.pre = true; hs.push(s); } }
     return new Promise(res => {
       const t0 = performance.now();
       (function check() {

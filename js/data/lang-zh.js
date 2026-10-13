@@ -1528,4 +1528,9 @@ G.I18n.add({
   'Borrar toda la partida': '清除所有進度',
   'Mejorar todo': '一鍵強化', 'Todo al máximo': '已全部強化至最高', '{x}: +{x} niveles de mejora': '{x}：強化等級 +{x}',
   'niveles': '級',
+  // ---------------- modo shiny ----------------
+  'Modo shiny': '異色模式', 'Desactivado': '關閉', 'Activado: sólo salen shinies': '開啟中：只會出現異色寶可夢',
+  'Modo shiny activado: todos los Pokémon salvajes saldrán shiny': '異色模式已開啟：所有野生寶可夢都會是異色',
+  'Modo shiny desactivado': '異色模式已關閉',
+  'Elegir de compañero': '設為夥伴',
 }, 'zh');

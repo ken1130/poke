@@ -72,6 +72,7 @@ G.Spawner = (() => {
 
   function rollShiny(dex) {
     if (!G.Sprites.hasShiny(dex)) return false;
+    if (G.Settings.get('shinyMode')) return true;
     if (forceShiny > 0) { forceShiny--; return true; }
     return Math.random() < SHINY_RATE;
   }
@@ -84,10 +85,11 @@ G.Spawner = (() => {
     const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
     e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
     if (G.EnemyMgr.count >= CAP * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
-    if (shiny) e.makeShiny();
+    const shinyMode = G.Settings.get('shinyMode');
+    if (shiny) e.makeShiny(!shinyMode);
     if (G.Events.golden) e.makeGolden();
     G.EnemyMgr.add(e);
-    if (shiny) {
+    if (shiny && !shinyMode) {
       say('¡Un ' + e.name + ' shiny anda cerca!', 3.4);
       G.Audio.sfx('shiny');
     }
@@ -97,7 +99,7 @@ G.Spawner = (() => {
   function spawnBoss(pl, t, b) {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
     const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1)), true);
-    if (rollShiny(b.dex)) e.makeShiny();
+    if (rollShiny(b.dex)) e.makeShiny(!G.Settings.get('shinyMode'));
     G.EnemyMgr.add(e);
     say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' salvaje apareció!', 3.2);
     G.Camera.kick(1.1);

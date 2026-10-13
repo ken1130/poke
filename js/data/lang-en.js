@@ -275,7 +275,7 @@ G.I18n.add({
   // colección
   'Volver': 'Back', 'Todos': 'All', 'Tengo': 'Owned', 'Me faltan': 'Missing', 'Legendaria': 'Legendary', 'Épica': 'Epic', 'Rara': 'Rare',
   'Poco común': 'Uncommon', 'Común': 'Common', 'Ninguno con este filtro.': 'None with this filter.', 'Ataque': 'Attack', 'Vida': 'HP', 'Velocidad': 'Speed',
-  'Empieza con': 'Starts with', 'Es tu compañero': 'It\'s your partner', 'Elegir de compañero{x}': 'Choose as partner{x}', '(shiny)': '(shiny)',
+  'Empieza con': 'Starts with', 'Es tu compañero': 'It\'s your partner', 'Elegir de compañero{x}': 'Choose as partner{x}', 'Elegir de compañero': 'Choose as partner', '(shiny)': '(shiny)',
   'Aún no lo tienes.': 'You don\'t have it yet.', 'Consíguelo en el banner de': 'Get it from the banner of', 'o derrotándolo cuando salga shiny.': 'or by defeating it when it shows up shiny.',
   '{x} es ahora tu compañero': '{x} is now your partner', '{x} shiny es ahora tu compañero': 'Shiny {x} is now your partner',
   '· {x} shiny': '· {x} shiny', '{x} · {x}: nivel {x}': '{x} · {x}: level {x}',
@@ -547,6 +547,8 @@ G.I18n.add({
   // ---------------- trucos ----------------
   'Trucos': 'Cheats', 'Introduce un código secreto': 'Enter a secret code', 'Código': 'Code', 'Usar': 'Use',
   'Código incorrecto': 'Wrong code',
+  'Modo shiny': 'Shiny mode', 'Desactivado': 'Off', 'Activado: sólo salen shinies': 'On: only shinies appear',
+  'Modo shiny activado: todos los Pokémon salvajes saldrán shiny': 'Shiny mode on: every wild Pokémon will be shiny', 'Modo shiny desactivado': 'Shiny mode off',
   'Mejorar todo': 'Upgrade all', 'Todo al máximo': 'All maxed', '{x}: +{x} niveles de mejora': '{x}: +{x} upgrade levels', 'Borrar toda la partida': 'Delete all progress',
   'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.': 'This browser cannot save data (incognito mode?): open the game in a normal window.',
   'Los trucos sólo funcionan en modo local (abre index.html con doble clic)': 'Cheats only work in local mode (double-click index.html)',
