@@ -377,7 +377,10 @@ G.Social = (() => {
     // Modos de la sala para el equipo: { boss, shiny } (lo elige el anfitrión).
     const xref = fb.rtdb.ref('rooms/' + id + '/mods');
     xref.on('value', s => { if (room && room.id === id) { room.mods = s.val() || {}; emit('room'); } }, () => {});
-    roomRefs = [mref, href, oref, dref, rref, sref, xref];
+    // PK por equipos (lo elige el anfitrión).
+    const tref = fb.rtdb.ref('rooms/' + id + '/teams');
+    tref.on('value', s => { if (room && room.id === id) { room.teams = s.val() === true; emit('room'); } }, () => {});
+    roomRefs = [mref, href, oref, dref, rref, sref, xref, tref];
     writeStatus();
     emit('room');
   }
@@ -423,9 +426,14 @@ G.Social = (() => {
     if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mode').set(mode === 'pvp' ? 'pvp' : 'coop').catch(() => {});
   }
 
+  /** El anfitrión activa o quita el PK por equipos. */
+  function setTeams(on) {
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/teams').set(!!on).catch(() => {});
+  }
+
   /** El anfitrión cambia los modos de la sala ({ boss, shiny }). */
   function setMods(mods) {
-    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mods').set({ boss: !!mods.boss, shiny: !!mods.shiny }).catch(() => {});
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mods').set({ boss: !!mods.boss, shiny: !!mods.shiny, rush: !!mods.rush }).catch(() => {});
   }
 
   /** El anfitrión elige el escenario (índice de bioma o null). */
@@ -561,7 +569,7 @@ G.Social = (() => {
 
   return {
     start, startLite, joinByCode, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setScene, setMods, refreshMember, setPlaying, refreshPresence,
+    createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setScene, setMods, setTeams, refreshMember, setPlaying, refreshPresence,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

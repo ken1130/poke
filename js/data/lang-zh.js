@@ -1738,4 +1738,12 @@ G.I18n.add({
   'Vincula tu cuenta de Google para salir en la clasificación y verla.': '綁定 Google 帳號才能上排行榜和查看排名。',
   'Nadie ha jugado el reto de hoy todavía. ¡Sé el primero!': '今天還沒有人玩過每日挑戰，搶第一吧！',
   'No se pudo cargar la clasificación.': '排行榜載入失敗。',
+  'Equipo rojo': '紅隊',
+  'Equipo azul': '藍隊',
+  'PK por equipos': '團隊 PK',
+  'Todos contra todos.': '個人混戰。',
+  '¡Tu equipo ha ganado!': '你的隊伍獲勝了！',
+  'Observando a {x}': '觀戰中：{x}',
+  'Toca «Cambiar» para ver a otro': '點「切換」看其他人',
+  'Tab / Espacio: ver a otro': 'Tab／空白鍵：切換觀戰對象',
 }, 'zh');

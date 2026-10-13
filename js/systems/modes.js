@@ -86,7 +86,10 @@ G.Modes = (() => {
   }
   function reset() { run = 'normal'; roomMods = null; }
   /** Al empezar una partida en grupo: los modos de la sala. */
-  function setRoom(mods) { roomMods = Object.assign({ boss: false, shiny: false }, mods); }
+  function setRoom(mods) {
+    roomMods = Object.assign({ boss: false, shiny: false, rush: false }, mods);
+    if (roomMods.rush) run = 'legend';          // Desafío legendario en grupo
+  }
 
   /** Tras el resumen de la run: el resultado del reto o de los legendarios. */
   function afterRun(r) {

@@ -72,10 +72,12 @@ G.Coop = (() => {
       const ang = (i / cfg.members.length) * 6.2832;
       const x = cfg.pvp ? Math.round(Math.cos(ang) * 260) : (i - (cfg.members.length - 1) / 2) * 34;
       const y = cfg.pvp ? Math.round(Math.sin(ang) * 180) : 0;
-      if (m.uid === me) { pl.x = x; pl.y = y; pl.uid = me; pl.coopHost = host; pl.tagColor = COLORS[i]; return; }
+      const team = cfg.teams ? (m.team | 0) : null;
+      const tagCol = cfg.teams ? G.PvP.TEAM_COLORS[team] : COLORS[i];
+      if (m.uid === me) { pl.x = x; pl.y = y; pl.uid = me; pl.coopHost = host; pl.tagColor = tagCol; pl.team = team; return; }
       const mon = G.DEX_BY[m.dex] || G.DEX_BY[25];
       const p = new G.Player(mon, {}, !!m.shiny);
-      p.remote = true; p.uid = m.uid; p.tag = m.name; p.tagColor = COLORS[i]; p.revLabel = 'Quédate a su lado';
+      p.remote = true; p.uid = m.uid; p.tag = m.name; p.tagColor = tagCol; p.team = team; p.revLabel = 'Quédate a su lado';
       p.x = x; p.y = y;
       p.net = { x, y, ang: Math.PI / 2, walk: 0, hp: p.maxHp, maxHp: p.maxHp, dead: 0, mv: G.startMoveOf(mon.dex), ml: 1, mag: 78, aim: Math.PI / 2, rev: 0 };
       G.Sprites.preload([mon.dex], 8000, p.shiny);

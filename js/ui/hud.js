@@ -143,9 +143,9 @@ G.HUD = (() => {
     // ---------- grupo (no PK): compañeros caídos, para ir a levantarlos ----------
     // En pantalla: "¡Ayúdame!" latiendo encima. (Fuera de la pantalla ya está la flecha
     // de drawCoop, que parpadea en rojo con "¡X necesita ayuda! · N m".)
-    if (G.Coop.active && !G.PvP.on) {
+    if (G.Coop.active && (!G.PvP.on || G.PvP.teams)) {
       for (const p of G.Coop.puppets()) {
-        if (!p.dead) continue;
+        if (!p.dead || (G.PvP.teams && p.team !== pl.team)) continue;
         const sx = (p.x - cam.left()) * cam.scale, sy = (p.y - cam.top()) * cam.scale;
         ctx.save();
         ctx.textAlign = 'center';
@@ -378,6 +378,31 @@ G.HUD = (() => {
         ctx.fillStyle = '#ffd23f';
         ctx.fillText(G.Items.BY[pl.item].name, ix + S / 2, iy - 6);
       }
+    }
+
+    // ---------- PK: viendo a otro jugador tras caer ----------
+    const spec = G.Game.spectating();
+    if (spec) {
+      const t1 = G.I18n.f('Observando a {x}', spec.tag), t2 = G.T(touch ? 'Toca «Cambiar» para ver a otro' : 'Tab / Espacio: ver a otro');
+      ctx.save();
+      ctx.font = F(800, 15);
+      const bw = Math.min(w - 24, Math.max(ctx.measureText(t1).width, (ctx.font = F(700, 10), ctx.measureText(t2).width)) + 40 + (touch ? 84 : 0));
+      const bx0 = w / 2 - bw / 2, by0 = h - 150;
+      roundRect(ctx, bx0, by0, bw, 46, 10);
+      ctx.fillStyle = 'rgba(10,16,28,.82)'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = spec.tagColor || '#ffd23f'; ctx.stroke();
+      const tx = touch ? bx0 + (bw - 84) / 2 : w / 2;
+      ctx.textAlign = 'center';
+      ctx.font = F(800, 15); ctx.fillStyle = '#f4f8ff'; ctx.fillText('👁 ' + t1, tx, by0 + 21);
+      ctx.font = F(700, 10); ctx.fillStyle = 'rgba(180,200,230,.85)'; ctx.fillText(t2, tx, by0 + 37);
+      if (touch) {
+        const cbx = bx0 + bw - 80, cby = by0 + 7;
+        roundRect(ctx, cbx, cby, 72, 32, 8);
+        ctx.fillStyle = 'rgba(255,210,63,.9)'; ctx.fill();
+        ctx.font = F(800, 13); ctx.fillStyle = '#1a1a1a'; ctx.fillText(G.T('Cambiar'), cbx + 36, cby + 21);
+        G.Touch.addButton(cbx, cby, 72, 32, () => G.Game.nextSpec(), 6);
+      }
+      ctx.restore();
     }
 
     // ---------- botón de pausa (táctil) ----------

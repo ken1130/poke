@@ -538,6 +538,7 @@ G.Game = (() => {
     if (G.Coop.active && G.Input.tap('keyt')) { G.Chat.open(); return; }
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
     if (state !== 'playing' || !pl) return;
+    if (spectating() && (G.Input.tap('tab') || G.Input.tap('space'))) { nextSpec(); return; }
     for (let i = 0; i < 4; i++) {
       if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setActive(i);
     }
@@ -628,8 +629,8 @@ G.Game = (() => {
     if (coop) {
       for (const p of G.Coop.puppets()) {
         p.netUpdate(dt); G.Combat.ghostOrbit(p, dt, time);
-        // Grupo (no PK): aviso cuando cae un compañero (la flecha la pinta hud.js).
-        if (p.dead && !p.downTold && !G.PvP.on) {
+        // Grupo (no PK, o PK por equipos si es de tu equipo): aviso cuando cae un compañero.
+        if (p.dead && !p.downTold && (!G.PvP.on || (G.PvP.teams && p.team === pl.team))) {
           p.downTold = true;
           G.Spawner.say(G.I18n.f('¡{x} ha caído! Ve a levantarle', p.tag), 3.2, true);
           G.Audio.sfx('error');
@@ -637,7 +638,8 @@ G.Game = (() => {
       }
       if (pl.dead) reviveTick(dt);
     }
-    G.Camera.follow(pl.x, pl.y, dt);
+    const cam = spectating() || pl;               // PK: caído, miras a quien siga en pie
+    G.Camera.follow(cam.x, cam.y, dt);
     G.World.update(dt, G.Camera);
 
     const all = everyone();
@@ -666,8 +668,8 @@ G.Game = (() => {
 
   /** Caído en grupo: un compañero a tu lado te va levantando. */
   function reviveTick(dt) {
-    if (G.PvP.on) return;                         // en PK no se revive
-    const helper = G.Coop.puppets().some(p => !p.dead && G.U.dist2(p.x, p.y, pl.x, pl.y) < 56 * 56);
+    if (G.PvP.on && !G.PvP.teams) return;         // en PK no se revive (por equipos, sí: tus compañeros)
+    const helper = G.Coop.puppets().some(p => !p.dead && (!G.PvP.teams || p.team === pl.team) && G.U.dist2(p.x, p.y, pl.x, pl.y) < 56 * 56);
     pl.reviveT = helper ? (pl.reviveT || 0) + dt : Math.max(0, (pl.reviveT || 0) - dt * 0.5);
     if (pl.reviveT >= G.Player.REVIVE_TIME) {
       pl.revive(0.5);
@@ -678,6 +680,14 @@ G.Game = (() => {
   }
 
   let pvpLast = null;
+  // PK: cuando caes, la cámara sigue a quien siga en pie (Tab / espacio / botón para cambiar).
+  let specI = 0;
+  function spectating() {
+    if (!pl || !pl.dead || !G.PvP.on || !G.Coop.active || state !== 'playing') return null;
+    const alive = G.Coop.puppets().filter(p => !p.dead);
+    return alive.length ? alive[specI % alive.length] : null;
+  }
+  function nextSpec() { specI++; G.Audio.sfx('confirm'); }
   let coopCards = [];      // grupo: subidas de nivel pendientes de elegir (en cola)
 
   /** Grupo: abre las cartas de la siguiente subida de nivel de la cola. */
@@ -699,6 +709,20 @@ G.Game = (() => {
     if (G.PvP.on) {
       // PK: se acaba cuando queda uno en pie (o ninguno).
       const ps = G.Coop.players(), alive = ps.filter(p => !p.dead);
+      if (G.PvP.teams) {
+        // Por equipos: se acaba cuando sólo queda gente de un equipo (o nadie).
+        const tw = G.PvP.teamWinner(alive);
+        if (tw === undefined) { deathT = 0; return; }
+        deathT += dt;
+        if (deathT > 1.6) {
+          deathT = 0;
+          G.PvP.setWinner(tw);
+          const sm = summary(); lastTeam = sm.team;
+          G.Coop.over(Object.assign(sm, { pvpWin: tw }));
+          endRun(pl.dead);
+        }
+        return;
+      }
       if (alive.length > 1) { deathT = 0; pvpLast = null; return; }
       // El ganador es el que quedaba en pie al caer el penúltimo (aunque luego caiga él).
       if (deathT === 0) pvpLast = alive[0] || null;
@@ -894,7 +918,7 @@ G.Game = (() => {
     debugTime(t) { time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
     debugSpeed(k) { speedK = k; },
-    togglePause,
+    togglePause, spectating, nextSpec,
     /** Abandona la partida en curso (p. ej. al cerrar sesión desde Ajustes). */
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
     /** Acaba la run como si hubieras caído (Desafío legendario: pierdes en la arena). */

@@ -9,10 +9,12 @@
  */
 G.PvP = (() => {
   const GRACE = 15, K = 0.3;
-  let on = false, saidGo = false, winner;
+  // Equipos (PK por equipos 2 contra 2): 0 = rojo, 1 = azul. Los del mismo equipo no se hacen daño.
+  const TEAM_NAMES = ['Equipo rojo', 'Equipo azul'], TEAM_COLORS = ['#ff5f6d', '#5fc8ff'];
+  let on = false, saidGo = false, winner, teams = false, myTeam = null;
 
   function begin(cfg) {
-    on = !!(cfg && cfg.pvp); saidGo = false; winner = undefined;
+    on = !!(cfg && cfg.pvp); saidGo = false; winner = undefined; teams = !!(on && cfg.teams); myTeam = null;
     if (on) G.Spawner.say('¡PK! Gana el último en pie. Tenéis 15 s para prepararos…', 4, true);
   }
 
@@ -20,11 +22,13 @@ G.PvP = (() => {
   /** Tu Pokémon, si se le puede golpear ahora. */
   function target(owner) {
     const pl = G.Coop.local;
+    if (teams && owner && owner.team === (pl && pl.team)) return null;       // compañero de equipo
     return armed() && pl && !pl.dead && !pl.god && owner && owner !== pl ? pl : null;
   }
   function hurt(pl, dmg, type) { pl.hurt(dmg * K, type); return true; }
 
   function tick() {
+    if (teams && G.Coop.local) myTeam = G.Coop.local.team;   // se recuerda: al acabar ya no hay sala
     if (on && !saidGo && armed()) { saidGo = true; G.Spawner.say('¡A luchar!', 2.4, true); G.Audio.sfx('boss'); }
   }
 
@@ -64,15 +68,25 @@ G.PvP = (() => {
     if (!armed() || !G.Coop.active) return null;
     let best = null, bd = range * range;
     for (const p of G.Coop.puppets()) {
-      if (p.dead) continue;
+      if (p.dead || (teams && p.team === pl.team)) continue;
       const d = G.U.dist2(pl.x, pl.y, p.x, p.y);
       if (d < bd) { bd = d; best = p; }
     }
     return best;
   }
 
-  /** ¿Has ganado tú el PK que acaba de terminar? */
-  function wonByMe() { return winner != null && !!G.Social.me && winner === G.Social.me.name; }
+  /** ¿Has ganado tú el PK que acaba de terminar? (por equipos: si ha ganado el tuyo) */
+  function wonByMe() {
+    if (winner == null) return false;
+    if (teams) return myTeam != null && winner === 'T' + myTeam;
+    return !!G.Social.me && winner === G.Social.me.name;
+  }
+  /** Por equipos: 'T0'/'T1' del equipo que queda en pie, null si nadie, undefined si quedan varios. */
+  function teamWinner(alive) {
+    const ts = new Set(alive.map(p => p.team));
+    if (ts.size > 1) return undefined;
+    return ts.size ? 'T' + [...ts][0] : null;
+  }
 
   /** Lo pone el anfitrión al acabar (o llega en el 'ov'): nombre del ganador, o null si nadie. */
   function setWinner(name) { winner = name; }
@@ -83,15 +97,17 @@ G.PvP = (() => {
     const box = document.getElementById('over-stats');
     if (box && winner !== undefined) {
       const me = G.Social.me && G.Social.me.name;
-      const txt = winner == null ? G.T('¡Empate!') : winner === me ? G.T('¡Has ganado el PK!') : G.I18n.f('¡{x} ha ganado el PK!', winner);
+      const mine = teams ? wonByMe() : winner === me;
+      const txt = winner == null ? G.T('¡Empate!') : mine ? G.T(teams ? '¡Tu equipo ha ganado!' : '¡Has ganado el PK!') : G.I18n.f('¡{x} ha ganado el PK!', teams ? G.T(TEAM_NAMES[+String(winner).slice(1)] || '') : winner);
       // El título de siempre ("Has caído…") no vale en PK: victoria, derrota o empate.
       const title = document.getElementById('over-title');
-      if (title) title.textContent = G.T(winner == null ? '¡Empate!' : winner === me ? '¡Victoria!' : 'Derrota…');
+      if (title) title.textContent = G.T(winner == null ? '¡Empate!' : mine ? '¡Victoria!' : 'Derrota…');
       box.insertAdjacentHTML('afterbegin', `<div style="grid-column:1/-1;text-align:center" class="panel"><b class="gold" style="font-size:22px">🏆 ${txt}</b></div>`);
     }
-    on = false; winner = undefined;
+    on = false; winner = undefined; teams = false; myTeam = null;
   }
 
-  return { begin, tick, foe, wonByMe, circle, arc, seg, projectile, orb, setWinner, afterRun, K, GRACE,
+  return { TEAM_NAMES, TEAM_COLORS, teamWinner, get teams() { return on && teams && G.Coop.active; },
+           begin, tick, foe, wonByMe, circle, arc, seg, projectile, orb, setWinner, afterRun, K, GRACE,
            get on() { return on && G.Coop.active; } };
 })();

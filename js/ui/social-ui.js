@@ -226,6 +226,18 @@
         b.onclick = () => { if (room.isHost) G.Social.setMods(Object.assign({}, room.mods, { [b.dataset.mod]: !on })); };
       });
 
+      // PK por equipos: 1.º y 3.º rojo, 2.º y 4.º azul (por orden de llegada).
+      $('lobby-teams').classList.toggle('hidden', room.mode !== 'pvp');
+      const tb = $('lobby-teams-btn');
+      tb.textContent = G.T(room.teams ? 'Sí' : 'No');
+      tb.classList.toggle('gold', !!room.teams);
+      tb.disabled = !room.isHost;
+      tb.onclick = () => { if (room.isHost) G.Social.setTeams(!room.teams); };
+      const names = t => ms.filter((m, i) => i % 2 === t).map(m => esc(m.name)).join('、') || '—';
+      $('lobby-teams-list').innerHTML = room.teams
+        ? `<b style="color:${G.PvP.TEAM_COLORS[0]}">${G.T('Equipo rojo')}</b>: <span translate="no">${names(0)}</span> · <b style="color:${G.PvP.TEAM_COLORS[1]}">${G.T('Equipo azul')}</b>: <span translate="no">${names(1)}</span>`
+        : G.T('Todos contra todos.');
+
       // PK: personaje al azar (el anfitrión lo activa).
       $('lobby-rand').classList.toggle('hidden', room.mode !== 'pvp');
       const rb = $('lobby-rand-btn');
@@ -309,8 +321,9 @@
       const picks = rand ? G.U.pickN(pool, room.members.length) : [];
       const cfg = {
         k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: room.mode === 'pvp', scene: G.Modes.scene(), rand,
-        mods: room.mode === 'pvp' ? {} : { boss: !!(room.mods || {}).boss, shiny: !!(room.mods || {}).shiny },
-        members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny }))
+        mods: room.mode === 'pvp' ? {} : { boss: !!(room.mods || {}).boss, shiny: !!(room.mods || {}).shiny, rush: !!(room.mods || {}).rush },
+        teams: room.mode === 'pvp' && !!room.teams,
+        members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny, team: i % 2 }))
       };
       G.Social.setOpen(false);
       G.Net.broadcast(cfg);

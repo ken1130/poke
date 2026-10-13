@@ -39,7 +39,8 @@ G.Rift = (() => {
   function update(dt, pl, time) {
     if (rush()) {
       // La siguiente arena, un momento después de volver (y de elegir el vínculo).
-      if (!arena && !pl.dead && G.Game.state === 'playing') { rushT += dt; if (rushT > 1.5) { rushT = 0; start(); } }
+      // En grupo, sólo el anfitrión abre la arena (y avisa a los demás).
+      if (!arena && authority() && !pl.dead && G.Game.state === 'playing') { rushT += dt; if (rushT > 1.5) { rushT = 0; start(); } }
       if (arena) arenaTick(dt, pl);
       return;
     }
