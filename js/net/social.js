@@ -350,7 +350,7 @@ G.Social = (() => {
   }
 
   function enterRoom(id, host) {
-    room = { id, host, isHost: host === uid, members: [], open: true, mode: 'coop' };
+    room = { id, host, isHost: host === uid, members: [], open: true, mode: 'coop', mods: {} };
     watchRoomDisconnect();
     const mref = fb.rtdb.ref('rooms/' + id + '/m');
     mref.on('value', s => {
@@ -374,7 +374,10 @@ G.Social = (() => {
     // Escenario de la partida (lo elige el anfitrión; null = turno normal).
     const sref = fb.rtdb.ref('rooms/' + id + '/scene');
     sref.on('value', s => { if (room && room.id === id) { const v = s.val(); room.scene = Number.isInteger(v) ? v : null; emit('room'); } }, () => {});
-    roomRefs = [mref, href, oref, dref, rref, sref];
+    // Modos de la sala para el equipo: { boss, shiny } (lo elige el anfitrión).
+    const xref = fb.rtdb.ref('rooms/' + id + '/mods');
+    xref.on('value', s => { if (room && room.id === id) { room.mods = s.val() || {}; emit('room'); } }, () => {});
+    roomRefs = [mref, href, oref, dref, rref, sref, xref];
     writeStatus();
     emit('room');
   }
@@ -418,6 +421,11 @@ G.Social = (() => {
   /** El anfitrión elige el modo de la sala: 'coop' o 'pvp'. */
   function setMode(mode) {
     if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mode').set(mode === 'pvp' ? 'pvp' : 'coop').catch(() => {});
+  }
+
+  /** El anfitrión cambia los modos de la sala ({ boss, shiny }). */
+  function setMods(mods) {
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mods').set({ boss: !!mods.boss, shiny: !!mods.shiny }).catch(() => {});
   }
 
   /** El anfitrión elige el escenario (índice de bioma o null). */
@@ -553,7 +561,7 @@ G.Social = (() => {
 
   return {
     start, startLite, joinByCode, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setScene, refreshMember, setPlaying, refreshPresence,
+    createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setScene, setMods, refreshMember, setPlaying, refreshPresence,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

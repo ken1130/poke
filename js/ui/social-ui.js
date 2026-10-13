@@ -216,6 +216,16 @@
         G.Social.setScene(v);
       };
 
+      // Equipo: modo jefes / shiny de la sala (no los de los ajustes de cada uno).
+      $('lobby-mods').classList.toggle('hidden', room.mode === 'pvp');
+      $('lobby-mods').querySelectorAll('[data-mod]').forEach(b => {
+        const on = !!(room.mods || {})[b.dataset.mod];
+        b.textContent = G.T(on ? 'Sí' : 'No');
+        b.classList.toggle('gold', on);
+        b.disabled = !room.isHost;
+        b.onclick = () => { if (room.isHost) G.Social.setMods(Object.assign({}, room.mods, { [b.dataset.mod]: !on })); };
+      });
+
       // PK: personaje al azar (el anfitrión lo activa).
       $('lobby-rand').classList.toggle('hidden', room.mode !== 'pvp');
       const rb = $('lobby-rand-btn');
@@ -299,6 +309,7 @@
       const picks = rand ? G.U.pickN(pool, room.members.length) : [];
       const cfg = {
         k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: room.mode === 'pvp', scene: G.Modes.scene(), rand,
+        mods: room.mode === 'pvp' ? {} : { boss: !!(room.mods || {}).boss, shiny: !!(room.mods || {}).shiny },
         members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny }))
       };
       G.Social.setOpen(false);

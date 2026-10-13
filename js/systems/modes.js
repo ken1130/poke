@@ -14,12 +14,17 @@
 G.Modes = (() => {
   const $ = id => document.getElementById(id);
   let run = 'normal';
+  // Partida en grupo: los modos los pone la sala ({ boss, shiny }), no los ajustes de cada uno.
+  let roomMods = null;
   const S = () => G.Settings;
   const fair = () => run === 'daily';
 
   /** ¿Está activo un modo? 'shiny' | 'boss' | 'extreme' */
-  function on(k) { return !fair() && !!S().get(k + 'Mode'); }
-  const pct = k => (fair() ? 1 : (S().get(k) || 100) / 100);
+  function on(k) {
+    if (roomMods) return !!roomMods[k];
+    return !fair() && !!S().get(k + 'Mode');
+  }
+  const pct = k => (fair() || roomMods ? 1 : (S().get(k) || 100) / 100);
 
   const hpMul = () => pct('diffHp');
   const spdMul = () => pct('diffSpd') * (on('extreme') ? 1.4 : 1);
@@ -79,7 +84,9 @@ G.Modes = (() => {
     run = kind;
     G.Flow.play();
   }
-  function reset() { run = 'normal'; }
+  function reset() { run = 'normal'; roomMods = null; }
+  /** Al empezar una partida en grupo: los modos de la sala. */
+  function setRoom(mods) { roomMods = Object.assign({ boss: false, shiny: false }, mods); }
 
   /** Tras el resumen de la run: el resultado del reto o de los legendarios. */
   function afterRun(r) {
@@ -215,7 +222,7 @@ G.Modes = (() => {
   }
 
   return {
-    on, scene, scale, countMul, rewardMul, dailySeed, seeded, start, reset, afterRun, openPanel, summary, copy,
+    on, scene, scale, countMul, rewardMul, dailySeed, seeded, start, reset, setRoom, afterRun, openPanel, summary, copy,
     get run() { return run; }
   };
 })();

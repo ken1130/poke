@@ -100,7 +100,7 @@ G.Game = (() => {
     G.Combat.clearFields();
     G.EnemyMgr.clear();
     G.Pickups.clear();
-    if (coop) G.Modes.reset();
+    if (coop) { G.Modes.reset(); G.Modes.setRoom(coop.mods || {}); }
     // Reto diario: el mapa y el elenco de enemigos salen de la fecha (iguales para todos).
     const daily = G.Modes.run === 'daily';
     const prepare = () => {
