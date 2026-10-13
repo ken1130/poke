@@ -28,7 +28,10 @@ G.Net = (() => {
   // costaba del cooperativo. Sin conexión directa ni TURN, esa pareja no puede jugar
   // junta ('failed') y el anfitrión lo reintenta cada RETRY_MS. Por la base de datos
   // sólo pasa la señalización (unos pocos mensajes pequeños para conectarse).
-  const ALLOW_RELAY = false, RETRY_MS = 15000;
+  // Esta versión lo vuelve a encender: su Firebase es del plan gratis SIN facturación, así
+  // que el relé no puede costar nada (si se pasa del cupo gratis, se para hasta el día/mes
+  // siguiente). Sin TURN, es lo que deja jugar a quien no puede conectar directo.
+  const ALLOW_RELAY = true, RETRY_MS = 15000;
 
   // ---------------- TURN (Cloudflare) ----------------
   // Esta versión no tiene TURN propio: no se pide al del proyecto original (le mandaría
