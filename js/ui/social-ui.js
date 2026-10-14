@@ -228,6 +228,11 @@
       // Equipo: qué se juega (una sola lista, así no se pisan): partida normal, desafíos en
       // grupo (con su clasificación de grupo), legendarios o una fase de la Aventura
       // (las que tiene desbloqueadas el anfitrión). Los modos jefes/shiny y el escenario, sólo en la normal.
+      // Venías de la Aventura con "Con amigos": la fase ya elegida.
+      if (room.isHost && room.mode !== 'pvp') {
+        const ps = G.Stages.takePartyStage();
+        if (ps != null && G.Stages.unlocked(ps)) G.Social.setMods(Object.assign({}, room.mods, { stage: ps, ch: null, rush: false }));
+      }
       const md = room.mods || {};
       const cur = Number.isInteger(md.stage) ? 's:' + md.stage : md.ch ? md.ch : md.rush ? 'legend' : 'n';
       $('lobby-stage').classList.toggle('hidden', room.mode === 'pvp');

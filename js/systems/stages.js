@@ -333,7 +333,7 @@ G.Stages = (() => {
 
   // ---------------- mapa ----------------
 
-  let overlay = null, pick = null;
+  let overlay = null, pick = null, partyStage = null;
   function closeMap() { if (overlay) { overlay.remove(); overlay = null; } }
 
   function openMap() {
@@ -381,7 +381,8 @@ G.Stages = (() => {
               <div style="font-size:12px;color:var(--muted);margin-top:4px">${G.T('En grupo: crea una sala en «Jugar con amigos» y elige la fase allí.')}</div>
             </div>
             <div style="text-align:center"><div style="color:#ffd23f;font-size:18px">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</div>
-              <button class="btn gold" data-play ${ok ? '' : 'disabled'}>${G.T('Jugar')}</button></div>
+              <button class="btn gold" data-play ${ok ? '' : 'disabled'}>${G.T('Jugar')}</button>
+              <button class="btn small" data-party ${ok ? '' : 'disabled'} style="display:block;margin:6px auto 0">👥 ${G.T('Con amigos')}</button></div>
           </div>
         </div>
       </div>`;
@@ -390,6 +391,8 @@ G.Stages = (() => {
     const pb = overlay.querySelector('[data-play]');
     pb.dataset.sfx = 'confirm';
     pb.onclick = () => { if (!unlocked(pick)) return; closeMap(); select(pick); G.Modes.start('stage'); };
+    // Con amigos: abre "Jugar con amigos" y, al crear la sala, ya viene elegida esta fase.
+    overlay.querySelector('[data-party]').onclick = () => { if (!unlocked(pick)) return; partyStage = pick; closeMap(); G.PartyUI.open(); };
     if (G.I18n.walk) G.I18n.walk(overlay);
   }
 
@@ -401,9 +404,11 @@ G.Stages = (() => {
 
   /** Fases que puede elegir el anfitrión en su sala (las que tiene desbloqueadas). */
   function choices() { return LIST.filter(s => unlocked(s.id)).map(s => ({ id: s.id, label: title(s) })); }
+  /** La fase elegida con "Con amigos" (una vez: la sala la pone al crearse). */
+  function takePartyStage() { const s = partyStage; partyStage = null; return s; }
 
   return { LIST, REGIONS, select, prepare, scene, headStart, tOffset, update, token, onNet, hudLine, drawable, drawHud, setResult, afterRun,
-           merge, openMap, closeMap, menuLine, choices, unlocked, starsOf, totalStars, title,
+           merge, openMap, closeMap, menuLine, choices, takePartyStage, unlocked, starsOf, totalStars, title,
            get active() { return !!st; },
            /** Tipo de objetivo de la fase en curso ('collect', 'zone'...) o null. */
            get goal() { return st ? st.s.obj.k : null; },

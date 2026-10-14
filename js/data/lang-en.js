@@ -877,6 +877,8 @@ G.I18n.add({
   'PK por equipos: no puedes herir a los de tu equipo y puedes levantarlos si caen.': 'Team PvP: you cannot hurt teammates and you can revive them.',
   'En grupo: pulsa T (o 💬 en el móvil) para mandar mensajes rápidos a tus compañeros.': 'In a group: press T (or 💬 on mobile) to send quick messages.',
   'Tu Pokémon evoluciona al llegar a Nv. 10, 20 y 30 y se hace más fuerte (se puede apagar en Ajustes).': 'Your Pokémon evolves at Lv 10, 20 and 30 and gets stronger (can be turned off in Settings).',
+  'Se elige solo en {x} s': 'Auto-pick in {x} s',
+  'Con amigos': 'With friends',
   'Mejorar todo': 'Upgrade all', 'Todo al máximo': 'All maxed', '{x}: +{x} niveles de mejora': '{x}: +{x} upgrade levels', 'Borrar toda la partida': 'Delete all progress',
   'Este navegador no deja guardar datos (¿modo incógnito?): abre el juego en una ventana normal.': 'This browser cannot save data (incognito mode?): open the game in a normal window.',
   'Los trucos sólo funcionan en modo local (abre index.html con doble clic)': 'Cheats only work in local mode (double-click index.html)',

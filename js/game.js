@@ -251,10 +251,13 @@ G.Game = (() => {
       bankTickets();
     },
     levelStart(level) {
-      // Sin esperar a nadie: las cartas se ponen en cola y se eligen una tras otra.
+      // Las cartas se ponen en cola; mientras alguien elige, la partida se para para todos
+      // (2026-10-14: antes seguía y te rodeaban mientras elegías).
       coopCards.push(level);
-      if (!G.UI.isOpen('scr-levelup')) nextCoopCard();
+      if (!['scr-levelup', 'scr-bond', 'scr-item'].some(G.UI.isOpen)) nextCoopCard();
     },
+    /** ¿Estás eligiendo algo? (lo manda coop.js en tu estado; si alguien elige, todo parado) */
+    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond'].some(G.UI.isOpen) || coopCards.length > 0; },
     waiting(names) { G.RunUI.setWaiting(names); },
     resume() { G.RunUI.closeLevelUp(); if (state === 'levelup') state = 'playing'; },
     shiny(dex) { G.onShinyCaught({ dex, name: (G.DEX_BY[dex] || {}).name || '' }); },
@@ -272,14 +275,16 @@ G.Game = (() => {
     item(id) { offerItem(id); },
     mateLeft() {},
     /** Grupo: quién está eligiendo fusión. Mientras haya alguien, todo parado. */
-    hold(names) {
-      holdBy = names || [];
-      const mine = G.UI.isOpen('scr-bond');
+    hold(list) {
+      // list = [[uid, nombre], ...] de quién está eligiendo; tú no cuentas (eso ya es 'choice').
+      const me = pl && pl.uid;
+      holdBy = (list || []).filter(x => (Array.isArray(x) ? x[0] : x) !== me).map(x => (Array.isArray(x) ? x[1] : x));
+      if (state === 'choice') return;                 // estás eligiendo: al terminar se mira (doneChoosing)
       if (holdBy.length) {
         if (state === 'playing') state = 'held';
-        if (pl && pl.bonds > 0) offerBond(true);      // si tú también tienes vínculo, eliges a la vez
-        const others = holdBy.filter(n => n !== (G.Social.me && G.Social.me.name) && n !== 'Tú');
-        if (!mine && others.length) G.Spawner.say('Pausa: ' + others.join(', ') + ' ' + (others.length > 1 ? 'están eligiendo…' : 'está eligiendo…'), 999, true);
+        if (coopCards.length) nextCoopCard();          // tus cartas pendientes, a la vez que los demás
+        else if (pl && pl.bonds > 0) offerBond(true);  // si tú también tienes vínculo, eliges a la vez
+        if (state === 'held') holdText();
       } else {
         if (state === 'held' && !awayBy) state = 'playing';
         G.Spawner.say(awayBy ? awayText() : '', awayBy ? 999 : 0, true);
@@ -298,6 +303,25 @@ G.Game = (() => {
     }
   };
   let awayBy = null;
+  /** Aviso "Pausa: X está eligiendo…" (o que no hay nadie). */
+  function holdText() {
+    if (!holdBy.length) return;
+    G.Spawner.say(G.I18n.f(holdBy.length > 1 ? 'Pausa: {x} están eligiendo…' : 'Pausa: {x} está eligiendo…', holdBy.join('、')), 999, true);
+  }
+  /**
+   * Grupo: has terminado una elección (carta, vínculo, objeto). Si te queda otra, la
+   * siguiente; si no, a esperar a los demás o a jugar.
+   */
+  function doneChoosing() {
+    if (!G.Coop.active) return;
+    if (coopCards.length) { nextCoopCard(); return; }
+    if (pl && pl.bonds > 0 && pl.bondOptions && pl.bondOptions()) { state = 'held'; offerBond(true); if (state === 'choice') return; }
+    if (state === 'choice' || state === 'held') state = holdBy.length || awayBy ? 'held' : 'playing';
+    if (state === 'held') { if (awayBy) G.Spawner.say(awayText(), 999, true); else holdText(); }
+    else G.Spawner.say('', 0, true);
+    G.Coop.holdEnd();
+  }
+  let choiceT = 0;          // grupo: segundos que llevas eligiendo (a los 25, elige solo)
   const awayText = () => 'Pausa: esperando a ' + awayBy + ' (anfitrión)…';
 
   /** Has llevado a casa a un Pokémon perdido y se une a ti (events.js). */
@@ -447,8 +471,8 @@ G.Game = (() => {
       G.FX.ring(pl.x, pl.y, 8, 130, '#ff8ad8', 0.8, 6);
       G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffb3e6', 40, 240);
       G.Spawner.say('¡Vínculo! ' + group.length + ' movimientos a la vez', 2.6, true);
-      if (state === 'choice') state = holdBy.length ? 'held' : 'playing';
-      if (G.Coop.active) G.Coop.holdEnd();
+      if (G.Coop.active) doneChoosing();
+      else if (state === 'choice') state = 'playing';
     });
   }
 
@@ -467,8 +491,8 @@ G.Game = (() => {
         G.Progress.event('item', { id: got });
       }
       if (!mine) return;
-      if (state === 'choice') state = holdBy.length ? 'held' : 'playing';
-      if (G.Coop.active) G.Coop.holdEnd();
+      if (G.Coop.active) doneChoosing();
+      else if (state === 'choice') state = 'playing';
     };
     if (!pl.item) { take(id); return; }
     if (pl.item === id) { G.Spawner.say('Ya llevas ' + G.Items.BY[id].name, 2, true); return; }
@@ -622,6 +646,19 @@ G.Game = (() => {
 
     if (state === 'playing') update(dt);
     else if (pl && state !== 'ui') { G.FX.update(dt * 0.25); pl.anim.update(dt * 0.25); }
+    if (state !== 'playing') G.Tips.tick(0);      // (esconde el consejo encima de cartas, pausa...)
+    // Grupo: nadie puede dejar a los demás esperando para siempre: a los 25 s se elige solo.
+    if (G.Coop.active && state === 'choice') {
+      choiceT += real;
+      const left = Math.ceil(25 - choiceT);
+      if (G.UI.isOpen('scr-levelup')) { const el = document.getElementById('lvl-wait'); if (el) { el.classList.remove('hidden'); el.textContent = G.I18n.f('Se elige solo en {x} s', Math.max(0, left)); } }
+      if (choiceT > 25) {
+        choiceT = 20;
+        if (G.UI.isOpen('scr-levelup')) G.RunUI.pick(0);
+        else if (G.UI.isOpen('scr-bond')) G.RunUI.pickBond(0);
+        else if (G.UI.isOpen('scr-item')) { const c = document.querySelector('#item-cards .card'); if (c) c.click(); }
+      }
+    } else choiceT = 0;
     // La red se atiende siempre (también con las cartas de nivel abiertas).
     if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick(dt);
 
@@ -732,14 +769,19 @@ G.Game = (() => {
   /** Grupo: abre las cartas de la siguiente subida de nivel de la cola. */
   function nextCoopCard() {
     const level = coopCards.shift();
-    if (level == null || !pl || state === 'over') return;
+    if (level == null || !pl || state === 'over' || state === 'ui') return;
+    // Se para todo mientras eliges (y los demás esperan: coop.js lo sabe por tu estado).
+    if (state === 'playing' || state === 'held') state = 'choice';
+    choiceT = 0;
     G.Audio.sfx('levelup');
     G.RunUI.showLevelUp(level, G.LevelUp.offer(pl), card => {
       G.Audio.sfx('confirm');
       card.apply(pl);
       G.Coop.localPicked();
-      nextCoopCard();
+      choiceT = 0;
+      doneChoosing();
     });
+    G.Coop.holdStart();
   }
   let fixedScene = null;   // índice de bioma si se eligió escenario (no se va turnando)   // PK: quién seguía en pie cuando quedó uno
 

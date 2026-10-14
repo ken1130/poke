@@ -21,6 +21,9 @@ G.MODNEWS = [
       { zh: '手機版：冒險地圖的「開始遊戲」固定在下方、挑戰按鈕改橫排、遊玩時螢幕不會自動變暗', en: 'Mobile: the Adventure “Play” button stays visible, challenge buttons in a row, the screen no longer dims while playing' }
     ],
     fix: [
+      { zh: '組隊升級、選羈絆、選道具時全隊暫停，等所有人選完才繼續；超過 25 秒會自動選擇', en: 'In groups, the game now pauses for everyone while anyone picks cards, bonds or items; auto-pick after 25 s' },
+      { zh: '修正組隊時選完技能仍顯示「對方正在選擇」而卡住的問題', en: 'Fixed the group getting stuck on “X is choosing…” after everyone had picked' },
+      { zh: '冒險地圖新增「和朋友一起玩這關」按鈕', en: 'Adventure map: new “With friends” button' },
       { zh: '修正多個組隊與關卡結算的問題', en: 'Fixed several co-op and stage result issues' }
     ] },
   { d: '2026-10-13', title: { zh: '和朋友一起玩', en: 'Play with friends' },

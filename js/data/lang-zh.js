@@ -1879,4 +1879,6 @@ G.I18n.add({
   'PK por equipos: no puedes herir a los de tu equipo y puedes levantarlos si caen.': '團隊 PK：打不到自己隊友，隊友倒下時可以去救他。',
   'En grupo: pulsa T (o 💬 en el móvil) para mandar mensajes rápidos a tus compañeros.': '組隊中：按 T（手機點 💬）可以發快捷訊息給隊友。',
   'Tu Pokémon evoluciona al llegar a Nv. 10, 20 y 30 y se hace más fuerte (se puede apagar en Ajustes).': '你的寶可夢到 Lv.10、20、30 會進化變強（可以在設定裡關閉）。',
+  'Se elige solo en {x} s': '{x} 秒後自動選擇',
+  'Con amigos': '和朋友一起玩這關',
 }, 'zh');

@@ -63,7 +63,7 @@ G.Coop = (() => {
     api = cb;
     members = cfg.members;
     mates.clear();
-    outEv = []; flushT = 0; waiting = new Set(); holds = new Set();
+    outEv = []; flushT = 0; waiting = new Set(); holds = new Set(); holdKey = ''; gotHolds = '';
     kills.clear(); revives.clear();
     hostAway = false; stalled = false; lastHostAt = performance.now();
     G.PvP.begin(cfg);
@@ -134,12 +134,12 @@ G.Coop = (() => {
     const m = g.find(x => x.kind === 'orbit') || g[0];
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
-            r2(local.reviveT || 0), r1(local.dmgDealt || 0), local.dex];
+            r2(local.reviveT || 0), r1(local.dmgDealt || 0), local.dex, api.choosing && api.choosing() ? 1 : 0];
   }
 
   function readState(a) {
     return { x: a[0], y: a[1], ang: a[2], walk: a[3], hp: a[4], maxHp: a[5], dead: a[6], mv: a[7], ml: a[8],
-             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0, dex: a[14] || 0 };
+             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0, dex: a[14] || 0, ch: a[15] ? 1 : 0 };
   }
 
   // ---------------- envío ----------------
@@ -172,6 +172,9 @@ G.Coop = (() => {
     return out;
   }
 
+  /** Quién está eligiendo ahora: [[uid, nombre], ...]. */
+  function holdList() { return [...holds].map(u => [u, nameOf(u)]); }
+
   function hostFrame(m) {
     const st = api.team();
     const p = { [me]: myState() };
@@ -180,7 +183,7 @@ G.Coop = (() => {
     }
     const ev = m.q; m.q = [];
     return { k: 'f', t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10],
-             p, e: enemyList(m.pl), ev };
+             p, e: enemyList(m.pl), ev, h: holdList() };
   }
 
   function flushAll() { for (const m of mates.values()) if (m.connected) G.Net.send(m.uid, hostFrame(m)); }
@@ -195,6 +198,7 @@ G.Coop = (() => {
   function tick(dt) {
     if (!active) return;
     if (host) {
+      syncHolds();
       for (const m of mates.values()) {
         if (!m.connected) continue;
         m.flushT -= dt;
@@ -295,8 +299,19 @@ G.Coop = (() => {
     flushAll();
   });
 
+  /** Invitado: lista de quién elige que manda el anfitrión (sólo si cambia). */
+  let gotHolds = '';
+  function applyHolds(list) {
+    if (!Array.isArray(list)) return;
+    const k = list.map(x => (Array.isArray(x) ? x[0] : x)).sort().join(',');
+    if (k === gotHolds) return;
+    gotHolds = k;
+    api.hold && api.hold(list);
+  }
+
   function onHostFrame(msg) {
     lastHostAt = performance.now();
+    if (msg.h) applyHolds(msg.h);
     if (stalled) { stalled = false; updateAway(); }
     for (const ev of msg.ev || []) applyHostEvent(ev);
     api.syncTeam({ time: msg.t, level: msg.lv, xp: msg.xp, xpNext: msg.xn, kills: msg.ki, bosses: msg.bo, coins: msg.co,
@@ -349,7 +364,7 @@ G.Coop = (() => {
       case 'lu': api.levelStart(ev[1]); break;
       case 'lw': api.waiting(ev[1]); break;
       case 'lr': api.resume(); break;
-      case 'hp': api.hold && api.hold(ev[1]); break;
+      case 'hp': applyHolds(ev[1]); break;
       case 'ha': hostAway = !!ev[1]; updateAway(); break;
       case 'sh': api.shiny(ev[1]); break;
       case 'ov': { const cb = api.over; const d = ev[1]; end(); cb(d); break; }
@@ -437,29 +452,31 @@ G.Coop = (() => {
     api.resume();
   }
 
-  // ---------------- fusiones: pausa para todos ----------------
-  // Mientras alguien elige qué movimientos fusiona (vínculo de un legendario),
-  // la partida se para para todos, como con las cartas de nivel.
+  // ---------------- elegir: pausa para todos ----------------
+  // Mientras alguien elige (cartas de nivel, vínculo de un legendario, objeto), la
+  // partida se para para todos. Cada uno dice en su estado si está eligiendo (índice 15)
+  // y el anfitrión lo recalcula cada fotograma y lo manda en cada mensaje ('h'): si se
+  // pierde o se cruza un aviso, al siguiente mensaje se arregla solo (antes, con avisos
+  // sueltos de empezar/terminar, a veces se quedaba "X está eligiendo…" para siempre).
 
-  function holdNames() { return [...holds].map(nameOf); }
-
-  /** Anfitrión: `u` empieza a elegir. */
-  function holdOn(u) {
-    holds.add(u);
-    emit(['hp', holdNames()]); flushAll();
-    api.hold && api.hold(holdNames());
+  let holdKey = '';
+  /** Anfitrión: quién está eligiendo según el último estado de cada uno. */
+  function syncHolds() {
+    const now = new Set();
+    if (api.choosing && api.choosing()) now.add(me);
+    for (const m of mates.values()) if (m.connected && m.pl && m.pl.net && m.pl.net.ch) now.add(m.uid);
+    const key = [...now].sort().join(',');
+    if (key === holdKey) return;
+    holdKey = key; holds = now;
+    emit(['hp', holdList()]); flushAll();
+    api.hold && api.hold(holdList());
   }
+  function holdOn(u) { if (host) syncHolds(); }
+  function holdOff(u) { holds.delete(u); if (host) syncHolds(); }
 
-  /** Anfitrión: `u` ha terminado (o se ha ido). */
-  function holdOff(u) {
-    if (!holds.delete(u)) return;
-    emit(['hp', holdNames()]); flushAll();
-    api.hold && api.hold(holdNames());
-  }
-
-  /** Tú empiezas / terminas de elegir fusión. */
-  function holdStart() { if (host) holdOn(me); else { outEv.push(['hs']); flushClient(true); } }
-  function holdEnd() { if (host) holdOff(me); else { outEv.push(['he']); flushClient(true); } }
+  /** Tú empiezas / terminas de elegir: que lo sepan ya (no esperar al siguiente mensaje). */
+  function holdStart() { if (host) syncHolds(); else flushClient(true); }
+  function holdEnd() { if (host) syncHolds(); else flushClient(true); }
 
   /** Has elegido tu carta. */
   function localPicked() {
