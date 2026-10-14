@@ -918,6 +918,15 @@
       corpses = corpses.filter(e => !e.remote);
     }
 
+    /** Anfitrión/solitario: quita un enemigo sin que cuente como derrotado (el jefe de incursión que se va). */
+    function remove(e) {
+      const i = list.indexOf(e);
+      if (i < 0) return;
+      list.splice(i, 1); byId.delete(e.id);
+      G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#c9d6ff', 24, 200);
+      if (G.Coop.isHost) G.Coop.enemyGone(e, false);
+    }
+
     /** Quita una copia (el anfitrión dice que ha caído o que se ha alejado). */
     function removeRemote(id, died) {
       const e = byId.get(id);
@@ -1084,7 +1093,7 @@
     function bossAlive() { return list.some(e => e.boss && !e.dead); }
     function shinies() { return list.filter(e => e.shiny && !e.dead); }
 
-    return { clear, all, add, get, addRemote, removeRemote, stash, restore, clearRemote, update, drawables, queryCircle, rebuildGrid, bossAlive, shinies, nearestPlayer,
+    return { clear, all, add, get, remove, addRemote, removeRemote, stash, restore, clearRemote, update, drawables, queryCircle, rebuildGrid, bossAlive, shinies, nearestPlayer,
              get count() { return list.length; } };
   })();
 })();

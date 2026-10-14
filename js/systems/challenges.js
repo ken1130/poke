@@ -90,7 +90,8 @@ G.Challenges = (() => {
     const f = 1 + Math.floor(time / FLOOR);
     if (f <= tower.floor) return;
     tower.floor = f;
-    const c = G.U.pick(CURSES);
+    // En la arena de una grieta no sale el jefe (se perdería al volver): otra maldición.
+    const c = G.U.pick(G.Rift.inArena ? CURSES.filter(x => !x.once) : CURSES);
     if (c.once) {
       G.Spawner.spawnBossNow(pl, time);
     } else {
@@ -169,6 +170,7 @@ G.Challenges = (() => {
   /** En grupo: la marca del grupo (la sube el anfitrión) y nada de récords en solitario. */
   function teamAfterRun(r, box, run) {
     const floor = tower ? tower.floor : 1;
+    if (run === 'weekly' && G.DB.save) { G.DB.save.stats.weeklyRuns = (G.DB.save.stats.weeklyRuns || 0) + 1; G.DB.commit(); }
     const v = run === 'tower' ? floor : Math.floor(r.time);
     const names = (r.names || []).join('、').slice(0, 48);
     if (r.host) post(boardKey(run, true), v, r, names);

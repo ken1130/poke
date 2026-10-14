@@ -17,7 +17,8 @@ G.Raid = (() => {
 
   /** Anfitrión, cada fotograma. */
   function update(dt, time) {
-    if (!G.Coop.isHost || !can() || G.Rift.inArena) return;
+    if (!G.Coop.isHost || !G.Coop.active || G.Rift.inArena) return;
+    // Un jefe en curso sigue hasta acabar aunque se vaya alguien (si no, se quedaba colgado).
     if (boss) {
       if (boss.dead) { win(); return; }
       life -= dt;
@@ -25,6 +26,7 @@ G.Raid = (() => {
       if ((lockT -= dt) <= 0) lockOn();
       return;
     }
+    if (!can()) return;
     if (time >= nextAt) { nextAt += EVERY; spawn(time); }
   }
 
@@ -62,7 +64,8 @@ G.Raid = (() => {
     clear();
   }
   function escape() {
-    if (boss && !boss.dead) { boss.hp = 0; boss.dead = true; boss.fade = 0.01; boss.noLoot = true; }
+    // Se va sin contar como derrotado (ni derribo, ni jefe, ni misión): se quita sin más.
+    if (boss && !boss.dead) G.EnemyMgr.remove(boss);
     G.Spawner.say(G.I18n.f('{x} se ha marchado…', G.T(boss.name)), 3);
     clear();
   }

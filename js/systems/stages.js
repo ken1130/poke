@@ -138,7 +138,9 @@ G.Stages = (() => {
       if (!win && !st.boss && time >= st.nextBossT) nextBoss(pl, time);
     }
     if (win) {
-      st.done = true; st.endT = 2.2;
+      st.done = true; st.endT = 2.2; sendT = 0;      // que les llegue ya a los demás
+      // Estrellas con lo de este momento (no con lo de 2 s después).
+      st.winT = time; st.winHp = pl.hp / pl.maxHp;
       G.Spawner.say(G.T('¡Fase superada!'), 2.4);
       G.Audio.sfx('shinyGet');
       G.Game.flash('#fff6c0', 0.5);
@@ -283,11 +285,14 @@ G.Stages = (() => {
   /** Tras el resumen: estrellas y premios (antes de G.Modes.afterRun). */
   function afterRun(r) {
     if (!st) return;
-    const s = st.s, win = !!(result && result.win);
+    // Si ya estaba superada (y luego caes en esos 2 s), cuenta como superada.
+    const s = st.s, win = result ? !!result.win || !!st.done : !!st.done;
     const box = document.getElementById('over-stats'), ttl = document.getElementById('over-title');
     const pl = r.pl;
-    const stars = !win ? 0 : 1 + (pl && pl.hp >= pl.maxHp * 0.5 ? 1 : 0)
-      + ((s.star3.kills ? r.kills >= s.star3.kills : r.time <= s.star3.time) ? 1 : 0);
+    const hpK = st.winHp != null ? st.winHp : pl ? pl.hp / pl.maxHp : 0;
+    const tWin = st.winT != null ? st.winT : r.time;
+    const stars = !win ? 0 : 1 + (hpK >= 0.5 ? 1 : 0)
+      + ((s.star3.kills ? r.kills >= s.star3.kills : tWin <= s.star3.time) ? 1 : 0);
     const before = starsOf(s.id);
     let rw = '';
     if (win && G.DB.save) {
@@ -399,5 +404,7 @@ G.Stages = (() => {
 
   return { LIST, REGIONS, select, prepare, scene, headStart, tOffset, update, token, onNet, hudLine, drawable, drawHud, setResult, afterRun,
            merge, openMap, closeMap, menuLine, choices, unlocked, starsOf, totalStars, title,
-           get active() { return !!st; } };
+           get active() { return !!st; },
+           /** Fase ya superada (esperando el resumen): nada te hace daño. */
+           get won() { if (!st) return false; const v = view(); return !!(st.done || (v && v.done)); } };
 })();

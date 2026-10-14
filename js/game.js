@@ -114,7 +114,7 @@ G.Game = (() => {
       G.Weather.reset();
       G.Path.clear();
       G.Hazards.clear();
-      G.World.reset(coop ? coop.seed : fixedSeed != null ? fixedSeed : Math.floor(Math.random() * 1e6));
+      G.World.reset(fixedSeed != null ? fixedSeed : coop ? coop.seed : Math.floor(Math.random() * 1e6));
     };
     if (fixedSeed != null) G.Modes.seeded(fixedSeed, prepare); else prepare();
     G.World.setBiome(0, true);
@@ -254,7 +254,8 @@ G.Game = (() => {
       if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, level: Math.max(pl.level, d.lv || 1), t1: d.t1 || pl.t1, t10: d.t10 || pl.t10 });
       if (d && d.t) time = d.t;
       if (d && d.why === 'host') G.UI.toast('El anfitrión ha terminado la partida', 3200);
-      endRun(!(d && d.why === 'host'));
+      // Sonido de derrota sólo si de verdad lo es (fase superada o PK ganado: no).
+      endRun(!(d && d.why === 'host') && !(d && d.stage && d.stage.win) && !(d && 'pvpWin' in d && G.PvP.wonByMe()));
     },
     lost(msg) { G.UI.toast(msg, 3600); endRun(false); },
     item(id) { offerItem(id); },
@@ -348,9 +349,11 @@ G.Game = (() => {
     const xs = save.stats, add = (k, n = 1) => { xs[k] = (xs[k] || 0) + n; };
     if (G.Modes.run === 'daily') add('dailyRuns');
     if (G.Modes.run === 'legend') xs.bestRush = Math.max(xs.bestRush || 0, G.Rift.rushWins);
-    if (G.Modes.on('boss')) add('bossModeBosses', pl.bosses);
-    if (G.Modes.on('shiny')) add('shinyRuns');
-    if (G.Modes.on('extreme')) xs.bestExtremeTime = Math.max(xs.bestExtremeTime || 0, Math.floor(time));
+    // (Sólo los modos de "Reglas a medida": el reto semanal de jefes no cuenta aquí.)
+    const custom = G.Modes.run === 'normal';
+    if (custom && G.Modes.on('boss')) add('bossModeBosses', pl.bosses);
+    if (custom && G.Modes.on('shiny')) add('shinyRuns');
+    if (custom && G.Modes.on('extreme')) xs.bestExtremeTime = Math.max(xs.bestExtremeTime || 0, Math.floor(time));
     if (G.PvP.wonByMe()) add('pvpWins');
     save.scenes = save.scenes || {};
     if (G.Tiles.SCENES.includes(G.World.biome)) save.scenes[G.World.biome] = Date.now();
@@ -373,7 +376,9 @@ G.Game = (() => {
     G.Stages.afterRun({ time, kills: pl.kills, pl });
     const rr = { time, level: pl.level, kills: pl.kills, dex: pl.dex, group: coop, host: wasHost, names: team.map(m => m.name) };
     G.Challenges.afterRun(rr);
-    G.DexQuests.afterRun(pl.startDex || pl.dex, { time, kills: pl.kills, bosses: pl.bosses });
+    // En grupo los derribos son del equipo: a tu Pokémon le cuenta tu parte.
+    const share = coop ? Math.max(1, team.length) : 1;
+    G.DexQuests.afterRun(pl.startDex || pl.dex, { time, kills: Math.round(pl.kills / share), bosses: Math.floor(pl.bosses / share) });
     G.Modes.afterRun(rr);
     G.PvP.afterRun();
     if (lastTeam) { showTeam(lastTeam); lastTeam = null; }

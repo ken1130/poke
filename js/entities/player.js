@@ -228,7 +228,8 @@ G.Player = class Player {
   /** @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual */
   hurt(amount, type = null) {
     // god: truco de invencible · picking: eligiendo cartas en grupo (no le llega nada, ni los ataques con aviso)
-    if (this.invuln > 0 || this.dead || this.god || this.picking) return;
+    // (won: fase de la Aventura ya superada, en los 2 s antes del resumen)
+    if (this.invuln > 0 || this.dead || this.god || this.picking || G.Stages.won) return;
     let eff = null;
     if (type) {
       const k = G.Types.mult(type, this.mon.types);
@@ -287,7 +288,7 @@ G.Player = class Player {
     // Además de los stats de la evolución, un empujón: +8% de vida y +6% de ataque.
     const dHp = (Math.max(0, mon.hp - old.hp) + this.maxHp * 0.08) * (this.glassK || 1);
     this.atkMul *= 1.06;
-    this.maxHp += dHp; this.hp = Math.min(this.maxHp, this.hp + dHp + this.maxHp * 0.25);
+    this.maxHp += dHp; this.hp = Math.min(this.maxHp, this.hp + (dHp + this.maxHp * 0.25) * G.Modes.healMul());
     this.baseSpd = Math.max(this.baseSpd, this.baseSpd + (mon.spd - old.spd));
     this.baseAtk = Math.max(this.baseAtk, this.baseAtk + (mon.atk - old.atk));
   }
