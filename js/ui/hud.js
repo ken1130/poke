@@ -116,7 +116,24 @@ G.HUD = (() => {
       bar(ctx, (w - bw) / 2, 70, bw, 12, boss.hp / boss.maxHp, '#ffcb3d');
       ctx.font = F(800, 10);
       ctx.fillStyle = '#20160a';
-      ctx.fillText(boss.name.toUpperCase(), w / 2, 80);
+      ctx.fillText((boss.raid ? G.T('INCURSIÓN') + ' · ' : '') + boss.name.toUpperCase(), w / 2, 80);
+    }
+
+    // ---------- incursión: a quién va el jefe ----------
+    if (G.Raid.active) {
+      const cam = G.Camera, beat = 0.6 + Math.sin(performance.now() / 120) * 0.4;
+      for (const p of G.Coop.players()) {
+        if (!G.Raid.targets(p) || p.dead) continue;
+        const sx = (p.x - cam.left()) * cam.scale, sy = (p.y - p.bodyH - cam.top()) * cam.scale - 26;
+        if (sx < 0 || sx > w || sy < 0 || sy > h) continue;
+        ctx.save();
+        ctx.globalAlpha = beat; ctx.textAlign = 'center';
+        ctx.font = F(800, p === pl ? 14 : 11);
+        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+        const t = G.T(p === pl ? '¡Te ha fichado! ¡Corre!' : '¡Fichado!');
+        ctx.strokeText('🎯 ' + t, sx, sy); ctx.fillStyle = '#ff5f6d'; ctx.fillText('🎯 ' + t, sx, sy);
+        ctx.restore();
+      }
     }
 
     // ---------- aviso ----------

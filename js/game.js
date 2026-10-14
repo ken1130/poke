@@ -108,6 +108,7 @@ G.Game = (() => {
     const prepare = () => {
       G.Spawner.reset();
       G.Rift.reset();
+      G.Raid.reset();
       G.Events.reset();
       G.Weather.reset();
       G.Path.clear();
@@ -660,6 +661,7 @@ G.Game = (() => {
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
     if (!coop) G.Challenges.update(dt, time, pl);
+    else G.Raid.update(dt, time);
     G.Evo.check(pl);
     G.Events.update(dt, all, time);
     G.Weather.update(dt, time, pl);

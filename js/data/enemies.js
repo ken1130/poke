@@ -182,6 +182,18 @@ G.Enemies = (() => {
     };
   }
 
+  /** Jefe de un Pokémon concreto con la fuerza de un hueco (aventura, incursión). */
+  function bossFor(dex, slot, hpMul = 1) {
+    const p = G.DEX_BY[dex];
+    return {
+      at: slot.at, dex: p.dex, name: p.name,
+      hp: Math.round(slot.hp * 1.35 * hpMul), spd: Math.round(G.U.clamp(40 + baseSpd(p) * 0.5, 40, 100)),
+      dmg: Math.round(slot.dmg * 1.2), xp: slot.xp,
+      behavior: behaviorOf(p) === 'ranged' ? 'ranged' : (baseSpd(p) > 90 ? 'charger' : 'chase'),
+      shotDmg: Math.round(slot.dmg * 0.55), shotCd: 1.1, range: 260
+    };
+  }
+
   /**
    * Modo jefes: un jefe al azar para el segundo `t`. Sube un hueco de
    * BOSS_SLOTS cada 2 min; los primeros minutos con menos vida (empiezas a nivel 1).
@@ -254,7 +266,7 @@ G.Enemies = (() => {
   }
 
   return {
-    TIERS, BOSS_SLOTS, LATE_FROM, rollRun, bossAt, scale, bossScale, late, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
+    TIERS, BOSS_SLOTS, LATE_FROM, rollRun, bossAt, bossFor, scale, bossScale, late, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }
   };

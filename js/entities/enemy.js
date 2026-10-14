@@ -29,7 +29,8 @@
       this.name = (G.DEX_BY[def.dex] && G.DEX_BY[def.dex].name) || def.name;
       this.x = x; this.y = y;
       this.boss = boss;
-      this.scale = boss ? bossScale(def.dex) : 1;
+      this.scale = boss ? bossScale(def.dex) * (def.raid ? 1.5 : 1) : 1;
+      this.raid = !!def.raid;
       this.anim = new G.Sprites.Animator(def.dex, this.scale);
       this.r = G.Sprites.bodyRadius(def.dex, this.scale);
       this.bodyH = G.Sprites.bodyHeight(def.dex, this.scale);
@@ -178,6 +179,7 @@
         if (this.shiny) { G.FX.burst(this.x, cy, '#ffe9a0', 30, 220); G.FX.ring(this.x, this.y, this.r, this.r * 7, '#9ae6ff', 0.7, 5); }
         return;
       }
+      if (this.noLoot) return;          // jefe de incursión que se ha ido
       if (this.boss) {
         G.Camera.kick(0.9);
         for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-40, 40), this.y + G.U.rand(-30, 30), 5);
@@ -879,7 +881,7 @@
     /** Copia local de un enemigo del anfitrión (cooperativo). */
     function addRemote(o) {
       if (byId.has(o.id)) return byId.get(o.id);
-      const def = { dex: o.dex, hp: o.hp, spd: 0, dmg: o.dmg, xp: 0, behavior: o.beh || 'remote' };
+      const def = { dex: o.dex, hp: o.hp, spd: 0, dmg: o.dmg, xp: 0, behavior: o.beh || 'remote', raid: !!o.raid };
       const e = new Enemy(def, o.x, o.y, { hp: 1, spd: 1, dmg: 1 }, o.boss);
       e.id = o.id;
       e.remote = true;
@@ -1022,7 +1024,8 @@
       rebuildGrid();
       for (const e of list) {
         if (e.remote) e.netUpdate(dt);
-        else e.update(dt, nearestPlayer(players, e.x, e.y) || pl);
+        // Jefe de incursión: va a por el que ha fichado (raid.js).
+        else e.update(dt, (e.lockOn && !e.lockOn.dead && players.includes(e.lockOn) && e.lockOn) || nearestPlayer(players, e.x, e.y) || pl);
       }
       if (!G.Coop.active || G.Coop.isHost) separate(dt);
       for (let i = list.length - 1; i >= 0; i--) {

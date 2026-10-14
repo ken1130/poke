@@ -1796,4 +1796,10 @@ G.I18n.add({
   '¡{x} ha evolucionado a {x}!': '{x} 進化成 {x} 了！',
   'Evolucionar en la partida': '對局中進化',
   'Tu Pokémon evoluciona al subir de nivel (Nv. 10, 20 y 30) y se hace más fuerte. Apágalo para jugar siempre con su forma de ahora.': '你的寶可夢升到 Lv.10、20、30 時會進化並變強。關掉的話就會一直維持目前的樣子。',
+  '¡Jefe de incursión: {x}! ¡Tumbadlo entre todos en 2:30!': '團體戰頭目 {x} 出現了！2 分 30 秒內合力打倒它！',
+  '¡Incursión superada! Ticket ×10 y 300 monedas para el grupo': '團體戰勝利！全隊獲得 ×10 扭蛋券和 300 寶可夢幣',
+  '{x} se ha marchado…': '{x} 離開了…',
+  '¡Te ha fichado! ¡Corre!': '你被盯上了！快跑！',
+  '¡Fichado!': '被盯上了！',
+  'INCURSIÓN': '團體戰',
 }, 'zh');

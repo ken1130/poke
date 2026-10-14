@@ -324,7 +324,7 @@ G.Coop = (() => {
   function applyHostEvent(ev) {
     switch (ev[0]) {
       case 'ne':
-        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9] });
+        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], raid: ev[5] === 2, shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9] });
         break;
       case 'ed': G.EnemyMgr.removeRemote(ev[1], true); break;
       case 'eg': G.EnemyMgr.removeRemote(ev[1], false); break;
@@ -359,6 +359,7 @@ G.Coop = (() => {
       case 'hz': G.Hazards.add(ev[1], true); break;
       case 'fxr': G.FX.ring(ev[1], ev[2], 8, ev[3], ev[4], 0.5, 3); break;
       case 'qc': G.Chat.show(ev[1], ev[2]); break;
+      case 'rdt': case 'rdw': G.Raid.onEvent(ev); break;
     }
   }
 
@@ -378,7 +379,7 @@ G.Coop = (() => {
   // anfitrión
   function hurtShown(e, d, color) { emitNear(['hn', e.id, d, color], e.x, e.y, hitFrom); }
   function enemyAdded(e) {
-    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? 1 : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior]);
+    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? (e.raid ? 2 : 1) : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior]);
   }
   function enemyGone(e, died) { emit([died ? 'ed' : 'eg', e.id]); }
   function enemyShot(p, type) { emit(['es', r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r2(p.dmg), p.r, p.life, type]); }

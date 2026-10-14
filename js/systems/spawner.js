@@ -180,7 +180,7 @@ G.Spawner = (() => {
 
   /** Un jefe ya (torre sin fin, aventura). @param def  definición del jefe (por defecto, uno al azar para `t`) */
   function spawnBossNow(pl, t, def) {
-    if (!players.length) players = [pl];
+    if (!players.length && pl) players = [pl];
     def = def || G.Enemies.bossAt(t);
     G.Sprites.preload([def.dex]);
     return spawnBoss(pl || anchor(), t, def);
