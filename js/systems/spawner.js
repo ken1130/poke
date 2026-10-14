@@ -178,6 +178,14 @@ G.Spawner = (() => {
     spawnBoss(target, t, def);
   }
 
+  /** Un jefe ya (torre sin fin, aventura). @param def  definición del jefe (por defecto, uno al azar para `t`) */
+  function spawnBossNow(pl, t, def) {
+    if (!players.length) players = [pl];
+    def = def || G.Enemies.bossAt(t);
+    G.Sprites.preload([def.dex]);
+    return spawnBoss(pl || anchor(), t, def);
+  }
+
   /** Unos cuantos de golpe desde un lado (al empezar una horda). */
   function burst(n) {
     if (G.Modes.on('boss') || G.Modes.run === 'legend') return;   // sin hordas
@@ -212,6 +220,6 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP,
+  return { reset, update, ahead, burst, spawnBossNow, tickBanner, banner, say, rate, SHINY_RATE, CAP,
            debugForceShiny(n = 1) { forceShiny = n; } };
 })();

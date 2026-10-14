@@ -187,6 +187,18 @@ service cloud.firestore {
       allow delete: if signedIn() && me() == uid;
     }
 
+    // Clasificaciones de los desafíos (reto semanal 'w-2026-W42', torre 'tower'): la mejor marca de cada uno.
+    match /boards/{key}/r/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && me() == uid && key.size() <= 24
+        && request.resource.data.keys().hasOnly(['name', 'v', 't', 'lv', 'dex', 'at'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 16
+        && request.resource.data.v is int && request.resource.data.v >= 0 && request.resource.data.v <= 100000
+        && request.resource.data.t is int && request.resource.data.lv is int && request.resource.data.dex is int
+        && request.resource.data.at == request.time;
+      allow delete: if signedIn() && me() == uid;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

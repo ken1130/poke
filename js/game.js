@@ -101,8 +101,10 @@ G.Game = (() => {
     G.EnemyMgr.clear();
     G.Pickups.clear();
     if (coop) { G.Modes.reset(); G.Modes.setRoom(coop.mods || {}); }
-    // Reto diario: el mapa y el elenco de enemigos salen de la fecha (iguales para todos).
-    const daily = G.Modes.run === 'daily';
+    // Desafíos / aventura: sus reglas (las "Reglas a medida" sólo valen en la run normal).
+    G.Challenges.prepare();
+    // Retos diario y semanal: el mapa y el elenco de enemigos salen de la fecha (iguales para todos).
+    const fixedSeed = coop ? null : G.Challenges.seed();
     const prepare = () => {
       G.Spawner.reset();
       G.Rift.reset();
@@ -110,9 +112,9 @@ G.Game = (() => {
       G.Weather.reset();
       G.Path.clear();
       G.Hazards.clear();
-      G.World.reset(coop ? coop.seed : daily ? G.Modes.dailySeed() : Math.floor(Math.random() * 1e6));
+      G.World.reset(coop ? coop.seed : fixedSeed != null ? fixedSeed : Math.floor(Math.random() * 1e6));
     };
-    if (daily) G.Modes.seeded(G.Modes.dailySeed(), prepare); else prepare();
+    if (fixedSeed != null) G.Modes.seeded(fixedSeed, prepare); else prepare();
     G.World.setBiome(0, true);
     // Escenario elegido en Modos de juego (en grupo, el del anfitrión): toda la run en él.
     fixedScene = coop ? (Number.isInteger(coop.scene) ? coop.scene : null) : G.Modes.scene();
@@ -123,6 +125,7 @@ G.Game = (() => {
     pl = new G.Player(mon, perks, !randomMe && !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
     // Modo extremo: más premio (XP y monedas).
     pl.xpMul *= G.Modes.rewardMul(); pl.coinMul *= G.Modes.rewardMul();
+    G.Challenges.applyPlayer(pl);
     banked = { t1: 0, t10: 0 };
     caught = [];
     // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
@@ -359,6 +362,7 @@ G.Game = (() => {
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
+    G.Challenges.afterRun({ time, level: pl.level, kills: pl.kills, dex: pl.dex });
     G.Modes.afterRun({ time, level: pl.level, kills: pl.kills, dex: pl.dex });
     G.PvP.afterRun();
     if (lastTeam) { showTeam(lastTeam); lastTeam = null; }
@@ -655,6 +659,7 @@ G.Game = (() => {
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
+    if (!coop) G.Challenges.update(dt, time, pl);
     G.Events.update(dt, all, time);
     G.Weather.update(dt, time, pl);
     G.FX.update(dt);

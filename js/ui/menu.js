@@ -5,7 +5,7 @@ G.MenuUI = (() => {
   let dexFilter = 'all', dexGen = 1, dexSel = null, dexQuery = '';
 
   function init() {
-    const ICON = { play: 'ball', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', party: 'friends', modes: 'crown', cheat: 'star', settings: 'gear' };
+    const ICON = { play: 'ball', adventure: 'trophy', challenge: 'crown', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', party: 'friends', modes: 'cards', cheat: 'star', settings: 'gear' };
     document.querySelectorAll('#scr-menu [data-go]').forEach(b => {
       b.insertAdjacentHTML('afterbegin', `<span class="mi-ico">${G.Icons.html(ICON[b.dataset.go], 26)}</span>`);
       b.dataset.sfx = b.dataset.go === 'play' ? 'confirm' : 'click';
@@ -18,6 +18,8 @@ G.MenuUI = (() => {
         else if (go === 'goals') G.GoalsUI.open();
         else if (go === 'party') G.PartyUI.open();
         else if (go === 'modes') G.Modes.openPanel();
+        else if (go === 'challenge') G.Challenges.open();
+        else if (go === 'adventure') G.Stages.openMap();
         else if (go === 'cheat') G.Cheat.openPrompt();
         else if (go === 'settings') G.SettingsUI.open();
       };
@@ -83,18 +85,27 @@ G.MenuUI = (() => {
     G.InvitePop.refresh();
   }
 
-  /** Bajo "Modos de juego": los que tienes activos. */
+  /** Bajo "Reglas a medida" (y "Jugar"): las que tienes puestas. */
   function modesLine() {
-    const sub = $('menu-modes-sub');
-    sub.textContent = G.Modes.summary();
-    sub.classList.toggle('gold', G.Modes.summary() !== 'Reto diario, legendarios y más');   // algo activo
+    const sub = $('menu-modes-sub'), sm = G.Modes.summary();
+    sub.textContent = sm ? G.T('Activas') + ': ' + sm.split(' · ').map(x => G.T(x)).join(' · ') : G.T('Sólo para «Jugar»');
+    sub.classList.toggle('gold', !!sm);
+    const ch = $('menu-ch-sub');
+    if (ch) ch.textContent = G.Challenges.menuLine();
+    const adv = $('menu-adv-sub');
+    if (adv && G.Stages) adv.textContent = G.Stages.menuLine();
   }
 
   /** Texto bajo "Amigos" y "Jugar": quién está en línea, solicitudes, sala. */
   function socialLine() {
     const room = G.Social.room;
     const play = document.querySelector('#scr-menu [data-go=play] small');
-    if (play) play.textContent = room ? 'Volver a tu sala (' + room.members.length + '/' + G.Social.MAX_PLAYERS + ')' : 'Entra en la mazmorra';
+    const sm = G.Modes.summary();
+    if (play) {
+      play.textContent = room ? G.I18n.f('Volver a tu sala ({x}/{x})', room.members.length, G.Social.MAX_PLAYERS)
+        : sm ? G.T('Con reglas a medida') + ': ' + sm.split(' · ').map(x => G.T(x)).join(' · ') : G.T('Entra en la mazmorra');
+      play.classList.toggle('gold', !room && !!sm);
+    }
     const fr = G.Social.friends;
     const on = fr.filter(f => f.status === 'ok' && f.online).length;
     const req = fr.filter(f => f.status === 'in').length;

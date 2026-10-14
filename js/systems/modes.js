@@ -10,33 +10,55 @@
  *   'daily'   reto diario: mapa y enemigos sorteados con la fecha, iguales
  *             para todos ese día; sin modos ni dificultad a medida
  *   'legend'  legendarios seguidos en la arena de la grieta (rift.js) hasta caer
+ *   'weekly' / 'tower' / 'stage'   reto semanal, torre sin fin y aventura
+ *             (challenges.js y stages.js): cada uno trae sus propias reglas
+ *
+ * Los ajustes de arriba (modos, escenario y dificultad a medida) SÓLO valen en la
+ * run normal. Los retos, la torre, la aventura y los legendarios no los usan:
+ * llevan sus reglas (`rules`), así nunca se pisan.
  */
 G.Modes = (() => {
   const $ = id => document.getElementById(id);
   let run = 'normal';
   // Partida en grupo: los modos los pone la sala ({ boss, shiny }), no los ajustes de cada uno.
   let roomMods = null;
+  /**
+   * Reglas del modo especial en curso (reto semanal, torre, aventura...):
+   *   hp, spd, dmg, count, reward   multiplicadores de los enemigos / del premio
+   *   boss     sólo jefes · shiny   todos shiny · types   sólo Pokémon de esos tipos
+   *   glass    tu vida ×0,3 y tu ataque ×2 · meSpd   tu velocidad ×
+   *   heal     cuánto curas (0 = nada) · dark   oscuridad alrededor (1, 2, 3...)
+   */
+  let rules = null;
   const S = () => G.Settings;
-  const fair = () => run === 'daily';
+  const fair = () => run !== 'normal';
+  const R = (k, d) => (rules && rules[k] != null ? rules[k] : d);
 
   /** ¿Está activo un modo? 'shiny' | 'boss' | 'extreme' */
   function on(k) {
     if (roomMods) return !!roomMods[k];
+    if (rules) return !!rules[k];
     return !fair() && !!S().get(k + 'Mode');
   }
   const pct = k => (fair() || roomMods ? 1 : (S().get(k) || 100) / 100);
 
-  const hpMul = () => pct('diffHp');
-  const spdMul = () => pct('diffSpd') * (on('extreme') ? 1.4 : 1);
-  const dmgMul = () => (on('extreme') ? 2 : 1);
-  const countMul = () => pct('diffCount');
-  const rewardMul = () => (on('extreme') ? 2 : 1);
+  const hpMul = () => pct('diffHp') * R('hp', 1);
+  const spdMul = () => pct('diffSpd') * (on('extreme') ? 1.4 : 1) * R('spd', 1);
+  const dmgMul = () => (on('extreme') ? 2 : 1) * R('dmg', 1);
+  const countMul = () => pct('diffCount') * R('count', 1);
+  const rewardMul = () => (on('extreme') ? 2 : 1) * R('reward', 1);
+  /** Cuánto cura lo que te cura (1 = normal). */
+  const healMul = () => R('heal', 1);
 
-  /** Escenario fijo elegido (índice de bioma) o null para el turno normal. El reto diario, siempre el normal. */
+  /** Escenario fijo elegido (índice de bioma) o null para el turno normal. Sólo en la run normal. */
   function scene() {
     const v = S().get('scene');
     return !fair() && Number.isInteger(v) && G.Tiles.SCENES.includes(v) ? v : null;
   }
+  /** Pone las reglas del modo especial (o null). */
+  function setRules(r) { rules = r ? Object.assign({}, r) : null; }
+  /** Valor de una regla (o undefined). */
+  function rule(k) { return rules ? rules[k] : undefined; }
 
   /** Multiplicadores {hp, spd, dmg} de un enemigo, con los modos aplicados. */
   function scale(sc) {
@@ -84,7 +106,7 @@ G.Modes = (() => {
     run = kind;
     G.Flow.play();
   }
-  function reset() { run = 'normal'; roomMods = null; }
+  function reset() { run = 'normal'; roomMods = null; rules = null; }
   /** Al empezar una partida en grupo: los modos de la sala. */
   function setRoom(mods) {
     roomMods = Object.assign({ boss: false, shiny: false, rush: false }, mods);
@@ -199,32 +221,13 @@ G.Modes = (() => {
   }
 
   function render() {
-    const db = dailyBest(), lb = legendBest();
     const sw = k => S().get(k);
     overlay.innerHTML = `
       <div class="box" style="width:min(560px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
-        <div class="row between"><h3 style="margin:0">Modos de juego</h3><button class="btn small ghost" data-close>Volver</button></div>
+        <div class="row between"><h3 style="margin:0">Reglas a medida</h3><button class="btn small ghost" data-close>Volver</button></div>
+        <p class="sub" style="margin:6px 0 0">Sólo cambian «Jugar» (la run normal) y las partidas en grupo normales que crees tú. La aventura y los desafíos llevan sus propias reglas y no usan estas.</p>
 
-        <div class="panel" style="padding:10px 12px;margin-top:10px">
-          <div class="row between" style="gap:10px">
-            <div class="grow"><b>Reto diario</b> <small style="color:var(--muted)">${today()}</small>
-              <div style="font-size:13px;color:var(--muted)">Mismo mapa y mismos enemigos para todos hoy (sin modos ni dificultad a medida). Comparte tu tiempo con tus amigos.</div>
-              ${db ? `<div style="font-size:13px" class="gold">${G.I18n.f('Tu mejor marca de hoy: {x}', G.U.mmss(db.time))}</div>` : ''}</div>
-            <div style="display:flex;flex-direction:column;gap:6px"><button class="btn gold" data-run="daily">Jugar</button>
-              <button class="btn small" data-board>Clasificación</button></div>
-          </div>
-        </div>
-
-        <div class="panel" style="padding:10px 12px;margin-top:8px">
-          <div class="row between" style="gap:10px">
-            <div class="grow"><b>Desafío legendario</b>
-              <div style="font-size:13px;color:var(--muted)">Legendarios uno tras otro en la arena de la grieta. ¿Cuántos vences antes de caer?</div>
-              ${lb ? `<div style="font-size:13px" class="gold">${G.I18n.f('Récord: {x}', lb)}</div>` : ''}</div>
-            <button class="btn gold" data-run="legend">Jugar</button>
-          </div>
-        </div>
-
-        <h3 class="set-h" style="margin-top:14px">Modos (para la run normal)</h3>
+        <h3 class="set-h" style="margin-top:14px">Modos</h3>
         ${TOGGLES.map(([k, name, desc]) => `
           <div class="set-row"><div class="grow"><b>${name}</b><small>${desc}</small></div>
             <button class="btn small switch ${sw(k) ? 'gold' : ''}" data-k="${k}">${sw(k) ? 'Sí' : 'No'}</button></div>`).join('')}
@@ -246,8 +249,6 @@ G.Modes = (() => {
         <div class="row" style="justify-content:flex-end;margin-top:6px"><button class="btn small ghost" data-reset>Restablecer (100%)</button></div>
       </div>`;
     overlay.querySelector('[data-close]').onclick = closePanel;
-    overlay.querySelectorAll('[data-run]').forEach(b => { b.onclick = () => start(b.dataset.run); });
-    overlay.querySelector('[data-board]').onclick = openBoard;
     overlay.querySelectorAll('[data-k]').forEach(b => {
       b.onclick = () => { S().set(b.dataset.k, !S().get(b.dataset.k)); G.Audio.sfx('click'); render(); };
     });
@@ -263,15 +264,16 @@ G.Modes = (() => {
 
   /** Texto bajo "Modos de juego" en el menú: qué está activo. */
   function summary() {
-    const act = TOGGLES.filter(([k]) => S().get(k)).map(([, n]) => n.replace('Modo ', ''));
-    if (SLIDERS.some(([k]) => (S().get(k) || 100) !== 100)) act.push('dificultad a medida');
+    const act = TOGGLES.filter(([k]) => S().get(k)).map(([, n]) => n);
+    if (SLIDERS.some(([k]) => (S().get(k) || 100) !== 100)) act.push('Dificultad a medida');
     const sc = scene();
     if (sc != null) act.push(G.Tiles.BIOMES[sc].name);
-    return act.length ? act.join(' · ') : 'Reto diario, legendarios y más';
+    return act.length ? act.join(' · ') : '';
   }
 
   return {
-    openBoard, on, scene, scale, countMul, rewardMul, dailySeed, seeded, start, reset, setRoom, afterRun, openPanel, summary, copy,
+    openBoard, on, scene, scale, countMul, rewardMul, healMul, setRules, rule, dailySeed, seeded, rng, start, reset, setRoom, afterRun, openPanel, summary, copy,
+    today, dailyBest, legendBest, closePanel,
     get run() { return run; }
   };
 })();

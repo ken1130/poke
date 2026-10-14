@@ -31,6 +31,16 @@ G.HUD = (() => {
     G.Touch.clearButtons();
     const touch = G.Touch.active;
 
+    // ---------- oscuridad (reto semanal / torre): sólo ves lo de cerca ----------
+    const dark = G.Modes.rule('dark');
+    if (dark) {
+      const sx = (pl.x - G.Camera.x) * G.Camera.scale + w / 2, sy = (pl.y - pl.bodyH * 0.5 - G.Camera.y) * G.Camera.scale + h / 2;
+      const r0 = Math.min(w, h) * (0.42 - dark * 0.07);
+      const gr = ctx.createRadialGradient(sx, sy, r0 * 0.55, sx, sy, r0);
+      gr.addColorStop(0, 'rgba(4,6,14,0)'); gr.addColorStop(1, 'rgba(4,6,14,.94)');
+      ctx.fillStyle = gr; ctx.fillRect(0, 0, w, h);
+    }
+
     // ---------- barra de experiencia (borde superior) ----------
     const xpF = pl.xp / pl.xpNext;
     ctx.fillStyle = 'rgba(0,0,0,.5)';
@@ -229,6 +239,21 @@ G.HUD = (() => {
       ctx.font = F(800, 12);
       ctx.fillStyle = '#d9c2ff';
       ctx.fillText('GRIETA · ' + G.U.mmss(G.Rift.timeLeft), w / 2, boss ? 98 : 76);
+    }
+
+    // Desafíos y aventura: piso de la torre, regla de la semana, objetivo de la fase.
+    const ch = (G.Stages && G.Stages.hudLine()) || G.Challenges.hudLine();
+    if (ch && !G.Rift.inArena) {
+      ctx.textAlign = 'center';
+      const y0 = boss ? 98 : 76;
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
+      ctx.font = F(800, 13); ctx.strokeText(ch.title, w / 2, y0); ctx.fillStyle = ch.color || '#e2b0ff'; ctx.fillText(ch.title, w / 2, y0);
+      if (ch.sub) { ctx.font = F(700, 10); ctx.strokeText(ch.sub, w / 2, y0 + 14); ctx.fillStyle = '#d6dcf0'; ctx.fillText(ch.sub, w / 2, y0 + 14); }
+      if (ch.bar != null) {
+        const bw = 180;
+        ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(w / 2 - bw / 2, y0 + (ch.sub ? 20 : 6), bw, 6);
+        ctx.fillStyle = ch.color || '#e2b0ff'; ctx.fillRect(w / 2 - bw / 2, y0 + (ch.sub ? 20 : 6), bw * G.U.clamp(ch.bar, 0, 1), 6);
+      }
     }
 
     // Eventos: cuenta atrás, flecha al Pokémon perdido / a la marca y a los duendes.

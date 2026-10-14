@@ -113,7 +113,15 @@ G.Enemies = (() => {
 
   /** Todos los candidatos de un tramo (sin legendarios ni míticos). */
   function candidates(tier) {
-    return G.DEX.filter(p => p.rarity < 5 && p.bst >= tier.bst[0] && p.bst <= tier.bst[1] && G.SPRITE_META[p.dex]);
+    const all = G.DEX.filter(p => p.rarity < 5 && p.bst >= tier.bst[0] && p.bst <= tier.bst[1] && G.SPRITE_META[p.dex]);
+    return byRuleTypes(all, 4);
+  }
+  /** Reglas de la run (reto semanal, aventura): sólo ciertos tipos, si hay bastantes. */
+  function byRuleTypes(list, min) {
+    const ts = G.Modes && G.Modes.rule('types');
+    if (!ts || !ts.length) return list;
+    const f = list.filter(p => p.types.some(t => ts.includes(t)));
+    return f.length >= min ? f : list;
   }
 
   // ---------------- elenco de la run ----------------
@@ -160,8 +168,8 @@ G.Enemies = (() => {
   /** Jefe de un hueco de BOSS_SLOTS (sin repetir los de `used`). */
   function bossFromSlot(slot, used = new Set(), hpMul = 1) {
     const ok = p => !p.leg && G.SPRITE_META[p.dex] && !used.has(p.dex);
-    let pool = G.DEX.filter(p => ok(p) && p.bst >= slot.bst[0] && p.bst <= slot.bst[1]);
-    if (!pool.length) pool = G.DEX.filter(p => ok(p) && p.bst >= 580);
+    let pool = byRuleTypes(G.DEX.filter(p => ok(p) && p.bst >= slot.bst[0] && p.bst <= slot.bst[1]), 1);
+    if (!pool.length) pool = byRuleTypes(G.DEX.filter(p => ok(p) && p.bst >= 580), 1);
     const p = G.U.pick(pool);
     used.add(p.dex);
     return {
