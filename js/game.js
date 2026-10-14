@@ -33,7 +33,7 @@ G.Game = (() => {
     addEventListener('resize', resize);
     G.Touch.init(cv);
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
-    document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); else if (pl && state !== 'over' && state !== 'ui') keepAwake(true); });
     G.RunUI.wirePause(() => { state = 'playing'; G.UI.hideAll(); }, quitRun);
     Backdrop.init();
     last = performance.now();
@@ -59,6 +59,16 @@ G.Game = (() => {
     if (portrait && !document.getElementById('rotate-ico').innerHTML) document.getElementById('rotate-ico').innerHTML = G.Icons.html('phone', 48);
     el.classList.toggle('hidden', !portrait);
     if (portrait) autoPause();
+  }
+
+  /** Móvil: que la pantalla no se apague sola mientras juegas (Wake Lock; si no hay, nada). */
+  let wake = null;
+  function keepAwake(on) {
+    try {
+      if (on && !wake && navigator.wakeLock) {
+        navigator.wakeLock.request('screen').then(w => { wake = w; w.addEventListener('release', () => { wake = null; }); }).catch(() => {});
+      } else if (!on && wake) { wake.release().catch(() => {}); wake = null; }
+    } catch (e) { /* nada */ }
   }
 
   /** Pausa sola (sólo en solitario: en grupo los demás siguen). */
@@ -159,6 +169,7 @@ G.Game = (() => {
     deathT = 0;
 
     state = 'playing';
+    keepAwake(true);
   }
 
   function quitRun() {
@@ -322,6 +333,7 @@ G.Game = (() => {
     if (G.Coop.active) G.Coop.end();
     if (coop) G.Social.setPlaying(false);
     state = 'over';
+    keepAwake(false);
     G.Chat.close();
     G.Tips.reset();
     if (coopCards.length || G.UI.isOpen('scr-levelup')) { coopCards = []; G.RunUI.closeLevelUp(); }

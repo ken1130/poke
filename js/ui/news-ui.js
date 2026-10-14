@@ -42,7 +42,13 @@ G.NewsUI = (() => {
   function close() { $('scr-news').classList.add('hidden'); }
 
   /** Al llegar al menú: si hay novedades sin ver, se abren solas (una vez por versión). */
-  function autoOpen() { if (seen() < latest()) open(); }
+  function autoOpen() {
+    if (seen() >= latest()) return;
+    // Jugador nuevo (nunca ha jugado): no le tapamos el menú con novedades; sólo se marcan como vistas.
+    const st = G.DB.save && G.DB.save.stats;
+    if (st && !st.runs) { try { localStorage.setItem(KEY, latest()); } catch (e) { /* nada */ } refresh(); return; }
+    open();
+  }
 
   return { init, open, close, autoOpen };
 })();

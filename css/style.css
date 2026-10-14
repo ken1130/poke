@@ -822,3 +822,5 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 
 /* Barra de arriba en pantallas estrechas: "Novedades" sólo con el icono. */
 @media (max-width: 900px) { .news-btn span { display: none; } }
+/* Teléfono en horizontal: botones de los desafíos en fila (las tarjetas ocupan menos). */
+@media (max-height: 520px) { .ch-btns { flex-direction: row !important; flex-wrap: wrap; justify-content: flex-end; } .ch-btns .btn { padding: 6px 10px; font-size: 14px; } }

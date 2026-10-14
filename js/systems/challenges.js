@@ -242,7 +242,7 @@ G.Challenges = (() => {
           <div class="grow"><b>${G.T(title)}</b> ${sub ? `<small style="color:var(--muted)">${sub}</small>` : ''}
             <div style="font-size:13px;color:var(--muted)">${desc}</div>
             ${rec ? `<div style="font-size:13px" class="gold">${rec}</div>` : ''}</div>
-          <div style="display:flex;flex-direction:column;gap:6px"><button class="btn gold" data-go="${id}">${G.T('Jugar')}</button>
+          <div class="ch-btns" style="display:flex;flex-direction:column;gap:6px"><button class="btn gold" data-go="${id}">${G.T('Jugar')}</button>
             ${board ? `<button class="btn small" data-board="${id}">${G.T(id === 'daily' ? 'Clasificación' : 'Ver clasificación')}</button>
               <button class="btn small" data-tboard="${id}">${G.T('Grupos')}</button>` : ''}</div>
         </div>
