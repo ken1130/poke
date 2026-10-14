@@ -76,7 +76,7 @@ G.Challenges = (() => {
   }
   /** Ya con tu Pokémon creado: lo que te cambian las reglas. */
   function applyPlayer(pl) {
-    if (G.Modes.rule('glass')) { pl.maxHp = pl.hp = Math.max(1, Math.round(pl.maxHp * 0.3)); pl.atkMul *= 2; }
+    if (G.Modes.rule('glass')) { pl.maxHp = pl.hp = Math.max(1, Math.round(pl.maxHp * 0.3)); pl.atkMul *= 2; pl.glassK = 0.3; }
     const ms = G.Modes.rule('meSpd');
     if (ms) pl.spdMul *= ms;
   }

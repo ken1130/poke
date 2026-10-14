@@ -271,6 +271,27 @@ G.Player = class Player {
 
   addMaxHp(amount) { this.maxHp += amount; this.hp += amount; }
 
+  /**
+   * Evoluciona (evo.js): stats y sprite de la evolución; se quedan los movimientos y las mejoras.
+   * @param visual  sólo el aspecto (la copia de un compañero en grupo)
+   */
+  evolveTo(dex, visual = false) {
+    const old = this.mon, mon = G.DEX_BY[dex];
+    if (!mon) return;
+    this.mon = mon; this.dex = dex;
+    this.shiny = this.shiny && G.Sprites.hasShiny(dex);
+    this.anim = new G.Sprites.Animator(dex, 1, this.shiny);
+    this.r = G.Sprites.bodyRadius(dex);
+    this.bodyH = G.Sprites.bodyHeight(dex);
+    if (visual) return;
+    // Además de los stats de la evolución, un empujón: +8% de vida y +6% de ataque.
+    const dHp = (Math.max(0, mon.hp - old.hp) + this.maxHp * 0.08) * (this.glassK || 1);
+    this.atkMul *= 1.06;
+    this.maxHp += dHp; this.hp = Math.min(this.maxHp, this.hp + dHp + this.maxHp * 0.25);
+    this.baseSpd = Math.max(this.baseSpd, this.baseSpd + (mon.spd - old.spd));
+    this.baseAtk = Math.max(this.baseAtk, this.baseAtk + (mon.atk - old.atk));
+  }
+
   /** Devuelve cuántos niveles ha subido (pueden ser varios de golpe). */
   gainXp(amount) {
     this.xp += amount * this.xpMul;
@@ -433,6 +454,7 @@ G.Player = class Player {
     this.hp = n.hp; this.maxHp = n.maxHp;
     this.magnet = n.mag || this.magnet;
     this.reviveT = n.rev || 0;
+    if (n.dex && n.dex !== this.dex && G.DEX_BY[n.dex]) { this.evolveTo(n.dex, true); G.Sprites.preload([n.dex], 8000, this.shiny); }
     if (n.dead && !this.dead) { this.dead = true; this.anim.play('Faint', { hold: true }); G.Projectiles.clearOrbs(this); }
     else if (!n.dead && this.dead) this.revive(n.hp / (n.maxHp || 1));
     // Movimiento activo (para el halo, el HUD y los orbes).

@@ -19,7 +19,7 @@
 G.Settings = (() => {
   const KEY = 'ps.settings';
   const DEF = { quality: 'auto', dmgNumbers: true, calm: false, fps: false, stick: 1, shinyMode: false, bossMode: false,
-               extremeMode: false, diffHp: 100, diffCount: 100, diffSpd: 100, scene: null };
+               extremeMode: false, diffHp: 100, diffCount: 100, diffSpd: 100, scene: null, evolve: true };
   let s = Object.assign({}, DEF);
   try { Object.assign(s, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* nada */ }
   const fns = new Set();

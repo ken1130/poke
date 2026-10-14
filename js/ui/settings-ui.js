@@ -83,6 +83,8 @@ G.SettingsUI = (() => {
         + toggle('dmgNumbers', 'Números de daño', 'Los números que salen al golpear y al recibir daño.')
         + toggle('calm', 'Menos sacudidas y destellos', 'La cámara tiembla menos y los fogonazos son suaves.')
         + toggle('fps', 'Mostrar FPS', 'Fotogramas por segundo, en la esquina de abajo.')
+        + section('Partida')
+        + toggle('evolve', 'Evolucionar en la partida', 'Tu Pokémon evoluciona al subir de nivel (Nv. 10, 20 y 30) y se hace más fuerte. Apágalo para jugar siempre con su forma de ahora.')
         + (canFull() ? `<div class="set-row"><div class="grow"><b>Pantalla completa</b><small>Sin barras del navegador.</small></div>
              <button class="btn small" id="set-full">${isFull() ? 'Salir' : 'Activar'}</button></div>`
            : iosTip() ? `<div class="set-row"><div class="grow"><b>Pantalla completa</b><small>${esc(IOS_TIP)}</small></div></div>` : '');

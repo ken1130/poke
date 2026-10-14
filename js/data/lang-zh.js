@@ -1793,4 +1793,7 @@ G.I18n.add({
   'Récord: piso {x}': '紀錄：第 {x} 層',
   'Todavía no hay nadie. ¡Sé el primero!': '還沒有人上榜，搶第一吧！',
   'Ver clasificación': '排行榜',
+  '¡{x} ha evolucionado a {x}!': '{x} 進化成 {x} 了！',
+  'Evolucionar en la partida': '對局中進化',
+  'Tu Pokémon evoluciona al subir de nivel (Nv. 10, 20 y 30) y se hace más fuerte. Apágalo para jugar siempre con su forma de ahora.': '你的寶可夢升到 Lv.10、20、30 時會進化並變強。關掉的話就會一直維持目前的樣子。',
 }, 'zh');

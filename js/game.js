@@ -660,6 +660,7 @@ G.Game = (() => {
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
     if (!coop) G.Challenges.update(dt, time, pl);
+    G.Evo.check(pl);
     G.Events.update(dt, all, time);
     G.Weather.update(dt, time, pl);
     G.FX.update(dt);
