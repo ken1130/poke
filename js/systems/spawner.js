@@ -22,6 +22,8 @@ G.Spawner = (() => {
   // hacia el minuto 6, cuando ya tienes ataques para tumbarlos.
   const hpK = t => 3.3 + Math.min(1.7, t / 210);
   const SHINY_RATE = 1 / 4096;
+  const EASE_T = 180;
+  let noEase = false;           // para pruebas: sin el comienzo suave
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
 
@@ -93,6 +95,11 @@ G.Spawner = (() => {
     const shiny = rollShiny(def.dex);
     const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
     e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
+    // Comienzo más suave (2026-10-14): sin mejoras se moría enseguida. Los primeros
+    // 3 minutos los enemigos pegan menos (desde ×0,5) y aguantan menos (desde ×0,7).
+    const f = noEase ? 1 : Math.min(1, t / EASE_T);
+    e.dmg *= 0.5 + 0.5 * f;
+    e.maxHp = e.hp = Math.max(1, Math.round(e.maxHp * (0.7 + 0.3 * f)));
     if (G.EnemyMgr.count >= capNow() * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
     const shinyMode = G.Modes.on('shiny');
     if (shiny) e.makeShiny(!shinyMode);
@@ -221,5 +228,5 @@ G.Spawner = (() => {
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
   return { reset, update, ahead, burst, spawnBossNow, tickBanner, banner, say, rate, SHINY_RATE, CAP,
-           debugForceShiny(n = 1) { forceShiny = n; } };
+           debugForceShiny(n = 1) { forceShiny = n; }, debugNoEase(v = true) { noEase = v; } };
 })();
