@@ -24,6 +24,9 @@ G.MODNEWS = [
       { zh: '組隊升級、選羈絆、選道具時全隊暫停，等所有人選完才繼續；超過 25 秒會自動選擇', en: 'In groups, the game now pauses for everyone while anyone picks cards, bonds or items; auto-pick after 25 s' },
       { zh: '修正組隊時選完技能仍顯示「對方正在選擇」而卡住的問題', en: 'Fixed the group getting stuck on “X is choosing…” after everyone had picked' },
       { zh: '冒險地圖新增「和朋友一起玩這關」按鈕', en: 'Adventure map: new “With friends” button' },
+      { zh: '房間「玩法」改成按鈕；冒險模式用地圖挑關卡（看得到星星和過關條件），朋友也看得到', en: 'Room “Play” is now buttons; Adventure stages are picked on the map with stars and goals, visible to everyone' },
+      { zh: '房間可「複製邀請連結」，朋友點連結就直接進房；手機上「開始遊戲」固定在下方', en: 'Rooms: “Copy link” — friends open it and join directly; the start button stays visible on mobile' },
+      { zh: '扭蛋拉霸機的文字變清楚了', en: 'Sharper text on the gacha slot machine' },
       { zh: '修正多個組隊與關卡結算的問題', en: 'Fixed several co-op and stage result issues' }
     ] },
   { d: '2026-10-13', title: { zh: '和朋友一起玩', en: 'Play with friends' },

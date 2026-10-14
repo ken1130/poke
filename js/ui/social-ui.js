@@ -234,26 +234,11 @@
         if (ps != null && G.Stages.unlocked(ps)) G.Social.setMods(Object.assign({}, room.mods, { stage: ps, ch: null, rush: false }));
       }
       const md = room.mods || {};
-      const cur = Number.isInteger(md.stage) ? 's:' + md.stage : md.ch ? md.ch : md.rush ? 'legend' : 'n';
+      const cur = Number.isInteger(md.stage) ? 'stage' : md.ch ? md.ch : md.rush ? 'legend' : 'n';
       $('lobby-stage').classList.toggle('hidden', room.mode === 'pvp');
       $('lobby-mods').classList.toggle('hidden', room.mode === 'pvp' || cur !== 'n');
       $('lobby-scene-row').classList.toggle('hidden', room.mode !== 'pvp' && cur !== 'n');
-      const ss = $('lobby-stage-sel');
-      const all = [['n', G.T('Partida normal')], ['daily', G.T('Reto diario') + ' · ' + G.T('en grupo')],
-        ['weekly', G.T('Reto semanal') + ' · ' + G.T(G.Challenges.weekly().name)], ['tower', G.T('Torre sin fin') + ' · ' + G.T('en grupo')],
-        ['legend', G.T('Desafío legendario')]]
-        .concat((room.isHost ? G.Stages.choices() : Number.isInteger(md.stage) ? [{ id: md.stage, label: G.Stages.title(G.Stages.LIST[md.stage]) }] : [])
-          .map(o => ['s:' + o.id, G.T('Aventura') + ' ' + o.label]));
-      const html = all.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
-      if (ss.dataset.html !== html) { ss.innerHTML = html; ss.dataset.html = html; }
-      ss.value = cur;
-      ss.disabled = !room.isHost;
-      ss.onchange = () => {
-        if (!room.isHost) return;
-        const v = ss.value;
-        G.Social.setMods(Object.assign({}, md, { stage: v.startsWith('s:') ? +v.slice(2) : null, rush: v === 'legend',
-          ch: ['daily', 'weekly', 'tower'].includes(v) ? v : null }));
-      };
+      renderPlay(room, md, cur);
 
       // PK por equipos: cada uno elige el suyo (si no, 1.º y 3.º rojo, 2.º y 4.º azul).
       $('lobby-teams').classList.toggle('hidden', room.mode !== 'pvp');
@@ -284,6 +269,8 @@
         ? 'PK: os podéis atacar entre vosotros. Gana el último en pie.'
         : 'Equipo: jugáis juntos contra los Pokémon salvajes.');
       $('lobby-copy').onclick = () => G.Modes.copy(room.id);
+      // Enlace: el amigo lo abre y entra directamente en la sala.
+      $('lobby-link').onclick = () => G.Modes.copy(G.PartyUI.link(room.id));
       $('lobby-sub').textContent = room.isHost
         ? 'Eres el anfitrión. Pasa el código a tus amigos (hasta ' + G.Social.MAX_PLAYERS + ') y empezad cuando estéis.'
         : 'Estás en la sala de ' + ((ms.find(m => m.uid === room.host) || {}).name || '…') + '. El anfitrión empezará la partida.';
@@ -337,6 +324,7 @@
 
       const btn = $('lobby-start');
       btn.classList.toggle('hidden', !room.isHost);
+      btn.parentElement.classList.toggle('hidden', !room.isHost);     // (el invitado no tiene botón: sin barra)
       const connecting = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'connecting');
       const failed = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'failed');
       btn.disabled = !room.isHost || ms.length < 2 || connecting || failed || !teamsOk;
@@ -346,6 +334,52 @@
         : !teamsOk ? 'Cada equipo necesita al menos a una persona.'
         : failed ? 'No se puede conectar con algún amigo: su red (o la tuya) no deja jugar en grupo. Probad con otra wifi o datos móviles; se reintenta solo.'
         : connecting ? 'Conectando con tus amigos…' : 'La partida empieza para todos a la vez.';
+    }
+
+    /**
+     * Equipo: qué se juega, con botones (antes una lista desplegable larga): partida normal,
+     * Aventura (la fase se elige en su mapa, con las estrellas), retos en grupo o legendarios.
+     * Debajo, una ficha con lo elegido (objetivo y estrellas de la fase, regla de la semana...).
+     */
+    function renderPlay(room, md, cur) {
+      const PLAYS = [['n', 'Partida normal'], ['stage', 'Aventura'], ['daily', 'Reto diario'], ['weekly', 'Reto semanal'],
+                     ['tower', 'Torre sin fin'], ['legend', 'Desafío legendario']];
+      const set = v => G.Social.setMods(Object.assign({}, md, { stage: null, rush: v === 'legend', ch: ['daily', 'weekly', 'tower'].includes(v) ? v : null }));
+      const pickStage = () => G.Stages.openMap({ current: md.stage, pick: id => G.Social.setMods(Object.assign({}, md, { stage: id, ch: null, rush: false })) });
+      const box = $('lobby-play');
+      const html = PLAYS.map(([v, l]) => `<button class="chip ${v === cur ? 'on' : ''}" data-play="${v}" ${room.isHost ? '' : 'disabled'}
+        style="padding:6px 12px;font-size:14px">${G.T(l)}</button>`).join('');
+      if (box.dataset.html !== html) { box.innerHTML = html; box.dataset.html = html; }
+      box.querySelectorAll('[data-play]').forEach(b => {
+        b.onclick = () => {
+          if (!room.isHost) return;
+          G.Audio.sfx('click');
+          if (b.dataset.play === 'stage') pickStage(); else set(b.dataset.play);
+        };
+      });
+      // Ficha de lo elegido.
+      const info = $('lobby-play-info');
+      let h = '';
+      if (cur === 'stage') {
+        const s = G.Stages.LIST[md.stage], n = G.Stages.starsOf(s.id);
+        h = `<div style="flex:1;min-width:220px"><b class="gold">${G.T('Aventura')} ${G.Stages.title(s)}</b>
+            <span style="color:#ffd23f;letter-spacing:1px" title="${G.T('Tus estrellas')}">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</span>
+            <div style="font-size:13px">🎯 ${G.Stages.goalText(s)}</div>
+            <div style="font-size:12px;color:var(--muted)">★ ${G.T('Superarla')} · ★ ${G.T('Acabar con la mitad de la vida o más')} · ★ ${G.Stages.star3Text(s)}</div></div>
+          ${room.isHost ? `<button class="btn small gold" data-change>${G.T('Cambiar fase')}</button>` : ''}`;
+      } else if (cur === 'weekly') {
+        const wk = G.Challenges.weekly();
+        h = `<div><b class="gold">${G.T('Reto semanal')} · ${G.T(wk.name)}</b><div style="font-size:13px">${G.T(wk.desc)} ${G.T('Clasificación de grupos aparte.')}</div></div>`;
+      } else {
+        const D = { n: 'Partida normal: con los modos y el escenario que elijas aquí abajo.',
+                    daily: 'Mismo mapa y mismos enemigos para todos hoy. Clasificación de grupos aparte.',
+                    tower: 'Cada minuto subís un piso y cae una maldición nueva. Clasificación de grupos aparte.',
+                    legend: 'Legendarios uno tras otro en la arena de la grieta. ¿Cuántos vencéis?' };
+        h = `<div style="font-size:13px">${G.T(D[cur] || '')}</div>`;
+      }
+      if (info.dataset.html !== h) { info.innerHTML = h; info.dataset.html = h; }
+      const ch = info.querySelector('[data-change]');
+      if (ch) ch.onclick = pickStage;
     }
 
     function start() {

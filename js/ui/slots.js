@@ -22,6 +22,10 @@ G.Slots = (() => {
   };
 
   let cv = null, ctx = null, st = null, raf = 0, last = 0, fast = false;
+  // El lienzo se pinta a S veces la resolución de arte (según lo grande que se vea y la
+  // densidad de la pantalla): los píxeles siguen igual de nítidos y el texto (en chino,
+  // con trazos finos) ya no sale borroso como al escalar 176×170 a pantalla completa.
+  let S = 1;
 
   const symOf = r => (r.shiny ? 'shiny' : SYM[r.rarity]);
   const colOf = r => (r.shiny ? '#9ae6ff' : G.Gacha.RARITY_COLOR[r.rarity]);
@@ -36,6 +40,9 @@ G.Slots = (() => {
   /** Anima las tiradas. → Promise que se resuelve al terminar. */
   async function play(canvas, results) {
     cv = canvas; ctx = cv.getContext('2d');
+    const shown = cv.getBoundingClientRect().width || 528;
+    S = Math.max(2, Math.min(8, Math.ceil(shown * (window.devicePixelRatio || 1) / W)));
+    if (cv.width !== W * S) { cv.width = W * S; cv.height = H * S; }
     fast = false;
     cv.onclick = () => { fast = true; };
     st = {
@@ -133,7 +140,7 @@ G.Slots = (() => {
   const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
 
   function draw() {
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.setTransform(S, 0, 0, S, 0, 0);
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, W, H);
     const t = st.t;

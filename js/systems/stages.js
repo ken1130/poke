@@ -334,10 +334,14 @@ G.Stages = (() => {
   // ---------------- mapa ----------------
 
   let overlay = null, pick = null, partyStage = null;
+  let picker = null;        // { pick(id) } si se abre para elegir la fase de una sala
   function closeMap() { if (overlay) { overlay.remove(); overlay = null; } }
 
-  function openMap() {
+  /** @param opts  { pick(id), current } para elegir la fase de una sala (en vez de jugarla) */
+  function openMap(opts) {
     closeMap();
+    picker = opts && opts.pick ? opts : null;
+    if (picker && Number.isInteger(picker.current)) pick = picker.current;
     overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;z-index:66;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.7)';
     overlay.onclick = e => { if (e.target === overlay) closeMap(); };
@@ -361,7 +365,7 @@ G.Stages = (() => {
                                                       : G.I18n.f('Necesitas {x} estrellas (tienes {x}).', reg.need, total)) : '';
     overlay.innerHTML = `
       <div class="box" style="width:min(640px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
-        <div class="row between"><h3 style="margin:0">${G.T('Aventura')} <small class="gold">★ ${total} / ${LIST.length * 3}</small></h3>
+        <div class="row between"><h3 style="margin:0">${G.T(picker ? 'Elige la fase de la sala' : 'Aventura')} <small class="gold">★ ${total} / ${LIST.length * 3}</small></h3>
           <button class="btn small ghost" data-close>${G.T('Volver')}</button></div>
         <p class="sub" style="margin:6px 0 4px">${G.T('Supera las fases en orden, gana estrellas y llega a la Liga. Cada región nueva pide unas estrellas.')}</p>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">
@@ -381,8 +385,8 @@ G.Stages = (() => {
               <div style="font-size:12px;color:var(--muted);margin-top:4px">${G.T('En grupo: crea una sala en «Jugar con amigos» y elige la fase allí.')}</div>
             </div>
             <div style="text-align:center"><div style="color:#ffd23f;font-size:18px">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</div>
-              <button class="btn gold" data-play ${ok ? '' : 'disabled'}>${G.T('Jugar')}</button>
-              <button class="btn small" data-party ${ok ? '' : 'disabled'} style="display:block;margin:6px auto 0">👥 ${G.T('Con amigos')}</button></div>
+              <button class="btn gold" data-play ${ok ? '' : 'disabled'}>${G.T(picker ? 'Elegir esta fase' : 'Jugar')}</button>
+              ${picker ? '' : `<button class="btn small" data-party ${ok ? '' : 'disabled'} style="display:block;margin:6px auto 0">👥 ${G.T('Con amigos')}</button>`}</div>
           </div>
         </div>
       </div>`;
@@ -390,9 +394,13 @@ G.Stages = (() => {
     overlay.querySelectorAll('[data-st]').forEach(b => { b.onclick = () => { pick = +b.dataset.st; G.Audio.sfx('click'); renderMap(); }; });
     const pb = overlay.querySelector('[data-play]');
     pb.dataset.sfx = 'confirm';
-    pb.onclick = () => { if (!unlocked(pick)) return; closeMap(); select(pick); G.Modes.start('stage'); };
+    pb.onclick = () => {
+      if (!unlocked(pick)) return;
+      if (picker) { const p = picker; closeMap(); p.pick(pick); return; }
+      closeMap(); select(pick); G.Modes.start('stage');
+    };
     // Con amigos: abre "Jugar con amigos" y, al crear la sala, ya viene elegida esta fase.
-    overlay.querySelector('[data-party]').onclick = () => { if (!unlocked(pick)) return; partyStage = pick; closeMap(); G.PartyUI.open(); };
+    if (!picker) overlay.querySelector('[data-party]').onclick = () => { if (!unlocked(pick)) return; partyStage = pick; closeMap(); G.PartyUI.open(); };
     if (G.I18n.walk) G.I18n.walk(overlay);
   }
 
@@ -408,7 +416,7 @@ G.Stages = (() => {
   function takePartyStage() { const s = partyStage; partyStage = null; return s; }
 
   return { LIST, REGIONS, select, prepare, scene, headStart, tOffset, update, token, onNet, hudLine, drawable, drawHud, setResult, afterRun,
-           merge, openMap, closeMap, menuLine, choices, takePartyStage, unlocked, starsOf, totalStars, title,
+           merge, openMap, closeMap, menuLine, choices, takePartyStage, goalText, star3Text, unlocked, starsOf, totalStars, title,
            get active() { return !!st; },
            /** Tipo de objetivo de la fase en curso ('collect', 'zone'...) o null. */
            get goal() { return st ? st.s.obj.k : null; },

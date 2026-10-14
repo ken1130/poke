@@ -89,7 +89,7 @@
 }
 </script>
 <!-- seo:end -->
-<link rel="stylesheet" href="css/style.css?v=20261014c">
+<link rel="stylesheet" href="css/style.css?v=20261014d">
 </head>
 <body>
 
@@ -375,6 +375,7 @@
       <span>Código de la sala</span>
       <b id="lobby-code" translate="no" style="font:700 30px monospace;letter-spacing:6px;color:var(--gold);user-select:all"></b>
       <button id="lobby-copy" class="btn small">Copiar</button>
+      <button id="lobby-link" class="btn small gold">Copiar enlace</button>
     </div>
     <div class="row" id="lobby-mode" style="gap:8px;justify-content:center;margin:4px 0 10px">
       <button class="btn small" data-mode="coop">Equipo</button>
@@ -389,9 +390,9 @@
       <span>Modo jefes</span><button class="btn small switch" data-mod="boss">No</button>
       <span style="margin-left:10px">Modo shiny</span><button class="btn small switch" data-mod="shiny">No</button>
     </div>
-    <div class="row hidden" id="lobby-stage" style="gap:8px;justify-content:center;margin:-4px 0 10px">
-      <span>Qué jugar</span>
-      <select id="lobby-stage-sel" class="field" style="width:auto;min-width:200px"></select>
+    <div class="hidden" id="lobby-stage" style="margin:-4px 0 10px">
+      <div class="chips" id="lobby-play" style="justify-content:center"></div>
+      <div class="panel" id="lobby-play-info" style="margin-top:8px;padding:8px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"></div>
     </div>
     <div class="row hidden" id="lobby-teams" style="gap:8px;justify-content:center;margin:-4px 0 10px;flex-wrap:wrap">
       <span>PK por equipos</span>
@@ -406,7 +407,7 @@
     <div id="lobby-members" class="lobby-members"></div>
     <h3 id="lobby-inv-title" style="margin:14px 0 6px">Invitar amigos</h3>
     <div id="lobby-invite" class="fr-list"></div>
-    <div class="row" style="margin-top:14px">
+    <div class="row lobby-startbar" style="margin-top:14px">
       <button id="lobby-start" class="btn gold grow">Empezar partida</button>
     </div>
     <p class="note" id="lobby-note"></p>

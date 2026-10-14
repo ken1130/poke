@@ -8,13 +8,14 @@ G.PartyUI = (() => {
 
   function close() { if (overlay) { overlay.remove(); overlay = null; } }
 
-  async function open() {
+  /** @param code  código de una sala (enlace de invitación ?sala=...): se entra directamente */
+  async function open(code) {
     if (!G.DB.online) {
       // La ventana de Google se abre en el mismo clic de "Vincular" (si no, el navegador la bloquea);
       // al terminar bien, se sigue directamente a "Jugar con amigos".
       G.Dialog.confirm('Para jugar con amigos necesitas vincular tu cuenta de Google (así la sala sabe quién es cada uno). Tu progreso actual se conserva.',
         { title: 'Jugar con amigos', ok: 'Vincular con Google',
-          onOk: () => G.AccountUI.bind().then(ok => { if (ok && G.DB.online) open(); }) });
+          onOk: () => G.AccountUI.bind().then(ok => { if (ok && G.DB.online) open(code); }) });
       return;
     }
     G.Social.startLite();
@@ -55,7 +56,21 @@ G.PartyUI = (() => {
     overlay.querySelector('[data-join]').onclick = join;
     overlay.querySelector('#party-code').addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
     document.body.appendChild(overlay);
+    if (code) { overlay.querySelector('#party-code').value = String(code).toUpperCase(); join(); }
   }
 
-  return { open, close };
+  /** Enlace de invitación: la página con ?sala=CÓDIGO. */
+  function link(code) { const u = new URL(location.href); u.search = '?sala=' + code; u.hash = ''; return u.toString(); }
+  /** Al llegar al menú por primera vez: si se abrió con un enlace de invitación, a esa sala. */
+  let checked = false;
+  function checkLink() {
+    if (checked) return;
+    checked = true;
+    const code = new URLSearchParams(location.search).get('sala');
+    if (!code || !/^[A-Za-z0-9]{4,8}$/.test(code)) return;
+    try { history.replaceState(null, '', location.pathname); } catch (e) { /* nada */ }
+    setTimeout(() => open(code), 300);
+  }
+
+  return { open, close, link, checkLink };
 })();

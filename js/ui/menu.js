@@ -86,6 +86,7 @@ G.MenuUI = (() => {
     // no se pide apodo ni se escribe en la nube cada 10 min.)
     G.InvitePop.refresh();
     G.NewsUI.autoOpen();          // novedades sin ver: se abren solas una vez
+    G.PartyUI.checkLink();        // abierto con un enlace de invitación: a esa sala
   }
 
   /** Bajo "Reglas a medida" (y "Jugar"): las que tienes puestas. */

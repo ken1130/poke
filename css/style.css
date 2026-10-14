@@ -824,3 +824,5 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 @media (max-width: 900px) { .news-btn span { display: none; } }
 /* Teléfono en horizontal: botones de los desafíos en fila (las tarjetas ocupan menos). */
 @media (max-height: 520px) { .ch-btns { flex-direction: row !important; flex-wrap: wrap; justify-content: flex-end; } .ch-btns .btn { padding: 6px 10px; font-size: 14px; } }
+/* Sala: el botón de empezar siempre a la vista (en el móvil la sala es más alta que la pantalla). */
+.lobby-startbar { position: sticky; bottom: -18px; z-index: 3; padding: 12px 0 8px; background: linear-gradient(rgba(22,42,92,0), rgba(22,42,92,.97) 35%); }
