@@ -405,6 +405,8 @@ G.Stages = (() => {
   return { LIST, REGIONS, select, prepare, scene, headStart, tOffset, update, token, onNet, hudLine, drawable, drawHud, setResult, afterRun,
            merge, openMap, closeMap, menuLine, choices, unlocked, starsOf, totalStars, title,
            get active() { return !!st; },
+           /** Tipo de objetivo de la fase en curso ('collect', 'zone'...) o null. */
+           get goal() { return st ? st.s.obj.k : null; },
            /** Fase ya superada (esperando el resumen): nada te hace daño. */
            get won() { if (!st) return false; const v = view(); return !!(st.done || (v && v.done)); } };
 })();

@@ -323,6 +323,7 @@ G.Game = (() => {
     if (coop) G.Social.setPlaying(false);
     state = 'over';
     G.Chat.close();
+    G.Tips.reset();
     if (coopCards.length || G.UI.isOpen('scr-levelup')) { coopCards = []; G.RunUI.closeLevelUp(); }
     G.Audio.music(null);
     G.Audio.sfx(dead ? 'gameover' : 'back');
@@ -679,6 +680,7 @@ G.Game = (() => {
     G.Challenges.update(dt, time, pl);
     if (coop) G.Raid.update(dt, time);
     G.Evo.check(pl);
+    G.Tips.tick(dt);
     G.Stages.update(dt, time, pl);
     G.Events.update(dt, all, time);
     G.Weather.update(dt, time, pl);

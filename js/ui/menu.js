@@ -85,6 +85,7 @@ G.MenuUI = (() => {
     // (Amigos, apodo y "en línea" desactivados en esta versión: sin Social.start
     // no se pide apodo ni se escribe en la nube cada 10 min.)
     G.InvitePop.refresh();
+    G.NewsUI.autoOpen();          // novedades sin ver: se abren solas una vez
   }
 
   /** Bajo "Reglas a medida" (y "Jugar"): las que tienes puestas. */

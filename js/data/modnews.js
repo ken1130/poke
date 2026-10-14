@@ -1,0 +1,32 @@
+/* ============ modnews.js — "Novedades" de esta versión (繁中 / inglés) ============
+ * Lo que enseña la ventana de novedades (news-ui.js). La más nueva, primero.
+ * Cada texto va ya en su idioma: { zh, en }.
+ */
+G.MODNEWS = [
+  { d: '2026-10-14', title: { zh: '冒險模式、挑戰大更新', en: 'Adventure & challenges update' },
+    new: [
+      { zh: '冒險模式：8 個地區 24 關，道館館主、火箭隊、四天王與冠軍，每關最多 3 顆星（可組隊）', en: 'Adventure: 8 regions, 24 stages with Gym Leaders, Team Rocket, the Elite Four and the Champion; up to 3 stars per stage (co-op too)' },
+      { zh: '挑戰：每日挑戰、每週挑戰（每週一種特殊規則）、無盡塔、傳說連戰，都有排行榜', en: 'Challenges: daily, weekly (a special rule each week), endless tower and legend rush, with leaderboards' },
+      { zh: '挑戰也能組隊玩，有獨立的組隊排行榜（房間的「玩法」選單）', en: 'Challenges can be played in a group, with their own group leaderboards (room “Play” menu)' },
+      { zh: '對局中進化：Lv.10、20、30 進化變強（設定裡可關閉）', en: 'Evolve during runs at Lv 10, 20 and 30 (can be turned off in Settings)' },
+      { zh: '組隊團體戰頭目：2 人以上每 5 分鐘出現，打倒全隊得 ×10 扭蛋券', en: 'Raid boss in groups of 2+: every 5 minutes, beat it for a ×10 ticket' },
+      { zh: '圖鑑任務：每隻寶可夢 3 個任務，全部完成可得異色', en: 'Pokédex challenges: 3 per Pokémon, finish them all for its shiny' },
+      { zh: '團隊 PK（可自己選紅隊／藍隊）、PK 倒下後觀戰', en: 'Team PvP (pick red or blue) and spectating after you fall' },
+      { zh: '第一次玩各模式時會有簡短提示', en: 'Short tips the first time you play each mode' }
+    ],
+    chg: [
+      { zh: '主選單重新整理成兩欄；「遊戲模式」改為「自訂規則」，只影響「開始遊戲」', en: 'Main menu in two columns; “Game modes” is now “Custom rules” and only affects “Play”' },
+      { zh: '開局前 3 分鐘敵人比較弱，沒升級也比較好上手', en: 'Enemies are weaker during the first 3 minutes, easier without upgrades' },
+      { zh: '連線更順：每秒傳送 20 次並預測隊友移動', en: 'Smoother online play: 20 updates per second and movement prediction' }
+    ],
+    fix: [
+      { zh: '修正多個組隊與關卡結算的問題', en: 'Fixed several co-op and stage result issues' }
+    ] },
+  { d: '2026-10-13', title: { zh: '和朋友一起玩', en: 'Play with friends' },
+    new: [
+      { zh: '邀請碼房間：組隊或 PK、房內選場景與模式', en: 'Invite-code rooms: co-op or PvP, pick the scene and modes in the room' },
+      { zh: '快捷訊息（電腦按 T、手機點 💬）、組隊 MVP、每日挑戰排行榜', en: 'Quick chat (T on PC, 💬 on mobile), group MVP and daily leaderboard' },
+      { zh: '新招式：火焰盾、落雷、吸血鬼之牙、念力追噬箭；頭目新招式', en: 'New moves: flame shield, lightning, vampire fang, psychic arrows; new boss attacks' },
+      { zh: '雲端存檔（綁定 Google）、存檔匯出／匯入', en: 'Cloud saves (Google), save export / import' }
+    ] }
+];
