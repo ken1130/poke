@@ -144,6 +144,9 @@ G.Game = (() => {
       if (pool.length) pl.addMove(G.U.pick(pool));
       pl.setActive(0);
     }
+    // Aventura: empiezas con unos niveles ya ganados (cartas al empezar), más cuanto más lejos.
+    const head = G.Stages.headStart();
+    if (head && (!coop || coop.host === G.Net.uid)) { pl.level += head; pl.xpNext = G.Player.xpFor(pl.level); pendingLevels += head; }
 
     if (coop) {
       G.Coop.begin(coop, pl, coopApi);

@@ -28,23 +28,23 @@ G.Stages = (() => {
   const GYM = (r, i, scene, leader, seq, types, time, title = 'Gimnasio') =>
     S(r, i, scene, { k: 'boss', seq, leader }, { time }, { gym: true, title, types });
   const LIST = [
-    S(0, 0, 0, { k: 'survive', t: 120 }, { kills: 110 }),
-    S(0, 1, 21, { k: 'kills', n: 90, t: 180 }, { time: 120 }),
-    GYM(0, 2, 33, 'Brock', [74, 95], ['rock', 'ground'], 240),
+    S(0, 0, 0, { k: 'survive', t: 120 }, { kills: 120 }),
+    S(0, 1, 21, { k: 'kills', n: 140, t: 180 }, { time: 130 }),
+    GYM(0, 2, 33, 'Brock', [74, 95], ['rock', 'ground'], 150),
     S(1, 0, 1, { k: 'collect', n: 6 }, { time: 150 }),
-    S(1, 1, 23, { k: 'survive', t: 150 }, { kills: 170 }),
+    S(1, 1, 23, { k: 'survive', t: 150 }, { kills: 140 }),
     GYM(1, 2, 40, 'Misty', [120, 121], ['water'], 240),
     S(2, 0, 25, { k: 'zone', t: 30 }, { time: 100 }),
-    S(2, 1, 43, { k: 'kills', n: 170, t: 200 }, { time: 150 }),
+    S(2, 1, 43, { k: 'kills', n: 160, t: 200 }, { time: 170 }),
     GYM(2, 2, 25, 'Teniente Surge', [100, 25, 26], ['electric'], 270),
-    S(3, 0, 24, { k: 'survive', t: 180 }, { kills: 240 }),
+    S(3, 0, 24, { k: 'survive', t: 180 }, { kills: 230 }),
     S(3, 1, 39, { k: 'collect', n: 8 }, { time: 180 }),
-    GYM(3, 2, 24, 'Erika', [71, 114, 45], ['grass'], 270),
+    GYM(3, 2, 24, 'Erika', [71, 114, 45], ['grass'], 220),
     S(4, 0, 28, { k: 'zone', t: 40 }, { time: 130 }),
-    S(4, 1, 34, { k: 'kills', n: 240, t: 240 }, { time: 180 }),
+    S(4, 1, 32, { k: 'kills', n: 200, t: 240 }, { time: 200 }),
     GYM(4, 2, 28, 'Koga', [109, 89, 110], ['poison'], 300),
     S(5, 0, 38, { k: 'collect', n: 10 }, { time: 200 }),
-    S(5, 1, 31, { k: 'survive', t: 210 }, { kills: 320 }),
+    S(5, 1, 31, { k: 'survive', t: 210 }, { kills: 300 }),
     GYM(5, 2, 31, 'Sabrina', [64, 122, 65], ['psychic'], 300),
     S(6, 0, 22, { k: 'zone', t: 45 }, { time: 140 }),
     GYM(6, 1, 29, 'Giovanni', [111, 34, 112], ['ground'], 300, 'Team Rocket'),
@@ -97,12 +97,19 @@ G.Stages = (() => {
     st = null; result = null; net = null;
     if (!on()) return;
     const s = sel;
-    G.Modes.setRules({ hp: 1 + s.r * 0.07, dmg: 1 + s.r * 0.05, types: s.types || null });
-    st = { s, t: 0, got: 0, inZone: 0, zone: null, zoneT: 0, bossI: -1, boss: null, nextBossT: s.obj.k === 'boss' ? 40 : 0, kills0: 0, done: false, endT: 0 };
+    // Equilibrio (2026-10-14): fases cortas = más enemigos a la vez pero más blandos al principio,
+    // para que se pueda jugar sin mejoras; cada región sube vida y daño. (Ver goals: ~45% de los
+    // que salen para el objetivo y ~60% para la estrella.)
+    G.Modes.setRules({ hp: 0.75 + s.r * 0.05, dmg: 0.7 + s.r * 0.015, count: COUNT[s.r], reward: 1.3, types: s.types || null });
+    st = { s, t: 0, got: 0, inZone: 0, zone: null, zoneT: 0, bossI: -1, boss: null, nextBossT: s.obj.k === 'boss' ? 35 : 0, kills0: 0, done: false, endT: 0 };
   }
   const scene = () => (on() ? sel.scene : null);
+  /** Niveles con los que empiezas la fase (cartas nada más empezar). */
+  const headStart = () => (on() ? 3 + sel.r : 0);
   /** Las fases avanzadas traen enemigos de más adelante (segundos que se suman al reloj de oleadas). */
-  const tOffset = () => (on() ? sel.r * 50 : 0);
+  const tOffset = () => (on() ? 15 + sel.r * 30 : 0);
+  // Cuántos enemigos más salen en cada región (las primeras, más: hay menos tiempo).
+  const COUNT = [1.5, 1.45, 1.35, 1.3, 1.2, 1.1, 1, 1];
 
   /** Anfitrión o solitario, cada fotograma. */
   function update(dt, time, pl) {
@@ -172,7 +179,7 @@ G.Stages = (() => {
     const slots = G.Enemies.BOSS_SLOTS;
     const slot = slots[Math.min(slots.length - 1, Math.floor(T / 200))];
     const last = st.bossI === o.seq.length - 1;
-    const def = G.Enemies.bossFor(dex, slot, (0.45 + st.s.r * 0.06) * (last ? 1.35 : 1));
+    const def = G.Enemies.bossFor(dex, slot, (0.3 + st.s.r * 0.04) * (last ? 1.3 : 1));
     st.boss = G.Spawner.spawnBossNow(null, T, def);
     G.Spawner.say(G.I18n.f('¡{x} saca a {x}!', G.T(o.leader), G.T(G.DEX_BY[dex].name)), 3);
   }
@@ -390,7 +397,7 @@ G.Stages = (() => {
   /** Fases que puede elegir el anfitrión en su sala (las que tiene desbloqueadas). */
   function choices() { return LIST.filter(s => unlocked(s.id)).map(s => ({ id: s.id, label: title(s) })); }
 
-  return { LIST, REGIONS, select, prepare, scene, tOffset, update, token, onNet, hudLine, drawable, drawHud, setResult, afterRun,
+  return { LIST, REGIONS, select, prepare, scene, headStart, tOffset, update, token, onNet, hudLine, drawable, drawHud, setResult, afterRun,
            merge, openMap, closeMap, menuLine, choices, unlocked, starsOf, totalStars, title,
            get active() { return !!st; } };
 })();
