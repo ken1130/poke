@@ -194,6 +194,9 @@ G.DB = (() => {
       });
     }
     for (const k in older.stats || {}) r.stats[k] = Math.max(r.stats[k] || 0, older.stats[k] || 0);
+    // Retos de cada Pokémon y estrellas de la aventura: lo mayor de cada uno.
+    if (G.DexQuests) G.DexQuests.merge(r, older);
+    if (G.Stages) G.Stages.merge(r, older);
     if (r.starter == null) r.starter = older.starter;
     if (r.personality == null) r.personality = older.personality;
     if (r.partner == null || !r.owned[r.partner]) { r.partner = older.partner; r.partnerShiny = older.partnerShiny; }

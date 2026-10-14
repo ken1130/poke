@@ -124,6 +124,7 @@ G.Game = (() => {
     time = 0; pendingLevels = 0; coopCards = [];
 
     pl = new G.Player(mon, perks, !randomMe && !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    pl.startDex = mon.dex;      // retos del Pokédex: cuenta para el que elegiste aunque evolucione
     // Modo extremo: más premio (XP y monedas).
     pl.xpMul *= G.Modes.rewardMul(); pl.coinMul *= G.Modes.rewardMul();
     G.Challenges.applyPlayer(pl);
@@ -364,6 +365,7 @@ G.Game = (() => {
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
     G.Challenges.afterRun({ time, level: pl.level, kills: pl.kills, dex: pl.dex });
+    G.DexQuests.afterRun(pl.startDex || pl.dex, { time, kills: pl.kills, bosses: pl.bosses });
     G.Modes.afterRun({ time, level: pl.level, kills: pl.kills, dex: pl.dex });
     G.PvP.afterRun();
     if (lastTeam) { showTeam(lastTeam); lastTeam = null; }

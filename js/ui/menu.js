@@ -66,7 +66,9 @@ G.MenuUI = (() => {
     modesLine();
     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
     const shinies = Object.keys(s.shiny || {}).length;
-    $('menu-dex-count').textContent = `${owned} / ${G.DEX.length}` + (shinies ? ` · ${shinies} shiny` : '');
+    const dq = G.DexQuests.pending();
+    $('menu-dex-count').textContent = dq ? G.I18n.f('{x} premios de retos por recoger', dq) : `${owned} / ${G.DEX.length}` + (shinies ? ` · ${shinies} shiny` : '');
+    $('menu-dex-count').classList.toggle('gold', dq > 0);
 
     const st = s.stats;
     $('menu-stats').innerHTML =
@@ -240,6 +242,7 @@ G.MenuUI = (() => {
         ${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
+        ${G.DexQuests.html(dex)}
       ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
     `;
@@ -249,6 +252,7 @@ G.MenuUI = (() => {
     box.querySelectorAll('.seg button').forEach(b => {
       b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
     });
+    G.DexQuests.wire(box, dex, () => { renderGrid(); showDetail(dex); });
     const pick = $('dex-pick');
     if (pick) pick.onclick = () => {
       s.partner = dex;
