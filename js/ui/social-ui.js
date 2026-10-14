@@ -225,6 +225,22 @@
         b.disabled = !room.isHost;
         b.onclick = () => { if (room.isHost) G.Social.setMods(Object.assign({}, room.mods, { [b.dataset.mod]: !on })); };
       });
+      // Equipo: fase de la Aventura (las que tiene desbloqueadas el anfitrión). Con una fase, sin los modos de arriba.
+      const stg = (room.mods || {}).stage;
+      const hasStage = Number.isInteger(stg);
+      $('lobby-stage').classList.toggle('hidden', room.mode === 'pvp');
+      $('lobby-mods').classList.toggle('hidden', room.mode === 'pvp' || hasStage);
+      const ss = $('lobby-stage-sel');
+      const opts = room.isHost ? G.Stages.choices() : (hasStage ? [{ id: stg, label: G.Stages.title(G.Stages.LIST[stg]) }] : []);
+      const html = `<option value="">${G.T('No (partida normal)')}</option>` + opts.map(o => `<option value="${o.id}">${o.label}</option>`).join('');
+      if (ss.dataset.html !== html) { ss.innerHTML = html; ss.dataset.html = html; }
+      ss.value = hasStage ? String(stg) : '';
+      ss.disabled = !room.isHost;
+      ss.onchange = () => {
+        if (!room.isHost) return;
+        const v = ss.value === '' ? null : +ss.value;
+        G.Social.setMods(Object.assign({}, room.mods, { stage: v, rush: v != null ? false : !!(room.mods || {}).rush }));
+      };
 
       // PK por equipos: cada uno elige el suyo (si no, 1.º y 3.º rojo, 2.º y 4.º azul).
       $('lobby-teams').classList.toggle('hidden', room.mode !== 'pvp');
@@ -328,7 +344,8 @@
       const picks = rand ? G.U.pickN(pool, room.members.length) : [];
       const cfg = {
         k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: room.mode === 'pvp', scene: G.Modes.scene(), rand,
-        mods: room.mode === 'pvp' ? {} : { boss: !!(room.mods || {}).boss, shiny: !!(room.mods || {}).shiny, rush: !!(room.mods || {}).rush },
+        mods: room.mode === 'pvp' ? {} : { boss: !!(room.mods || {}).boss, shiny: !!(room.mods || {}).shiny, rush: !!(room.mods || {}).rush,
+          stage: Number.isInteger((room.mods || {}).stage) ? room.mods.stage : null },
         teams: room.mode === 'pvp' && !!room.teams,
         members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny, team: G.Social.teamOf(m, i) }))
       };

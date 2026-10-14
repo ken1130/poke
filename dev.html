@@ -89,7 +89,7 @@
 }
 </script>
 <!-- seo:end -->
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=20261014">
 </head>
 <body>
 
@@ -188,6 +188,7 @@
     <div class="box">
       <div class="menu-list">
         <button class="menu-item play" data-go="play">Jugar<small>Entra en la mazmorra</small></button>
+        <button class="menu-item" data-go="adventure">Aventura<small id="menu-adv-sub">8 regiones · gimnasios y Liga</small></button>
         <button class="menu-item" data-go="challenge">Desafíos<small id="menu-ch-sub">Retos, torre y legendarios</small></button>
         <button class="menu-item" data-go="party">Jugar con amigos<small>Equipo o PK con código de invitación</small></button>
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
@@ -388,6 +389,10 @@
       <span>Modo jefes</span><button class="btn small switch" data-mod="boss">No</button>
       <span style="margin-left:10px">Modo shiny</span><button class="btn small switch" data-mod="shiny">No</button>
       <span style="margin-left:10px">Desafío legendario</span><button class="btn small switch" data-mod="rush">No</button>
+    </div>
+    <div class="row hidden" id="lobby-stage" style="gap:8px;justify-content:center;margin:-4px 0 10px">
+      <span>Aventura</span>
+      <select id="lobby-stage-sel" class="field" style="width:auto;min-width:200px"></select>
     </div>
     <div class="row hidden" id="lobby-teams" style="gap:8px;justify-content:center;margin:-4px 0 10px;flex-wrap:wrap">
       <span>PK por equipos</span>
@@ -633,6 +638,7 @@
 <script defer src="js/systems/evo.js"></script>
 <script defer src="js/systems/raid.js"></script>
 <script defer src="js/systems/dexquests.js"></script>
+<script defer src="js/systems/stages.js"></script>
 <script defer src="js/systems/pvp.js"></script>
 <script defer src="js/systems/cheat.js"></script>
 <!-- red: amigos, salas, cooperativo y ranking -->

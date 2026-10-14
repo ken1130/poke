@@ -49,7 +49,7 @@ G.Rift = (() => {
       rift.ttl -= dt;
       if (rift.ttl <= 0) { rift = null; return; }
       if (!arena && !pl.dead && G.U.dist2(pl.x, pl.y, rift.x, rift.y - 10) < 30 * 30) enter();
-    } else if (!arena && authority() && time > FROM) {
+    } else if (!arena && authority() && time > FROM && G.Modes.run !== 'stage') {
       checkT -= dt;
       if (checkT <= 0) {
         checkT = CHECK;

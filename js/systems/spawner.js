@@ -136,7 +136,7 @@ G.Spawner = (() => {
     if (G.Modes.on('boss')) { bossModeUpdate(dt, t); return; }
 
     // --- jefes ---
-    const b = G.Enemies.BOSSES[bossIdx];
+    const b = G.Modes.run === 'stage' ? null : G.Enemies.BOSSES[bossIdx];     // aventura: los jefes los pone la fase
     if (b && t >= b.at) { spawnBoss(anchor(), t, b); bossIdx++; }
 
     // Combate de jefe: las oleadas bajan al 25% y no hay mareas, para que el

@@ -21,7 +21,8 @@ G.Pickups = (() => {
     coin:  { color: '#ffd23f', glow: '#b8860b', r: 5.5 },
     ticket:   { color: '#ffd23f', glow: '#c08a10', r: 7 },
     ticket10: { color: '#c47bff', glow: '#8a3fd0', r: 8 },
-    item:     { color: '#ffd23f', glow: '#c08a10', r: 9 }       // value = id del objeto
+    item:     { color: '#ffd23f', glow: '#c08a10', r: 9 },      // value = id del objeto
+    token:    { color: '#ffd23f', glow: '#ffb000', r: 10 }      // baya dorada (aventura)
   };
   /** Probabilidad de que un Pokémon normal suelte un ticket del gacha. */
   const BOSS_T10 = 1 / 3;               // ticket ×10 de un jefe normal
@@ -180,9 +181,9 @@ G.Pickups = (() => {
         ctx.beginPath(); ctx.ellipse(p.x, y, r * sx * 0.5, r * 0.5, 0, 0, 6.2832); ctx.fill();
       } else {
         // Baya, imán y bomba: su icono pixel art.
-        const ICON = { heal: 'berry', magnet: 'magnet', bomb: 'bomb', ticket: 'ticket', ticket10: 'ticket10' };
-        const sz = p.kind === 'ticket10' || p.kind === 'item' ? 24 : 18;
-        if (p.kind === 'item') {
+        const ICON = { heal: 'berry', magnet: 'magnet', bomb: 'bomb', ticket: 'ticket', ticket10: 'ticket10', token: 'berry' };
+        const sz = p.kind === 'token' ? 28 : p.kind === 'ticket10' || p.kind === 'item' ? 24 : 18;
+        if (p.kind === 'item' || p.kind === 'token') {
           // Objeto: brillo dorado latiendo, para que se vea desde lejos.
           ctx.globalAlpha = 0.35 + Math.sin(p.t * 1.5) * 0.15;
           ctx.fillStyle = '#ffe14d';

@@ -109,8 +109,12 @@ G.Modes = (() => {
   function reset() { run = 'normal'; roomMods = null; rules = null; }
   /** Al empezar una partida en grupo: los modos de la sala. */
   function setRoom(mods) {
-    roomMods = Object.assign({ boss: false, shiny: false, rush: false }, mods);
-    if (roomMods.rush) run = 'legend';          // Desafío legendario en grupo
+    roomMods = Object.assign({ boss: false, shiny: false, rush: false, stage: null }, mods);
+    if (Number.isInteger(roomMods.stage) && G.Stages.LIST[roomMods.stage]) {
+      // Aventura en grupo: la fase que eligió el anfitrión (sin modo jefes / shiny).
+      run = 'stage'; G.Stages.select(roomMods.stage);
+      roomMods.boss = roomMods.shiny = roomMods.rush = false;
+    } else if (roomMods.rush) run = 'legend';   // Desafío legendario en grupo
   }
 
   /** Tras el resumen de la run: el resultado del reto o de los legendarios. */

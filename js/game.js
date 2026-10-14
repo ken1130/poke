@@ -103,6 +103,7 @@ G.Game = (() => {
     if (coop) { G.Modes.reset(); G.Modes.setRoom(coop.mods || {}); }
     // Desafíos / aventura: sus reglas (las "Reglas a medida" sólo valen en la run normal).
     G.Challenges.prepare();
+    G.Stages.prepare();
     // Retos diario y semanal: el mapa y el elenco de enemigos salen de la fecha (iguales para todos).
     const fixedSeed = coop ? null : G.Challenges.seed();
     const prepare = () => {
@@ -119,6 +120,7 @@ G.Game = (() => {
     G.World.setBiome(0, true);
     // Escenario elegido en Modos de juego (en grupo, el del anfitrión): toda la run en él.
     fixedScene = coop ? (Number.isInteger(coop.scene) ? coop.scene : null) : G.Modes.scene();
+    if (G.Stages.scene() != null) fixedScene = G.Stages.scene();      // aventura: el escenario de la fase
     if (fixedScene != null) G.World.setBiome(fixedScene, true);
     biome = 0;
     time = 0; pendingLevels = 0; coopCards = [];
@@ -244,6 +246,7 @@ G.Game = (() => {
     shiny(dex) { G.onShinyCaught({ dex, name: (G.DEX_BY[dex] || {}).name || '' }); },
     over(d) {
       if (d && 'pvpWin' in d) G.PvP.setWinner(d.pvpWin);
+      if (d && d.stage) G.Stages.setResult(d.stage.win);
       if (d && d.team) lastTeam = d.team;
       if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, level: Math.max(pl.level, d.lv || 1), t1: d.t1 || pl.t1, t10: d.t10 || pl.t10 });
       if (d && d.t) time = d.t;
@@ -364,6 +367,7 @@ G.Game = (() => {
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
+    G.Stages.afterRun({ time, kills: pl.kills, pl });
     G.Challenges.afterRun({ time, level: pl.level, kills: pl.kills, dex: pl.dex });
     G.DexQuests.afterRun(pl.startDex || pl.dex, { time, kills: pl.kills, bosses: pl.bosses });
     G.Modes.afterRun({ time, level: pl.level, kills: pl.kills, dex: pl.dex });
@@ -428,7 +432,7 @@ G.Game = (() => {
 
   // ---------------- recogida ----------------
 
-  const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend' };
+  const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend', token: 'shiny' };
 
   /** Has cogido un objeto: si no llevas ninguno te lo pones; si no, eliges. */
   function offerItem(id) {
@@ -479,6 +483,7 @@ G.Game = (() => {
       if (mine) offerItem(p.value);
       return;
     }
+    if (p.kind === 'token') { G.Stages.token(who); return; }
     if (p.kind === 'ticket' || p.kind === 'ticket10') {
       if (p.kind === 'ticket') pl.t1++; else pl.t10++;
       bankTickets();
@@ -650,7 +655,7 @@ G.Game = (() => {
     G.World.update(dt, G.Camera);
 
     const all = everyone();
-    if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, time); }
+    if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, time + G.Stages.tOffset()); }
     else G.Spawner.tickBanner(dt);
     G.EnemyMgr.update(dt, all);
     G.EnemyMgr.rebuildGrid();
@@ -665,6 +670,7 @@ G.Game = (() => {
     if (!coop) G.Challenges.update(dt, time, pl);
     else G.Raid.update(dt, time);
     G.Evo.check(pl);
+    G.Stages.update(dt, time, pl);
     G.Events.update(dt, all, time);
     G.Weather.update(dt, time, pl);
     G.FX.update(dt);
@@ -776,6 +782,8 @@ G.Game = (() => {
     for (const e of extra) items.push({ y: e.y, ent: e });
     const rift = G.Rift.drawable();
     if (rift) items.push({ y: rift.y, ent: rift });
+    const zone = G.Stages.drawable();
+    if (zone) items.push({ y: zone.y, ent: zone });
     if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });
     items.sort((a, b) => a.y - b.y);
     for (const it of items) {
@@ -931,6 +939,16 @@ G.Game = (() => {
     togglePause, spectating, nextSpec,
     /** Abandona la partida en curso (p. ej. al cerrar sesión desde Ajustes). */
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
+    /** Aventura: fase superada (win) o fallida. En grupo lo manda el anfitrión a todos. */
+    stageEnd(win) {
+      if (state === 'ui' || state === 'over' || !pl) return;
+      G.Stages.setResult(win);
+      if (G.Coop.active && G.Coop.isHost) {
+        const sm = summary(); lastTeam = sm.team;
+        G.Coop.over(Object.assign(sm, { stage: { win: !!win } }));
+      }
+      endRun(!win);
+    },
     /** Acaba la run como si hubieras caído (Desafío legendario: pierdes en la arena). */
     end() { if (state !== 'ui' && state !== 'over') endRun(true); },
     /** Para grabar vídeos: abre las cartas de subir de nivel. */

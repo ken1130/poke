@@ -360,6 +360,7 @@ G.Coop = (() => {
       case 'fxr': G.FX.ring(ev[1], ev[2], 8, ev[3], ev[4], 0.5, 3); break;
       case 'qc': G.Chat.show(ev[1], ev[2]); break;
       case 'rdt': case 'rdw': G.Raid.onEvent(ev); break;
+      case 'stg': G.Stages.onNet(ev); break;
     }
   }
 
