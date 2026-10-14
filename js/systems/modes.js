@@ -36,8 +36,9 @@ G.Modes = (() => {
 
   /** ¿Está activo un modo? 'shiny' | 'boss' | 'extreme' */
   function on(k) {
+    if (rules && rules[k] != null) return !!rules[k];     // la regla del modo manda (reto semanal: sólo jefes)
     if (roomMods) return !!roomMods[k];
-    if (rules) return !!rules[k];
+    if (rules) return false;
     return !fair() && !!S().get(k + 'Mode');
   }
   const pct = k => (fair() || roomMods ? 1 : (S().get(k) || 100) / 100);
@@ -109,11 +110,14 @@ G.Modes = (() => {
   function reset() { run = 'normal'; roomMods = null; rules = null; }
   /** Al empezar una partida en grupo: los modos de la sala. */
   function setRoom(mods) {
-    roomMods = Object.assign({ boss: false, shiny: false, rush: false, stage: null }, mods);
+    roomMods = Object.assign({ boss: false, shiny: false, rush: false, stage: null, ch: null }, mods);
     if (Number.isInteger(roomMods.stage) && G.Stages.LIST[roomMods.stage]) {
       // Aventura en grupo: la fase que eligió el anfitrión (sin modo jefes / shiny).
       run = 'stage'; G.Stages.select(roomMods.stage);
       roomMods.boss = roomMods.shiny = roomMods.rush = false;
+    } else if (['daily', 'weekly', 'tower'].includes(roomMods.ch)) {
+      // Desafío en grupo (con su clasificación de grupo, challenges.js).
+      run = roomMods.ch; roomMods.boss = roomMods.shiny = roomMods.rush = false;
     } else if (roomMods.rush) run = 'legend';   // Desafío legendario en grupo
   }
 
@@ -122,7 +126,7 @@ G.Modes = (() => {
     const box = $('over-stats');
     if (!box) { reset(); return; }
     let html = '';
-    if (run === 'daily') {
+    if (run === 'daily' && !r.group) {
       const mon = G.T(G.DEX_BY[r.dex].name);
       const line = G.I18n.f('PokéSurvivor · Reto diario {x} · {x} · {x} · Lv {x} · {x} derrotados',
         today(), mon, G.U.mmss(r.time), r.level, r.kills);

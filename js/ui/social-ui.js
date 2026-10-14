@@ -225,21 +225,29 @@
         b.disabled = !room.isHost;
         b.onclick = () => { if (room.isHost) G.Social.setMods(Object.assign({}, room.mods, { [b.dataset.mod]: !on })); };
       });
-      // Equipo: fase de la Aventura (las que tiene desbloqueadas el anfitrión). Con una fase, sin los modos de arriba.
-      const stg = (room.mods || {}).stage;
-      const hasStage = Number.isInteger(stg);
+      // Equipo: qué se juega (una sola lista, así no se pisan): partida normal, desafíos en
+      // grupo (con su clasificación de grupo), legendarios o una fase de la Aventura
+      // (las que tiene desbloqueadas el anfitrión). Los modos jefes/shiny y el escenario, sólo en la normal.
+      const md = room.mods || {};
+      const cur = Number.isInteger(md.stage) ? 's:' + md.stage : md.ch ? md.ch : md.rush ? 'legend' : 'n';
       $('lobby-stage').classList.toggle('hidden', room.mode === 'pvp');
-      $('lobby-mods').classList.toggle('hidden', room.mode === 'pvp' || hasStage);
+      $('lobby-mods').classList.toggle('hidden', room.mode === 'pvp' || cur !== 'n');
+      $('lobby-scene-row').classList.toggle('hidden', room.mode !== 'pvp' && cur !== 'n');
       const ss = $('lobby-stage-sel');
-      const opts = room.isHost ? G.Stages.choices() : (hasStage ? [{ id: stg, label: G.Stages.title(G.Stages.LIST[stg]) }] : []);
-      const html = `<option value="">${G.T('No (partida normal)')}</option>` + opts.map(o => `<option value="${o.id}">${o.label}</option>`).join('');
+      const all = [['n', G.T('Partida normal')], ['daily', G.T('Reto diario') + ' · ' + G.T('en grupo')],
+        ['weekly', G.T('Reto semanal') + ' · ' + G.T(G.Challenges.weekly().name)], ['tower', G.T('Torre sin fin') + ' · ' + G.T('en grupo')],
+        ['legend', G.T('Desafío legendario')]]
+        .concat((room.isHost ? G.Stages.choices() : Number.isInteger(md.stage) ? [{ id: md.stage, label: G.Stages.title(G.Stages.LIST[md.stage]) }] : [])
+          .map(o => ['s:' + o.id, G.T('Aventura') + ' ' + o.label]));
+      const html = all.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
       if (ss.dataset.html !== html) { ss.innerHTML = html; ss.dataset.html = html; }
-      ss.value = hasStage ? String(stg) : '';
+      ss.value = cur;
       ss.disabled = !room.isHost;
       ss.onchange = () => {
         if (!room.isHost) return;
-        const v = ss.value === '' ? null : +ss.value;
-        G.Social.setMods(Object.assign({}, room.mods, { stage: v, rush: v != null ? false : !!(room.mods || {}).rush }));
+        const v = ss.value;
+        G.Social.setMods(Object.assign({}, md, { stage: v.startsWith('s:') ? +v.slice(2) : null, rush: v === 'legend',
+          ch: ['daily', 'weekly', 'tower'].includes(v) ? v : null }));
       };
 
       // PK por equipos: cada uno elige el suyo (si no, 1.º y 3.º rojo, 2.º y 4.º azul).
@@ -343,9 +351,9 @@
       const pool = rand ? G.DEX.filter(p => !p.leg && G.SPRITE_META[p.dex]) : [];
       const picks = rand ? G.U.pickN(pool, room.members.length) : [];
       const cfg = {
-        k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: room.mode === 'pvp', scene: G.Modes.scene(), rand,
+        k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: room.mode === 'pvp', scene: room.mode === 'pvp' || !(room.mods || {}).ch && !(room.mods || {}).rush && !Number.isInteger((room.mods || {}).stage) ? G.Modes.scene() : null, rand,
         mods: room.mode === 'pvp' ? {} : { boss: !!(room.mods || {}).boss, shiny: !!(room.mods || {}).shiny, rush: !!(room.mods || {}).rush,
-          stage: Number.isInteger((room.mods || {}).stage) ? room.mods.stage : null },
+          stage: Number.isInteger((room.mods || {}).stage) ? room.mods.stage : null, ch: (room.mods || {}).ch || null },
         teams: room.mode === 'pvp' && !!room.teams,
         members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny, team: G.Social.teamOf(m, i) }))
       };

@@ -1862,4 +1862,9 @@ G.I18n.add({
   'No (partida normal)': '不使用（一般模式）',
   'Zona': '區域',
   'Baya': '樹果',
+  'Qué jugar': '玩法',
+  'Partida normal': '一般模式',
+  'Grupos': '組隊排行',
+  'La marca del grupo va a la clasificación de grupos.': '這場的成績會登上組隊排行榜（由房主上傳）。',
+  'Con amigos: crea una sala en «Jugar con amigos» y elige el desafío en «Qué jugar» (tiene su clasificación de grupos).': '想跟朋友一起：到「和朋友一起玩」開房間，在「玩法」選擇挑戰（有獨立的組隊排行榜）。',
 }, 'zh');

@@ -440,7 +440,8 @@ G.Social = (() => {
 
   /** El anfitrión cambia los modos de la sala ({ boss, shiny }). */
   function setMods(mods) {
-    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mods').set({ boss: !!mods.boss, shiny: !!mods.shiny, rush: !!mods.rush, stage: Number.isInteger(mods.stage) ? mods.stage : null }).catch(() => {});
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mods').set({ boss: !!mods.boss, shiny: !!mods.shiny, rush: !!mods.rush, stage: Number.isInteger(mods.stage) ? mods.stage : null,
+      ch: ['daily', 'weekly', 'tower'].includes(mods.ch) ? mods.ch : null }).catch(() => {});
   }
 
   /** El anfitrión elige el escenario (índice de bioma o null). */

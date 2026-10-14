@@ -105,7 +105,7 @@ G.Game = (() => {
     G.Challenges.prepare();
     G.Stages.prepare();
     // Retos diario y semanal: el mapa y el elenco de enemigos salen de la fecha (iguales para todos).
-    const fixedSeed = coop ? null : G.Challenges.seed();
+    const fixedSeed = G.Challenges.seed();       // en grupo también: todos el mismo mapa del día/semana
     const prepare = () => {
       G.Spawner.reset();
       G.Rift.reset();
@@ -368,9 +368,10 @@ G.Game = (() => {
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
     G.Stages.afterRun({ time, kills: pl.kills, pl });
-    G.Challenges.afterRun({ time, level: pl.level, kills: pl.kills, dex: pl.dex });
+    const rr = { time, level: pl.level, kills: pl.kills, dex: pl.dex, group: coop, host: wasHost, names: team.map(m => m.name) };
+    G.Challenges.afterRun(rr);
     G.DexQuests.afterRun(pl.startDex || pl.dex, { time, kills: pl.kills, bosses: pl.bosses });
-    G.Modes.afterRun({ time, level: pl.level, kills: pl.kills, dex: pl.dex });
+    G.Modes.afterRun(rr);
     G.PvP.afterRun();
     if (lastTeam) { showTeam(lastTeam); lastTeam = null; }
   }
@@ -667,8 +668,8 @@ G.Game = (() => {
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
-    if (!coop) G.Challenges.update(dt, time, pl);
-    else G.Raid.update(dt, time);
+    G.Challenges.update(dt, time, pl);
+    if (coop) G.Raid.update(dt, time);
     G.Evo.check(pl);
     G.Stages.update(dt, time, pl);
     G.Events.update(dt, all, time);
