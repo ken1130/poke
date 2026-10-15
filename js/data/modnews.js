@@ -3,7 +3,7 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
-  { d: '2026-10-16', title: { zh: '迷宮新事件：怪物屋、卡克隆商店、神秘雕像', en: 'New dungeon events: Monster House, Kecleon Shop, Mystery Statue' },
+  { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
       { zh: '下樓梯有獎勵：到新樓層回復 30% 血量，並送一片不佔額度的技能光碟；越深扭蛋券越常掉、精英怪越常掉道具；結算畫面顯示最深樓層', en: 'Stairs are now worth it: each new floor heals 30% and gives a bonus move disc (doesn’t count toward the 3); deeper floors drop more tickets and elites drop more items; the results screen shows your deepest floor' },
       { zh: '寶可夢蛋可孵出約 500 種寶可夢的初始型態（不含傳說與幻之寶可夢，越常見越容易出）；夥伴會自己升級（每打倒 25 隻 +1 級），Lv.10、Lv.20 進化並變強', en: 'Eggs can hatch about 500 first-stage Pokémon (no legendaries or mythicals; common ones more often); partners level up (1 level per 25 defeated) and evolve at Lv.10 and Lv.20' },
@@ -20,14 +20,7 @@ G.MODNEWS = [
       { zh: '精英怪：第 2 分鐘起偶爾出現更大更強的精英怪（迅捷、護盾、分裂、瞬移），打倒掉更多經驗，有機率掉道具', en: 'Elite enemies: from minute 2, bigger and tougher elites sometimes appear (Swift, Shield, Splitter, Blink) and drop extra XP and sometimes an item' },
       { zh: '新增 6 種攜帶道具：達人帶、焦點鏡、光粉、王者之證、進化奇石、漂浮氣球', en: 'Six new held items: Expert Belt, Scope Lens, Bright Powder, King’s Rock, Eviolite and Air Balloon' },
       { zh: '凹凸頭盔的反傷改成隨攻擊力成長，後期不再無感', en: 'Rocky Helmet’s recoil damage now grows with your attack, so it stays useful late in a run' },
-      { zh: '神秘雕像：摸了之後全隊得到 3 分鐘的祝福，或有代價也有好處的詛咒', en: 'Mystery Statue: touch it for a 3-minute team blessing — or a curse with an upside' }
-    ],
-    chg: [
-      { zh: '關於頁精簡，移除外部連結與捐款按鈕', en: 'Simpler About screen; external links and donation buttons removed' }
-    ]
-  },
-  { d: '2026-10-15', title: { zh: '五個新招式、技能光碟與藥水', en: 'Five new moves, move discs and potions' },
-    new: [
+      { zh: '神秘雕像：摸了之後全隊得到 3 分鐘的祝福，或有代價也有好處的詛咒', en: 'Mystery Statue: touch it for a 3-minute team blessing — or a curse with an upside' },
       { zh: '技能光碟：第 4、9、15 分鐘在每個人附近出現（一場 3 片），打開隨機得到 1～4 個技能強化（一場可重抽 3 次）。組隊時每人有自己的光碟，只有自己看得到、撿得到', en: 'Move discs: one appears near each player at minutes 4, 9 and 15 (3 per run) and gives 1–4 random move upgrades (3 rerolls per run). In groups each player has their own discs: only you can see and pick up yours' },
       { zh: '藥水：地圖上會隨機出現，效果隨機——變大、變小、狂暴、無敵星星、磁鐵、幸運，也可能是壞藥水（組隊時也是各自的）', en: 'Potions: they appear around the map with a random effect — giant, tiny, fury, star, magnet, lucky… or a bad one (each player gets their own)' },
       { zh: '開技能光碟有特效：光碟旋轉後一張一張翻出來，3 個發金光、4 個是彩虹大獎；地上的光碟有青藍色光柱，畫面外會有箭頭指路', en: 'Opening a move disc is now an event: it spins and the upgrades come out one by one — 3 glow gold, 4 is a rainbow jackpot; discs on the map have a cyan light beam and an arrow points to them when off-screen' },
@@ -40,6 +33,7 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '關於頁精簡，移除外部連結與捐款按鈕', en: 'Simpler About screen; external links and donation buttons removed' },
       { zh: '升級選卡的重抽改成每場免費 15 次（強化商店買的另外加上去）', en: 'Level-up card rerolls: 15 free per run (plus the ones bought in Upgrades)' },
       { zh: '招式平衡：水砲、冰凍光束、加農光炮、幻象光線傷害 ×1.5；毒針、污泥攻擊、骨頭回力鏢、替身、鬼火傷害 ×1.3', en: 'Move balance: Hydro Pump, Ice Beam, Flash Cannon and Psybeam deal ×1.5 damage; Poison Sting, Sludge, Bonemerang, Substitute and Will-O-Wisp ×1.3' },
       { zh: '電擊、噴射火焰、熱風、重踏、彗星拳進化後明顯變強（原本進化幾乎沒加傷害）', en: 'Thunder Shock, Flamethrower, Heat Wave, Bulldoze and Meteor Mash now get much stronger when they evolve (they barely improved before)' },
