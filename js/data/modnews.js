@@ -5,6 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '新增 19 個招式，補齊招式少的屬性：隱形岩、原始之力、岩石封鎖、龍息、逆鱗、流星群、魅惑之聲、吸取之吻、嬉鬧、空氣斬、勇鳥猛攻、冰礫、冷凍乾燥、發勁、真空波、子彈拳、鋼翼、暗襲要害、大聲咆哮（含進化型）', en: '19 new moves for the thinner types: Stealth Rock, Ancient Power, Rock Tomb, Dragon Breath, Outrage, Draco Meteor, Disarming Voice, Draining Kiss, Play Rough, Air Slash, Brave Bird, Ice Shard, Freeze-Dry, Force Palm, Vacuum Wave, Bullet Punch, Steel Wing, Night Slash, Snarl (with evolutions)' },
+      { zh: '新招式附加效果：麻痺／畏縮（短暫定身）、降低敵人攻擊、提升自己能力、反作用傷害、逆鱗混亂', en: 'New move effects: paralysis/flinch (short root), lowered enemy attack, self stat boosts, recoil, and Outrage’s confusion' },
       { zh: '卡克隆商店變成室內場景：從門走進店裡，裡面沒有怪物，可以安心購物；偷東西的話卡克隆會在店裡暴怒、門會鎖住直到打倒牠', en: 'Kecleon’s shop is now an indoor scene: walk through the door to shop safely with no enemies inside; steal and Kecleon goes berserk inside with the door locked until you beat him' },
       { zh: '神秘房間也變成室內：走進「？」進入房間，可能是怪物屋（門鎖 30 秒）、寶藏房、治癒房或陷阱房，從南邊的門離開；組隊時全隊一起進出', en: 'Mystery rooms are indoor too: step on the “?” to enter a room — Monster House (door locked 30 s), treasure, healing or trap — and leave by the south door; in groups the whole team goes in and out together' },
       { zh: '離開商店或房間時有衝擊波與 3 秒無敵，外面的怪物會原樣放回', en: 'Leaving a shop or room gives a shockwave and 3 s of invincibility; the monsters outside are restored as they were' },
@@ -53,6 +55,7 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '三個舊招式的進化名稱改為力量寶石、死亡羽翼、龍之波動（避免與新招同名）', en: 'Three old evolutions renamed to Power Gem, Oblivion Wing and Dragon Pulse so they don’t share names with new moves' },
       { zh: '安全屋更安全：有人在裡面時附近的怪物會被嚇跑、不會圍在外面；離開時卡克隆放出衝擊波彈開周圍的怪，並給 3 秒無敵', en: 'Safer safe house: while someone is inside, nearby enemies get scared off instead of waiting around it; when you leave, Kecleon’s shockwave knocks back nearby enemies and you get 3 s of invincibility' },
       { zh: '連線再優化：敵人資料只傳有變動的部分（訊息約小 70%，怪多時比較不會卡），隊友和敵人的移動改用平滑插值，網路不穩時抖動更少', en: 'Smoother online play: enemy updates now only send what changed (messages about 70% smaller, fewer hitches with big hordes), and teammates and enemies are smoothly interpolated, jittering less on unstable connections' },
       { zh: '招式欄上方的招式名稱改成深色底＋亮色字，更清楚', en: 'The move name above your move bar now has a dark backing and brighter text so it’s easier to read' },
