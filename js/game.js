@@ -273,10 +273,10 @@ G.Game = (() => {
       // Las cartas se ponen en cola; mientras alguien elige, la partida se para para todos
       // (2026-10-14: antes seguía y te rodeaban mientras elegías).
       coopCards.push(level);
-      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox'].some(G.UI.isOpen)) nextCoopCard();
+      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic'].some(G.UI.isOpen)) nextCoopCard();
     },
     /** ¿Estás eligiendo algo? (lo manda coop.js en tu estado; si alguien elige, todo parado) */
-    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox'].some(G.UI.isOpen) || coopCards.length > 0; },
+    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox', 'scr-relic'].some(G.UI.isOpen) || coopCards.length > 0; },
     /** Invitado: has cogido un disco de movimientos / una poción (lo decide el anfitrión). */
     sbox() { if (pl) { pl.sboxes = (pl.sboxes || 0) + 1; offerBox(); } },
     fbox() { if (pl) offerBox(); },
@@ -485,7 +485,7 @@ G.Game = (() => {
    */
   function offerBond(quiet = false) {
     if (!pl || pl.bonds <= 0 || pl.dead || (state !== 'playing' && state !== 'held') || G.Rift.inArena) return;
-    if (['scr-bond', 'scr-pause', 'scr-item', 'scr-levelup', 'scr-sbox'].some(G.UI.isOpen)) return;
+    if (['scr-bond', 'scr-pause', 'scr-item', 'scr-levelup', 'scr-sbox', 'scr-relic'].some(G.UI.isOpen)) return;
     const opt = pl.bondOptions();
     if (!opt) {
       if (!quiet) G.Spawner.say('Guardas el vínculo: aprende otro movimiento para usarlo', 3, true);
@@ -510,6 +510,25 @@ G.Game = (() => {
 
   const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend', token: 'shiny',
                      sbox: 'legend', potion: 'confirm', egg: 'shiny' };
+
+  /**
+   * Una elección que para la partida (en grupo, para todos hasta que eligen): reliquias de
+   * la torre (relics.js). show(done) abre la ventana y llama a done() al elegir.
+   */
+  function openChoice(show) {
+    if (!pl || pl.dead) return;
+    let mine = false;
+    if (state === 'playing' || state === 'held') {
+      mine = true;
+      state = 'choice';
+      if (G.Coop.active) G.Coop.holdStart();
+    }
+    show(() => {
+      if (!mine) return;
+      if (G.Coop.active) doneChoosing();
+      else if (state === 'choice') state = 'playing';
+    });
+  }
 
   /** Disco de movimientos (loot.js): 1-4 mejoras al azar; se para el juego mientras lo miras. */
   function offerBox() {
@@ -628,6 +647,10 @@ G.Game = (() => {
       if (G.Input.tap('keyr')) G.RunUI.reroll();
       return;
     }
+    if (G.UI.isOpen('scr-relic')) {
+      for (let i = 0; i < 3; i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.Relics.pick(i);
+      return;
+    }
     if (G.UI.isOpen('scr-sbox')) {
       if (G.Input.tap('keyr')) document.getElementById('sbox-reroll').click();
       else if (G.Input.tap('enter') || G.Input.tap('space') || G.Input.tap('digit1')) document.getElementById('sbox-ok').click();
@@ -722,6 +745,7 @@ G.Game = (() => {
         else if (G.UI.isOpen('scr-bond')) G.RunUI.pickBond(0);
         else if (G.UI.isOpen('scr-item')) { const c = document.querySelector('#item-cards .card'); if (c) c.click(); }
         else if (G.UI.isOpen('scr-sbox')) document.getElementById('sbox-ok').click();
+        else if (G.UI.isOpen('scr-relic')) G.Relics.pick(0);
       }
     } else choiceT = 0;
     // La red se atiende siempre (también con las cartas de nivel abiertas).
@@ -791,6 +815,7 @@ G.Game = (() => {
     if (!coop || G.Coop.isHost) G.Loot.tick(dt, time, all);      // discos de movimientos y pociones
     if (!coop || G.Coop.isHost) G.Dungeon.tick(dt, all);          // casa de monstruos, tienda de Kecleon, estatua
     G.Dungeon.update(dt, pl);
+    G.Relics.tick(dt, pl);                                       // reliquias de la torre
     G.Floors.update(dt, all);                                    // escaleras y ataque combinado
     if (!coop || G.Coop.isHost) G.Companion.tick(dt, time, all); // huevo Pokémon
     G.Companion.update(dt, pl);
@@ -1073,7 +1098,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash, offerBond, offerItem, offerBox,
+    init, startRun, everyone, levelXp, flash, offerBond, offerItem, offerBox, openChoice,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */

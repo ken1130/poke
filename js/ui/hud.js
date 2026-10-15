@@ -345,6 +345,7 @@ G.HUD = (() => {
         ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(w / 2 - bw / 2, y0 + (ch.sub ? 20 : 6), bw, 6);
         ctx.fillStyle = ch.color || '#e2b0ff'; ctx.fillRect(w / 2 - bw / 2, y0 + (ch.sub ? 20 : 6), bw * G.U.clamp(ch.bar, 0, 1), 6);
       }
+      G.Relics.drawHud(ctx, w / 2, y0 + (ch.sub ? 22 : 8));        // reliquias de la torre
     }
 
     // Eventos: cuenta atrás, flecha al Pokémon perdido / a la marca y a los duendes.

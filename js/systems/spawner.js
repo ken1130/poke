@@ -107,7 +107,7 @@ G.Spawner = (() => {
     if (G.Events.golden) e.makeGolden();
     G.Floors.scaleEnemy(e);
     // Élite (2026-10-15): desde el minuto 2, un 3 % sale con un afijo (enemy.js makeElite).
-    if (t >= 120 && Math.random() < 0.03 && e.behavior !== 'thief') e.makeElite(G.U.pick(Object.keys(G.Enemy.ELITE)));
+    if (t >= 120 && Math.random() < 0.03 * (G.Modes.rule('eliteK') || 1) && e.behavior !== 'thief') e.makeElite(G.U.pick(Object.keys(G.Enemy.ELITE)));
     G.EnemyMgr.add(e);
     if (shiny && !shinyMode) {
       say('¡Un ' + e.name + ' shiny anda cerca!', 3.4);

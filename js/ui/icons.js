@@ -185,6 +185,16 @@ G.Icons = (() => {
     airballoon: { pal: { r: '#ff5f6d', d: '#b8283a', w: '#ffd3d8', s: '#e8eef8' }, rows: [
       '...kkkkkk...', '..krrrrrrk..', '.krwwrrrrdk.', '.krwrrrrrdk.', '.krrrrrrrdk.', '.krrrrrrddk.',
       '..krrrrddk..', '...krrddk...', '....kddk....', '.....kk.....', '......s.....', '.....s......'] },
+    // ---------- reliquias de la torre (relics.js, 2026-10-15) ----------
+    relic_fang: { pal: { w: '#f4f4ff', s: '#b8c0d0', r: '#ff3048', d: '#a01428' }, rows: [
+      '....kkkk....', '...kwwwsk...', '...kwwwsk...', '...kwwwsk...', '....kwwsk...', '....kwwsk...',
+      '.....kwsk...', '.....kwk....', '......k.....', '.....krk....', '....krrdk...', '.....kkk....'] },
+    relic_orbs: { pal: { o: '#ff7b3d', y: '#ffd23f', r: '#c0300a', w: '#fff3b0' }, rows: [
+      '............', '..kkk.......', '.kwyok......', '.kyoork.....', '.koorrk.....', '..krrk......',
+      '......kkk...', '.....kwyok..', '.....kyoork.', '.....koorrk.', '......krrk..', '............'] },
+    relic_venom: { pal: { p: '#a043d0', q: '#d995f2', g: '#c8d4e6', w: '#ffffff', c: '#8a5a2b' }, rows: [
+      '....kkkk....', '....kcck....', '....kggk....', '...kkggkk...', '..kqqqqppk..', '.kqwwqqpppk.',
+      '.kqwkwqpppk.', '.kqqwqqpppk.', '.kpqqqppppk.', '.kppppppppk.', '..kppppppk..', '...kkkkkk...'] },
     // ---------- medallas de logros (bronce, plata, oro) ----------
     medal1: { pal: { r: '#ff5f6d', q: '#b8283a', m: '#d08a4a', n: '#8a5226', w: '#ffd0a0', s: '#ffe8c8' }, rows: MEDAL },
     medal2: { pal: { r: '#4fb4ff', q: '#2a6fb0', m: '#c9d2de', n: '#7d8899', w: '#ffffff', s: '#ffffff' }, rows: MEDAL },
