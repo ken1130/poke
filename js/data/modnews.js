@@ -5,6 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '新增 8 個輔助技能：自我再生、光牆、守住、祈願、冥想、生命水滴、睡覺、神秘守護。學會後自動發動，不能被選成攻擊，招式欄標示「輔助」（升級時最多出現 2 個）', en: '8 new support moves: Recover, Light Screen, Protect, Wish, Calm Mind, Life Dew, Rest and Safeguard. They trigger automatically, can never be selected as your attack, and are marked “Support” in the move bar (up to 2 offered)' },
+      { zh: '祈願、生命水滴在組隊時也會治療附近的隊友', en: 'Wish and Life Dew also heal nearby teammates in co-op' },
       { zh: '卡克隆商店改成安全屋：走進去怪物進不來、不會受傷，自動跳出購物選單，按「購買」用這場的金幣買；每樣商品也能按「偷走」，卡克隆會暴怒追殺你', en: 'Kecleon’s shop is now a safe house: enemies can’t get in and you take no damage; a shop menu opens — press “Buy” to pay with this run’s coins, or “Steal” and Kecleon goes berserk' },
       { zh: '卡克隆的幸運輪盤：在商店選單裡，押這場金幣的 25%／50%／全部，結果可能歸零、×0.5、持平、×1.5、×2、×3，或大獎 ×5（每間店 3 次）', en: 'Kecleon’s Lucky Roulette: from the shop menu, bet 25%/50%/all of this run’s coins — you might lose it all, get ×0.5, break even, ×1.5, ×2, ×3 or the ×5 jackpot (3 spins per shop)' },
       { zh: '神秘房間不一定是怪物屋：也可能是寶藏房、治癒房或陷阱房', en: 'Mystery rooms aren’t always Monster Houses: they can also be treasure, healing or trap rooms' },
