@@ -3,6 +3,17 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-16', title: { zh: '迷宮新事件：怪物屋、卡克隆商店、神秘雕像', en: 'New dungeon events: Monster House, Kecleon Shop, Mystery Statue' },
+    new: [
+      { zh: '遊戲改名為「寶可夢迷宮倖存者」', en: 'The game is now called “Pokémon Dungeon Survivors”' },
+      { zh: '怪物屋：小地圖上的「？」神秘房間，走進去會湧出大量怪物，撐過 30 秒或全部打倒就有大獎', en: 'Monster House: the “?” room on the minimap — step in, a horde appears; survive 30 s or clear it for big loot' },
+      { zh: '卡克隆商店：用這場的金幣買藥水、道具、技能強化；沒錢硬拿就是偷，卡克隆會變成頭目追殺你（強度跟著時間和等級成長），打贏全店免費', en: 'Kecleon Shop: spend this run’s coins on potions, items and upgrades; take something without paying and Kecleon becomes a boss (scales with time and level) — beat it and the shop is free' },
+      { zh: '神秘雕像：摸了之後全隊得到 3 分鐘的祝福，或有代價也有好處的詛咒', en: 'Mystery Statue: touch it for a 3-minute team blessing — or a curse with an upside' }
+    ],
+    chg: [
+      { zh: '關於頁精簡，移除外部連結與捐款按鈕', en: 'Simpler About screen; external links and donation buttons removed' }
+    ]
+  },
   { d: '2026-10-15', title: { zh: '五個新招式、技能光碟與藥水', en: 'Five new moves, move discs and potions' },
     new: [
       { zh: '技能光碟：第 4、9、15 分鐘在每個人附近出現（一場 3 片），打開隨機得到 1～4 個技能強化（一場可重抽 3 次）。組隊時每人有自己的光碟，只有自己看得到、撿得到', en: 'Move discs: one appears near each player at minutes 4, 9 and 15 (3 per run) and gives 1–4 random move upgrades (3 rerolls per run). In groups each player has their own discs: only you can see and pick up yours' },

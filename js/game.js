@@ -126,6 +126,7 @@ G.Game = (() => {
     G.EnemyMgr.clear();
     G.Pickups.clear();
     G.Loot.reset();
+    G.Dungeon.reset();
     if (coop) { G.Modes.reset(); G.Modes.setRoom(coop.mods || {}); }
     // Desafíos / aventura: sus reglas (las "Reglas a medida" sólo valen en la run normal).
     G.Challenges.prepare();
@@ -574,7 +575,7 @@ G.Game = (() => {
       return;
     }
     if (p.kind === 'coin') {
-      pl.coins += p.value;
+      pl.coins += p.value * G.Dungeon.mod('coins');      // (maldición de la avaricia: ×2)
       G.FX.dmgText(who.x, who.y - who.bodyH - 6, '+' + p.value, '#ffd23f');
       return;
     }
@@ -782,7 +783,9 @@ G.Game = (() => {
     G.Combat.resolve(dt, pl, time);
     G.Combat.updateFields(dt);
     G.Pickups.update(dt, all, onCollect);
-    if (!coop || G.Coop.isHost) G.Loot.tick(dt, time, all);      // cofres de movimientos y pociones
+    if (!coop || G.Coop.isHost) G.Loot.tick(dt, time, all);      // discos de movimientos y pociones
+    if (!coop || G.Coop.isHost) G.Dungeon.tick(dt, all);          // casa de monstruos, tienda de Kecleon, estatua
+    G.Dungeon.update(dt, pl);
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
@@ -897,6 +900,7 @@ G.Game = (() => {
     G.World.drawLiquid(ctx, cam, t);
     G.Hazards.draw(ctx);
     G.Combat.drawGroundFields(ctx);
+    G.Dungeon.drawGround(ctx);
     G.Pickups.draw(ctx);
 
     // Todo lo que tiene "pies" se ordena por Y: objetos, enemigos, jugador.
@@ -928,6 +932,7 @@ G.Game = (() => {
     drawScene(G.Camera, G.Coop.active ? [pl, ...G.Coop.puppets()] : [pl]);
     G.Projectiles.draw(ctx);
     G.Combat.drawAirFields(ctx);
+    G.Dungeon.drawAir(ctx);
     G.FX.draw(ctx);
     ctx.restore();
 
@@ -1056,7 +1061,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash, offerBond,
+    init, startRun, everyone, levelXp, flash, offerBond, offerItem,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */

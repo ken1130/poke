@@ -234,7 +234,16 @@ G.Pickups = (() => {
     ctx.restore();
   }
 
-  /** Disco de movimientos (con columna de luz) y poción (frasco rosa). */
+  /** Sprite de tiles.js centrado en (x, y), a `k` píxeles de pantalla por píxel. */
+  function sprite(ctx, type, v, x, y, k) {
+    const img = G.Tiles.propSprite(G.World.biome, type, v);
+    const prev = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, Math.round(x - img.width * k / 2), Math.round(y - img.height * k / 2), img.width * k, img.height * k);
+    ctx.imageSmoothingEnabled = prev;
+  }
+
+  /** Disco de movimientos (con columna de luz) y poción. */
   function drawLoot(ctx, p, y) {
     const beat = Math.sin(p.t * 1.5);
     ctx.save();
@@ -257,18 +266,14 @@ G.Pickups = (() => {
       const lbl = G.T('DISCO DE MOVIMIENTOS');
       ctx.strokeText(lbl, p.x, y - 30 - Math.abs(beat) * 3);
       ctx.fillStyle = '#bff3ff'; ctx.fillText(lbl, p.x, y - 30 - Math.abs(beat) * 3);
-      drawDisc(ctx, p.x, y, 13, p.t * 2.2);
+      // El disco, en pixel art como el resto del mapa (tiles.js), girando su brillo.
+      sprite(ctx, 'disc', Math.floor(p.t * 2) % 6, p.x, y, 2.2);
     } else {
-      // Poción: frasco redondo con tapón y líquido que cambia de color.
-      const hue = (p.t * 40) % 360;
-      ctx.fillStyle = `hsl(${hue},85%,62%)`;
-      ctx.beginPath(); ctx.arc(p.x, y + 2, 8, 0, 6.2832); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#e8eef8'; ctx.fillRect(p.x - 3, y - 10, 6, 6); ctx.strokeRect(p.x - 3, y - 10, 6, 6);
-      ctx.fillStyle = '#8a5a2b'; ctx.fillRect(p.x - 3.5, y - 13, 7, 3);
-      ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(p.x - 3, y, 2.2, 0, 6.2832); ctx.fill();
+      // Poción: frasco en pixel art; el líquido va cambiando de color.
+      sprite(ctx, 'potion', Math.floor(p.t * 0.8) % 6, p.x, y, 2);
     }
     ctx.restore();
   }
 
-  return { drawDisc, clear, all, dropXp, drop, update, draw, addRemote, removeId, pullAll, KIND, get count() { return list.length; } };
+  return { drawDisc, sprite, clear, all, dropXp, drop, update, draw, addRemote, removeId, pullAll, KIND, get count() { return list.length; } };
 })();

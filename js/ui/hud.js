@@ -97,6 +97,19 @@ G.HUD = (() => {
       bx += tw + 5;
     }
 
+    // bendición o maldición de la estatua (dungeon.js), para todo el grupo
+    const bl = G.Dungeon.blessingInfo();
+    if (bl) {
+      ctx.font = F(800, 9);
+      const txt = G.T(bl.name) + ' ' + Math.ceil(bl.left) + 's';
+      const tw = ctx.measureText(txt).width + 12;
+      roundRect(ctx, bx, py + 34, tw, 15, 7);
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
+      ctx.fillStyle = bl.color;
+      ctx.fillText(txt, bx + 6, py + 45);
+      bx += tw + 5;
+    }
+
     // ---------- reloj / bioma / kills ----------
     ctx.textAlign = 'center';
     ctx.font = F(800, 26);
@@ -627,13 +640,9 @@ G.HUD = (() => {
     sbox(ctx, x, y, on) {
       ctx.fillStyle = on ? 'rgba(127,224,255,.55)' : 'rgba(127,224,255,.25)';
       ctx.beginPath(); ctx.arc(x, y, 10, 0, 6.2832); ctx.fill();
-      G.Pickups.drawDisc(ctx, x, y, 6.5, performance.now() / 300);
+      G.Pickups.sprite(ctx, 'disc', Math.floor(performance.now() / 160) % 6, x, y, 0.85);
     },
-    potion(ctx, x, y) {
-      ctx.fillStyle = '#ff7ad9'; ctx.beginPath(); ctx.arc(x, y + 1.5, 4.5, 0, 6.2832); ctx.fill();
-      ctx.strokeStyle = '#2a0a20'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = '#e8eef8'; ctx.fillRect(x - 1.5, y - 5, 3, 3);
-    },
+    potion(ctx, x, y) { G.Pickups.sprite(ctx, 'potion', 5, x, y, 0.75); },
     item(ctx, x, y) {
       ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 4, y); ctx.lineTo(x, y + 5); ctx.lineTo(x - 4, y); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = '#5a3a00'; ctx.lineWidth = 1; ctx.stroke();
@@ -662,6 +671,17 @@ G.HUD = (() => {
       ctx.strokeStyle = '#3a0008'; ctx.lineWidth = 1; ctx.stroke();
       ctx.fillStyle = '#fff'; ctx.fillRect(x - 3, y - 2, 2, 2); ctx.fillRect(x + 1, y - 2, 2, 2); ctx.fillRect(x - 2, y + 2, 4, 1);
     },
+    mhouse(ctx, x, y, on) {
+      ctx.fillStyle = on ? '#c47bff' : '#7a3fb0'; ctx.beginPath(); ctx.arc(x, y, 6.5, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = '#1a0a2a'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = F(800, 10); ctx.textAlign = 'center'; ctx.fillText('?', x, y + 3.5);
+    },
+    shop(ctx, x, y) {
+      ctx.fillStyle = '#2f8a5a'; ctx.fillRect(x - 6, y - 4, 12, 9);
+      ctx.strokeStyle = '#f2c443'; ctx.lineWidth = 1.5; ctx.strokeRect(x - 6, y - 4, 12, 9);
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, y + 0.5, 2.5, 0, 6.2832); ctx.fill();
+    },
+    statue(ctx, x, y) { G.Pickups.sprite(ctx, 'statue', Math.floor(performance.now() / 600) % 6, x, y, 0.45); },
     mate(ctx, x, y, dead) {
       ctx.fillStyle = dead ? '#ff5f6d' : '#5fe08a'; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 6.2832); ctx.fill();
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
@@ -720,6 +740,7 @@ G.HUD = (() => {
     }
     const rift = G.Rift.rift;
     if (rift) icon('rift', rift.x, rift.y, true, blink);
+    for (const s of G.Dungeon.sites) icon(s.type, s.x, s.y, true, blink);
     for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) icon('boss', e.x, e.y, true);
     if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl) icon('mate', o.x, o.y, true, o.dead);
     // Tú: flecha blanca hacia donde miras.
@@ -756,11 +777,19 @@ G.HUD = (() => {
     add(near(mmProps, p => p.type === 'altar' && !p.used), 'Altar', '#ff8ad8', 'altar');
     add(near(mmProps, p => p.type === 'spring' && !p.used), 'Manantial', '#4fb4ff', 'spring');
     if (G.Rift.rift) add(G.Rift.rift, 'Grieta', '#c9a6ff', 'rift');
+    for (const s of G.Dungeon.sites) {
+      if (s.type === 'mhouse') add(s, s.state === 'active' ? 'Casa de monstruos' : 'Sala misteriosa', '#d9a6ff', 'mhouse');
+      else if (s.type === 'shop') add(s, 'Tienda de Kecleon', '#9fe0b0', 'shop');
+      else if (s.type === 'statue') add(s, 'Estatua misteriosa', '#e8eef8', 'statue');
+    }
     add(near(G.EnemyMgr.all(), e => e.boss && !e.dead), 'Jefe', '#ff5f6d', 'boss');
     if (!rows.length) return;
     ctx.save();
     ctx.font = F(800, 10);
     ctx.textAlign = 'right';
+    // Lo más importante primero (caben 6).
+    const PRI = ['sbox', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'item', 'bigchest', 'altar', 'spring'];
+    rows.sort((a, b) => PRI.indexOf(a.ic) - PRI.indexOf(b.ic));
     rows.slice(0, 6).forEach((r, k) => {
       const a = Math.atan2(r.o.y - pl.y, r.o.x - pl.x);
       const arrow = ARROWS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];

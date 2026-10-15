@@ -88,13 +88,14 @@ G.Spawner = (() => {
     return Math.random() < SHINY_RATE;
   }
 
-  function spawnOne(pl, t, angle) {
+  function spawnOne(pl, t, angle, at) {
     const def = G.U.pick(G.Enemies.bagAt(t));
-    const pt = freePoint(pl, angle == null ? Math.random() * 6.2832 : angle, isFlyer(def));
+    const pt = at || freePoint(pl, angle == null ? Math.random() * 6.2832 : angle, isFlyer(def));
     if (!pt) return null;
     const shiny = rollShiny(def.dex);
     const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
     e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
+    e.maxHp = e.hp = Math.round(e.maxHp * G.Dungeon.mod('enemyHp'));     // maldición de la avaricia
     // Comienzo más suave (2026-10-14): sin mejoras se moría enseguida. Los primeros
     // 3 minutos los enemigos pegan menos (desde ×0,5) y aguantan menos (desde ×0,7).
     const f = noEase ? 1 : Math.min(1, t / EASE_T);
@@ -227,6 +228,9 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, ahead, burst, spawnBossNow, tickBanner, banner, say, rate, SHINY_RATE, CAP,
+  /** Uno normal en (x, y) (casa de monstruos, dungeon.js). */
+  function spawnAt(x, y, t) { return spawnOne(null, t, null, [x, y]); }
+
+  return { reset, update, ahead, burst, spawnBossNow, spawnAt, tickBanner, banner, say, rate, SHINY_RATE, CAP,
            debugForceShiny(n = 1) { forceShiny = n; }, debugNoEase(v = true) { noEase = v; } };
 })();

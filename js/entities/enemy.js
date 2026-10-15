@@ -294,7 +294,7 @@
         } else if (le.slow) terrainMul = le.slow < 0.5 ? 0.45 : 0.55;
       }
 
-      const spd = this.spd * (1 - this.slow) * (this.rootT > 0 ? 0 : 1) * terrainMul * G.Weather.speedFor(this.types);
+      const spd = this.spd * (1 - this.slow) * (this.rootT > 0 ? 0 : 1) * terrainMul * G.Weather.speedFor(this.types) * G.Dungeon.mod('enemySpd');
       let [dx, dy] = G.U.norm(pl.x - this.x, pl.y - this.y);
       const dist = G.U.dist(this.x, this.y, pl.x, pl.y);
       // Duende del tesoro: huye de ti (en zigzag) en cuanto te acercas.

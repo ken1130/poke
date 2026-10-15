@@ -574,6 +574,95 @@ G.Tiles = (() => {
       return P.canvas();
     },
 
+    // ---------- sorpresas del mapa (dungeon.js / loot.js, 2026-10-15) ----------
+
+    /** Estatua misteriosa: pedestal de piedra y una figura de Unown con un ojo que brilla. variante = color del ojo 0..5. */
+    statue(B, variant) {
+      const P = Pix(22, 36);
+      const R = B.rock.map(h => pack(h));
+      const moss = pack(B.grass ? B.grass[0] : '#2f6b2c');
+      const EYE = ['#ff5f6d', '#ffd23f', '#5fe08a', '#4fb4ff', '#c47bff', '#ff8ad8'][variant % 6];
+      const eye = pack(EYE), eyeL = pack('#ffffff');
+      // Pedestal (dos escalones).
+      for (let y = 29; y <= 34; y++) for (let x = 1; x <= 20; x++) P.set(x, y, R[y === 29 ? 2 : y >= 33 ? 0 : 1]);
+      for (let y = 25; y <= 28; y++) for (let x = 4; x <= 17; x++) P.set(x, y, R[y === 25 ? 2 : x >= 16 ? 0 : 1]);
+      // Figura: Unown "O" de piedra sobre una columna.
+      for (let y = 17; y <= 24; y++) for (let x = 9; x <= 12; x++) P.set(x, y, R[x === 9 ? 2 : x === 12 ? 0 : 1]);
+      disc(P, 10.5, 9.5, 7.6, (x, y, d) => {
+        if (d < 0.55) return null;                          // hueco del anillo
+        const lit = (10.5 - x) * 0.4 + (9.5 - y) * 0.6;
+        return lit > 1.8 ? R[2] : lit < -1.8 ? R[0] : R[1];
+      });
+      disc(P, 10.5, 9.5, 3.1, (x, y, d) => (d > 0.8 ? pack('#2a2f3a') : d < 0.4 ? eyeL : eye));
+      // Musgo y grietas.
+      [[2, 33], [3, 33], [5, 32], [17, 33], [18, 32], [5, 28], [15, 27], [4, 12], [16, 7]].forEach(([x, y]) => P.set(x, y, moss));
+      [[13, 30], [14, 31], [7, 26], [8, 27], [6, 6]].forEach(([x, y]) => P.set(x, y, R[0]));
+      outline(P, pack('#14161c'));
+      return P.canvas();
+    },
+
+    /** Losa de la casa de monstruos: trampilla de piedra con un "?" dorado tallado. Plana. */
+    mhouse(B) {
+      const P = Pix(34, 22);
+      const R = B.rock.map(h => pack(h));
+      const pit = pack('#1a1226'), pitL = pack('#2c2040'), gold = pack('#f2c443'), goldD = pack('#b5832a');
+      for (let y = 0; y < 22; y++) for (let x = 0; x < 34; x++) {
+        const nx = (x - 16.5) / 16.5, ny = (y - 10.5) / 10.5, d = nx * nx + ny * ny;
+        if (d > 1) continue;
+        if (d > 0.62) { P.set(x, y, R[(H(x, y, 91) < 0.4 ? 0 : 1) + (ny < -0.3 ? 1 : 0)]); continue; }
+        P.set(x, y, (x + y) % 3 ? pit : pitL);
+      }
+      const Q = ['.ggg.', 'g...g', '....g', '...g.', '..g..', '.....', '..g..'];
+      Q.forEach((row, j) => [...row].forEach((c, i) => { if (c === 'g') { P.set(14 + i, 7 + j, gold); P.set(15 + i, 8 + j, goldD); } }));
+      outline(P, pack('#0c0812'));
+      return P.canvas();
+    },
+
+    /** Alfombra de la tienda de Kecleon (verde con greca dorada, como en Mundo Misterioso). Plana. */
+    shopmat() {
+      const P = Pix(112, 36);
+      const g = pack('#2f8a5a'), gD = pack('#226a44'), gL = pack('#46a872'), y = pack('#f2c443'), yD = pack('#b5832a'), r = pack('#c84a4a');
+      for (let j = 0; j < 36; j++) for (let i = 0; i < 112; i++) {
+        let c = (i + j) % 6 < 3 ? g : gL;
+        if (j < 3 || j > 32 || i < 3 || i > 108) c = j === 0 || j === 35 || i === 0 || i === 111 ? yD : y;
+        else if (j === 5 || j === 30) c = (i % 4 < 2) ? r : yD;
+        else if (j > 26 || j < 9) c = gD;
+        P.set(i, j, c);
+      }
+      // Flecos.
+      for (let i = 2; i < 110; i += 3) { P.set(i, 35, y); }
+      return P.canvas();
+    },
+
+    /** Disco de movimientos (como una MT): plateado, con un brillo de arcoíris que gira. variante = fotograma 0..5. */
+    disc(B, variant) {
+      const P = Pix(18, 18);
+      const ring = ['#ff7a9e', '#ffd23f', '#7dff9a', '#7fe0ff', '#a98bff', '#ff8ad8'];
+      disc(P, 8.5, 8.5, 8.4, (x, y, d) => {
+        if (d < 0.2) return null;
+        if (d < 0.36) return pack('#5a6a88');
+        const a = (Math.atan2(y - 8.5, x - 8.5) / 6.2832 + 1 + variant / 6) % 1;
+        const band = Math.floor(a * 6);
+        const shine = (a * 6) % 1 < 0.35 && d > 0.45;
+        return shine ? pack(ring[band]) : pack(d > 0.88 ? '#8a9ab4' : d > 0.6 ? '#c8d4e6' : '#e8eef8');
+      });
+      P.set(5, 4, pack('#ffffff')); P.set(4, 5, pack('#ffffff'));
+      outline(P, pack('#1a2a44'));
+      return P.canvas();
+    },
+
+    /** Poción: frasco redondo con tapón de corcho; el líquido cambia de color. variante = color 0..5. */
+    potion(B, variant) {
+      const P = Pix(14, 18);
+      const L = [['#ff5f6d', '#b8283a'], ['#ffd23f', '#c08a10'], ['#5fe08a', '#2f9a52'], ['#4fb4ff', '#2a6fb0'], ['#c47bff', '#7a3fb0'], ['#ff8ad8', '#b03d84']][variant % 6];
+      const liq = pack(L[0]), liqD = pack(L[1]), glass = pack('#d8eef8'), glassD = pack('#8fb0c8'), cork = pack('#a0703a'), corkD = pack('#6b4520');
+      disc(P, 6.5, 11, 6.2, (x, y, d) => (y < 8 ? (d > 0.85 ? glassD : glass) : d > 0.82 ? liqD : (x < 5 && y < 12 ? pack('#ffffff') : liq)));
+      for (let y = 2; y <= 5; y++) for (let x = 5; x <= 8; x++) P.set(x, y, x === 5 ? glass : glassD);
+      for (let x = 4; x <= 9; x++) { P.set(x, 0, corkD); P.set(x, 1, cork); }
+      outline(P, pack('#140c1a'));
+      return P.canvas();
+    },
+
     /** Trampa de Mundo Misterioso. variante: 0 veneno · 1 pegajosa · 2 explosiva. */
     trap(B, variant) {
       const P = Pix(14, 14);

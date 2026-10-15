@@ -298,7 +298,8 @@ G.Coop = (() => {
         case 're': G.Rift.enterRequest(); break;
         case 'bye': mateGone(from); break;
         case 'qc': G.Chat.show(from, ev[1]); emit(['qc', from, ev[1]], from); break;   // mensaje rápido
-        case 'rv': creditRevive(ev[1]); break;                                         // `from` fue levantado por ev[1]
+        case 'rv': creditRevive(ev[1]); break;
+        case 'dg': G.Dungeon.onClient(from, ev); break;                               // tienda de Kecleon                                         // `from` fue levantado por ev[1]
       }
     }
   }
@@ -399,6 +400,7 @@ G.Coop = (() => {
       case 'rdt': case 'rdw': G.Raid.onEvent(ev); break;
       case 'stg': G.Stages.onNet(ev); break;
       case 'twr': G.Challenges.onNet(ev); break;
+      case 'dg': G.Dungeon.onNet(ev); break;
     }
   }
 
@@ -548,6 +550,10 @@ G.Coop = (() => {
     /** Anfitrión: evento para todos. Invitado: evento para el anfitrión. */
     broadcast(ev) { emit(ev); },
     toHost(ev) { if (active && !host) { outEv.push(ev); flushClient(true); } },
+    /** Invitado: pide algo al anfitrión (dungeon.js: comprar en la tienda). */
+    request(ev) { if (active && !host) { outEv.push(ev); flushClient(true); } },
+    /** Anfitrión: evento sólo para un invitado. */
+    sendTo(u, ev) { const m = mates.get(u); if (host && m && m.connected) m.q.push(ev); },
     mate(u) { return mates.get(u); },
     get mates() { return [...mates.values()]; },
     get members() { return members; },
