@@ -1162,7 +1162,7 @@ G.Combat = (() => {
         continue;
       }
       if (G.U.dist2(e.x, e.y, pl.x, pl.y) > (e.r + pl.r) * (e.r + pl.r)) continue;
-      if (e.touchCd > 0 || e.behavior === 'thief') continue;
+      if (e.touchCd > 0 || e.behavior === 'thief' || e.dmg <= 0) continue;     // (los Magikarp de la migración no pegan)
       e.touchCd = 0.55;
       e.strike(pl);
       // Peso Pesado: la armadura quita parte del daño de los choques.

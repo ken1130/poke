@@ -420,7 +420,8 @@ G.Player = class Player {
 
     // --- movimiento con colisiones ---
     // (En cooperativo la pausa no para el juego: sólo te quedas quieto.)
-    const [ax, ay] = this.frozen ? [0, 0] : G.Input.axis();
+    let [ax, ay] = this.frozen ? [0, 0] : G.Input.axis();
+    if (this.reversed) { ax = -ax; ay = -ay; }        // poción del revés (loot.js)
     this.walking = ax !== 0 || ay !== 0;
     const s = this.spd;
     // Hielo: resbalas (la velocidad cambia despacio).

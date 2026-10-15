@@ -231,6 +231,16 @@ G.Loot = (() => {
     toxic: { w: 5, dur: 5, color: '#a043d0', name: 'Poción mala: ¡veneno!',
              desc: 'Pierdes un poco de vida durante 5 s',
              on: p => { p.toxic = true; }, off: p => { p.toxic = false; } },
+    // De risa (2026-10-15): no cambian mucho la partida, pero dan juego.
+    bighead: { w: 6, dur: 15, color: '#ffd23f', name: '¡Cabezón!',
+             desc: 'Te crece la cabeza… (y +10% de crítico)',
+             on: p => { p.sizeK = 1.8; p.critChance = (p.critChance || 0) + 0.1; }, off: p => { p.sizeK = 1; p.critChance -= 0.1; } },
+    reverse: { w: 5, dur: 8, color: '#c47bff', name: 'Poción rara: ¡al revés!',
+             desc: 'Izquierda es derecha y arriba es abajo durante 8 s',
+             on: p => { p.reversed = true; }, off: p => { p.reversed = false; } },
+    disco:   { w: 6, dur: 10, color: '#ff8ad8', name: '¡Fiesta disco!',
+             desc: 'Los enemigos de alrededor se ponen a bailar (van mucho más lentos)',
+             on: p => { p.disco = true; }, off: p => { p.disco = false; } },
     heavy: { w: 5, dur: 5, color: '#8f98ab', name: 'Poción mala: ¡pesadez!',
              desc: 'Vas a la mitad de velocidad durante 5 s',
              on: p => { p.spdMul *= 0.5; }, off: p => { p.spdMul /= 0.5; } }

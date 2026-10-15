@@ -186,6 +186,12 @@
     /** Lo que se VE al recibir un golpe. */
     showHurt(d, color, dirX = 0, dirY = 0, eff = null) {
       this.flash = 0.09;
+      // Slowpoke y familia se enteran tarde (funny.js): "…?" y el número 2,5 s después.
+      if (this.dex === 79 || this.dex === 80 || this.dex === 199) {
+        if (!this.slowT0 || performance.now() - this.slowT0 > 2500) { this.slowT0 = performance.now(); G.FX.dmgText(this.x, this.y - this.bodyH - 4, '…?', '#ffffff'); }
+        setTimeout(() => { if (!this.dead) G.FX.dmgText(this.x, this.y - this.bodyH - 4, d + '!?', '#ff8ad8', true); }, 2500);
+        return;
+      }
       // Muy eficaz: número amarillo y grande. Poco eficaz: gris. Crítico: naranja y grande.
       G.FX.dmgText(this.x, this.y - this.bodyH - 4, d, eff === 'crit' ? '#ff9a3c' : eff === 'super' ? '#ffe14d' : eff === 'weak' ? '#a3abb8' : color,
                    this.boss || eff === 'super' || eff === 'crit');
@@ -231,6 +237,7 @@
         return;
       }
       if (this.noLoot) return;          // jefe de incursión que se ha ido
+      G.Funny.onDeath(this);            // Magikarp de la migración: una moneda
       if (this.elite) {
         // Élite: dos orbes grandes de experiencia y a veces un objeto; el "split" se parte en 3.
         for (let i = 0; i < 2; i++) G.Pickups.drop('xpBig', this.x + G.U.rand(-20, 20), this.y + G.U.rand(-14, 14), Math.ceil(this.xp / 4));

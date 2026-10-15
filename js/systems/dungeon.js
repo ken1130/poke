@@ -28,7 +28,8 @@ G.Dungeon = (() => {
 
   function reset() {
     sites = []; nextId = 1; blessing = null; buyT = 0; buyKey = '';
-    houseT = 150; shopT = 270; statueT = 200; timed = false;
+    houseT = 150; shopT = 270; statueT = 200;
+    G.Funny.reset(); timed = false;
   }
   const allowed = () => !G.PvP.on && !G.Rift.inArena && G.Modes.run !== 'legend';
   const byId = id => sites.find(s => s.id === id);
@@ -50,6 +51,7 @@ G.Dungeon = (() => {
     else if (k === 'bless') startBlessing(ev[2], ev[3]);
     else if (k === 'say') G.Spawner.say(G.T(ev[2]), ev[3] || 3, true);
     else if (k === 'ach') G.Progress.event(ev[2]);
+    else if (k === 'fn') G.Funny.onNet(ev);
     else if (k === 'poor') G.Spawner.say(G.I18n.f('¡No tienes bastantes monedas! (cuesta {x})', ev[2]), 2, true);
   }
   /** Anfitrión: un invitado pide comprar (o se lleva sin pagar) el artículo `idx`. */
@@ -92,6 +94,7 @@ G.Dungeon = (() => {
 
   /** Anfitrión o solitario: programa lo que sale y lo que pasa. */
   function tick(dt, players) {
+    G.Funny.tick(dt, players);
     const live = players.filter(p => !p.dead);
     if (!live.length) return;
     const t = T();
@@ -125,6 +128,7 @@ G.Dungeon = (() => {
 
   /** Cada ordenador, para su jugador: comprar en la tienda (quedarse encima). */
   function update(dt, pl) {
+    G.Funny.update(dt, pl);
     if (!pl || pl.dead) { buyT = 0; return; }
     let on = null;
     for (const s of sites) {
@@ -404,6 +408,7 @@ G.Dungeon = (() => {
   const WARE_NAME = { potion: 'Poción', upgrade: 'Mejora', item: 'Objeto', heal: 'Curación', rerolls: '+3 cambios', disc: 'Disco', tm: 'MT',
                       protein: 'Proteína', hpup: 'Más PS', revive: 'Semilla Revivir', ticket: 'Ticket', egg: 'Huevo' };
   function drawAir(ctx) {
+    G.Funny.drawAir(ctx);
     const now = performance.now() / 1000;
     const pl = G.Game.player;
     for (const s of sites) {
@@ -429,11 +434,17 @@ G.Dungeon = (() => {
         label(G.T('ESTATUA MISTERIOSA'), s.x, s.y - 80, '#e8eef8');
       } else if (s.type === 'shop' && s.wares) {
         // Kecleon detrás del mostrador (si no está furioso: entonces es el jefe).
+        if (s.state === 'angry') {
+          const k = G.EnemyMgr.get(s.bossId);
+          if (k && !k.dead && G.Camera.sees(k.x, k.y, 40)) G.Funny.bubble(ctx, k.x, k.y - k.bodyH - 16, G.T('¡LADRÓN! ¡VUELVE AQUÍ!'), '#c8282a');
+        }
         if (s.state !== 'angry') {
           if (!kecleonAnim) kecleonAnim = new G.Sprites.Animator(352, 1, false);
           kecleonAnim.loop('Idle'); kecleonAnim.update(1 / 60);
           G.Sprites.drawShadow(ctx, 352, s.x, s.y);
           kecleonAnim.draw(ctx, s.x, s.y, {});
+          // Habla cuando te acercas.
+          if (pl && s.state === 'open' && G.U.dist2(pl.x, pl.y, s.x, s.y) < 230 * 230) G.Funny.bubble(ctx, s.x, s.y - 70, G.T('¡Bienvenido! ¡Tienda de Kecleon!'));
         }
         const title = s.state === 'free' ? G.T('¡TODO GRATIS!') : s.state === 'angry' ? G.T('¡KECLEON FURIOSO!') : G.T('TIENDA DE KECLEON');
         label(title + (s.state === 'open' ? ' · ' + Math.max(0, Math.ceil(s.until - T())) + 's' : ''), s.x, s.y - 52, s.state === 'angry' ? '#ff5f6d' : '#9fe0b0');

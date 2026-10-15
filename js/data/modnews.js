@@ -5,6 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '搞笑事件：鯉魚王大遷徙（30 隻只會亂跳、打了掉金幣）、卡比獸睡在路中間把怪彈開、呆呆獸被打要過 2.5 秒才反應、怪物會冒出吐槽對話泡泡', en: 'Funny events: the Great Magikarp Migration (30 that only flop and drop coins), a sleeping Snorlax that bounces enemies away, Slowpoke reacting 2.5 s late, and enemies saying silly things in speech bubbles' },
+      { zh: '搞笑藥水：大頭症（頭超大＋暴擊）、顛倒（方向相反 8 秒）、迪斯可派對（周圍敵人跳舞變超慢）；卡克隆會說「歡迎光臨」，被偷時大喊「小偷！！給我站住！！」', en: 'Funny potions: Big Head (huge + crit), Reversed (controls flipped 8 s), Disco Party (nearby enemies dance and slow down); Kecleon greets you and yells “THIEF! GET BACK HERE!”' },
       { zh: '下樓梯有獎勵：到新樓層回復 30% 血量，並送一片不佔額度的技能光碟；越深扭蛋券越常掉、精英怪越常掉道具；結算畫面顯示最深樓層', en: 'Stairs are now worth it: each new floor heals 30% and gives a bonus move disc (doesn’t count toward the 3); deeper floors drop more tickets and elites drop more items; the results screen shows your deepest floor' },
       { zh: '寶可夢蛋可孵出約 500 種寶可夢的初始型態（不含傳說與幻之寶可夢，越常見越容易出）；夥伴會自己升級（每打倒 25 隻 +1 級），Lv.10、Lv.20 進化並變強', en: 'Eggs can hatch about 500 first-stage Pokémon (no legendaries or mythicals; common ones more often); partners level up (1 level per 25 defeated) and evolve at Lv.10 and Lv.20' },
       { zh: '卡克隆商店擴充到 12 種商品、每間隨機擺 4 個：新增技能光碟、招式學習器、能力藥、體力藥、復活種子、扭蛋券、寶可夢蛋', en: 'Kecleon Shop now has 12 kinds of wares, 4 random per shop: new move disc, TM, Protein, HP Up, Revive Seed, gacha ticket and Pokémon Egg' },
