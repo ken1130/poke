@@ -33,6 +33,7 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '房間畫面重新排版：隊員放上面，組隊／PK、模式、場景、頭目和異色集中在「玩法設定」卡片，卡片變小不用一直往下捲', en: 'Room screen redesigned: players on top, and team/PK, mode, scene, boss and shiny grouped in a “How to play” card; smaller cards so you don’t have to scroll' },
       { zh: '關於頁精簡，移除外部連結與捐款按鈕', en: 'Simpler About screen; external links and donation buttons removed' },
       { zh: '升級選卡的重抽改成每場免費 15 次（強化商店買的另外加上去）', en: 'Level-up card rerolls: 15 free per run (plus the ones bought in Upgrades)' },
       { zh: '招式平衡：水砲、冰凍光束、加農光炮、幻象光線傷害 ×1.5；毒針、污泥攻擊、骨頭回力鏢、替身、鬼火傷害 ×1.3', en: 'Move balance: Hydro Pump, Ice Beam, Flash Cannon and Psybeam deal ×1.5 damage; Poison Sting, Sludge, Bonemerang, Substitute and Will-O-Wisp ×1.3' },

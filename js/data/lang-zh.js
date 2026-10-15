@@ -2073,4 +2073,6 @@ G.I18n.add({
   'Ya tienes compañero (o un huevo)': '你已經有夥伴（或蛋）了',
   '¡Semilla Revivir!': '復活種子！',
   'Piso más hondo': '最深樓層',
+  'Jugadores': '隊員',
+  'Cómo jugar': '玩法設定',
 }, 'zh');

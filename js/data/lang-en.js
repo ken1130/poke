@@ -1072,4 +1072,6 @@ G.I18n.add({
   'Ya tienes compañero (o un huevo)': 'You already have a partner (or an egg)',
   '¡Semilla Revivir!': 'Revive Seed!',
   'Piso más hondo': 'Deepest floor',
+  'Jugadores': 'Players',
+  'Cómo jugar': 'How to play',
 }, 'en');
