@@ -23,8 +23,12 @@ G.Combat = (() => {
   const isFoe = e => e instanceof G.Player;
   function enemiesIn(x, y, r) {
     const l = G.EnemyMgr.queryCircle(x, y, r);
-    return G.PvP.on && !ghost ? l.concat(G.PvP.foesIn(x, y, r)) : l;
+    if (!G.PvP.on) return l;
+    // Tus ataques: los rivales. El ataque repetido de un rival (fantasma): tú, sólo para que
+    // se VEA dónde cae (el rayo, el puñetazo, el árbol...); el daño lo decide él (deal).
+    return l.concat(ghost ? G.PvP.meFor(ghostOwner, x, y, r) : G.PvP.foesIn(x, y, r));
   }
+  let ghostOwner = null;
   const alive = e => isFoe(e) || !!G.EnemyMgr.get(e.id);
   let fields = [];
 
@@ -708,7 +712,7 @@ G.Combat = (() => {
   function chain(pl, m) {
     const col = G.U.TYPE_COLOR[m.type], vis = G.VFX.forMove(m);
     let cur = pl.target && !pl.target.dead && pl.target.hurt ? pl.target : G.Projectiles.nearest(G.EnemyMgr.all(), pl.x, pl.y, reach(m));
-    if (!cur && G.PvP.on && !ghost) cur = G.PvP.foe(pl, reach(m));
+    if (!cur && G.PvP.on) cur = ghost ? G.PvP.meFor(pl, pl.x, pl.y, reach(m))[0] : G.PvP.foe(pl, reach(m));
     if (!cur) return;
     let fx = pl.x, fy = pl.y - G.LIFT, k = 1;
     const done = new Set();
@@ -1141,11 +1145,11 @@ G.Combat = (() => {
     const m = G.Moves.instance(id, lvl);
     if (evolved) G.Moves.evolve(m);
     pl.aim = aim;
-    ghost = true;
+    ghost = true; ghostOwner = pl;
     try {
       pl.cast(m);
       run(pl, m);
-    } finally { ghost = false; }
+    } finally { ghost = false; ghostOwner = null; }
   }
 
   /** Orbes de un compañero que tiene activo un movimiento de órbita (sólo visual). */
@@ -1280,6 +1284,9 @@ G.Combat = (() => {
       const half = Math.hypot(p.x - sx, p.y - sy) / 2;
       for (const e of enemiesIn((sx + p.x) / 2, (sy + p.y) / 2, half + p.r)) {
         if (segDist2(sx, sy, p.x, p.y, e.x, e.y) > (p.r + e.r) * (p.r + e.r)) continue;
+        // PK: un disparo nunca choca con quien lo lanzó, y uno repetido (fantasma) no choca con
+        // otros jugadores (si no, el del rival se deshacía nada más salir y no se veía).
+        if (isFoe(e) && (e === p.owner || p.ghost)) continue;
         if (p.orb) {
           const last = p.hitLog.get(e.id) || -99;
           if (now - last < p.rehit) continue;

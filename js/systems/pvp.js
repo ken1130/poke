@@ -99,12 +99,21 @@ G.PvP = (() => {
     }
     return out;
   }
+  /** combat.js, al repetir el ataque de `owner` en tu pantalla: tú, si eres su rival y estás en el círculo. */
+  function meFor(owner, x, y, r) {
+    const me = G.Coop.local;
+    if (!armed() || !me || me.dead || !owner || owner === me || (teams && owner.team === me.team)) return [];
+    if (G.U.dist2(x, y, me.x, me.y) > (r + me.r) ** 2) return [];
+    if (me.id == null) me.id = 'pv:me';
+    return [me];
+  }
   /** El rival más cercano a un punto (torretas). */
   function foeNear(x, y, r) {
     let best = null, bd = r * r;
     for (const p of foesIn(x, y, r)) { const d = G.U.dist2(x, y, p.x, p.y); if (d < bd) { bd = d; best = p; } }
     return best;
   }
+  const DODGE = 95;               // px de margen por el retraso de la red (~0,1 s de interpolación + ping)
   const lastHit = new Map();      // uid del rival -> último golpe tuyo (ms): como mucho uno cada 70 ms
   const send = ev => { if (G.Coop.isHost) G.Coop.broadcast(ev); else if (G.Coop.active) G.Coop.request(ev); };
   /** Le has dado a un rival (en TU pantalla): se nota al momento y se le avisa para que pierda vida. */
@@ -122,7 +131,7 @@ G.PvP = (() => {
     G.FX.sp('impact', type || 'normal', foe.x, foe.y - foe.bodyH * 0.5, { life: 0.16, scale: crit ? 2.4 : 1.7 });
     G.FX.burst(foe.x, foe.y - foe.bodyH * 0.5, '#ffffff', crit ? 14 : 8, 160);
     G.Audio.sfx(crit ? 'break' : 'hit');
-    send(['pv', 'd', foe.uid, G.Net.uid, +(dmg).toFixed(1), type || null, crit ? 1 : 0]);
+    send(['pv', 'd', foe.uid, G.Net.uid, +(dmg).toFixed(1), type || null, crit ? 1 : 0, Math.round(foe.x), Math.round(foe.y)]);
   }
   /** Frenar a un rival (Grava, charcos...): se le pide a él. */
   function status(foe, t) { if (foe && foe.uid) send(['pv', 's', foe.uid, +t.toFixed(2)]); }
@@ -219,6 +228,12 @@ G.PvP = (() => {
       const pl = G.Game.player, at = G.Coop.mate(ev[3]);
       const owner = at && at.pl;
       if (!pl || pl.dead || !armed() || (teams && owner && owner.team === pl.team)) return;
+      // Donde te vio él (con el retraso de la red) y donde estás tú: si ya te habías ido lejos,
+      // lo has esquivado (si no, recibías golpes "de la nada" corriendo).
+      if (ev[7] != null && G.U.dist2(ev[7], ev[8], pl.x, pl.y) > DODGE * DODGE) {
+        G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, G.T('¡Esquivado!'), '#bff3ff');
+        return;
+      }
       hurt(pl, ev[4], ev[5], owner, !!ev[6]);
       return;
     }
@@ -457,7 +472,7 @@ G.PvP = (() => {
     ctx.restore();
   }
 
-  return { foesIn, foeNear, deal, touchesMe, TEAM_NAMES, TEAM_COLORS, teamWinner, get teams() { return on && teams && G.Coop.active; },
+  return { foesIn, foeNear, meFor, deal, touchesMe, TEAM_NAMES, TEAM_COLORS, teamWinner, get teams() { return on && teams && G.Coop.active; },
            begin, tick, foe, wonByMe, circle, arc, seg, projectile, orb, setWinner, afterRun, K, GRACE,
            onNet, timeScale, manualAim, arenaTick, arenaStart, pickTick, pickKey, drawWorld, drawHud, zoneR,
            get aiming() { return aiming(); }, get arena() { return on && arena && G.Coop.active; },
