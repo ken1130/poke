@@ -8,6 +8,8 @@ G.MODNEWS = [
       { zh: '遊戲改名為「寶可夢迷宮倖存者」', en: 'The game is now called “Pokémon Dungeon Survivors”' },
       { zh: '怪物屋：小地圖上的「？」神秘房間，走進去會湧出大量怪物，撐過 30 秒或全部打倒就有大獎', en: 'Monster House: the “?” room on the minimap — step in, a horde appears; survive 30 s or clear it for big loot' },
       { zh: '卡克隆商店：用這場的金幣買藥水、道具、技能強化；沒錢硬拿就是偷，卡克隆會變成頭目追殺你（強度跟著時間和等級成長），打贏全店免費', en: 'Kecleon Shop: spend this run’s coins on potions, items and upgrades; take something without paying and Kecleon becomes a boss (scales with time and level) — beat it and the shop is free' },
+      { zh: '新增 6 種攜帶道具：達人帶、焦點鏡、光粉、王者之證、進化奇石、漂浮氣球', en: 'Six new held items: Expert Belt, Scope Lens, Bright Powder, King’s Rock, Eviolite and Air Balloon' },
+      { zh: '凹凸頭盔的反傷改成隨攻擊力成長，後期不再無感', en: 'Rocky Helmet’s recoil damage now grows with your attack, so it stays useful late in a run' },
       { zh: '神秘雕像：摸了之後全隊得到 3 分鐘的祝福，或有代價也有好處的詛咒', en: 'Mystery Statue: touch it for a 3-minute team blessing — or a curse with an upside' }
     ],
     chg: [
