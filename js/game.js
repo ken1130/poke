@@ -565,22 +565,25 @@ G.Game = (() => {
     });
   }
 
-  /** Has cogido un objeto: si no llevas ninguno te lo pones; si no, eliges. */
+  /**
+   * Has cogido un objeto: se pueden llevar 2 (2026-10-15). Con hueco, te lo pones; con los
+   * dos ocupados, eliges cuál cambias (o te quedas como estás).
+   */
   function offerItem(id) {
     if (!pl || !G.Items.BY[id]) return;
     let mine = false;            // esta elección es la que ha parado el juego
-    const take = got => {
-      if (got !== pl.item) {
-        pl.equip(got);
-        G.Spawner.say('¡Llevas ' + G.Items.BY[got].name + '!', 2.6, true);
-        G.Progress.event('item', { id: got });
+    const take = replace => {    // replace: el que se quita (undefined = hay hueco, null = no lo coges)
+      if (replace !== null) {
+        pl.equip(id, replace);
+        G.Spawner.say('¡Llevas ' + G.Items.BY[id].name + '!', 2.6, true);
+        G.Progress.event('item', { id });
       }
       if (!mine) return;
       if (G.Coop.active) doneChoosing();
       else if (state === 'choice') state = 'playing';
     };
-    if (!pl.item) { take(id); return; }
-    if (pl.item === id) { G.Spawner.say('Ya llevas ' + G.Items.BY[id].name, 2, true); return; }
+    if (pl.hasItem(id)) { G.Spawner.say('Ya llevas ' + G.Items.BY[id].name, 2, true); return; }
+    if (pl.items.length < G.Player.MAX_ITEMS) { take(undefined); return; }
     // Se para el juego mientras eliges; en grupo, para todos (como con las
     // fusiones). Antes en grupo seguía y te pegaban mientras elegías.
     if (state === 'playing' || state === 'held') {
@@ -588,7 +591,7 @@ G.Game = (() => {
       state = 'choice';
       if (G.Coop.active) G.Coop.holdStart();
     }
-    G.RunUI.showItemChoice(pl.item, id, take);
+    G.RunUI.showItemChoice(pl.items.slice(), id, take);
   }
 
   /** @param who  quien lo ha cogido (en cooperativo puede ser un compañero) */
@@ -686,8 +689,9 @@ G.Game = (() => {
       return;
     }
     if (G.UI.isOpen('scr-item')) {
-      for (let i = 0; i < 2; i++) {
-        if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) document.querySelectorAll('#item-cards .card')[i].click();
+      for (let i = 0; i < 3; i++) {
+        const c = document.querySelectorAll('#item-cards .card')[i];
+        if (c && (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1)))) c.click();
       }
       return;
     }

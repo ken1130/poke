@@ -2143,4 +2143,9 @@ G.I18n.add({
   '¡Kecleon te despide! Tienes 3 s para escapar': '卡克隆送你出門！3 秒內無敵，快離開',
   'El manantial se ha secado': '泉水乾涸了',
   '¡El manantial te ha curado del todo! (y se ha secado)': '泉水讓你恢復了全部體力！（泉水乾涸了）',
+  'Llevas dos: elige cuál cambias · ': '你已經帶了兩個：選擇要換掉哪一個 · ',
+  'Cambiar {x} por {x}': '把 {x} 換成 {x}',
+  'No coger {x}': '不拿 {x}',
+  'Te quedas con los dos que llevas.': '保留身上的兩個道具。',
+  'Puedes llevar 2 objetos; duran toda la run.': '最多可以帶 2 個道具，整場有效。',
 }, 'zh');

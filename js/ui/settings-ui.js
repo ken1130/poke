@@ -175,8 +175,8 @@ G.SettingsUI = (() => {
   }
 
   /** Cerrar sesión (si estás en una partida, se abandona). */
-  function leave() {
-    if (G.DB.guest && !confirm('Eres invitado: se perderá todo el progreso. ¿Salir?')) return;
+  async function leave() {
+    if (G.DB.guest && !(await G.Dialog.confirm('Eres invitado: se perderá todo el progreso. ¿Salir?', { ok: 'Salir', danger: true }))) return;
     if (G.Game.state !== 'ui') G.Game.quit && G.Game.quit();
     G.Audio.music(null);
     G.DB.logout().then(() => G.Flow.toLogin());

@@ -1163,12 +1163,12 @@ G.Combat = (() => {
     if (ghost) return 1;
     // Reliquia Frasco de Ponzoña (torre): +15 % a los quemados o envenenados.
     const venom = pl.relicVenom && (e.burn > 0 || e.poison > 0) ? 1.15 : 1;
-    if (!pl.item) return venom;
-    if (pl.item === 'kingsrock' && !e.boss && Math.random() < 0.1) {
+    if (!pl.items || !pl.items.length) return venom;
+    if (pl.hasItem('kingsrock') && !e.boss && Math.random() < 0.1) {
       e.applyRoot(0.6);
       if (G.Camera.sees(e.x, e.y, 20)) G.FX.ring(e.x, e.y, 4, 22, '#9aa6b5', 0.3, 2);
     }
-    return venom * (pl.item === 'expertbelt' && type && G.Types.mult(type, e.types) > 1 ? 1.3 : 1);
+    return venom * (pl.hasItem('expertbelt') && type && G.Types.mult(type, e.types) > 1 ? 1.3 : 1);
   }
 
   // ---------------- colisiones ----------------

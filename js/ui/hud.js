@@ -556,23 +556,24 @@ G.HUD = (() => {
       }
     }
 
-    // ---------- objeto equipado (a la izquierda de los movimientos) ----------
-    {
-      const ix = sx - S - 18, iy = sy;
+    // ---------- objetos equipados (2 huecos, a la izquierda de los movimientos) ----------
+    for (let k = 0; k < G.Player.MAX_ITEMS; k++) {
+      const id = pl.items[k];
+      const ix = sx - (S + 12) * (G.Player.MAX_ITEMS - k) - 6, iy = sy;
       roundRect(ctx, ix, iy, S, S, 12);
-      ctx.fillStyle = pl.item ? 'rgba(40,30,10,.9)' : 'rgba(10,16,28,.55)';
+      ctx.fillStyle = id ? 'rgba(40,30,10,.9)' : 'rgba(10,16,28,.55)';
       ctx.fill();
-      ctx.lineWidth = pl.item ? 2 : 1;
-      ctx.strokeStyle = pl.item ? '#ffd23f' : 'rgba(140,170,210,.18)';
+      ctx.lineWidth = id ? 2 : 1;
+      ctx.strokeStyle = id ? '#ffd23f' : 'rgba(140,170,210,.18)';
       ctx.stroke();
-      if (pl.item) {
-        G.Icons.draw(ctx, pl.item, ix + (S - 36) / 2, iy + (S - 36) / 2, 36);
+      if (id) {
+        const it = G.Items.BY[id];
+        G.Icons.draw(ctx, id, ix + (S - 36) / 2, iy + (S - 36) / 2, 36);
         ctx.font = F(700, 9);
         ctx.textAlign = 'center';
         ctx.fillStyle = '#ffd23f';
-        ctx.fillText(G.Items.BY[pl.item].name, ix + S / 2, iy - 6);
-        const it = G.Items.BY[pl.item];
-        tapInfo(ix, iy, S, S, 'item', () => ({ title: G.T(it.name), color: '#ffd23f', lines: [G.T(it.desc), G.T('Sólo puedes llevar uno; dura toda la run.')] }), 'up');
+        ctx.fillText(G.T(it.name), ix + S / 2, iy - 6);
+        tapInfo(ix, iy, S, S, 'item' + k, () => ({ title: G.T(it.name), color: '#ffd23f', lines: [G.T(it.desc), G.T('Puedes llevar 2 objetos; duran toda la run.')] }), 'up');
       }
     }
 

@@ -71,7 +71,7 @@ G.Player = class Player {
     this.dead = false;
     this.power = null;         // poder de altar activo: { def, t, dur }
     this.slowT = 0;            // pegado por una trampa
-    this.item = null;          // objeto equipado (data/items.js), uno por run
+    this.items = [];           // objetos equipados (data/items.js): hasta MAX_ITEMS (2 desde 2026-10-15)
     this.sashT = -999;         // última vez que salvó la Banda Focus
     this.bellHeal = 0;         // curación pendiente del Cascabel Concha
     this.statsTaken = {};      // mejoras de stat cogidas (condición de evolución)
@@ -364,18 +364,25 @@ G.Player = class Player {
   }
 
   // ---------------- objeto equipado ----------------
-  hasItem(id) { return this.item === id; }
+  static get MAX_ITEMS() { return 2; }
+  /** El primero (compatibilidad con lo que sólo miraba uno). */
+  get item() { return this.items[0] || null; }
+  hasItem(id) { return this.items.includes(id); }
 
-  /** Se pone un objeto (y se quita el que llevara). */
-  equip(id) {
-    if (this.item) G.Items.BY[this.item].off(this);
-    this.item = id;
-    if (id) G.Items.BY[id].on(this);
+  /** Se pone un objeto: si hay hueco, se añade; si no, sustituye a `replace` (o al primero). */
+  equip(id, replace = null) {
+    if (!id || this.items.includes(id)) return;
+    if (this.items.length >= Player.MAX_ITEMS) {
+      const i = Math.max(0, this.items.indexOf(replace));
+      G.Items.BY[this.items[i]].off(this);
+      this.items[i] = id;
+    } else this.items.push(id);
+    G.Items.BY[id].on(this);
   }
 
   /** Cascabel Concha: un poco de vida por el daño que haces (tope 4/s). */
   onDealt(dmg) {
-    if (this.item === 'shellbell') this.bellHeal = Math.min(4, this.bellHeal + dmg * 0.04);
+    if (this.hasItem('shellbell')) this.bellHeal = Math.min(4, this.bellHeal + dmg * 0.04);
     // Reliquia Colmillo Sediento (torre): un poco de vida por golpe (como mucho el 1 % por golpe).
     if (this.relicLeech && !this.dead) this.hp = Math.min(this.maxHp, this.hp + Math.min(dmg * this.relicLeech, this.maxHp * 0.01));
   }

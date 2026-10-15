@@ -55,6 +55,8 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '攜帶道具可以帶 2 個了；帶滿時撿到新的，可以選擇換掉哪一個或不拿', en: 'You can now carry 2 held items; when full, choose which one to swap or skip the new one' },
+      { zh: '確認視窗（偷東西、登出、刪好友）改用遊戲風格，不再跳瀏覽器的原生視窗', en: 'Confirmation prompts (stealing, logging out, removing friends) now use the game’s own window instead of the browser’s' },
       { zh: '頭目平衡：頭目和裂縫傳說寶可夢的血量至少是當時小怪的 2.5～5 倍（以前 10 分鐘後小怪比傳說還硬）；裂縫時間 120 秒→150 秒；20 分鐘後小怪血量成長放慢 15%', en: 'Boss balance: bosses and rift legendaries now have at least 2.5–5× the HP of the regular enemies at that time (before, after 10 min regular enemies were tougher than the legendary); rift time 120 s → 150 s; regular enemy HP grows 15% slower after 20 min' },
       { zh: '泉水改成一次性：踩上去立刻補滿血，然後永久乾涸（不再慢慢恢復），不能再守在泉水旁邊', en: 'Springs are now single-use: step on one to heal to full instantly, then it dries up for good (no more camping next to it)' },
       { zh: '三個舊招式的進化名稱改為力量寶石、死亡羽翼、龍之波動（避免與新招同名）', en: 'Three old evolutions renamed to Power Gem, Oblivion Wing and Dragon Pulse so they don’t share names with new moves' },

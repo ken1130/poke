@@ -225,8 +225,9 @@ G.Dungeon = (() => {
       box.appendChild(row);
     });
     box.querySelectorAll('[data-buy]').forEach(b => { b.onclick = () => { G.Audio.sfx('coin'); request(s, +b.dataset.buy, false); }; });
-    box.querySelectorAll('[data-steal]').forEach(b => { b.onclick = () => {
-      if (!confirm(G.T('¿Robarlo? Kecleon se enfadará y te perseguirá (si lo vences, todo será gratis).'))) return;
+    box.querySelectorAll('[data-steal]').forEach(b => { b.onclick = async () => {
+      if (!(await G.Dialog.confirm('¿Robarlo? Kecleon se enfadará y te perseguirá (si lo vences, todo será gratis).', { ok: 'Robar', danger: true }))) return;
+      if (openShop !== s) return;
       request(s, +b.dataset.steal, true); closeShop(); shopSkip = s.id;
     }; });
     const rb = document.getElementById('shop-roul');

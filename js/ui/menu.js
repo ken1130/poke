@@ -26,8 +26,8 @@ G.MenuUI = (() => {
     });
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
     G.Social.on(() => { if (G.UI.isOpen('scr-menu')) socialLine(); });
-    $('btn-logout').onclick = () => {
-      if (G.DB.guest && !confirm('Eres invitado: se perderá todo el progreso. ¿Salir?')) return;
+    $('btn-logout').onclick = async () => {
+      if (G.DB.guest && !(await G.Dialog.confirm('Eres invitado: se perderá todo el progreso. ¿Salir?', { ok: 'Salir', danger: true }))) return;
       G.Audio.music(null);
       G.DB.logout().then(() => G.Flow.toLogin());
     };

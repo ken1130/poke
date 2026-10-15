@@ -130,7 +130,7 @@
               if (r.ok) G.LobbyUI.open();
             });
           }
-          btn('Quitar', 'ghost', () => { if (confirm('¿Quitar a ' + f.name + ' de tus amigos?')) G.Social.remove(f.uid); });
+          btn('Quitar', 'ghost', async () => { if (await G.Dialog.confirm(G.I18n.f('¿Quitar a {x} de tus amigos?', f.name), { ok: 'Quitar', danger: true })) G.Social.remove(f.uid); });
         }
         box.appendChild(el);
       }

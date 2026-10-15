@@ -1142,4 +1142,9 @@ G.I18n.add({
   '¡Kecleon te despide! Tienes 3 s para escapar': 'Kecleon sees you off! 3 s to get away',
   'El manantial se ha secado': 'The spring has dried up',
   '¡El manantial te ha curado del todo! (y se ha secado)': 'The spring fully healed you! (and dried up)',
+  'Llevas dos: elige cuál cambias · ': 'You carry two: choose which to swap · ',
+  'Cambiar {x} por {x}': 'Swap {x} for {x}',
+  'No coger {x}': 'Don’t take {x}',
+  'Te quedas con los dos que llevas.': 'You keep the two you carry.',
+  'Puedes llevar 2 objetos; duran toda la run.': 'You can carry 2 items; they last the whole run.',
 }, 'en');
