@@ -1085,4 +1085,5 @@ G.I18n.add({
   'Izquierda es derecha y arriba es abajo durante 8 s': 'Left is right and up is down for 8 s',
   '¡Fiesta disco!': 'Disco party!',
   'Los enemigos de alrededor se ponen a bailar (van mucho más lentos)': 'Nearby enemies start dancing (they get much slower)',
+  'piso {x}': 'floor {x}',
 }, 'en');

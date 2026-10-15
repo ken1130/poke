@@ -5,6 +5,10 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '無盡塔：每 5 層三選一「遺物」，整座塔都有效（吸血、雙子火球、獵人之眼、永恆之芽、引爆器等 8 種）', en: 'Endless Tower: every 5 floors pick 1 of 3 relics that last the whole climb (lifesteal, twin fireballs, hunter’s eye, revive, detonator and more — 8 in all)' },
+      { zh: '每日挑戰連續天數：連續 3／7／14／30 天有扭蛋券與稱號', en: 'Daily challenge streaks: tickets and titles at 3, 7, 14 and 30 days in a row' },
+      { zh: '每週挑戰新增 4 種規則：只能一個攻擊、精英週、疾速惡魔、孤注一擲（從下週開始輪替）', en: 'Four new weekly rules: one attack only, elite week, speed demons, all or nothing (in rotation from next week)' },
+      { zh: '傳說連戰可選難度：普通／困難／極難，越難獎勵越多，各難度分開記錄', en: 'Legend Rush difficulty tiers: normal, hard, very hard — harder means bigger rewards, with a separate record per tier' },
       { zh: '搞笑事件：鯉魚王大遷徙（30 隻只會亂跳、打了掉金幣）、卡比獸睡在路中間把怪彈開、呆呆獸被打要過 2.5 秒才反應、怪物會冒出吐槽對話泡泡', en: 'Funny events: the Great Magikarp Migration (30 that only flop and drop coins), a sleeping Snorlax that bounces enemies away, Slowpoke reacting 2.5 s late, and enemies saying silly things in speech bubbles' },
       { zh: '搞笑藥水：大頭症（頭超大＋暴擊）、顛倒（方向相反 8 秒）、迪斯可派對（周圍敵人跳舞變超慢）；卡克隆會說「歡迎光臨」，被偷時大喊「小偷！！給我站住！！」', en: 'Funny potions: Big Head (huge + crit), Reversed (controls flipped 8 s), Disco Party (nearby enemies dance and slow down); Kecleon greets you and yells “THIEF! GET BACK HERE!”' },
       { zh: '下樓梯有獎勵：到新樓層回復 30% 血量，並送一片不佔額度的技能光碟；越深扭蛋券越常掉、精英怪越常掉道具；結算畫面顯示最深樓層', en: 'Stairs are now worth it: each new floor heals 30% and gives a bonus move disc (doesn’t count toward the 3); deeper floors drop more tickets and elites drop more items; the results screen shows your deepest floor' },

@@ -2086,4 +2086,5 @@ G.I18n.add({
   'Izquierda es derecha y arriba es abajo durante 8 s': '8 秒內左右相反、上下顛倒',
   '¡Fiesta disco!': '迪斯可派對！',
   'Los enemigos de alrededor se ponen a bailar (van mucho más lentos)': '周圍的敵人開始跳舞（變得超慢）',
+  'piso {x}': '第 {x} 層',
 }, 'zh');
