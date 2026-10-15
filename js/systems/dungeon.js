@@ -423,6 +423,9 @@ G.Dungeon = (() => {
     return { name: d.name, color: d.color, left: Math.max(0, blessing.until - T()) };
   }
 
-  return { reset, tick, update, onNet, onClient, drawGround, drawAir, blessingInfo, mod,
+  /** Al bajar de piso (floors.js): lo del mapa anterior desaparece (la bendición sigue). */
+  function clearSites() { sites = []; buyT = 0; buyKey = ''; }
+
+  return { reset, clearSites, tick, update, onNet, onClient, drawGround, drawAir, blessingInfo, mod,
            get sites() { return sites; }, BLESS };
 })();

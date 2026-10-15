@@ -105,6 +105,7 @@ G.Spawner = (() => {
     const shinyMode = G.Modes.on('shiny');
     if (shiny) e.makeShiny(!shinyMode);
     if (G.Events.golden) e.makeGolden();
+    G.Floors.scaleEnemy(e);
     G.EnemyMgr.add(e);
     if (shiny && !shinyMode) {
       say('¡Un ' + e.name + ' shiny anda cerca!', 3.4);
@@ -117,6 +118,7 @@ G.Spawner = (() => {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
     const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1)), true);
     if (rollShiny(b.dex)) e.makeShiny(!G.Modes.on('shiny'));
+    G.Floors.scaleEnemy(e);
     G.EnemyMgr.add(e);
     say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' salvaje apareció!', 3.2);
     G.Camera.kick(1.1);
