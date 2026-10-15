@@ -4,7 +4,7 @@
  * escaleras lejos de vosotros. Cuando TODOS los que siguen en pie están encima 2 s,
  * se baja al siguiente piso: mapa nuevo (otra semilla) y el bioma siguiente; fuera
  * enemigos, disparos y objetos del suelo (los discos y pociones de cada uno se
- * vuelven a dejar cerca). Cada piso: enemigos con +15 % de vida y +20 % de
+ * vuelven a dejar cerca). Cada piso: enemigos con +8 % de vida y +20 % de
  * experiencia y monedas (acumulativo).
  *
  * Ataque combinado (sólo en grupo): la barra se llena mientras estás cerca de un
@@ -20,10 +20,15 @@ G.Floors = (() => {
   const authority = () => !G.Coop.active || G.Coop.isHost;
   const FIRST = 300, EVERY = 300, STAND = 2, STAIRS_R = 50;
 
-  let floor = 0, stairs = null, nextAt = FIRST, standT = 0, fadeT = 0;
+  // Tregua al bajar (2026-10-15): 6 s sin enemigos y luego van saliendo poco a poco
+  // (hasta 30 s, y con un tope que también va subiendo), sin mareas ni jefes.
+  const GRACE = 30, GRACE_EMPTY = 6;
+  let floor = 0, stairs = null, nextAt = FIRST, standT = 0, fadeT = 0, graceT = 0;
   let combo = 0, comboFlash = 0;
 
-  function reset() { floor = 0; stairs = null; nextAt = FIRST; standT = 0; fadeT = 0; combo = 0; comboFlash = 0; }
+  function reset() { floor = 0; stairs = null; nextAt = FIRST; standT = 0; fadeT = 0; graceT = 0; combo = 0; comboFlash = 0; }
+  /** Spawner: 0 = no sale nada, 1 = normal (la tregua del piso nuevo). */
+  const graceMul = () => graceT <= 0 ? 1 : graceT > GRACE - GRACE_EMPTY ? 0 : Math.pow(1 - graceT / (GRACE - GRACE_EMPTY), 2);
   const allowed = () => G.Modes.run === 'normal' && !G.PvP.on && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom);
 
   // ---------------- escaleras ----------------
@@ -55,6 +60,7 @@ G.Floors = (() => {
   /** Cada fotograma de juego, en todos los ordenadores. */
   function update(dt, players) {
     if (fadeT > 0) fadeT -= dt;
+    if (graceT > 0) graceT -= dt;
     if (comboFlash > 0) comboFlash -= dt;
     comboTick(dt, players);
     if (!authority()) { if (stairs) stairs.t += dt; return; }
@@ -111,6 +117,7 @@ G.Floors = (() => {
         if (G.World.isFree(x, y, 16)) { G.Pickups.drop(kind, x, y, owner); break; }
       }
     }
+    graceT = GRACE;
     fadeT = 2.2;                       // el cartel "B2F" del fundido (drawHud)
     G.Audio.sfx('biome');
   }
@@ -118,7 +125,7 @@ G.Floors = (() => {
   /** Spawner: un enemigo recién creado en este piso. */
   function scaleEnemy(e) {
     if (!floor || !e) return;
-    const k = 1 + 0.15 * floor;
+    const k = 1 + 0.08 * floor;       // 2026-10-15: antes +15 % por piso (se disparaba)
     e.maxHp = e.hp = Math.round(e.maxHp * k);
     e.xp = Math.round(e.xp * (1 + 0.2 * floor));
   }
@@ -287,7 +294,7 @@ G.Floors = (() => {
     ctx.restore();
   }
 
-  return { reset, update, onNet, scaleEnemy, drawable, drawHud, drawFade, fireCombo, comboFx, descend,
+  return { reset, update, onNet, scaleEnemy, graceMul, get inGrace() { return graceT > 0; }, drawable, drawHud, drawFade, fireCombo, comboFx, descend,
            get floor() { return floor; }, get stairs() { return stairs; }, get coinMul() { return coinMul(); },
            get combo() { return combo; }, set combo(v) { combo = v; } };
 })();

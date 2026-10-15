@@ -207,7 +207,8 @@ G.Enemies = (() => {
     const k = late(t);
     // Vida: +1 cada 95 s; desde el minuto 20, un 15 % más despacio (2026-10-15: a media
     // partida los normales eran tan duros que pegarles era rascar).
-    const hpT = t <= 1200 ? 1 + t / 95 : 1 + 1200 / 95 + (t - 1200) * 0.85 / 95;
+    // (2026-10-15: +1 cada 110 s, antes 95: se ponían duros demasiado pronto.)
+    const hpT = t <= 1200 ? 1 + t / 110 : 1 + 1200 / 110 + (t - 1200) * 0.85 / 110;
     return { hp: hpT * k, dmg: (1 + t / 420) * Math.pow(k, 0.7), spd: 1 + Math.min(0.35, t / 1400) };
   }
 
@@ -217,7 +218,7 @@ G.Enemies = (() => {
    * 5 min, 3× a los 10, 4× a los 20 y 5× desde los 30 (2026-10-15: antes, a partir del
    * minuto 10 un normal tenía más vida que el legendario de la grieta).
    */
-  function mobRef(t) { return TIERS[tierAt(t)].hp * scale(t).hp * (3.3 + Math.min(1.7, t / 210)); }
+  function mobRef(t) { return TIERS[tierAt(t)].hp * scale(t).hp * (3.3 + Math.min(1.7, t / 420)); }
   function bossFloor(t) { return mobRef(t) * Math.max(2.5, Math.min(5, 2.5 + (t - 300) / 600)); }
 
   /**

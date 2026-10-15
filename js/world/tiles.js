@@ -763,7 +763,7 @@ G.Tiles = (() => {
     /** Ruleta de Kecleon: rueda de colores sobre un pie dorado. variante = giro 0..3. */
     roulette(B, variant) {
       const P = Pix(24, 30);
-      const C = ['#c84a4a', '#4f8fd0', '#45b23c', '#f2c443', '#c47bff', '#3a3f52'];
+      const C = ['#8c2f35', '#e9dcb8', '#8c2f35', '#e9dcb8', '#2b2433', '#e9dcb8'];     // como la de la ventana (roulette.js)
       const gold = pack('#f2c443'), goldD = pack('#b5832a'), wood = pack('#6b3a1e');
       // Pie.
       for (let y = 21; y <= 28; y++) for (let x = 10; x <= 13; x++) P.set(x, y, x === 10 ? goldD : gold);

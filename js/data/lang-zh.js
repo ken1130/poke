@@ -2148,4 +2148,11 @@ G.I18n.add({
   'No coger {x}': '不拿 {x}',
   'Te quedas con los dos que llevas.': '保留身上的兩個道具。',
   'Puedes llevar 2 objetos; duran toda la run.': '最多可以帶 2 個道具，整場有效。',
+  '¡Snorlax se ha despertado!': '卡比獸醒來了！',
+  '¡Snorlax se ha despertado! Aplastamiento y curación para todos': '卡比獸醒來了！泰山壓頂掃開敵人，全員回復一半生命',
+  'Un Snorlax duerme en el camino… quédate a su lado para despertarlo': '路上有隻卡比獸在睡覺…站在牠旁邊就能叫醒牠',
+  'Quédate a mi lado para despertarme… Zzz': '站在我旁邊叫醒我…Zzz',
+  'Términos de uso y política de privacidad completos': '完整的使用條款與隱私權政策',
+  'Sin garantías': '免責聲明',
+  'El juego se ofrece gratis y tal cual, sin garantías de ningún tipo. El autor no se hace responsable de la pérdida de partidas, cuentas o datos. Las monedas y objetos del juego no tienen valor real.': '本遊戲免費並依現狀提供，不附帶任何保證。作者不對存檔、帳號或資料的遺失負責。遊戲內的金幣與道具沒有任何現實價值。',
 }, 'zh');

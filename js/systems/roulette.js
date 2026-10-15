@@ -13,7 +13,10 @@
 G.Roulette = (() => {
   const $ = id => document.getElementById(id);
   const SLOTS = [0, 1, 0.5, 1.5, 0, 2, 1, 0, 0.5, 3, 0, 1, 1.5, 0, 2, 0.5, 0, 1, 5, 0];
-  const COL = { 0: '#3a3f52', 0.5: '#c84a4a', 1: '#4f8fd0', 1.5: '#45b23c', 2: '#f2c443', 3: '#c47bff', 5: '#ff8ad8' };
+  // Colores sobrios (2026-10-15: antes uno por premio y quedaba muy chillón): casillas
+  // alternas granate / crema como una ruleta de verdad, ×0 en oscuro y sólo ×3 y ×5 en oro.
+  const slotCol = i => { const k = SLOTS[i]; return k === 0 ? '#2b2433' : k >= 3 ? '#e0a92e' : i % 2 ? '#e9dcb8' : '#8c2f35'; };
+  const slotInk = i => { const c = slotCol(i); return c === '#e9dcb8' || c === '#e0a92e' ? '#3a2410' : '#ffffff'; };
   const SPINS = 3, MIN_COINS = 10;
   const label = k => (k === 0 ? '×0' : '×' + String(k).replace('.', ','));
 
@@ -123,6 +126,8 @@ G.Roulette = (() => {
     const el = $('roul-res');
     el.className = 'roul-res ' + (k === 0 ? 'lose' : k >= 2 ? 'win' : '');
     el.textContent = label(k) + '  ' + (r.delta >= 0 ? '+' : '') + r.delta + ' ' + G.T('monedas') + (k === 0 ? '  ' + G.T('Kecleon se ríe…') : k >= 5 ? '  ' + G.T('¡¡PREMIO GORDO!!') : '');
+    // Encima de tu Pokémon: +/- monedas, bien grande (verde si ganas, rojo si pierdes).
+    if (pl) G.FX.dmgText(pl.x, pl.y - pl.bodyH - 24, (r.delta >= 0 ? '+' : '') + r.delta + ' ' + G.T('monedas'), r.delta > 0 ? '#5fe08a' : r.delta < 0 ? '#ff5f6d' : '#ffe14d', true);
     if (k === 0) G.Audio.sfx('hurt');
     else if (k >= 2) { G.Audio.sfx(k >= 5 ? 'legend' : 'shiny'); if (pl) G.FX.burst(pl.x, pl.y - pl.bodyH, '#ffd23f', k >= 5 ? 50 : 24, 240); }
     else G.Audio.sfx('coin');
@@ -150,7 +155,7 @@ G.Roulette = (() => {
       else {
         let a = Math.atan2(dy, dx) - cur.angle; a = ((a % 6.2832) + 6.2832) % 6.2832;
         const i = Math.floor(a / slot), f = (a / slot) % 1;
-        col = f < 0.06 ? '#1a1220' : COL[SLOTS[i]];                 // línea entre casillas
+        col = f < 0.06 ? '#5a3a18' : slotCol(i);                    // línea entre casillas
       }
       px[y * N + x] = pack(col);
     }
@@ -165,8 +170,9 @@ G.Roulette = (() => {
     SLOTS.forEach((k, i) => {
       const a = cur.angle + (i + 0.5) * slot;
       ctx.save(); ctx.rotate(a); ctx.translate(R * 0.66, 0); ctx.rotate(Math.PI / 2);
-      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(label(k), 0, 0);
-      ctx.fillStyle = '#ffffff'; ctx.fillText(label(k), 0, 0);
+      const ink = slotInk(i);
+      if (ink === '#ffffff') { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(label(k), 0, 0); }
+      ctx.fillStyle = ink; ctx.fillText(label(k), 0, 0);
       ctx.restore();
     });
     ctx.restore();

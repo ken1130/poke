@@ -1147,4 +1147,11 @@ G.I18n.add({
   'No coger {x}': 'Don’t take {x}',
   'Te quedas con los dos que llevas.': 'You keep the two you carry.',
   'Puedes llevar 2 objetos; duran toda la run.': 'You can carry 2 items; they last the whole run.',
+  '¡Snorlax se ha despertado!': 'Snorlax woke up!',
+  '¡Snorlax se ha despertado! Aplastamiento y curación para todos': 'Snorlax woke up! Body Slam clears the area and heals everyone by half',
+  'Un Snorlax duerme en el camino… quédate a su lado para despertarlo': 'A Snorlax is sleeping on the path… stand next to it to wake it up',
+  'Quédate a mi lado para despertarme… Zzz': 'Stand by me to wake me up… Zzz',
+  'Términos de uso y política de privacidad completos': 'Full Terms of Use & Privacy Policy',
+  'Sin garantías': 'No warranty',
+  'El juego se ofrece gratis y tal cual, sin garantías de ningún tipo. El autor no se hace responsable de la pérdida de partidas, cuentas o datos. Las monedas y objetos del juego no tienen valor real.': 'The game is free and provided as is, without warranties of any kind. The author is not responsible for lost saves, accounts or data. In-game coins and items have no real value.',
 }, 'en');

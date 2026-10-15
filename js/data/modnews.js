@@ -5,6 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '卡比獸不再只是站著：站在牠旁邊 3 秒就能叫醒牠，醒來會泰山壓頂掃開周圍敵人、全員回復一半生命，還會掉金幣（有機會掉道具）', en: 'Snorlax now does something: stand next to it for 3 s to wake it — its Body Slam clears nearby enemies, heals everyone by half and drops coins (sometimes an item)' },
+      { zh: '新增完整的使用條款與隱私權政策頁面（法律聲明視窗裡有連結）', en: 'Added a full Terms of Use & Privacy Policy page (linked from the Legal window)' },
       { zh: '新增 19 個招式，補齊招式少的屬性：隱形岩、原始之力、岩石封鎖、龍息、逆鱗、流星群、魅惑之聲、吸取之吻、嬉鬧、空氣斬、勇鳥猛攻、冰礫、冷凍乾燥、發勁、真空波、子彈拳、鋼翼、暗襲要害、大聲咆哮（含進化型）', en: '19 new moves for the thinner types: Stealth Rock, Ancient Power, Rock Tomb, Dragon Breath, Outrage, Draco Meteor, Disarming Voice, Draining Kiss, Play Rough, Air Slash, Brave Bird, Ice Shard, Freeze-Dry, Force Palm, Vacuum Wave, Bullet Punch, Steel Wing, Night Slash, Snarl (with evolutions)' },
       { zh: '新招式附加效果：麻痺／畏縮（短暫定身）、降低敵人攻擊、提升自己能力、反作用傷害、逆鱗混亂', en: 'New move effects: paralysis/flinch (short root), lowered enemy attack, self stat boosts, recoil, and Outrage’s confusion' },
       { zh: '卡克隆商店變成室內場景：從門走進店裡，裡面沒有怪物，可以安心購物；偷東西的話卡克隆會在店裡暴怒、門會鎖住直到打倒牠', en: 'Kecleon’s shop is now an indoor scene: walk through the door to shop safely with no enemies inside; steal and Kecleon goes berserk inside with the door locked until you beat him' },
@@ -55,6 +57,12 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '下樓後有緩衝時間：前 6 秒不出怪，之後 30 秒內怪物數量慢慢增加，這段期間也不會有怪物潮、頭目或事件', en: 'Breathing room after the stairs: no enemies for 6 s, then they ramp up over 30 s, with no surges, bosses or events meanwhile' },
+      { zh: '怪物變強的速度放慢：血量成長變慢、每層加成從 +15% 降為 +8%，前期的耐打度要到 12 分鐘才到頂（原本 6 分鐘）', en: 'Enemies get stronger more slowly: slower HP growth, the per-floor bonus drops from +15% to +8%, and early toughness peaks at 12 min (was 6)' },
+      { zh: '怪物屋加強：怪物更耐打、更痛，有精英怪，每 5 秒一波；要撐到最後一波才能提早結束', en: 'Monster Houses are tougher: sturdier, harder-hitting monsters with elites and a wave every 5 s; you can only finish early after the last wave' },
+      { zh: '卡克隆老闆加強：血量更高（不低於同時期頭目）、攻擊與速度提升', en: 'Kecleon is much tougher when angry: more HP (at least a boss of that moment), more damage and speed' },
+      { zh: '輪盤換成較沉穩的配色（酒紅／米白，只有大獎是金色），轉完會在角色頭上跳出 +／- 多少金幣', en: 'The roulette has a calmer look (burgundy/cream, only big prizes in gold), and shows +/- coins above your Pokémon after each spin' },
+      { zh: '商店裡的櫃台、貨架和輪盤不能再穿過去', en: 'You can no longer walk through the shop counter, shelves and roulette' },
       { zh: '攜帶道具可以帶 2 個了；帶滿時撿到新的，可以選擇換掉哪一個或不拿', en: 'You can now carry 2 held items; when full, choose which one to swap or skip the new one' },
       { zh: '確認視窗（偷東西、登出、刪好友）改用遊戲風格，不再跳瀏覽器的原生視窗', en: 'Confirmation prompts (stealing, logging out, removing friends) now use the game’s own window instead of the browser’s' },
       { zh: '頭目平衡：頭目和裂縫傳說寶可夢的血量至少是當時小怪的 2.5～5 倍（以前 10 分鐘後小怪比傳說還硬）；裂縫時間 120 秒→150 秒；20 分鐘後小怪血量成長放慢 15%', en: 'Boss balance: bosses and rift legendaries now have at least 2.5–5× the HP of the regular enemies at that time (before, after 10 min regular enemies were tougher than the legendary); rift time 120 s → 150 s; regular enemy HP grows 15% slower after 20 min' },
@@ -76,6 +84,7 @@ G.MODNEWS = [
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
+      { zh: '打倒卡克隆後牠不會再留在櫃台後面', en: 'Kecleon no longer stays behind the counter after you beat him' },
       { zh: '修正升級選卡畫面在說明很長時卡片擠到左邊', en: 'Fixed level-up cards sticking to the left when a description was long' },
       { zh: '被動技（火焰盾、歐美肥佬、進化後的吸血鬼之牙）一直有效，招式欄上標示「被動」，不能也不需要點選', en: 'Passive moves (Flame Shield, Heavyweight, evolved Vampire Fang) are always on: they show “Passive” in the move bar and can no longer be selected' },
       { zh: '修正組隊時按暫停不會真的暫停：現在任何人按暫停，全隊都會停下，畫面會顯示誰按了暫停', en: 'Fixed pause not pausing in groups: now when anyone pauses, the game stops for the whole group and shows who paused' }

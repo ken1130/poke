@@ -20,7 +20,8 @@ G.Spawner = (() => {
   const DENSITY = 0.24, DMG_K = 2.4, XP_K = 5.6;
   // La resistencia extra crece con la run: al principio ×3,3 y hasta ×5
   // hacia el minuto 6, cuando ya tienes ataques para tumbarlos.
-  const hpK = t => 3.3 + Math.min(1.7, t / 210);
+  // (2026-10-15: la subida hasta ×5 tarda 12 min, antes 6; ver también enemies.js mobRef.)
+  const hpK = t => 3.3 + Math.min(1.7, t / 420);
   const SHINY_RATE = 1 / 4096;
   const EASE_T = 180;
   let noEase = false;           // para pruebas: sin el comienzo suave
@@ -155,23 +156,24 @@ G.Spawner = (() => {
 
     // --- jefes ---
     const b = G.Modes.run === 'stage' ? null : G.Enemies.BOSSES[bossIdx];     // aventura: los jefes los pone la fase
-    if (b && t >= b.at) { spawnBoss(anchor(), t, b); bossIdx++; }
+    const grace = G.Floors.graceMul();     // piso recién estrenado: tregua (floors.js)
+    if (b && t >= b.at && !G.Floors.inGrace) { spawnBoss(anchor(), t, b); bossIdx++; }
 
     // Combate de jefe: las oleadas bajan al 25% y no hay mareas, para que el
     // jefe sea un momento propio y se le pueda apuntar entre la multitud.
     const bossFight = G.EnemyMgr.bossAlive();
 
     // --- goteo normal ---
-    const cap = capNow();
+    const cap = grace < 1 ? Math.round(capNow() * (0.15 + 0.85 * grace)) : capNow();
     if (G.EnemyMgr.count < cap) {
-      acc += rate(t) * G.Modes.countMul() * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * (G.PvP.on ? 0.5 : 1) * dt;
+      acc += rate(t) * G.Modes.countMul() * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * (G.PvP.on ? 0.5 : 1) * grace * dt;
       let n = Math.floor(acc);
       acc -= n;
       while (n-- > 0 && G.EnemyMgr.count < cap) spawnOne(anchor(), t);
     }
 
     // --- marea ---
-    if (!bossFight) surgeT -= dt;
+    if (!bossFight && grace >= 1) surgeT -= dt;
     if (surgeT <= 0) {
       surgeT = G.U.rand(38, 56);
       const base = Math.random() * 6.2832;

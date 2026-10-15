@@ -5,6 +5,9 @@
  *   Magikarp   "Gran migración": de vez en cuando aparecen ~30 Magikarp que no hacen
  *              nada más que chapotear. Cada uno suelta una moneda.
  *   Snorlax    Un Snorlax dormido corta el paso: los enemigos rebotan contra él. Ronca.
+ *              Si te quedas a su lado 3 s se despierta: aplastamiento que barre a los
+ *              enemigos de alrededor, cura la mitad de la vida a todos, suelta monedas
+ *              (y a veces un objeto) y se va (2026-10-15: antes sólo estaba ahí).
  *   Slowpoke   Los Slowpoke/Slowbro/Slowking reaccionan tarde: el número de daño sale
  *              2,5 s después, con un "…?" antes (ver enemy.js showHurt).
  *   Bocadillos Los enemigos a veces dicen tonterías ("Sólo pasaba por aquí…").
@@ -12,7 +15,9 @@
  * Las pociones de risa (cabezón, al revés, disco) están en loot.js.
  *
  * Cooperativo: Magikarp son enemigos normales (se copian solos). Snorlax lo pone el
- * anfitrión y se manda con ['dg', 'fn', 'snor', x, y]. Los bocadillos son de cada uno.
+ * anfitrión y se manda con ['dg', 'fn', 'snor', x, y]; el despertar, con
+ * ['dg', 'fn', 'wake'] (el anfitrión hace el daño y suelta el botín; cada uno se cura).
+ * Los bocadillos son de cada uno.
  */
 G.Funny = (() => {
   const T = () => G.Game.st.time;
@@ -39,6 +44,7 @@ G.Funny = (() => {
     const t = T();
     if (t >= karpT) { karpT = t + 420 + Math.random() * 180; migration(G.U.pick(live)); }
     if (t >= snorT && !snorlax) { snorT = t + 300 + Math.random() * 120; placeSnorlax(G.U.pick(live)); }
+    wakeTick(dt, live);
   }
 
   // ---------------- Magikarp ----------------
@@ -73,14 +79,47 @@ G.Funny = (() => {
       if (!G.World.isFree(x, y, 40)) continue;
       setSnorlax(x, y);
       if (G.Coop.active && G.Coop.isHost) G.Coop.broadcast(['dg', 'fn', 'snor', Math.round(x), Math.round(y)]);
-      G.Spawner.say(G.T('Un Snorlax se ha quedado dormido en medio del camino…'), 3, true);
+      G.Spawner.say(G.T('Un Snorlax duerme en el camino… quédate a su lado para despertarlo'), 3.5, true);
       return;
     }
   }
-  function setSnorlax(x, y) { snorlax = { x, y, z: 0, until: T() + 150, anim: new G.Sprites.Animator(143, 1.3, false) }; }
+  function setSnorlax(x, y) { snorlax = { x, y, z: 0, wake: 0, until: T() + 150, anim: new G.Sprites.Animator(143, 1.3, false) }; }
+
+  const WAKE_R = 80, WAKE_TIME = 3;
+  /** Anfitrión: alguien lleva un rato a su lado. */
+  function wakeTick(dt, live) {
+    if (!snorlax) return;
+    const near = live.some(p => G.U.dist2(p.x, p.y, snorlax.x, snorlax.y) < WAKE_R * WAKE_R);
+    snorlax.wake = near ? snorlax.wake + dt : Math.max(0, snorlax.wake - dt);
+    if (snorlax.wake < WAKE_TIME) return;
+    const { x, y } = snorlax;
+    if (G.Coop.active) G.Coop.broadcast(['dg', 'fn', 'wake']);
+    // Aplastamiento: barre a los normales de alrededor y hace mucho daño a los jefes.
+    for (const e of G.EnemyMgr.queryCircle(x, y, 240)) {
+      if (e.dead || e.remote) continue;
+      e.hurt(e.boss ? e.maxHp * 0.15 : e.hp + 1, '#ffd23f');
+    }
+    for (let i = 0; i < 12; i++) G.Pickups.drop('coin', x + G.U.rand(-70, 70), y + G.U.rand(-40, 40), 5);
+    if (Math.random() < 0.35) G.Pickups.drop('item', x + 30, y, G.Items.roll());
+    wakeFx();
+  }
+  /** Todos: se despierta, aplasta, cura y se marcha. */
+  function wakeFx() {
+    if (!snorlax) return;
+    const { x, y } = snorlax, pl = G.Game.player;
+    G.FX.ring(x, y, 20, 240, '#ffd23f', 0.6, 6);
+    G.FX.burst(x, y - 20, '#ffe9a0', 40, 260);
+    G.FX.dmgText(x, y - 80, G.T('¡Snorlax se ha despertado!'), '#ffd23f', true);
+    G.Camera.kick(1.2);
+    G.Audio.sfx('boss');
+    if (pl && !pl.dead) { pl.heal(pl.maxHp * 0.5); G.FX.ring(pl.x, pl.y, 6, 80, '#5fe08a', 0.6, 4); }
+    G.Spawner.say(G.T('¡Snorlax se ha despertado! Aplastamiento y curación para todos'), 3, true);
+    snorlax = null;
+  }
 
   function onNet(ev) {
     if (ev[2] === 'snor') setSnorlax(ev[3], ev[4]);
+    else if (ev[2] === 'wake') wakeFx();
   }
 
   /** Cada ordenador: Snorlax empuja a los enemigos; bocadillos. */
@@ -96,6 +135,8 @@ G.Funny = (() => {
           if (Math.random() < 0.05) G.FX.dmgText(e.x, e.y - e.bodyH - 4, G.T('¡Boing!'), '#ffd23f');
         }
         snorlax.anim.loop('Idle'); snorlax.anim.update(dt * 0.25);
+        // Invitado: la barra la calcula con su propio Pokémon (el despertar lo decide el anfitrión).
+        if (!authority() && pl && !pl.dead) snorlax.wake = G.U.dist2(pl.x, pl.y, snorlax.x, snorlax.y) < WAKE_R * WAKE_R ? Math.min(WAKE_TIME, snorlax.wake + dt) : Math.max(0, snorlax.wake - dt);
         if ((snorlax.z -= dt) <= 0) { snorlax.z = 1.6; if (pl && G.U.dist2(pl.x, pl.y, snorlax.x, snorlax.y) < 260 * 260) G.FX.dmgText(snorlax.x + 16, snorlax.y - 64, 'Zzz…', '#bfe8ff'); }
       }
     }
@@ -144,6 +185,15 @@ G.Funny = (() => {
     if (snorlax && G.Camera.sees(snorlax.x, snorlax.y, 80)) {
       G.Sprites.drawShadow(ctx, 143, snorlax.x, snorlax.y, 1.3);
       snorlax.anim.draw(ctx, snorlax.x, snorlax.y, {});
+      // Qué hacer con él: bocadillo de ayuda y barra de "despertando".
+      const pl = G.Game.player, w = snorlax.wake || 0;
+      if (w > 0) {
+        const bw = 60, bx = Math.round(snorlax.x - bw / 2), by = Math.round(snorlax.y - 96);
+        ctx.fillStyle = '#1a1a2a'; ctx.fillRect(bx - 2, by - 2, bw + 4, 10);
+        ctx.fillStyle = '#ffd23f'; ctx.fillRect(bx, by, Math.round(bw * Math.min(1, w / WAKE_TIME)), 6);
+      } else if (pl && G.U.dist2(pl.x, pl.y, snorlax.x, snorlax.y) < 320 * 320) {
+        bubble(ctx, snorlax.x, snorlax.y - 84, G.T('Quédate a mi lado para despertarme… Zzz'));
+      }
     }
     for (const q of quips) bubble(ctx, q.e.x, q.e.y - q.e.bodyH - 10, G.T(q.text));
   }

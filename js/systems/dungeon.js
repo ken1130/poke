@@ -164,6 +164,8 @@ G.Dungeon = (() => {
   /** Cada ordenador, para su jugador: comprar en la tienda (quedarse encima). */
   function update(dt, pl) {
     G.Funny.update(dt, pl);
+    if (room && pl && !pl.dead) collideFurniture(pl);
+    if (room && G.Coop.isHost !== false) for (const e of G.EnemyMgr.all()) if (!e.dead && !e.remote) collideFurniture(e);
     if (!pl || pl.dead || !room || room.kind !== 'shop') { closeShop(); return; }
     // Dentro de la tienda: el menú se abre solo (y otra vez si vuelves al mostrador).
     const shop = byId(room.siteId);
@@ -275,8 +277,13 @@ G.Dungeon = (() => {
         ok = G.World.isFree(x, y, 12) && G.Game.everyone().every(p => G.U.dist2(p.x, p.y, x, y) > 130 * 130);
       }
       if (!ok) continue;
-      const e = G.Spawner.spawnAt(x, y, t + 40);         // un poco más duros que los de ese momento
-      if (e) { room.mobs.push(e.id); G.FX.burst(x, y - 10, '#c47bff', 6, 90); }
+      // Más duros que los de ese momento (2026-10-15: antes caían de un golpe):
+      // +90 s de dureza, ×2 de vida, ×1,3 de daño y uno de cada 6, élite.
+      const e = G.Spawner.spawnAt(x, y, t + 90);
+      if (e) {
+        e.maxHp = e.hp = Math.round(e.maxHp * 2); e.dmg *= 1.3;
+        if (i % 6 === 0 && e.behavior !== 'thief') e.makeElite(G.U.pick(Object.keys(G.Enemy.ELITE)));
+        room.mobs.push(e.id); G.FX.burst(x, y - 10, '#c47bff', 6, 90); }
     }
   }
   function houseStartFx() {
@@ -290,6 +297,25 @@ G.Dungeon = (() => {
   const ROOMS = { shop: { rw: 7, rh: 5, theme: 'fighting' }, myst: { rw: 9, rh: 7, theme: 'ghost' } };
   const TSZ = () => G.Tiles.T * G.Sprites.PX;
   const counterY = () => room.cy - (room.rh - 2.6) * room.ts;
+  /** Muebles de la tienda que no se atraviesan: [x0, y0, x1, y1] (mostrador, estanterías, ruleta). */
+  function furniture() {
+    if (!room || room.kind !== 'shop') return [];
+    const ts = room.ts, cy = counterY() + 14, out = [[room.cx - 70, cy - 16, room.cx + 70, cy + 16]];
+    for (let i = -2; i <= 2; i++) if (i) { const x = room.cx + i * ts * 2.2, y = room.cy - (room.rh - 1.4) * ts; out.push([x - 30, y - 30, x + 30, y + 30]); }
+    const rx = room.cx + (room.rw - 1.6) * ts, ry = room.cy - ts * 0.6;
+    out.push([rx - 20, ry - 6, rx + 20, ry + 30]);
+    return out;
+  }
+  /** Saca al Pokémon de dentro de un mueble (por el lado más cercano). */
+  function collideFurniture(p) {
+    const r = Math.max(6, p.r * 0.5);
+    for (const [x0, y0, x1, y1] of furniture()) {
+      if (p.x < x0 - r || p.x > x1 + r || p.y < y0 - r || p.y > y1 + r) continue;
+      const dl = p.x - (x0 - r), dr = (x1 + r) - p.x, du = p.y - (y0 - r), dd = (y1 + r) - p.y;
+      const m = Math.min(dl, dr, du, dd);
+      if (m === dl) p.x = x0 - r; else if (m === dr) p.x = x1 + r; else if (m === du) p.y = y0 - r; else p.y = y1 + r;
+    }
+  }
   const doorP = () => [room.cx, room.cy + (room.rh - 1) * room.ts];
   const myKey = p => (p === G.Game.player ? (p.uid || 'me') : p.uid);
 
@@ -332,7 +358,7 @@ G.Dungeon = (() => {
       lockDoor(true);
       houseStartFx();
       send(['dg', 'say', '¡Es una casa de monstruos! Aguanta 30 s', 3]);
-      wave(12 + 4 * live.length);
+      wave(14 + 4 * live.length);
     } else if (ev === 'treasure') {
       say('¡Sala del tesoro!', 3);
       for (let i = 0; i < 14; i++) G.Pickups.drop('coin', cx + G.U.rand(-90, 90), cy + G.U.rand(-50, 50), 5);
@@ -366,9 +392,10 @@ G.Dungeon = (() => {
         }
       }
     } else if (room.ev === 'house' && room.locked) {
-      if (room.t >= 6 * room.wave && room.t < HOUSE_TIME - 5) wave(5 + 2 * live.length);
+      if (room.t >= 5 * room.wave && room.t < HOUSE_TIME - 5) wave(7 + 3 * live.length);
       const alive = room.mobs.filter(id => { const e = G.EnemyMgr.get(id); return e && !e.dead; }).length;
-      if (room.t >= HOUSE_TIME || (alive === 0 && room.t > 4)) {
+      // Sólo se acaba antes si ya no quedan oleadas por salir y los has vencido a todos.
+      if (room.t >= HOUSE_TIME || (alive === 0 && room.t >= HOUSE_TIME - 5)) {
         lockDoor(false);
         say(alive === 0 ? '¡Casa de monstruos superada! Recoge el botín' : '¡Has aguantado! Recoge el botín', 3);
         award('mhouse');
@@ -490,9 +517,15 @@ G.Dungeon = (() => {
     for (const o of slots) if (o.at <= t) slot = o;
     // Fuerza de los jefes de ese momento, más un extra por el nivel del grupo.
     const lvl = Math.max(...G.Game.everyone().map(p => p.level || 1));
-    const def = G.Enemies.bossFor(352, slot, 1.3 * (1 + lvl * 0.02));
+    // (2026-10-15: más duro; antes caía enseguida.)
+    const def = G.Enemies.bossFor(352, slot, 2.5 * (1 + lvl * 0.03));
     def.behavior = 'charger';
     const e = G.Spawner.spawnBossNow(pl, t, def);
+    if (e) {
+      const floor = Math.round(G.Enemies.bossFloor(t) * 1.8 * G.Coop.scaleHp(G.Game.everyone().length));
+      if (e.maxHp < floor) e.maxHp = floor;
+      e.hp = e.maxHp; e.dmg *= 1.5; e.spd *= 1.25;
+    }
     // Dentro de la tienda: sale de detrás del mostrador (y la puerta se cierra hasta vencerlo).
     if (e) { e.x = room ? room.cx : s.x; e.y = room ? counterY() + room.ts : s.y; e.name = 'Kecleon'; s.bossId = e.id; }
     setState(s, 'angry');
@@ -669,13 +702,13 @@ G.Dungeon = (() => {
       // La ruleta, a un lado (se juega desde el menú).
       sprite(ctx, 'roulette', Math.floor(now * 6) % 4, r.cx + (r.rw - 1.6) * ts, r.cy - ts * 0.6);
       label(ctx, G.T('Ruleta'), r.cx + (r.rw - 1.6) * ts, r.cy - ts * 1.9, '#ffd23f', 11);
-      if (s && s.state !== 'angry') {
+      if (s && s.state === 'open') {
         if (!kecleonAnim) kecleonAnim = new G.Sprites.Animator(352, 1, false);
         kecleonAnim.loop('Idle'); kecleonAnim.update(1 / 60);
         G.Sprites.drawShadow(ctx, 352, r.cx, counterY() - 6);
         kecleonAnim.draw(ctx, r.cx, counterY() - 6, {});
-        if (!openShop) G.Funny.bubble(ctx, r.cx, counterY() - 70, G.T(s.state === 'free' ? '…Llévatelo todo. Snif.' : 'Acércate al mostrador para comprar'));
-      } else if (s) {
+        if (!openShop) G.Funny.bubble(ctx, r.cx, counterY() - 70, G.T('Acércate al mostrador para comprar'));
+      } else if (s && s.state === 'angry') {
         const k = G.EnemyMgr.get(s.bossId);
         if (k && !k.dead) G.Funny.bubble(ctx, k.x, k.y - k.bodyH - 16, G.T('¡LADRÓN! ¡VUELVE AQUÍ!'), '#c8282a');
       }

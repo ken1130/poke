@@ -53,7 +53,7 @@ G.Events = (() => {
     if (cur) return;
     nextT -= dt;
     if (nextT > 0) return;
-    if (G.EnemyMgr.bossAlive()) { nextT = 10; return; }
+    if (G.EnemyMgr.bossAlive() || G.Floors.inGrace) { nextT = 10; return; }
     nextT = G.U.rand(EVERY[0], EVERY[1]);
     const ids = ['horde', 'gold', 'lost'].filter(id => id !== last);
     start(G.U.pick(ids), time, players);
