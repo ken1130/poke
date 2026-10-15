@@ -141,7 +141,7 @@ G.Spawner = (() => {
     // En la arena de la grieta no sale nada más (y el reloj de jefes espera).
     // En el Desafío legendario, nunca: todo pasa en la arena.
     // (Tampoco con el grupo dentro de la tienda o de una sala: dungeon.js.)
-    if (G.Rift.inArena || (G.Dungeon && G.Dungeon.inRoom) || G.Modes.run === 'legend') return;
+    if (G.Rift.inArena || (G.Dungeon && G.Dungeon.inRoom) || G.Modes.run === 'legend' || G.PvP.arena) return;   // arena de PK: nada
 
     // Precarga lo que va a salir en el próximo minuto.
     preloadT -= dt;

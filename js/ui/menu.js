@@ -399,17 +399,17 @@ G.MenuUI = (() => {
     const el = document.createElement('div');
     el.className = 'panel bind-panel';
     el.innerHTML = `<b>Atajos de movimientos</b>
-      <p class="sub" style="margin:2px 0 8px">Elige qué movimiento va siempre en cada hueco (teclas 1-4 o los iconos de abajo), para la memoria muscular. Si aún no tienes tantos movimientos, va al hueco más cercano.</p>
-      <div class="bind-slots">${[0, 1, 2, 3].map(i => `<label class="bind-slot"><span>${i + 1}</span>
+      <p class="sub" style="margin:2px 0 8px">Elige qué movimiento va siempre en cada hueco (teclas 1-5 o los iconos de abajo), para la memoria muscular. Si aún no tienes tantos movimientos, va al hueco más cercano.</p>
+      <div class="bind-slots">${[0, 1, 2, 3, 4].map(i => `<label class="bind-slot"><span>${i + 1}</span>
         <select class="field" data-slot="${i}"><option value="">Libre</option>${ids.map(id =>
           `<option value="${id}" ${list[i] === id ? 'selected' : ''}>${G.Moves.BY_ID[id].name}</option>`).join('')}</select></label>`).join('')}</div>`;
     el.querySelectorAll('select[data-slot]').forEach(sel => {
       sel.onchange = () => {
-        const l = (s.pbind[upgDex] || [null, null, null, null]).slice(0, 4);
-        while (l.length < 4) l.push(null);
+        const l = (s.pbind[upgDex] || [null, null, null, null, null]).slice(0, 5);
+        while (l.length < 5) l.push(null);
         const i = +sel.dataset.slot, id = sel.value || null;
         // Un movimiento sólo puede estar en un hueco.
-        for (let j = 0; j < 4; j++) if (id && l[j] === id) l[j] = null;
+        for (let j = 0; j < 5; j++) if (id && l[j] === id) l[j] = null;
         l[i] = id;
         s.pbind[upgDex] = l;
         G.DB.commit();

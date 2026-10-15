@@ -290,12 +290,12 @@ G.Dungeon = (() => {
         ok = G.World.isFree(x, y, 12) && G.Game.everyone().every(p => G.U.dist2(p.x, p.y, x, y) > 130 * 130);
       }
       if (!ok) continue;
-      // Más duros que los de ese momento (2026-10-15: antes caían de un golpe):
-      // +90 s de dureza, ×2 de vida, ×1,3 de daño y uno de cada 6, élite.
-      const e = G.Spawner.spawnAt(x, y, t + 90);
+      // Más duros que los de ese momento (2026-10-15: antes caían de un golpe; luego se
+      // pasó: ahora +60 s de dureza, ×1,5 de vida, ×1,1 de daño y uno de cada 8, élite).
+      const e = G.Spawner.spawnAt(x, y, t + 60);
       if (e) {
-        e.maxHp = e.hp = Math.round(e.maxHp * 2); e.dmg *= 1.3;
-        if (i % 6 === 0 && e.behavior !== 'thief') e.makeElite(G.U.pick(Object.keys(G.Enemy.ELITE)));
+        e.maxHp = e.hp = Math.round(e.maxHp * 1.5); e.dmg *= 1.1;
+        if (i % 8 === 0 && e.behavior !== 'thief') e.makeElite(G.U.pick(Object.keys(G.Enemy.ELITE)));
         room.mobs.push(e.id); G.FX.burst(x, y - 10, '#c47bff', 6, 90); }
     }
   }
@@ -384,7 +384,7 @@ G.Dungeon = (() => {
       lockDoor(true);
       houseStartFx();
       send(['dg', 'say', '¡Es una casa de monstruos! Aguanta 30 s', 3]);
-      wave(14 + 4 * live.length);
+      wave(12 + 3 * live.length);
     } else if (ev === 'treasure') {
       say('¡Sala del tesoro! Acércate a los cofres para abrirlos', 3.2);
       G.Audio.sfx('legend');
@@ -412,7 +412,7 @@ G.Dungeon = (() => {
         }
       }
     } else if (room.ev === 'house' && room.locked) {
-      if (room.t >= 5 * room.wave && room.t < HOUSE_TIME - 5) wave(7 + 3 * live.length);
+      if (room.t >= 6 * room.wave && room.t < HOUSE_TIME - 5) wave(6 + 2 * live.length);
       const alive = room.mobs.filter(id => { const e = G.EnemyMgr.get(id); return e && !e.dead; }).length;
       // Sólo se acaba antes si ya no quedan oleadas por salir y los has vencido a todos.
       if (room.t >= HOUSE_TIME || (alive === 0 && room.t >= HOUSE_TIME - 5)) {

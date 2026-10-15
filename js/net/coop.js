@@ -433,6 +433,7 @@ G.Coop = (() => {
         case 'dg': G.Dungeon.onClient(from, ev); break;
         case 'sh': G.Combat.supportHeal(ev[1], ev[2], ev[3], ev[4]); emit(ev, from); break;                               // tienda de Kecleon
         case 'cb': G.Floors.comboFx(ev[1], ev[2], ev[3], ev[4]); emit(ev, from); break;   // ataque combinado (floors.js)
+        case 'pv': G.PvP.onNet(ev); emit(ev, from); break;                                 // PK: golpe entre jugadores
       }
     }
   }
@@ -560,6 +561,7 @@ G.Coop = (() => {
       case 'twr': G.Challenges.onNet(ev); break;
       case 'pi': outEv.push(['po', ev[1]]); flushClient(true); break;            // latencia: se devuelve al momento
       case 'dg': G.Dungeon.onNet(ev); break;
+      case 'pv': G.PvP.onNet(ev); break;
       case 'sh': G.Combat.supportHeal(ev[1], ev[2], ev[3], ev[4]); break;      // Deseo / Rocío Vital de un compañero
     }
   }

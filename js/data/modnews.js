@@ -5,6 +5,9 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: 'PK 指向技：PK 時招式朝你瞄準的方向發射（電腦用滑鼠，手機用右手拇指在右半邊拖曳），畫面上有準心和瞄準線', en: 'PvP aiming: in PvP your moves fire where you aim (mouse on PC, right thumb on the right half on phones), with a crosshair and aim line' },
+      { zh: 'PK 打擊感：打中有命中標記、傷害數字、音效、短暫停頓和擊退；擊倒對手有慢動作、「擊倒！」和擊倒訊息', en: 'PvP hit feedback: hit marker, damage numbers, sound, a brief hit-stop and knockback; knockouts get slow motion, “K.O.!” and a kill feed' },
+      { zh: 'PK 競技場地圖（房間可選）：沒有野怪、頭目和事件；開場從 5 個攻擊招式選 3 個（Lv.3，可換一批 1 次），大家都沒有商店強化；中間定期出現回血果實，1:30 後安全區開始縮小', en: 'PvP Arena map (room option): no wild Pokémon, bosses or events; pick 3 of 5 attack moves at the start (Lv.3, one reroll), no shop upgrades for anyone; healing berries spawn in the middle and the safe zone shrinks from 1:30' },
       { zh: '設定 →「關於」新增「法律與隱私權」：可開啟法律聲明（含刪除帳號）與完整的使用條款／隱私權政策', en: 'Settings → About now has a Legal & privacy section: open the legal notice (with account deletion) and the full Terms & Privacy Policy' },
       { zh: '卡比獸不再只是站著：站在牠旁邊 3 秒就能叫醒牠，醒來會泰山壓頂掃開周圍敵人、全員回復一半生命，還會掉金幣（有機會掉道具）', en: 'Snorlax now does something: stand next to it for 3 s to wake it — its Body Slam clears nearby enemies, heals everyone by half and drops coins (sometimes an item)' },
       { zh: '新增完整的使用條款與隱私權政策頁面（法律聲明視窗裡有連結）', en: 'Added a full Terms of Use & Privacy Policy page (linked from the Legal window)' },
@@ -58,12 +61,16 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '招式欄從 4 格增加為 5 格（按鍵 1～5），輔助和被動招式不會再把攻擊招式擠掉', en: 'Move bar grows from 4 to 5 slots (keys 1-5), so support and passive moves don’t crowd out your attacks' },
+      { zh: '組合技（連結）最多可以組 5 個招式（原本 4 個）', en: 'Bonds can now link up to 5 moves (was 4)' },
+      { zh: '救起倒地隊友更快：1.5 秒（原本 3 秒）、範圍更大，救人時受到的傷害減半，暫時離開進度也掉得比較慢', en: 'Reviving downed teammates is faster: 1.5 s (was 3), a bigger range, half damage taken while reviving, and progress drains slower if you step away' },
+      { zh: '怪物屋稍微下修：比上次加強時溫和（血量、傷害、精英怪數量和每波數量都降低），但仍比最早的版本耐打', en: 'Monster Houses toned down a bit from the last buff (less HP, damage, elites and monsters per wave), still tougher than the original' },
       { zh: '寶藏房的 3 個大寶箱可以打開了：走到寶箱旁邊就會打開噴出寶物（以前只是擺設，寶物一進門就撒在地上）', en: 'The 3 big chests in treasure rooms now open: walk up to one and it bursts with loot (they used to be decoration)' },
       { zh: '治癒房要踩上泉水才會回復全部生命（跟地圖上的泉水一樣），泉水用完會乾掉', en: 'In healing rooms you now step on the spring to restore all HP (like springs on the map); it dries up after use' },
       { zh: '商店裡的輪盤走過去就會打開（選單裡的按鈕也還在）', en: 'Walking up to the shop roulette now opens it (the menu button still works)' },
       { zh: '下樓後有緩衝時間：前 6 秒不出怪，之後 30 秒內怪物數量慢慢增加，這段期間也不會有怪物潮、頭目或事件', en: 'Breathing room after the stairs: no enemies for 6 s, then they ramp up over 30 s, with no surges, bosses or events meanwhile' },
       { zh: '怪物變強的速度放慢：血量成長變慢、每層加成從 +15% 降為 +8%，前期的耐打度要到 12 分鐘才到頂（原本 6 分鐘）', en: 'Enemies get stronger more slowly: slower HP growth, the per-floor bonus drops from +15% to +8%, and early toughness peaks at 12 min (was 6)' },
-      { zh: '怪物屋加強：怪物更耐打、更痛，有精英怪，每 5 秒一波；要撐到最後一波才能提早結束', en: 'Monster Houses are tougher: sturdier, harder-hitting monsters with elites and a wave every 5 s; you can only finish early after the last wave' },
+      { zh: '怪物屋加強：怪物更耐打，有精英怪，每 6 秒一波；要撐到最後一波才能提早結束', en: 'Monster Houses are tougher: sturdier monsters with elites and a wave every 6 s; you can only finish early after the last wave' },
       { zh: '卡克隆老闆加強：血量更高（不低於同時期頭目）、攻擊與速度提升', en: 'Kecleon is much tougher when angry: more HP (at least a boss of that moment), more damage and speed' },
       { zh: '輪盤換成較沉穩的配色（酒紅／米白，只有大獎是金色），轉完會在角色頭上跳出 +／- 多少金幣', en: 'The roulette has a calmer look (burgundy/cream, only big prizes in gold), and shows +/- coins above your Pokémon after each spin' },
       { zh: '商店裡的櫃台、貨架和輪盤不能再穿過去', en: 'You can no longer walk through the shop counter, shelves and roulette' },

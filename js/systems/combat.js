@@ -36,7 +36,7 @@ G.Combat = (() => {
     if (m.t > 0) return;
     // Los ataques que necesitan blanco esperan a tenerlo (no gastes animación al aire).
     if (needsTarget(m) && !(pl.target && G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))
-        && !(G.PvP.on && G.PvP.foe(pl, reach(m)))) {
+        && !(G.PvP.on && G.PvP.foe(pl, reach(m) + (G.PvP.aiming ? 160 : 0)))) {   // apuntando: dispara si hay un rival cerca
       m.t = 0.05;
       return;
     }

@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifyPS-400.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifyPS-700.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=20261015g">
+<link rel="stylesheet" href="css/style.css?v=20261015h">
 </head>
 <body>
 
@@ -347,6 +347,11 @@
       <button class="btn small switch" id="lobby-teams-btn">No</button>
       <span class="sub" id="lobby-teams-list" style="margin:0"></span>
     </div>
+    <div class="row hidden" id="lobby-arena" style="gap:8px;flex-wrap:wrap">
+      <span>Mapa</span>
+      <button class="btn small switch" id="lobby-arena-btn">Arena</button>
+      <span class="sub" id="lobby-arena-desc" style="margin:0"></span>
+    </div>
     <div class="row hidden" id="lobby-rand" style="gap:8px">
       <span>Personaje al azar</span>
       <button class="btn small switch" id="lobby-rand-btn">No</button>
@@ -478,6 +483,18 @@
 </div>
 
 <!-- ====== Durante la run ====== -->
+<!-- PK en la arena: elegir 3 de 5 movimientos (pvp.js) -->
+<section id="scr-pkpick" class="scr dim hidden">
+  <div class="box center">
+    <h2>Elige tus movimientos</h2>
+    <p id="pk-sub" class="sub"></p>
+    <div id="pk-cards" class="cards"></div>
+    <div class="row" style="justify-content:center;gap:10px;margin-top:10px">
+      <button id="pk-reroll" class="btn small ghost" data-sfx="none">Cambiar opciones</button>
+      <button id="pk-ok" class="btn gold">¡A luchar!</button>
+    </div>
+  </div>
+</section>
 <section id="scr-levelup" class="scr dim hidden">
   <div class="box center">
     <h2>¡Nivel <span id="lvl-num">2</span>!</h2>
@@ -565,7 +582,7 @@
 <section id="scr-pause" class="scr dim hidden">
   <div class="box center" style="width:min(460px,100%)">
     <h2>Pausa</h2>
-    <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
+    <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>5</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
     <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo</p>
     <p id="pause-coop" class="note hidden">Partida en grupo: la partida está en pausa para todos hasta que continúes.</p>
     <div id="pause-sound" class="sound-inline"></div>
@@ -587,6 +604,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=c91103eeed"></script>
+<script defer src="js/app.min.js?v=4a8ec6d9b8"></script>
 </body>
 </html>

@@ -116,7 +116,9 @@ G.Game = (() => {
     // PK con personaje al azar: el Pokémon que le ha tocado a cada uno (cfg.members), sin mejoras.
     const randomMe = coop && coop.rand ? (coop.members.find(m => m.uid === G.Net.uid) || {}).dex : null;
     const mon = G.DEX_BY[randomMe || save.partner];
-    const perks = G.Upgrades.perks(randomMe ? {} : G.DB.upgradesOf(mon.dex));
+    // Arena de PK: todos sin las mejoras de la tienda (igualdad).
+    const flat = !!(coop && coop.pvp && coop.arena);
+    const perks = G.Upgrades.perks(randomMe || flat ? {} : G.DB.upgradesOf(mon.dex));
 
     G.UI.hideAll();
     G.UI.chrome(false);
@@ -190,6 +192,7 @@ G.Game = (() => {
 
     state = 'playing';
     keepAwake(true);
+    G.PvP.arenaStart(pl);                 // arena de PK: elegir 3 de 5 movimientos
   }
 
   function quitRun() {
@@ -662,6 +665,12 @@ G.Game = (() => {
 
   function handleKeys() {
     if (G.SettingsUI.isOpen) { if (G.Input.tap('escape')) G.SettingsUI.close(); return; }
+    if (G.UI.isOpen('scr-pkpick')) {
+      for (let i = 0; i < 5; i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.PvP.pickKey(i + 1);
+      if (G.Input.tap('enter')) document.getElementById('pk-ok').click();
+      if (G.Input.tap('keyr')) document.getElementById('pk-reroll').click();
+      return;
+    }
     if (state === 'levelup' || (G.Coop.active && G.UI.isOpen('scr-levelup'))) {
       for (let i = 0; i < 3; i++) {
         if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pick(i);
@@ -711,7 +720,7 @@ G.Game = (() => {
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
     if (state !== 'playing' || !pl) return;
     if (spectating() && (G.Input.tap('tab') || G.Input.tap('space'))) { nextSpec(); return; }
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setActive(i);
     }
     if (G.Input.tap('keyq')) pl.cycle(-1);
@@ -749,7 +758,7 @@ G.Game = (() => {
 
   function frame(ts) {
     const real = (ts - last) / 1000 || 0;
-    const dt = Math.min(1 / 30, real) * speedK;
+    const dt = Math.min(1 / 30, real) * speedK * (state === 'playing' ? G.PvP.timeScale(real) : 1);   // PK: parón al golpear
     last = ts;
     if (state === 'playing') G.Settings.sample(real);
     fpsAcc += real; fpsN++;
@@ -846,6 +855,7 @@ G.Game = (() => {
     G.Dungeon.update(dt, pl);
     G.Relics.tick(dt, pl);                                       // reliquias de la torre
     G.Floors.update(dt, all);                                    // escaleras y ataque combinado
+    G.PvP.arenaTick(dt, pl); G.PvP.pickTick(dt);                 // arena de PK: zona, bayas, elección
     G.Boons.update(dt, pl);                                      // bendición inicial (modo normal)
     if (!coop || G.Coop.isHost) G.Boons.tick(time, all);         // hitos de 10/20/30 min
     if (!coop || G.Coop.isHost) G.Companion.tick(dt, time, all); // huevo Pokémon
@@ -872,8 +882,9 @@ G.Game = (() => {
   /** Caído en grupo: un compañero a tu lado te va levantando. */
   function reviveTick(dt) {
     if (G.PvP.on && !G.PvP.teams) return;         // en PK no se revive (por equipos, sí: tus compañeros)
-    const helper = G.Coop.puppets().some(p => !p.dead && (!G.PvP.teams || p.team === pl.team) && G.U.dist2(p.x, p.y, pl.x, pl.y) < 56 * 56);
-    pl.reviveT = helper ? (pl.reviveT || 0) + dt : Math.max(0, (pl.reviveT || 0) - dt * 0.5);
+    const helper = G.Coop.puppets().some(p => !p.dead && (!G.PvP.teams || p.team === pl.team) && G.U.dist2(p.x, p.y, pl.x, pl.y) < G.Player.REVIVE_R * G.Player.REVIVE_R);
+    // Si el compañero se aparta un momento, lo avanzado se pierde despacio.
+    pl.reviveT = helper ? (pl.reviveT || 0) + dt : Math.max(0, (pl.reviveT || 0) - dt * 0.25);
     if (pl.reviveT >= G.Player.REVIVE_TIME) {
       pl.revive(0.5);
       // MVP: quién te ha levantado (el compañero más cercano).
@@ -1000,6 +1011,7 @@ G.Game = (() => {
     G.Projectiles.draw(ctx);
     G.Combat.drawAirFields(ctx);
     G.Dungeon.drawAir(ctx);
+    G.PvP.drawWorld(ctx);                // PK: zona segura y punto de mira
     G.FX.draw(ctx);
     ctx.restore();
 
@@ -1015,6 +1027,7 @@ G.Game = (() => {
       ctx.fillRect(0, 0, w, h);
     }
     G.HUD.draw(ctx, w, h, pl, st);
+    G.PvP.drawHud(ctx, w, h);
     G.Floors.drawFade(ctx, w, h, (wt, s) => `${wt} ${s}px Pixelify,"Segoe UI",system-ui,sans-serif`);   // bajada de piso
     G.Touch.draw(ctx);
     if (G.Settings.get('fps')) {

@@ -258,6 +258,17 @@
       tl.querySelectorAll('[data-team]').forEach(b => { b.onclick = () => G.Social.setTeam(+b.dataset.team); });
       const teamsOk = !(room.mode === 'pvp' && room.teams) || (names(0) !== '—' && names(1) !== '—');
 
+      // PK: mapa. Arena = sin salvajes ni jefes, eliges 3 de 5 movimientos y la zona se cierra.
+      $('lobby-arena').classList.toggle('hidden', room.mode !== 'pvp');
+      const ab = $('lobby-arena-btn');
+      ab.textContent = G.T(room.arena !== false ? 'Arena' : 'Campo abierto');
+      ab.classList.toggle('gold', room.arena !== false);
+      ab.disabled = !room.isHost;
+      ab.onclick = () => { if (room.isHost) G.Social.setArena(room.arena === false); };
+      $('lobby-arena-desc').textContent = G.T(room.arena !== false
+        ? 'Sin Pokémon salvajes ni jefes: cada uno elige 3 de 5 movimientos y la zona se va cerrando.'
+        : 'Con Pokémon salvajes para subir de nivel mientras os buscáis.');
+
       // PK: personaje al azar (el anfitrión lo activa).
       $('lobby-rand').classList.toggle('hidden', room.mode !== 'pvp');
       const rb = $('lobby-rand-btn');
@@ -394,6 +405,7 @@
         mods: room.mode === 'pvp' ? {} : { boss: !!(room.mods || {}).boss, shiny: !!(room.mods || {}).shiny, rush: !!(room.mods || {}).rush,
           stage: Number.isInteger((room.mods || {}).stage) ? room.mods.stage : null, ch: (room.mods || {}).ch || null },
         teams: room.mode === 'pvp' && !!room.teams,
+        arena: room.mode === 'pvp' && room.arena !== false,
         members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny, team: G.Social.teamOf(m, i) }))
       };
       G.Social.setOpen(false);

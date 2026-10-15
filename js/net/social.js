@@ -380,7 +380,10 @@ G.Social = (() => {
     // PK por equipos (lo elige el anfitrión).
     const tref = fb.rtdb.ref('rooms/' + id + '/teams');
     tref.on('value', s => { if (room && room.id === id) { room.teams = s.val() === true; emit('room'); } }, () => {});
-    roomRefs = [mref, href, oref, dref, rref, sref, xref, tref];
+    // PK en la arena (sin salvajes; lo elige el anfitrión; por defecto sí).
+    const aref = fb.rtdb.ref('rooms/' + id + '/arena');
+    aref.on('value', s => { if (room && room.id === id) { room.arena = s.val() !== false; emit('room'); } }, () => {});
+    roomRefs = [mref, href, oref, dref, rref, sref, xref, tref, aref];
     writeStatus();
     emit('room');
   }
@@ -447,6 +450,11 @@ G.Social = (() => {
   /** El anfitrión elige el escenario (índice de bioma o null). */
   function setScene(v) {
     if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/scene').set(Number.isInteger(v) ? v : null).catch(() => {});
+  }
+
+  /** El anfitrión elige el mapa del PK: arena (sin salvajes) o campo abierto. */
+  function setArena(on) {
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/arena').set(!!on).catch(() => {});
   }
 
   /** El anfitrión activa o quita "personaje al azar" para el PK. */
@@ -577,7 +585,7 @@ G.Social = (() => {
 
   return {
     start, startLite, joinByCode, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
-    createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setScene, setMods, setTeams, setTeam, teamOf, refreshMember, setPlaying, refreshPresence,
+    createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setArena, setScene, setMods, setTeams, setTeam, teamOf, refreshMember, setPlaying, refreshPresence,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

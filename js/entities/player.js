@@ -34,7 +34,7 @@ G.Player = class Player {
     this.moves = [];           // todos los movimientos aprendidos
     this.slots = [];           // huecos: cada uno, una lista de movimientos que se lanzan a la vez
     this.active = 0;           // hueco activo
-    this.maxMoves = 4;         // huecos
+    this.maxMoves = 5;         // huecos (2026-10-15: antes 4; los de apoyo y pasivos también ocupan)
     this.bonds = 0;            // vínculos por usar (premio de los legendarios)
 
     this.buffs = {
@@ -78,7 +78,9 @@ G.Player = class Player {
   }
 
   /** Segundos que hay que estar junto a un compañero caído para levantarlo. */
-  static get REVIVE_TIME() { return 3; }
+  // (2026-10-15: antes 3 s y a 56 px; a partir de media partida te rodeaban y no daba tiempo.)
+  static get REVIVE_TIME() { return 1.5; }
+  static get REVIVE_R() { return 80; }
 
   // (×2 y luego ×4 el 2026-10-10: se subía de nivel demasiado rápido.)
   static xpFor(level) {
@@ -174,7 +176,7 @@ G.Player = class Player {
   // Cada legendario vencido da un vínculo. Con él se juntan movimientos en un
   // solo hueco y se lanzan a la vez. Sólo crece un grupo (hasta BOND_MAX); si
   // no hay ninguno a medias, el vínculo une dos movimientos sueltos.
-  static get BOND_MAX() { return 4; }
+  static get BOND_MAX() { return 5; }      // 2026-10-15: antes 4 (lo pidió el dueño)
 
   /** Lo que se puede hacer ahora con un vínculo: añadir a un grupo o unir dos sueltos. */
   bondOptions() {
@@ -264,11 +266,13 @@ G.Player = class Player {
     // Con un ataque cuerpo a cuerpo activo se recibe un 25 % menos: hay que
     // estar encima de los enemigos para pegar (iban muy por detrás).
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
+    // Levantando a un compañero caído: la mitad de daño (para poder rescatarle aunque te rodeen).
+    const rescuing = G.Coop.active && !this.remote && G.Coop.puppets().some(p => p.dead && G.U.dist2(p.x, p.y, this.x, this.y) < Player.REVIVE_R * Player.REVIVE_R) ? 0.5 : 1;
     // curseTaken: maldición de cristal (dungeon.js)
     // taken: reto semanal "Todo o nada" (×2)
     // Pantalla de Luz (apoyo): para parte del daño mientras dura.
     const screen = this.screenT > 0 ? 1 - (this.screenCut || 0.5) : 1;
-    const d = Math.max(1, amount * (1 - this.reduction) * close * screen * (1 + (this.curseTaken || 0)) * (G.Modes.rule('taken') || 1));
+    const d = Math.max(1, amount * (1 - this.reduction) * close * rescuing * screen * (1 + (this.curseTaken || 0)) * (G.Modes.rule('taken') || 1));
     this.hp -= d;
     // Globo Helio: al recibir un golpe explota (vuelve a los 30 s, ver update).
     if (this.hasItem('airballoon') && this.balloon) {
@@ -493,6 +497,9 @@ G.Player = class Player {
     if (foe) this.aim = Math.atan2(foe.y - this.y, foe.x - this.x);
     else if (tg) this.aim = Math.atan2(tg.y - this.y, tg.x - this.x);
     else if (this.walking) this.aim = this.moveAngle;
+    // PK: apuntas tú (ratón o pulgar derecho), ver pvp.js.
+    const ma = G.PvP.manualAim(this);
+    if (ma != null) { this.aim = ma; this.manualAim = ma; }
 
     // --- animación: mira al objetivo al atacar, si no a donde camina ---
     const face = this.attackFace > 0 || !this.walking ? this.aim : this.moveAngle;

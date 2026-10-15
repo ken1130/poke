@@ -120,12 +120,12 @@ G.DB = (() => {
     if (G.DEX_BY) for (const coll of ['owned', 'shiny']) {
       for (const d of Object.keys(s[coll] || {})) if (!G.DEX_BY[d]) delete s[coll][d];
     }
-    // Atajos: 4 huecos con un movimiento que exista (o null), sin repetir.
+    // Atajos: 5 huecos con un movimiento que exista (o null), sin repetir.
     if (s.pbind && typeof s.pbind === 'object') {
       for (const d of Object.keys(s.pbind)) {
-        const l = Array.isArray(s.pbind[d]) ? s.pbind[d].slice(0, 4) : [];
+        const l = Array.isArray(s.pbind[d]) ? s.pbind[d].slice(0, 5) : [];
         const seen = new Set();
-        s.pbind[d] = [0, 1, 2, 3].map(i => {
+        s.pbind[d] = [0, 1, 2, 3, 4].map(i => {
           const id = l[i];
           if (typeof id !== 'string' || (G.Moves && !G.Moves.BY_ID[id]) || seen.has(id)) return null;
           seen.add(id); return id;

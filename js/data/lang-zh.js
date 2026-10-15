@@ -1159,7 +1159,7 @@ G.I18n.add({
   'Grieta · {x} m · {x} s': '裂縫 · {x} 分 · {x} 秒', 'DERROTADOS ·': '擊倒 ·', 'MONEDAS': '金幣',
   '{x} · {x} DERROTADOS · {x} MONEDAS': '{x} · 擊倒 {x} · {x} 金幣',
   'Arrastra el dedo para moverte · toca un ataque para cambiarlo': '拖曳手指移動 · 點擊招式以切換',
-  'WASD moverse · 1-4 / Q / E o clic en un ataque para cambiarlo · Esc pausa': 'WASD 移動 · 1-4 / Q / E 或點擊招式切換 · Esc 暫停',
+  'WASD moverse · 1-5 / Q / E o clic en un ataque para cambiarlo · Esc pausa': 'WASD 移動 · 1-5 / Q / E 或點擊招式切換 · Esc 暫停',
   'El anfitrión ha terminado la partida': '房主已結束遊戲', 'Se ha perdido la conexión con el anfitrión.': '與房主的連線已中斷。',
 
   // ---------------- pausa y fin ----------------
@@ -1498,8 +1498,8 @@ G.I18n.add({
   'Ahora mismo no se pueden crear cuentas nuevas. Si ya tienes cuenta, entra normal; si no, puedes jugar como invitado.':
     '目前無法建立新帳號。如果你已有帳號，請照常登入；如果沒有，你可以以訪客身分遊玩。',
   'Atajos de movimientos': '招式快捷鍵', 'Libre': '空位',
-  'Elige qué movimiento va siempre en cada hueco (teclas 1-4 o los iconos de abajo), para la memoria muscular. Si aún no tienes tantos movimientos, va al hueco más cercano.':
-    '選擇每個欄位固定放置的招式（按鍵 1-4 或下方圖示），方便培養肌肉記憶。如果你還沒有那麼多招式，會放到最近的欄位。',
+  'Elige qué movimiento va siempre en cada hueco (teclas 1-5 o los iconos de abajo), para la memoria muscular. Si aún no tienes tantos movimientos, va al hueco más cercano.':
+    '選擇每個欄位固定放置的招式（按鍵 1-5 或下方圖示），方便培養肌肉記憶。如果你還沒有那麼多招式，會放到最近的欄位。',
   'Golpe Crítico': '會心一擊', '+3% de críticos (x1,5 de daño)': '+3% 會心一擊率（x1.5 傷害）',
   'Cambio de cartas': '重抽卡片', '+1 cambio de cartas de nivel por run': '每局 +1 次升級卡片重抽',
   'Veto': '禁用', 'Bloquea 1 movimiento: no te sale en las cartas': '禁用 1 個招式：它不會出現在你的卡片中',
@@ -1728,7 +1728,7 @@ G.I18n.add({
   '¡Corre!': '快跑！',
   '¡Gracias!': '謝謝！',
   '¡Vamos!': '衝啊！',
-  'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa  ·  T mensajes': 'WASD 移動 · 1-4 / Q / E 或點擊招式切換 · Esc 暫停 · T 快捷訊息',
+  'WASD moverse  ·  1-5 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa  ·  T mensajes': 'WASD 移動 · 1-5 / Q / E 或點擊招式切換 · Esc 暫停 · T 快捷訊息',
   'T mensajes': 'T 快捷訊息',
   'Derribos': '擊倒',
   'Daño': '傷害',
@@ -2163,4 +2163,21 @@ G.I18n.add({
   'Ya no quedan tiradas en esta ruleta': '這台輪盤已經沒有次數了',
   'Legal y privacidad': '法律與隱私權',
   'Qué datos guardamos, cómo borrar tu cuenta y las condiciones de uso.': '我們保存哪些資料、如何刪除帳號，以及使用條款。',
+  '¡PK en la arena! Elige tus movimientos: tenéis 15 s…': '競技場 PK！選好你的招式，有 15 秒準備…',
+  '{x} ha tumbado a {x}': '{x} 擊倒了 {x}',
+  '¡K.O.!': '擊倒！',
+  'Elige {x} de {x} · quedan {x} s': '選 {x} 個（共 {x} 個）· 剩 {x} 秒',
+  '¡A luchar! ({x}/{x})': '開打！（{x}/{x}）',
+  'Cambiar opciones ({x})': '換一批（{x}）',
+  '¡Listo! Cambia de movimiento con 1-3 (o tocando su icono)': '準備好了！用 1～3 切換招式（或點招式圖示）',
+  '¡Estás fuera de la zona! Vuelve al centro': '你在安全區外！快回到中間',
+  'La zona se cierra en {x} s': '安全區 {x} 秒後開始縮小',
+  'La zona se está cerrando…': '安全區正在縮小…',
+  'Mapa': '地圖',
+  'Arena': '競技場',
+  'Campo abierto': '野外',
+  'Sin Pokémon salvajes ni jefes: cada uno elige 3 de 5 movimientos y la zona se va cerrando.': '沒有野生寶可夢和頭目：每人從 5 個招式選 3 個，安全區會慢慢縮小。',
+  'Con Pokémon salvajes para subir de nivel mientras os buscáis.': '有野生寶可夢，可以邊練等邊找對手。',
+  'Elige tus movimientos': '選擇你的招式',
+  'Cambiar opciones': '換一批',
 }, 'zh');

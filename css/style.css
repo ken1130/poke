@@ -898,3 +898,9 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .shop-row.sold { opacity: .45; } .shop-row .sold { color: var(--muted); font-weight: 800; }
 @media (max-height: 520px) { #scr-shop > .box { padding: 10px 12px; } .shop-row { padding: 5px 8px; } .shop-row .txt small { display: none; } }
 .shop-row button[disabled] { opacity: .4; pointer-events: none; }
+
+/* PK en la arena: movimiento elegido (pvp.js, 2026-10-15) */
+#scr-pkpick .card.pk-sel { border-color: var(--gold, #ffd23f); background: rgba(255, 210, 63, .14); }
+#scr-pkpick .card.pk-sel .key { color: #ffd23f; border-color: #ffd23f; }
+#scr-pkpick #pk-ok[disabled] { opacity: .5; pointer-events: none; }
+@media (max-height: 520px) { #scr-pkpick .card { padding-top: 4px; padding-bottom: 4px; } #scr-pkpick .card .ds { font-size: 12px; } }

@@ -95,7 +95,7 @@ G.SettingsUI = (() => {
         + section('En PC')
         + `<div class="keys">
              <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> o flechas</div><span>moverse</span>
-             <div><kbd>1</kbd>–<kbd>4</kbd> o clic en el icono</div><span>elegir ataque</span>
+             <div><kbd>1</kbd>–<kbd>5</kbd> o clic en el icono</div><span>elegir ataque</span>
              <div><kbd>Q</kbd> / <kbd>E</kbd></div><span>ataque anterior / siguiente</span>
              <div><kbd>Esc</kbd> o <kbd>P</kbd></div><span>pausa</span>
              <div><kbd>1</kbd>–<kbd>3</kbd></div><span>elegir carta al subir de nivel</span>

@@ -9,6 +9,8 @@
  */
 G.Touch = (() => {
   let cv = null, stick = null;
+  // PK (2026-10-15): el pulgar derecho apunta (mitad derecha de la pantalla), el izquierdo mueve.
+  let aim = null;
   let active = G.Settings.touch;      // ¿se está usando táctil?
   let buttons = [];
 
@@ -62,21 +64,40 @@ G.Touch = (() => {
     if (touchy && !active) { active = true; document.body.classList.add('touch'); }
     const b = hit(e.clientX, e.clientY);
     if (b) { e.preventDefault(); press(b); return; }
-    if (!touchy || stick || !G.Game || G.Game.state !== 'playing') return;
+    if (!touchy || !G.Game || G.Game.state !== 'playing') return;
+    if (G.PvP && G.PvP.aiming && e.clientX > innerWidth / 2 && !aim) {
+      e.preventDefault();
+      aim = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY };
+      try { cv.setPointerCapture(e.pointerId); } catch (err) { /* nada */ }
+      return;
+    }
+    if (stick) return;
     e.preventDefault();
     stick = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY };
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* nada */ }
   }
 
   function move(e) {
+    if (aim && e.pointerId === aim.id) {
+      aim.x = e.clientX; aim.y = e.clientY;
+      const dx = aim.x - aim.ox, dy = aim.y - aim.oy, d = Math.hypot(dx, dy), r = R();
+      if (d > r) { aim.ox = aim.x - dx / d * r; aim.oy = aim.y - dy / d * r; }
+      return;
+    }
     if (!stick || e.pointerId !== stick.id) return;
     stick.x = e.clientX; stick.y = e.clientY;
     const dx = stick.x - stick.ox, dy = stick.y - stick.oy, d = Math.hypot(dx, dy), r = R();
     if (d > r) { stick.ox = stick.x - dx / d * r; stick.oy = stick.y - dy / d * r; }
   }
 
-  function up(e) { if (stick && e.pointerId === stick.id) stick = null; }
-  function reset() { stick = null; }
+  function up(e) { if (stick && e.pointerId === stick.id) stick = null; if (aim && e.pointerId === aim.id) aim = null; }
+  function reset() { stick = null; aim = null; }
+  /** PK: dirección del pulgar que apunta, o null. */
+  function aimVector() {
+    if (!aim) return null;
+    const dx = aim.x - aim.ox, dy = aim.y - aim.oy;
+    return Math.hypot(dx, dy) < 10 ? null : [dx, dy];
+  }
 
   /** Dirección del joystick (con fuerza 0..1), o null si no se usa. */
   function vector() {
@@ -111,7 +132,11 @@ G.Touch = (() => {
 
   /** Dibuja el joystick (coordenadas de pantalla, CSS px). */
   function draw(ctx) {
+    if (aim) drawStick(ctx, aim, '#ff5f6d', '#8a1a22');
     if (!stick) return;
+    drawStick(ctx, stick, '#ffd23f', '#a55f00');
+  }
+  function drawStick(ctx, stick, knob, edge) {
     const r = R();
     const dx = stick.x - stick.ox, dy = stick.y - stick.oy, d = Math.hypot(dx, dy);
     const kx = stick.ox + (d > r ? dx / d * r : dx), ky = stick.oy + (d > r ? dy / d * r : dy);
@@ -122,12 +147,12 @@ G.Touch = (() => {
     ctx.lineWidth = 3; ctx.strokeStyle = '#f4f8ff';
     ctx.stroke();
     ctx.globalAlpha = 0.85;
-    ctx.fillStyle = '#ffd23f';
+    ctx.fillStyle = knob;
     ctx.beginPath(); ctx.arc(kx, ky, r * 0.42, 0, 6.2832); ctx.fill();
-    ctx.lineWidth = 3; ctx.strokeStyle = '#a55f00'; ctx.stroke();
+    ctx.lineWidth = 3; ctx.strokeStyle = edge; ctx.stroke();
     ctx.restore();
   }
 
-  return { init, vector, draw, clearButtons, addButton, reset, safeArea,
+  return { init, vector, aimVector, draw, clearButtons, addButton, reset, safeArea,
            get active() { return active; }, get stick() { return stick; } };
 })();

@@ -188,7 +188,7 @@ G.I18n.add({
   'Grieta · {x} m · {x} s': 'Rift · {x} m · {x} s', 'DERROTADOS ·': 'DEFEATED ·', 'MONEDAS': 'COINS',
   '{x} · {x} DERROTADOS · {x} MONEDAS': '{x} · {x} DEFEATED · {x} COINS',
   'Arrastra el dedo para moverte · toca un ataque para cambiarlo': 'Drag your finger to move · tap a move to switch',
-  'WASD moverse · 1-4 / Q / E o clic en un ataque para cambiarlo · Esc pausa': 'WASD move · 1-4 / Q / E or click a move to switch · Esc pause',
+  'WASD moverse · 1-5 / Q / E o clic en un ataque para cambiarlo · Esc pausa': 'WASD move · 1-5 / Q / E or click a move to switch · Esc pause',
   'El anfitrión ha terminado la partida': 'The host has ended the game', 'Se ha perdido la conexión con el anfitrión.': 'Lost connection to the host.',
 
   // ---------------- pausa y fin ----------------
@@ -527,8 +527,8 @@ G.I18n.add({
   'Ahora mismo no se pueden crear cuentas nuevas. Si ya tienes cuenta, entra normal; si no, puedes jugar como invitado.':
     'New accounts cannot be created right now. If you already have an account, sign in as usual; otherwise, you can play as a guest.',
   'Atajos de movimientos': 'Move shortcuts', 'Libre': 'Free',
-  'Elige qué movimiento va siempre en cada hueco (teclas 1-4 o los iconos de abajo), para la memoria muscular. Si aún no tienes tantos movimientos, va al hueco más cercano.':
-    'Choose which move always goes in each slot (keys 1-4 or the icons at the bottom), for muscle memory. If you do not have that many moves yet, it goes to the closest slot.',
+  'Elige qué movimiento va siempre en cada hueco (teclas 1-5 o los iconos de abajo), para la memoria muscular. Si aún no tienes tantos movimientos, va al hueco más cercano.':
+    'Choose which move always goes in each slot (keys 1-5 or the icons at the bottom), for muscle memory. If you do not have that many moves yet, it goes to the closest slot.',
   'Golpe Crítico': 'Critical Hit', '+3% de críticos (x1,5 de daño)': '+3% critical chance (x1.5 damage)',
   'Cambio de cartas': 'Card reroll', '+1 cambio de cartas de nivel por run': '+1 level-up card reroll per run',
   'Veto': 'Ban', 'Bloquea 1 movimiento: no te sale en las cartas': 'Ban 1 move: it never shows up in your cards',
@@ -727,7 +727,7 @@ G.I18n.add({
   '¡Corre!': 'Run!',
   '¡Gracias!': 'Thanks!',
   '¡Vamos!': 'Let\'s go!',
-  'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa  ·  T mensajes': 'WASD move · 1-4 / Q / E or click a move to switch · Esc pause · T messages',
+  'WASD moverse  ·  1-5 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa  ·  T mensajes': 'WASD move · 1-5 / Q / E or click a move to switch · Esc pause · T messages',
   'Derribos': 'Kills',
   'Daño': 'Damage',
   'Levantados': 'Revives',
@@ -1162,4 +1162,21 @@ G.I18n.add({
   'Ya no quedan tiradas en esta ruleta': 'No spins left on this roulette',
   'Legal y privacidad': 'Legal & privacy',
   'Qué datos guardamos, cómo borrar tu cuenta y las condiciones de uso.': 'What data we keep, how to delete your account and the terms of use.',
+  '¡PK en la arena! Elige tus movimientos: tenéis 15 s…': 'Arena PvP! Pick your moves: 15 s to get ready…',
+  '{x} ha tumbado a {x}': '{x} knocked out {x}',
+  '¡K.O.!': 'K.O.!',
+  'Elige {x} de {x} · quedan {x} s': 'Pick {x} of {x} · {x} s left',
+  '¡A luchar! ({x}/{x})': 'Fight! ({x}/{x})',
+  'Cambiar opciones ({x})': 'Reroll ({x})',
+  '¡Listo! Cambia de movimiento con 1-3 (o tocando su icono)': 'Ready! Switch moves with 1-3 (or tap their icon)',
+  '¡Estás fuera de la zona! Vuelve al centro': 'You are outside the zone! Get back to the center',
+  'La zona se cierra en {x} s': 'The zone starts closing in {x} s',
+  'La zona se está cerrando…': 'The zone is closing…',
+  'Mapa': 'Map',
+  'Arena': 'Arena',
+  'Campo abierto': 'Open field',
+  'Sin Pokémon salvajes ni jefes: cada uno elige 3 de 5 movimientos y la zona se va cerrando.': 'No wild Pokémon or bosses: everyone picks 3 of 5 moves and the zone keeps closing.',
+  'Con Pokémon salvajes para subir de nivel mientras os buscáis.': 'With wild Pokémon to level up while you hunt each other.',
+  'Elige tus movimientos': 'Pick your moves',
+  'Cambiar opciones': 'Reroll',
 }, 'en');
