@@ -66,7 +66,10 @@ G.Loot = (() => {
   /** ¿Es de este jugador? (sólo él lo ve y lo coge) */
   const isMine = (p, pl) => p.value === ownerKey(pl);
   /** ¿Puede cogerlo este jugador? (el suyo y, los cofres, como mucho 2 por run) */
-  function canTake(p, pl) { return isMine(p, pl) && (p.kind !== 'sbox' || (pl.sboxes || 0) < BOX_MAX); }
+  function canTake(p, pl) {
+    return isMine(p, pl) && (p.kind !== 'sbox' || (pl.sboxes || 0) < BOX_MAX)
+      && (p.kind !== 'egg' || (!pl.egg && !pl.buddy && !(pl.net && pl.net.bd)));   // huevo: uno, si aún no tienes compañero
+  }
   /** ¿Se dibuja aquí? Sólo los tuyos (y un cofre que ya no puedes abrir, tampoco). */
   function visible(p) { const pl = G.Game.player; return !!pl && canTake(p, pl); }
 

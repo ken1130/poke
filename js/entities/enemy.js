@@ -93,6 +93,51 @@
       G.Sprites.preload([this.dex], 4000, true);
     }
 
+    /**
+     * Enemigo de élite (spawner.js, 2026-10-15): ×4 de vida y de experiencia, algo más de
+     * daño, un 25 % más grande y un afijo: fast (rápido), shield (escudo que se recarga),
+     * split (al caer se parte en 3) o blink (se teletransporta junto a ti).
+     * `copy`: copia de un invitado (sólo el aspecto; la vida ya viene multiplicada).
+     */
+    makeElite(affix, copy = false) {
+      if (!Enemy.ELITE[affix]) return;
+      this.elite = affix;
+      this.scale = 1.25;
+      this.anim = new G.Sprites.Animator(this.dex, this.scale, this.shiny);
+      this.r = G.Sprites.bodyRadius(this.dex, this.scale);
+      this.bodyH = G.Sprites.bodyHeight(this.dex, this.scale);
+      if (copy) return;
+      this.maxHp *= 4; this.hp = this.maxHp;
+      this.dmg *= 1.3; this.xp *= 4;
+      if (affix === 'fast') this.spd *= 1.5;
+      this.eliteT = affix === 'blink' ? 4 : affix === 'shield' ? 0.5 : 0;
+    }
+
+    /** Lo de cada afijo de élite (sólo en quien manda sobre el enemigo). */
+    eliteTick(dt, pl) {
+      if (!this.elite || this.remote || this.dead) return;
+      if (this.elite === 'shield') {
+        if ((this.eliteT -= dt) <= 0) {
+          this.eliteT = 6;
+          this.shield = Math.max(this.shield, this.maxHp * 0.3); this.shieldT = 5;
+          G.FX.ring(this.x, this.y, this.r, this.r * 2.6, '#9fd8ff', 0.4, 3);
+        }
+      } else if (this.elite === 'blink' && pl && !pl.dead) {
+        if ((this.eliteT -= dt) <= 0) {
+          this.eliteT = 4;
+          for (let k = 0; k < 8; k++) {
+            const a = Math.random() * 6.2832, x = pl.x + Math.cos(a) * 80, y = pl.y + Math.sin(a) * 80;
+            if (!G.World.isFree(x, y, this.r * 0.6, this.flying)) continue;
+            G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#c47bff', 14, 160);
+            this.x = x; this.y = y; this.kx = 0; this.ky = 0;
+            G.FX.burst(x, y - this.bodyH * 0.5, '#c47bff', 14, 160);
+            G.FX.ring(x, y, 4, 40, '#c47bff', 0.35, 3);
+            break;
+          }
+        }
+      }
+    }
+
     /** Hora dorada (events.js): doble de experiencia y a veces monedas. */
     makeGolden() {
       if (this.golden || this.boss || this.behavior === 'thief') return;
@@ -186,6 +231,27 @@
         return;
       }
       if (this.noLoot) return;          // jefe de incursión que se ha ido
+      if (this.elite) {
+        // Élite: dos orbes grandes de experiencia y a veces un objeto; el "split" se parte en 3.
+        for (let i = 0; i < 2; i++) G.Pickups.drop('xpBig', this.x + G.U.rand(-20, 20), this.y + G.U.rand(-14, 14), Math.ceil(this.xp / 4));
+        if (Math.random() < 0.4) G.Pickups.drop('item', this.x + 18, this.y - 8, G.Items.roll());
+        if (this.elite === 'split') {
+          const base = this.maxHp / 4, def = this.def, x0 = this.x, y0 = this.y;
+          const sc = { hp: base * 0.75 / Math.max(1, def.hp), dmg: this.dmg / 1.3 / Math.max(0.01, def.dmg), spd: 1 };
+          // Al fotograma siguiente (no se toca la lista de enemigos mientras se recorre).
+          setTimeout(() => {
+            if (!G.Game.player) return;
+            for (let i = 0; i < 3; i++) {
+              const a = i * 2.094 + Math.random() * 0.5, x = x0 + Math.cos(a) * 30, y = y0 + Math.sin(a) * 24;
+              if (!G.World.isFree(x, y, 10)) continue;
+              const e = new Enemy(def, x, y, sc);
+              e.xp = Math.max(1, Math.round(e.xp * 0.5));
+              G.EnemyMgr.add(e);
+              G.FX.burst(x, y - 10, '#5fe08a', 6, 100);
+            }
+          }, 0);
+        }
+      }
       if (this.boss) {
         G.Camera.kick(0.9);
         for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-40, 40), this.y + G.U.rand(-30, 30), 5);
@@ -281,6 +347,7 @@
         if (this.poisonT <= 0) this.poison = 0;
       }
       if (this.dead) return;
+      this.eliteTick(dt, pl);
 
       // --- terreno ---
       let terrainMul = 1;
@@ -811,6 +878,17 @@
       if (alpha <= 0) return;
 
       const gold = this.golden || this.behavior === 'thief' || (this.remote && !this.boss && G.Events.golden);
+      // Élite: aro de su color latiendo bajo los pies.
+      if (this.elite && !this.dead) {
+        const E = Enemy.ELITE[this.elite];
+        ctx.save();
+        ctx.globalAlpha = 0.3 + Math.sin(this.bob * 0.8) * 0.12;
+        ctx.fillStyle = E.color;
+        ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.9, this.r * 0.75, 0, 0, 6.2832); ctx.fill();
+        ctx.globalAlpha = 0.85; ctx.strokeStyle = E.color; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 2.2, this.r * 0.9, 0, 0, 6.2832); ctx.stroke();
+        ctx.restore();
+      }
       if ((this.boss || this.shiny || gold) && !this.dead) {
         ctx.save();
         ctx.globalAlpha = (gold && !this.boss ? 0.32 : 0.22) + Math.sin(this.bob * 0.5) * 0.06;
@@ -849,6 +927,20 @@
         ctx.restore();
       }
 
+      // Élite: "Élite · afijo" encima, en su color.
+      if (this.elite) {
+        const E = Enemy.ELITE[this.elite];
+        const txt = G.T('Élite') + ' · ' + G.T(E.name);
+        ctx.save();
+        ctx.font = '800 10px Pixelify,"Segoe UI",system-ui,sans-serif';
+        ctx.textAlign = 'center';
+        const sup = this.behavior === 'healer' || this.behavior === 'shielder' || this.behavior === 'summoner';
+        const ly = this.y - this.bodyH - (this.hp < this.maxHp ? 16 : 8) - (sup ? 14 : 0);
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(txt, this.x, ly);
+        ctx.fillStyle = E.color; ctx.fillText(txt, this.x, ly);
+        ctx.restore();
+      }
+
       // Apoyos: icono encima, para saber a quién ir primero.
       const SUP = { healer: 'heart', shielder: 'shield', summoner: 'friends' };
       if (SUP[this.behavior]) G.Icons.draw(ctx, SUP[this.behavior], Math.round(this.x - 6), Math.round(this.y - this.bodyH - (this.hp < this.maxHp ? 26 : 18)), 12);
@@ -865,6 +957,14 @@
   }
 
   // ---------------- gestor ----------------
+
+  /** Afijos de élite: nombre (en español, se traduce) y color. */
+  Enemy.ELITE = {
+    fast:   { name: 'Veloz', color: '#7fe0ff' },
+    shield: { name: 'Escudo', color: '#9fd8ff' },
+    split:  { name: 'Divisor', color: '#5fe08a' },
+    blink:  { name: 'Teletransporte', color: '#c47bff' }
+  };
 
   G.Enemy = Enemy;
 
@@ -893,6 +993,7 @@
       e.id = o.id;
       e.remote = true;
       if (o.shiny) e.makeShiny();
+      if (o.elite) e.makeElite(o.elite, true);
       e.maxHp = o.hp; e.hp = o.hp;
       e.net = { x: o.x, y: o.y, vx: 0, vy: 0, age: 0, dir: 0, anim: 0, st: 0 };
       list.push(e);

@@ -24,10 +24,11 @@ G.Pickups = (() => {
     item:     { color: '#ffd23f', glow: '#c08a10', r: 9 },      // value = id del objeto
     token:    { color: '#ffd23f', glow: '#ffb000', r: 10 },     // baya dorada (aventura)
     sbox:     { color: '#ffd23f', glow: '#ffb000', r: 12 },     // disco de movimientos (loot.js)
-    potion:   { color: '#ff7ad9', glow: '#b03d9a', r: 9 }       // poción de efecto al azar (loot.js)
+    potion:   { color: '#ff7ad9', glow: '#b03d9a', r: 9 },      // poción de efecto al azar (loot.js)
+    egg:      { color: '#fff3c8', glow: '#ffd23f', r: 10 }      // huevo Pokémon (companion.js)
   };
   // Se quedan quietos donde salen (ni el imán los mueve): hay que ir a por ellos.
-  const STAY = { sbox: true, potion: true };
+  const STAY = { sbox: true, potion: true, egg: true };
   /** Probabilidad de que un Pokémon normal suelte un ticket del gacha. */
   const BOSS_T10 = 1 / 3;               // ticket ×10 de un jefe normal
   const LEGEND_T10 = 1 / 2;             // ticket ×10 del legendario de la grieta
@@ -180,6 +181,7 @@ G.Pickups = (() => {
 
       ctx.globalAlpha = 1;
       if (p.kind === 'sbox' || p.kind === 'potion') { drawLoot(ctx, p, y); continue; }
+      if (p.kind === 'egg') { drawEgg(ctx, p, y); continue; }
       ctx.fillStyle = k.color;
       if (p.kind === 'xp' || p.kind === 'xpBig') {
         ctx.beginPath();
@@ -231,6 +233,32 @@ G.Pickups = (() => {
     ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.stroke();
     ctx.fillStyle = '#5a6a88'; ctx.beginPath(); ctx.arc(x, y, r * 0.38, 0, 6.2832); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#0a1020'; ctx.beginPath(); ctx.arc(x, y, r * 0.16, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  /** Huevo Pokémon (pixel art de tiles.js): se mece, brilla y lleva su cartel. */
+  function drawEgg(ctx, p, y) {
+    const beat = Math.sin(p.t * 1.5);
+    ctx.save();
+    ctx.globalAlpha = 0.3 + beat * 0.12;
+    ctx.fillStyle = '#ffe9a0';
+    ctx.beginPath(); ctx.arc(p.x, y, 22, 0, 6.2832); ctx.fill();
+    ctx.globalAlpha = 1;
+    if (Math.random() < 0.06) G.FX.twinkle(p.x + G.U.rand(-16, 16), y - G.U.rand(0, 26));
+    const img = G.Tiles.propSprite(G.World.biome, 'egg', 0);
+    const k = 2, w = img.width * k, h = img.height * k;
+    ctx.imageSmoothingEnabled = false;
+    ctx.translate(p.x, y + h / 2 - 4);
+    ctx.rotate(Math.sin(p.t * 2.2) * 0.12);                 // se mece: ¡va a nacer algo!
+    ctx.drawImage(img, Math.round(-w / 2), -h, w, h);
+    ctx.restore();
+    ctx.save();
+    ctx.font = '800 11px Pixelify,"Segoe UI",system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+    const lbl = G.T('HUEVO POKÉMON');
+    ctx.strokeText(lbl, p.x, y - 30 - Math.abs(beat) * 3);
+    ctx.fillStyle = '#fff3c8'; ctx.fillText(lbl, p.x, y - 30 - Math.abs(beat) * 3);
     ctx.restore();
   }
 

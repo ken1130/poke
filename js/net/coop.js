@@ -142,12 +142,12 @@ G.Coop = (() => {
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
             r2(local.reviveT || 0), r1(local.dmgDealt || 0), local.dex, api.choosing && api.choosing() ? 1 : api.paused && api.paused() ? 2 : 0,
-            clock(), local.sizeK && local.sizeK !== 1 ? local.sizeK : 0];
+            clock(), local.sizeK && local.sizeK !== 1 ? local.sizeK : 0, ...G.Companion.state(local)];
   }
 
   function readState(a) {
     return { x: a[0], y: a[1], ang: a[2], walk: a[3], hp: a[4], maxHp: a[5], dead: a[6], mv: a[7], ml: a[8],
-             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0, dex: a[14] || 0, ch: a[15] || 0, t: a[16] || 0, sz: a[17] || 0 };
+             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0, dex: a[14] || 0, ch: a[15] || 0, t: a[16] || 0, sz: a[17] || 0, bd: a[18] || 0, bs: a[19] || 0 };
   }
 
   // ---------------- envío ----------------
@@ -358,7 +358,7 @@ G.Coop = (() => {
   function applyHostEvent(ev) {
     switch (ev[0]) {
       case 'ne':
-        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], raid: ev[5] === 2, shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9] });
+        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], raid: ev[5] === 2, shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9], elite: ev[10] || null });
         break;
       case 'ed': G.EnemyMgr.removeRemote(ev[1], true); break;
       case 'eg': G.EnemyMgr.removeRemote(ev[1], false); break;
@@ -370,6 +370,7 @@ G.Coop = (() => {
       case 'c': { const m = mates.get(ev[1]); if (m) G.Combat.ghostCast(m.pl, ev[2], ev[3], ev[4], ev[5]); break; }
       case 'item': api.item(ev[1]); break;
       case 'sbox': api.sbox && api.sbox(); break;
+      case 'egg': G.Companion.gotEgg(local); break;
       case 'potion': api.potion && api.potion(ev[1]); break;
       case 'pk': G.Pickups.addRemote(ev[1], ev[2], ev[3], ev[4], ev[5]); break;
       case 'pc': G.Pickups.removeId(ev[1]); break;
@@ -418,7 +419,7 @@ G.Coop = (() => {
   // anfitrión
   function hurtShown(e, d, color) { emitNear(['hn', e.id, d, color], e.x, e.y, hitFrom); }
   function enemyAdded(e) {
-    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? (e.raid ? 2 : 1) : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior]);
+    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? (e.raid ? 2 : 1) : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior, e.elite || 0]);
   }
   function enemyGone(e, died) { emit([died ? 'ed' : 'eg', e.id]); }
   function enemyShot(p, type) { emit(['es', r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r2(p.dmg), p.r, p.life, type]); }
@@ -441,9 +442,9 @@ G.Coop = (() => {
       if (m) m.q.push(p.kind === 'heal' ? ['heal', 0.3] : ['item', p.value]);
     }
     // Cofre de movimientos y poción (loot.js): al que lo ha cogido.
-    if ((p.kind === 'sbox' || p.kind === 'potion') && who !== local) {
+    if ((p.kind === 'sbox' || p.kind === 'potion' || p.kind === 'egg') && who !== local) {
       const m = mates.get(who.uid);
-      if (m) m.q.push(p.kind === 'sbox' ? ['sbox'] : ['potion', p.eff]);
+      if (m) m.q.push(p.kind === 'sbox' ? ['sbox'] : p.kind === 'egg' ? ['egg'] : ['potion', p.eff]);
     }
     if (p.kind === 'potion' && p.eff === 'magnet') emit(['mag']);
   }
