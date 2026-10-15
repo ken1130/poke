@@ -1212,6 +1212,10 @@ G.Combat = (() => {
     return qx * qx + qy * qy;
   }
 
+  // Tus disparos atraviesan los cofres (2026-10-15: "el cofre tapa los ataques"; el grande con
+  // candado no se rompe y se tragaba todo). Al pequeño se le sigue haciendo daño al pasar.
+  // Andando siguen siendo sólidos, y los disparos enemigos siguen chocando (sirven de cobertura).
+  const SHOOT_THROUGH = new Set(['chest', 'bigchest']);
   function resolve(dt, pl, now) {
     const projectiles = G.Projectiles.all();
 
@@ -1244,7 +1248,7 @@ G.Combat = (() => {
       }
       if (!p.orb) {
         const block = G.World.projectileBlock(p.x, p.y, p.r);
-        if (block === 'wall' || (block && !block.destructible)) {
+        if (block === 'wall' || (block && !block.destructible && !SHOOT_THROUGH.has(block.type))) {
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 5, 80);
           projectiles.splice(i, 1);
           continue;
@@ -1264,8 +1268,8 @@ G.Combat = (() => {
         if (p.phits.has(prop.id)) continue;
         p.phits.add(prop.id);
         if (!p.ghost) G.World.damageProp(prop, p.dmg, p.color);
-        // La hierba no frena; lo sólido sí gasta perforación.
-        if (prop.solid) {
+        // La hierba no frena; lo sólido sí gasta perforación (los cofres, no: ver SHOOT_THROUGH).
+        if (prop.solid && !SHOOT_THROUGH.has(prop.type)) {
           if (p.pierce > 0) p.pierce--;
           else { consumed = true; break; }
         }
