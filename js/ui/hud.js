@@ -175,7 +175,7 @@ G.HUD = (() => {
     ctx.fillText(G.U.mmss(st.time), w / 2, 42);
     ctx.font = F(600, 10);
     ctx.fillStyle = '#8fa3c4';
-    ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 58);
+    ctx.fillText((G.Dungeon.roomName ? G.T(G.Dungeon.roomName) : G.World.biomeName()).toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 58);
 
     // ---------- clima (arriba a la derecha) ----------
     const wx = G.Weather.current;
@@ -836,7 +836,8 @@ G.HUD = (() => {
       }
       return [cx + dx, cy + dy];
     };
-    const icon = (name, x, y, edge, arg) => { const q = at(x, y, edge); if (q) MM_ICON[name](ctx, q[0], q[1], arg); };
+    const inside = G.Dungeon.inRoom;              // tienda / sala: sólo lo de dentro (nada en el borde)
+    const icon = (name, x, y, edge, arg) => { const q = at(x, y, edge && !inside); if (q) MM_ICON[name](ctx, q[0], q[1], arg); };
     const blink = Math.sin(now * 6) > 0;
     for (const p of mmProps) icon(MM_ICON[p.type] ? p.type : 'chest', p.x, p.y, false);
     for (const p of G.Pickups.all()) {
@@ -848,6 +849,8 @@ G.HUD = (() => {
     }
     const rift = G.Rift.rift;
     if (rift) icon('rift', rift.x, rift.y, true, blink);
+    const door = G.Dungeon.roomDoor;
+    if (door) icon('shop', door.x, door.y, false);
     for (const s of G.Dungeon.sites) icon(s.type, s.x, s.y, true, blink);
     if (G.Floors.stairs) icon('stairs', G.Floors.stairs.x, G.Floors.stairs.y, true);
     for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) icon('boss', e.x, e.y, true);
@@ -880,6 +883,8 @@ G.HUD = (() => {
     };
     const add = (o, name, col, ic) => { if (o) rows.push({ o, name, col, ic, d: G.U.dist(o.x, o.y, pl.x, pl.y) }); };
     const pk = G.Pickups.all();
+    // Dentro de la tienda o de una sala: la salida (y sólo lo que haya dentro).
+    if (G.Dungeon.roomDoor) add(G.Dungeon.roomDoor, 'Salida', '#7dffb0', 'shop');
     add(near(pk, p => (p.kind === 'sbox' || p.kind === 'fbox') && G.Loot.visible(p)), 'DISCO DE MOVIMIENTOS', '#7fe0ff', 'sbox');
     add(near(pk, p => p.kind === 'potion' && G.Loot.visible(p)), 'Poción', '#ff7ad9', 'potion');
     add(near(pk, p => p.kind === 'egg' && G.Loot.visible(p)), 'Huevo', '#fff3c8', 'egg');
@@ -902,6 +907,7 @@ G.HUD = (() => {
     ctx.textAlign = 'right';
     // Lo más importante primero (caben 6).
     const PRI = ['sbox', 'egg', 'stairs', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'elite', 'item', 'bigchest', 'altar', 'spring'];
+    if (G.Dungeon.roomDoor) for (let i = rows.length - 1; i >= 0; i--) if (rows[i].d > 700) rows.splice(i, 1);
     rows.sort((a, b) => PRI.indexOf(a.ic) - PRI.indexOf(b.ic));
     rows.slice(0, max).forEach((r, k) => {
       const a = Math.atan2(r.o.y - pl.y, r.o.x - pl.x);

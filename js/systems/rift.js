@@ -37,6 +37,7 @@ G.Rift = (() => {
   // ---------------- grieta en el mapa ----------------
 
   function update(dt, pl, time) {
+    if ((G.Dungeon && G.Dungeon.inRoom)) return;              // dentro de la tienda o de una sala (dungeon.js)
     if (rush()) {
       // La siguiente arena, un momento después de volver (y de elegir el vínculo).
       // En grupo, sólo el anfitrión abre la arena (y avisa a los demás).

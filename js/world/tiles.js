@@ -781,6 +781,86 @@ G.Tiles = (() => {
       return P.canvas();
     },
 
+    // ---------- interiores (2026-10-15): tienda de Kecleon y sala misteriosa ----------
+
+    /** Entrada de la tienda en el mapa: puesto con toldo de rayas verdes y doradas y una puerta. */
+    shopdoor() {
+      const P = Pix(44, 40);
+      const g = pack('#2f8a5a'), gL = pack('#46a872'), y = pack('#f2c443'), yD = pack('#b5832a');
+      const wood = pack('#8e5329'), woodL = pack('#b06a35'), woodD = pack('#5a3018'), dark = pack('#1a1008'), sign = pack('#e8d8b0');
+      // Paredes de madera.
+      for (let j = 14; j < 39; j++) for (let i = 4; i < 40; i++) P.set(i, j, (i % 6 === 0) ? woodD : (j % 5 === 0 ? woodL : wood));
+      // Toldo de rayas con borde ondulado.
+      for (let j = 4; j < 15; j++) for (let i = 1; i < 43; i++) {
+        const stripe = Math.floor((i + (14 - j) * 0.4) / 5) % 2 ? g : y;
+        P.set(i, j, j === 4 ? (stripe === g ? gL : yD) : stripe);
+      }
+      for (let i = 1; i < 43; i++) if (i % 4 < 2) P.set(i, 15, Math.floor(i / 5) % 2 ? g : y);
+      // Puerta oscura con marco.
+      for (let j = 22; j < 39; j++) for (let i = 17; i < 27; i++) P.set(i, j, (i === 17 || i === 26 || j === 22) ? woodD : dark);
+      // Cartel con una moneda.
+      for (let j = 17; j < 21; j++) for (let i = 8; i < 15; i++) P.set(i, j, sign);
+      for (let j = 17; j < 21; j++) for (let i = 30; i < 37; i++) P.set(i, j, sign);
+      disc(P, 11.5, 19, 1.4, () => y); disc(P, 33.5, 19, 1.4, () => g);
+      // Banderín en lo alto.
+      for (let j = 0; j < 5; j++) P.set(22, j, woodD);
+      for (let j = 0; j < 3; j++) for (let i = 23; i < 23 + 4 - j; i++) P.set(i, j, pack('#ff5f6d'));
+      outline(P, pack('#140c06'));
+      return P.canvas();
+    },
+
+    /** Mostrador de la tienda (madera con tapa dorada). */
+    counter() {
+      const P = Pix(70, 16);
+      const top = pack('#f2c443'), topD = pack('#b5832a'), wood = pack('#8e5329'), woodL = pack('#b06a35'), woodD = pack('#5a3018');
+      for (let j = 0; j < 16; j++) for (let i = 0; i < 70; i++) {
+        let c = j < 3 ? (j === 0 ? top : topD) : (i % 10 === 0 ? woodD : (j % 4 === 0 ? woodL : wood));
+        if (j === 15) c = woodD;
+        P.set(i, j, c);
+      }
+      outline(P, pack('#140c06'));
+      return P.canvas();
+    },
+
+    /** Estantería con mercancía (pociones, cajas, bayas). variante = surtido 0..2. */
+    shelf(B, variant) {
+      const P = Pix(30, 30);
+      const wood = pack('#6b3a1e'), woodL = pack('#8e5329'), woodD = pack('#432210');
+      for (let j = 0; j < 30; j++) for (let i = 0; i < 30; i++) {
+        if (i < 2 || i > 27 || j < 2) { P.set(i, j, woodD); continue; }
+        P.set(i, j, (j % 9 === 0 || j % 9 === 1) ? woodL : pack('#2a1810'));
+      }
+      const goods = [['#ff5f6d', '#4fb4ff', '#5fe08a', '#ffd23f'], ['#c47bff', '#ff8ad8', '#ffd23f', '#7fe0ff'], ['#ff9a3d', '#5fe08a', '#ff5f6d', '#e8eef8']][variant % 3];
+      for (let row = 0; row < 3; row++) {
+        const by = 8 + row * 9;
+        for (let k = 0; k < 5; k++) {
+          const x = 4 + k * 5, col = pack(goods[(k + row) % 4]);
+          if ((k + row + variant) % 3 === 0) { disc(P, x + 1.5, by - 2, 1.8, () => col); P.set(x + 1, by - 5, pack('#e8eef8')); }
+          else for (let j = by - 4; j < by; j++) for (let i = x; i < x + 3; i++) P.set(i, j, col);
+        }
+      }
+      outline(P, pack('#140c06'));
+      return P.canvas();
+    },
+
+    /** Puerta de salida de un interior. variante 0 abierta (luz verde), 1 cerrada (barrotes y luz roja). */
+    door(B, variant) {
+      const P = Pix(24, 28);
+      const R = B.rock.map(h => pack(h));
+      const light = pack(variant ? '#ff5f6d' : '#7dffb0'), lightD = pack(variant ? '#a02030' : '#2f9a52');
+      for (let j = 0; j < 28; j++) for (let i = 0; i < 24; i++) {
+        const frame = i < 4 || i > 19 || j < 4;
+        if (frame) { P.set(i, j, R[(i + j) % 3 === 0 ? 2 : 1]); continue; }
+        P.set(i, j, j < 8 ? lightD : (j > 22 ? light : pack('#0c0a14')));
+      }
+      // Arco de piedra.
+      for (let i = 2; i < 22; i++) P.set(i, 1, R[2]);
+      if (variant) for (let i = 6; i < 19; i += 3) for (let j = 5; j < 28; j++) P.set(i, j, pack('#9aa6b5'));
+      else for (let i = 9; i < 15; i++) { P.set(i, 25, pack('#ffffff')); P.set(i - 1 + (i % 2), 24, pack('#c8ffd8')); }
+      outline(P, pack('#0c0812'));
+      return P.canvas();
+    },
+
     /** Trampa de Mundo Misterioso. variante: 0 veneno · 1 pegajosa · 2 explosiva. */
     trap(B, variant) {
       const P = Pix(14, 14);

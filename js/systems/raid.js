@@ -17,7 +17,7 @@ G.Raid = (() => {
 
   /** Anfitrión, cada fotograma. */
   function update(dt, time) {
-    if (!G.Coop.isHost || !G.Coop.active || G.Rift.inArena) return;
+    if (!G.Coop.isHost || !G.Coop.active || G.Rift.inArena || (G.Dungeon && G.Dungeon.inRoom)) return;
     // Un jefe en curso sigue hasta acabar aunque se vaya alguien (si no, se quedaba colgado).
     if (boss) {
       if (boss.dead) { win(); return; }

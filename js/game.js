@@ -799,7 +799,7 @@ G.Game = (() => {
     time += dt;
 
     const b = Math.floor(time / 240) + G.Floors.floor;      // cada piso, el bioma siguiente (floors.js)
-    if (b !== biome && !G.Rift.inArena && fixedScene == null) {
+    if (b !== biome && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom) && fixedScene == null) {
       biome = b;
       G.World.setBiome(b);
       G.Audio.sfx('biome');
