@@ -6,9 +6,9 @@ Normas fijas del dueño del proyecto. Se aplican SIEMPRE.
 - **一律用繁體中文回覆主人**：最後的總結、工作過程中的每一句說明、指令的說明文字，全部都要中文。不可以用英文或西班牙文回覆（程式碼與檔名照原樣即可）。
 
 ## 多人協作（主人＋peter，2026-10-15 起）
-推送前每次都要做，避免互相蓋掉（詳細步驟見 `docs/MOD-NOTES.md` 的發佈流程）：
+推送前每次都要做，避免互相蓋掉（詳細步驟見 `docs/dev/MOD-NOTES.md` 的發佈流程）：
 1. `git fetch origin`，看 `git log main..origin/main` 對方改了什麼，跟主人說。
-2. 先提交自己的改動，再 `git merge origin/main`。只用 merge，不 rebase、不 force push、不蓋掉對方的提交。
+2. 先提交自己的改動，再拉最新版本：`git pull origin main`（合併），或 `git rebase origin/main`（只重排自己還沒推的提交）。不 force push、不蓋掉對方的提交。
 3. 產生檔（`index.html`、`js/app.min.js`、`version.json`）衝突時不手動合併：取任一邊後重新跑下面第 2 步的建置。
 4. 不要自己覆蓋或還原對方的檔案；跟主人的決定衝突時，先問主人。
 5. 合併後測試沒有錯誤才推送。

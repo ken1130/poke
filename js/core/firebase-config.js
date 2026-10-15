@@ -1,7 +1,7 @@
 /* ============ firebase-config.js — conexión con tu proyecto de Firebase ============
  * Pega aquí la configuración de tu app web de Firebase (Consola de Firebase >
  * Configuración del proyecto > Tus apps > SDK setup and configuration > Config).
- * Los pasos completos están en docs/FIREBASE.md.
+ * Los pasos completos están en docs/deploy/FIREBASE.md.
  *
  * Estos datos NO son secretos: Firebase los diseña para ir en la web. Lo que
  * protege las partidas son las reglas de Firestore (firestore.rules).

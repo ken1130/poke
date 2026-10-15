@@ -18,7 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 RAW = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = os.path.join(ROOT, 'assets', 'pokemon')
-OUT = os.path.join(ROOT, 'CREDITS.md')
+OUT = os.path.join(ROOT, 'docs', 'legal', 'CREDITS.md')
 
 
 def fetch(url):

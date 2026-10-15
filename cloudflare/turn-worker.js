@@ -14,7 +14,7 @@
  *   TURN_KEY_ID         el "Turn Token ID" de Cloudflare Realtime -> TURN
  *   TURN_KEY_API_TOKEN  el "API Token" de esa misma clave
  * Dominio: turn.pokesurvivor.com (Settings -> Domains & Routes -> Custom domain).
- * Ver docs/TURN.md.
+ * Ver docs/deploy/TURN.md.
  *
  * /online — contador aproximado de gente jugando (sin coste: plan gratis de
  * Workers). Cada pestaña avisa al abrir y cada 20 min con un id de sesión; un

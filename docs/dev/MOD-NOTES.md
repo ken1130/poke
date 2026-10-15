@@ -29,7 +29,7 @@
 
 - **有協作者一起開發（2026-10-15 起，主人＋peter）**：推送前**每次**照下面做，避免互相蓋掉：
   1. `git fetch origin`，用 `git log main..origin/main`、`git diff --stat main...origin/main` 看對方改了什麼，告訴主人。
-  2. 先提交自己的改動（指定檔案，不加 .claude/），再 `git merge --no-edit origin/main`。**只用 merge**，不要 rebase、不要 force push、不要 reset 掉對方的提交。
+  2. 先提交自己的改動（指定檔案，不加 .claude/），再拉最新：`git merge --no-edit origin/main`（等於 pull），或 `git rebase origin/main`（只重排自己還沒推的提交；rebase 中有衝突同樣照第 3 點處理，`git rebase --continue`）。不要 force push、不要 reset 掉對方的提交。
   3. 衝突在產生檔（`index.html`、`js/app.min.js`、`version.json`）：不要手動合併，`git checkout --ours` 後用合併後的原始碼重跑 `node tools/build.js --sin-seo` 和 `node tools/export_data.js`。原始碼衝突：兩邊的意圖都保留。
   4. 不要自己覆蓋或還原對方的檔案；對方的改動如果跟主人的決定衝突，先拿給主人決定。
   5. 合併後跑一次無頭測試，沒錯誤才提交合併、推送。

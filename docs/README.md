@@ -32,8 +32,8 @@
 
 ## 授權與聲明
 
-- **原作程式碼**：MIT License，著作權屬原作者 JPTER78，授權條款見 [`LICENSE`](LICENSE)。本修改版保留原授權與著作權聲明。
-- **寶可夢精靈圖**：來自 [PMDCollab/SpriteCollab](https://github.com/PMDCollab/SpriteCollab)，採用 **CC BY-NC 4.0**（限非商業使用、須標示作者），各作者名單見 [`CREDITS.md`](CREDITS.md)。
+- **原作程式碼**：MIT License，著作權屬原作者 JPTER78，授權條款見 [`LICENSE`](../LICENSE)。本修改版保留原授權與著作權聲明。
+- **寶可夢精靈圖**：來自 [PMDCollab/SpriteCollab](https://github.com/PMDCollab/SpriteCollab)，採用 **CC BY-NC 4.0**（限非商業使用、須標示作者），各作者名單見 [`CREDITS.md`](legal/CREDITS.md)。
 - **字型**：Pixelify Sans，SIL Open Font License 1.1。
 - **寶可夢資料**：取自 [PokeAPI](https://pokeapi.co/)。
 - **商標**：Pokémon 及所有相關名稱、角色皆為 Nintendo、Creatures Inc.、GAME FREAK 與 The Pokémon Company 的商標與財產。本專案為非營利粉絲作品，與上述公司無任何關聯，亦未獲其授權或認可。
