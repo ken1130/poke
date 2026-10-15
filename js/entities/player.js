@@ -126,9 +126,16 @@ G.Player = class Player {
    */
   arrange() {
     const n = this.slots.length;
-    if (n < 2 || !this.bind) return;
-    const want = g => { let k = Infinity; for (const m of g) if (this.bind[m.id] != null) k = Math.min(k, this.bind[m.id]); return k; };
     const cur = this.slots[this.active];
+    // Pasivos y de apoyo, siempre a la derecha (2026-10-15: un ataque nuevo se ponía detrás de
+    // ellos). Los ataques, a la izquierda en su orden (o en su hueco fijo, abajo).
+    const isP = g => g.length > 0 && g.every(m => G.Moves.isPassive(m));
+    const passivesLast = () => {
+      this.slots = this.slots.filter(g => !isP(g)).concat(this.slots.filter(isP));
+      if (cur) this.active = this.slots.indexOf(cur);
+    };
+    if (n < 2 || !this.bind) { passivesLast(); return; }
+    const want = g => { let k = Infinity; for (const m of g) if (this.bind[m.id] != null) k = Math.min(k, this.bind[m.id]); return k; };
     const out = new Array(n).fill(null);
     const bound = this.slots.filter(g => want(g) < Infinity).sort((a, b) => want(a) - want(b));
     for (const g of bound) {
@@ -139,7 +146,7 @@ G.Player = class Player {
     }
     for (const g of this.slots) if (!out.includes(g)) out[out.indexOf(null)] = g;
     this.slots = out;
-    if (cur) this.active = out.indexOf(cur);
+    passivesLast();
   }
 
   hasMove(id) { return this.moves.some(m => m.id === id); }

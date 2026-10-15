@@ -112,6 +112,7 @@ G.MODNEWS = [
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
+      { zh: '修正：學到新的攻擊招式時會排在被動招式後面。現在攻擊招式一律在左邊，輔助和被動招式一律在最右邊（招式進化成被動時也會自動移過去）', en: 'Fixed: new attack moves were placed after passive ones. Attacks now always sit on the left and support/passive moves on the far right (also when a move evolves into a passive)' },
       { zh: '修正 PK：守住、無敵星星等防禦被破；攻擊者看到的傷害數字現在一定等於實際扣的血，被擋或閃掉會顯示「格擋／閃避」', en: 'PvP fixes: Protect, Star and other defenses now work; the damage numbers you see always match the real HP lost, and blocked or dodged hits say so' },
       { zh: '修正 PK：群體治療（祈願、生命水滴）會治到對手；噴射火焰等多發型招式大部分命中被吃掉；被安全區淘汰顯示「? 擊倒了」', en: 'PvP fixes: group heals (Wish, Life Dew) healed opponents; most pellets of multi-shot moves like Flamethrower were dropped; zone eliminations showed “? knocked out”' },
       { zh: '修正組隊：隊友的祈願、生命水滴從來沒治到房客（訊息代碼和閃光寶可夢撞在一起）', en: 'Co-op fix: teammates’ Wish and Life Dew never healed guests (the message code clashed with shiny catches)' },
