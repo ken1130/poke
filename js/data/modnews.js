@@ -33,6 +33,9 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '冒險模式的關卡比較短：技能光碟、寶可夢蛋、怪物屋、商店、雕像會依關卡長度平均出現，短關卡也拿得到', en: 'Adventure stages are shorter, so move discs, eggs, Monster Houses, shops and statues are now spread across each stage’s length' },
+      { zh: '美術統一：小地圖圖示、怪物屋邊界（符文石圈）、技能光碟光柱都改成像素風格', en: 'Art pass: minimap icons, the Monster House border (a ring of rune stones) and the move disc light beam are now pixel art' },
+      { zh: '手機橫向畫面：小地圖縮小、清單只列 3 項，不再擋到畫面', en: 'Phones in landscape: smaller minimap and a 3-item list so it no longer covers the screen' },
       { zh: '房間畫面重新排版：隊員放上面，組隊／PK、模式、場景、頭目和異色集中在「玩法設定」卡片，卡片變小不用一直往下捲', en: 'Room screen redesigned: players on top, and team/PK, mode, scene, boss and shiny grouped in a “How to play” card; smaller cards so you don’t have to scroll' },
       { zh: '關於頁精簡，移除外部連結與捐款按鈕', en: 'Simpler About screen; external links and donation buttons removed' },
       { zh: '升級選卡的重抽改成每場免費 15 次（強化商店買的另外加上去）', en: 'Level-up card rerolls: 15 free per run (plus the ones bought in Upgrades)' },
