@@ -222,7 +222,22 @@ G.Pickups = (() => {
     ctx.globalAlpha = 1;
     ctx.lineWidth = 2; ctx.strokeStyle = '#2a1a08';
     if (p.kind === 'sbox') {
-      // Cofre: caja marrón con tapa y cierre dorados.
+      // Columna de luz dorada hasta el cielo (se ve desde lejos) y destellos.
+      const g = ctx.createLinearGradient(0, y - 170, 0, y);
+      g.addColorStop(0, 'rgba(255,225,77,0)'); g.addColorStop(1, 'rgba(255,225,77,' + (0.45 + beat * 0.15).toFixed(2) + ')');
+      ctx.fillStyle = g;
+      ctx.fillRect(p.x - 11 - beat * 2, y - 170, 22 + beat * 4, 170);
+      if (Math.random() < 0.25) G.FX.twinkle(p.x + G.U.rand(-22, 22), y - G.U.rand(0, 60));
+      // Cartel encima.
+      ctx.font = '800 11px Pixelify,"Segoe UI",system-ui,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+      const lbl = G.T('COFRE DE MOVIMIENTOS');
+      ctx.strokeText(lbl, p.x, y - 30 - Math.abs(beat) * 3);
+      ctx.fillStyle = '#ffe14d'; ctx.fillText(lbl, p.x, y - 30 - Math.abs(beat) * 3);
+      ctx.lineWidth = 2; ctx.strokeStyle = '#2a1a08';
+      // Cofre: caja marrón con tapa y cierre dorados (más grande que los demás objetos).
+      ctx.translate(p.x, y); ctx.scale(1.35, 1.35); ctx.translate(-p.x, -y);
       ctx.fillStyle = '#9a5a22'; ctx.fillRect(p.x - 13, y - 6, 26, 15); ctx.strokeRect(p.x - 13, y - 6, 26, 15);
       ctx.fillStyle = '#c47a2c'; ctx.fillRect(p.x - 14, y - 13, 28, 8); ctx.strokeRect(p.x - 14, y - 13, 28, 8);
       ctx.fillStyle = '#ffd23f'; ctx.fillRect(p.x - 3, y - 8, 6, 8); ctx.strokeRect(p.x - 3, y - 8, 6, 8);

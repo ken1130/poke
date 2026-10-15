@@ -389,6 +389,34 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 
 /* ---------- cartas de nivel ---------- */
 .cards { display: flex; flex-direction: column; gap: 10px; width: min(560px, 100%); }
+/* Ventanas de cartas (nivel, cofre de movimientos, objeto): ancho fijo y cartas centradas.
+   Sin esto, una descripción larga ensanchaba la ventana y las cartas se quedaban a la izquierda. */
+#scr-levelup > .box, #scr-sbox > .box, #scr-item > .box { width: min(616px, 100%); }
+.box .cards { margin-left: auto; margin-right: auto; }
+
+/* ---------- cofre de movimientos: se abre y salen las cartas de una en una ---------- */
+#sbox-chest { display: flex; justify-content: center; align-items: center; height: 0; overflow: visible; transition: height .2s; }
+#sbox-chest.on { height: 76px; }
+#sbox-chest svg { image-rendering: pixelated; }
+#sbox-chest.shake svg { animation: sbshake .11s linear infinite; }
+#sbox-chest.open svg { animation: sbopen .4s ease-out forwards; }
+@keyframes sbshake { 0% { transform: none; } 25% { transform: translate(-3px, 1px) rotate(-7deg); } 50% { transform: translate(3px, -1px) rotate(5deg); } 75% { transform: translate(-2px, 0) rotate(-3deg); } 100% { transform: none; } }
+@keyframes sbopen { 0% { transform: scale(1); filter: brightness(1); } 45% { transform: scale(1.4); filter: brightness(2.6); } 100% { transform: scale(.85); filter: brightness(1.4); opacity: .25; } }
+#sbox-cards .card.reveal { animation: sbreveal .4s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes sbreveal { from { transform: scale(.35) rotateX(75deg); opacity: 0; } to { transform: none; opacity: 1; } }
+#scr-sbox .box.tier3 { box-shadow: 0 0 0 3px var(--edge-out), 0 0 30px 8px rgba(255, 210, 63, .8), 0 18px 50px rgba(0, 0, 0, .55); }
+#scr-sbox .box.tier4 { animation: sbrainbow 1.1s linear infinite; }
+@keyframes sbrainbow {
+  0%, 100% { box-shadow: 0 0 0 3px #ff5f6d, 0 0 34px 10px #ff5f6d; }
+  25% { box-shadow: 0 0 0 3px #ffd23f, 0 0 34px 10px #ffd23f; }
+  50% { box-shadow: 0 0 0 3px #5fe08a, 0 0 34px 10px #5fe08a; }
+  75% { box-shadow: 0 0 0 3px #4fb4ff, 0 0 34px 10px #4fb4ff; }
+}
+#sbox-banner { font-size: 28px; font-weight: 800; margin: 2px 0 8px; background: linear-gradient(90deg, #ff5f6d, #ffd23f, #5fe08a, #4fb4ff, #c47bff);
+  -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; animation: sbbanner .6s ease-in-out infinite alternate; }
+@keyframes sbbanner { from { transform: scale(1); } to { transform: scale(1.12); } }
+#sbox-sub.count { font-size: 20px; font-weight: 800; color: #ffd23f; }
+#scr-sbox button[disabled] { opacity: .45; pointer-events: none; }
 .card {
   display: flex; align-items: center; gap: 14px; text-align: left; cursor: pointer;
   background: rgba(0,0,0,.2); border: 2px solid rgba(244,248,255,.3); border-radius: 12px;

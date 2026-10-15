@@ -100,42 +100,96 @@ G.Loot = (() => {
     return out;
   }
 
-  /** Abre la ventana del cofre; `done` cuando se acepta. */
+  /** El cofre en pixel art (para la ventana). */
+  const CHEST_SVG = `<svg width="72" height="60" viewBox="0 0 36 30" shape-rendering="crispEdges">
+    <rect x="3" y="12" width="30" height="16" fill="#9a5a22" stroke="#2a1a08"/>
+    <rect x="2" y="5" width="32" height="9" fill="#c47a2c" stroke="#2a1a08"/>
+    <rect x="2" y="12" width="32" height="2" fill="#ffd23f"/>
+    <rect x="15" y="9" width="6" height="8" fill="#ffd23f" stroke="#2a1a08"/>
+    <rect x="5" y="7" width="4" height="2" fill="#ffe9a0"/></svg>`;
+
+  /**
+   * Abre la ventana del cofre; `done` cuando se acepta. Primero el cofre tiembla y se
+   * abre, y las mejoras salen de una en una (no se sabe cuántas hasta el final): con 3,
+   * brillo dorado; con 4, ¡premio gordo! (borde arcoíris y fiesta). Volver a tirar
+   * repite la animación, más corta.
+   */
   function showBox(pl, done) {
-    let list = rollBox(pl);
-    const render = () => {
-      $('sbox-sub').textContent = list.length === 1 ? G.T('¡1 mejora!') : G.I18n.f('¡{x} mejoras!', list.length);
-      const box = $('sbox-cards');
-      box.innerHTML = '';
-      list.forEach(c => {
-        const el = document.createElement('div');
-        el.className = 'card' + (c.type === 'evo' ? ' evo' : '');
-        const tag = c.type === 'new' ? 'Nuevo · ' + c.tag : c.tag;
-        el.innerHTML = `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 32)}</div>
-          <div class="txt"><div class="nm">${c.title} <span class="tag-chip" style="background:${c.color}">${tag}</span></div><div class="ds">${c.desc}</div></div>`;
-        box.appendChild(el);
+    let list = rollBox(pl), run = 0;
+    const boxEl = document.querySelector('#scr-sbox > .box');
+    const buttons = on => { $('sbox-ok').disabled = !on; $('sbox-reroll').disabled = !on; };
+    const card = c => {
+      const el = document.createElement('div');
+      el.className = 'card reveal' + (c.type === 'evo' ? ' evo' : '');
+      const tag = c.type === 'new' ? 'Nuevo · ' + c.tag : c.tag;
+      el.innerHTML = `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 32)}</div>
+        <div class="txt"><div class="nm">${c.title} <span class="tag-chip" style="background:${c.color}">${tag}</span></div><div class="ds">${c.desc}</div></div>`;
+      return el;
+    };
+    const play = quick => {
+      const me = ++run, n = list.length;
+      const later = (ms, fn) => setTimeout(() => { if (me === run && G.UI.isOpen('scr-sbox')) fn(); }, ms);
+      const SHAKE = quick ? 450 : 1100, STEP = quick ? 280 : 520;
+      buttons(false);
+      boxEl.classList.remove('tier3', 'tier4');
+      $('sbox-banner').classList.add('hidden');
+      $('sbox-cards').innerHTML = '';
+      $('sbox-sub').classList.remove('count');
+      $('sbox-sub').textContent = G.T('Abriendo…');
+      const chest = $('sbox-chest');
+      chest.innerHTML = CHEST_SVG;
+      chest.className = 'on shake';
+      G.Audio.sfx('select');
+      later(SHAKE, () => { chest.className = 'on open'; G.Audio.sfx('break'); });
+      for (let k = 0; k < n; k++) {
+        later(SHAKE + 250 + k * STEP, () => {
+          $('sbox-cards').appendChild(card(list[k]));
+          $('sbox-sub').classList.add('count');
+          $('sbox-sub').textContent = '×' + (k + 1);
+          G.Audio.sfx(k >= 2 ? 'shiny' : 'xp');
+          if (k === 0) { chest.className = ''; chest.innerHTML = ''; }
+          if (k === 2) boxEl.classList.add('tier3');
+          if (k === 3) {
+            boxEl.classList.replace('tier3', 'tier4');
+            $('sbox-banner').classList.remove('hidden');
+          }
+        });
+      }
+      later(SHAKE + 250 + (n - 1) * STEP + 350, () => {
+        $('sbox-sub').classList.remove('count');
+        $('sbox-sub').textContent = n === 1 ? G.T('¡1 mejora!') : G.I18n.f('¡{x} mejoras!', n);
+        if (n >= 3) G.Audio.sfx('legend');
+        if (n >= 4) {
+          // Premio gordo: fiesta también en el mapa.
+          for (const col of ['#ff5f6d', '#ffd23f', '#5fe08a', '#4fb4ff', '#c47bff']) G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, col, 16, 260);
+          G.FX.ring(pl.x, pl.y, 8, 200, '#ffd23f', 0.9, 6);
+          G.Camera.kick(0.5);
+        }
+        const left = BOX_REROLLS - (pl.sboxRerolls || 0);
+        $('sbox-rr-n').textContent = left;
+        $('sbox-reroll').classList.toggle('hidden', left <= 0);
+        buttons(true);
       });
-      const left = BOX_REROLLS - (pl.sboxRerolls || 0);
-      $('sbox-rr-n').textContent = left;
-      $('sbox-reroll').classList.toggle('hidden', left <= 0);
     };
     $('sbox-reroll').onclick = () => {
-      if ((pl.sboxRerolls || 0) >= BOX_REROLLS) return;
+      if ($('sbox-reroll').disabled || (pl.sboxRerolls || 0) >= BOX_REROLLS) return;
       pl.sboxRerolls = (pl.sboxRerolls || 0) + 1;
-      G.Audio.sfx('select');
       list = rollBox(pl);
-      render();
+      play(true);
     };
     $('sbox-ok').onclick = () => {
+      if ($('sbox-ok').disabled) return;
+      run++;
       G.UI.hide('scr-sbox');
+      boxEl.classList.remove('tier3', 'tier4');
       G.Audio.sfx('confirm');
       for (const c of list) c.apply(pl);
       G.FX.ring(pl.x, pl.y, 8, 120, '#ffd23f', 0.7, 5);
       G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffe14d', 30, 220);
       done();
     };
-    render();
     G.UI.show('scr-sbox');
+    play(false);
   }
 
   // ---------------- pociones ----------------

@@ -742,5 +742,5 @@
   }
 
   G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, instance, levelUp, nextUpText, startFor,
-              EVO, NEED_NAME, evoInfo, evolve, TABLE, stat, isPassive };
+              EVO, EVO_MODS, NEED_NAME, evoInfo, evolve, TABLE, stat, isPassive };
 })();

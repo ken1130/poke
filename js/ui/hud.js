@@ -266,6 +266,35 @@ G.HUD = (() => {
       }
       ctx.restore();
     }
+    // Tu cofre de movimientos: si no se ve, flecha dorada en el borde con los metros.
+    const box = G.Pickups.all().find(p => p.kind === 'sbox' && G.Loot.visible(p));
+    if (box) {
+      const bsx = (box.x - cam.left()) * cam.scale, bsy = (box.y - 20 - cam.top()) * cam.scale;
+      if (bsx < 0 || bsx > w || bsy < 0 || bsy > h) {
+        const M = 46, ex = G.U.clamp(bsx, M, w - M), ey = G.U.clamp(bsy, M + 70, h - M - 90);
+        const a = Math.atan2(bsy - ey, bsx - ex), ca = Math.cos(a), sa = Math.sin(a);
+        const beat = 0.5 + Math.sin(performance.now() / 140) * 0.5;
+        ctx.save();
+        ctx.translate(ex, ey);
+        ctx.globalAlpha = 0.2 + beat * 0.2; ctx.fillStyle = '#ffd23f';
+        ctx.beginPath(); ctx.arc(0, 0, 24 + beat * 6, 0, 6.2832); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(ca * 32, sa * 32);
+        ctx.lineTo(Math.cos(a + 2.45) * 16, Math.sin(a + 2.45) * 16);
+        ctx.lineTo(Math.cos(a - 2.45) * 16, Math.sin(a - 2.45) * 16);
+        ctx.closePath();
+        ctx.fillStyle = beat > 0.5 ? '#fff3b0' : '#ffd23f'; ctx.fill();
+        ctx.lineWidth = 3; ctx.strokeStyle = '#2a1a08'; ctx.stroke();
+        const label = G.T('COFRE DE MOVIMIENTOS') + ' · ' + Math.round(G.U.dist(pl.x, pl.y, box.x, box.y) / 32) + ' m';
+        ctx.font = F(800, 11);
+        ctx.textAlign = ca > 0.3 ? 'right' : ca < -0.3 ? 'left' : 'center';
+        const lx = -ca * 28, ly = -sa * 26 + 4;
+        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(label, lx, ly);
+        ctx.fillStyle = '#ffe14d'; ctx.fillText(label, lx, ly);
+        ctx.restore();
+      }
+    }
     if (G.Rift.inArena) {
       ctx.textAlign = 'center';
       ctx.font = F(800, 12);
@@ -342,9 +371,15 @@ G.HUD = (() => {
       const x = sx + i * (S + GAP);
       const y = on ? sy - 6 : sy;
       // Tocar (o hacer clic en) un icono activa ese movimiento.
-      // Los huecos de pasivos no se tocan: funcionan siempre.
+      // Tocar otro movimiento lo activa; tocar el activo o un pasivo (que funciona siempre)
+      // enseña qué hace (otra vez: se cierra).
       const passive = pl.passiveSlot(i);
-      if (m && !passive) G.Touch.addButton(x, y, S, S, () => { if (G.Game.state === 'playing' && pl.active !== i) { pl.setActive(i); G.Audio.sfx('click'); } }, GAP / 2 + 3);
+      if (m) G.Touch.addButton(x, y, S, S, () => {
+        if (G.Game.state !== 'playing') return;
+        G.Audio.sfx('click');
+        if (passive || pl.active === i) { info = info && info.i === i ? null : { i, until: performance.now() + 5000 }; return; }
+        pl.setActive(i); info = null;
+      }, GAP / 2 + 3);
       const col = m ? G.U.TYPE_COLOR[m.type] : '#4a5468';
 
       // fondo
@@ -419,6 +454,10 @@ G.HUD = (() => {
         ctx.fillText(fused ? m.name + ' +' + (g.length - 1) : m.name, x + S / 2, y - 7);
       }
     }
+
+    // ---------- qué hace el movimiento tocado ----------
+    if (info && performance.now() < info.until && pl.slots[info.i]) drawMoveInfo(ctx, w, pl, pl.slots[info.i], sx + info.i * (S + GAP) + S / 2, sy - 24);
+    else info = null;
 
     // ---------- vínculo guardado (aún no hay dos movimientos sueltos) ----------
     if (pl.bonds > 0) {
@@ -509,6 +548,55 @@ G.HUD = (() => {
     ctx.restore();
   }
 
+  // ---------------- ficha de un movimiento ----------------
+
+  let info = null;                   // { i: hueco tocado, until }
+  /** Corta un texto en líneas de como mucho `maxW` px (en chino, por caracteres). */
+  function wrap(ctx, text, maxW) {
+    const out = [];
+    // Chino: se puede cortar en cualquier carácter; si no, por palabras.
+    const words = /[\u3000-\u9fff\uff00-\uffef]/.test(text) || !/\s/.test(text) ? [...text] : text.split(/(\s+)/);
+    let line = '';
+    for (const wd of words) {
+      if (ctx.measureText(line + wd).width > maxW && line.trim()) { out.push(line.trim()); line = wd.trimStart(); }
+      else line += wd;
+    }
+    if (line.trim()) out.push(line.trim());
+    return out;
+  }
+  /** Cajita encima del hueco: nombre, nivel, qué hace, mejoras que ya tiene y la siguiente. */
+  function drawMoveInfo(ctx, w, pl, group, cx, bottom) {
+    const W = Math.min(300, w - 24), P = 10, LH = 14;
+    const rows = [];                 // [texto, color, negrita]
+    for (const m of group) {
+      const passive = G.Moves.isPassive(m);
+      rows.push([G.T(m.name) + '  Lv.' + m.lvl + '/' + m.def.maxLvl + (passive ? '  · ' + G.T('PASIVO') : ''), G.U.TYPE_COLOR[m.type], true]);
+      rows.push([G.T(m.def.desc), '#dfe8ff']);
+      for (let k = 0; k < m.lvl - 1 && m.def.ups[k]; k++) rows.push(['✓ ' + G.T(m.def.ups[k].t), '#9fe0b0']);
+      if (m.evolved && G.Moves.EVO_MODS[m.kind]) rows.push(['★ ' + G.T(m.name) + ': ' + G.T(G.Moves.EVO_MODS[m.kind].t), '#ffd23f']);
+      const next = G.Moves.nextUpText(m);
+      if (next) rows.push(['→ ' + G.I18n.f('Siguiente nivel: {x}', G.T(next)), '#8fa3c4']);
+    }
+    const lines = [];
+    for (const [t, col, bold] of rows) {
+      ctx.font = F(bold ? 800 : 600, bold ? 12 : 11);
+      for (const l of wrap(ctx, t, W - P * 2)) lines.push([l, col, bold]);
+    }
+    const H = P * 2 + lines.length * LH;
+    const x0 = G.U.clamp(cx - W / 2, 12, w - W - 12), y0 = Math.max(70, bottom - H);
+    ctx.save();
+    roundRect(ctx, x0, y0, W, H, 10);
+    ctx.fillStyle = 'rgba(8,12,24,.92)'; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(200,215,255,.55)'; ctx.stroke();
+    ctx.textAlign = 'left';
+    lines.forEach(([l, col, bold], k) => {
+      ctx.font = F(bold ? 800 : 600, bold ? 12 : 11);
+      ctx.fillStyle = col;
+      ctx.fillText(l, x0 + P, y0 + P + 11 + k * LH);
+    });
+    ctx.restore();
+  }
+
   // ---------------- minimapa ----------------
 
   /*
@@ -517,60 +605,177 @@ G.HUD = (() => {
    * altares/manantiales del mapa, jefes, la grieta y los compañeros.
    */
   const MM_R = 1300;                 // radio del mundo que se ve (unidades)
-  let mmProps = [], mmT = 0;
+  const MM_N = 48;                   // celdas del terreno por lado
+  let mmProps = [], mmT = 0, mmTer = null, mmAt = null;
+  /** Terreno de alrededor (suelo / pared / agua...) en una imagen pequeña; se rehace cada medio segundo. */
+  function minimapTerrain(pl) {
+    const cell = (MM_R * 2) / MM_N;
+    const ox = Math.round(pl.x / cell) * cell - MM_R, oy = Math.round(pl.y / cell) * cell - MM_R;
+    if (!mmTer) { mmTer = document.createElement('canvas'); mmTer.width = mmTer.height = MM_N; }
+    const c = mmTer.getContext('2d'), B = G.Tiles.BIOMES[G.World.biome] || G.Tiles.BIOMES[0];
+    const floor = B.floor[0], wall = B.wallTop ? B.wallTop[0] : '#222', liq = B.liq || '#3b7fc6';
+    for (let j = 0; j < MM_N; j++) for (let i = 0; i < MM_N; i++) {
+      const x = ox + (i + 0.5) * cell, y = oy + (j + 0.5) * cell;
+      c.fillStyle = G.World.isWall(x, y) ? wall : G.World.isLiquid(x, y) ? liq : floor;
+      c.fillRect(i, j, 1, 1);
+    }
+    mmAt = { ox, oy, cell };
+  }
+
+  /** Iconitos del minimapa (dibujados a mano, unos 10-14 px). */
+  const MM_ICON = {
+    sbox(ctx, x, y, on) {
+      ctx.fillStyle = on ? 'rgba(255,225,77,.55)' : 'rgba(255,225,77,.25)';
+      ctx.beginPath(); ctx.arc(x, y, 10, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = '#9a5a22'; ctx.fillRect(x - 6, y - 2, 12, 7);
+      ctx.fillStyle = '#c47a2c'; ctx.fillRect(x - 7, y - 6, 14, 5);
+      ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - 1.5, y - 4, 3, 5); ctx.fillRect(x - 7, y - 2, 14, 1);
+      ctx.strokeStyle = '#2a1a08'; ctx.lineWidth = 1; ctx.strokeRect(x - 7, y - 6, 14, 11);
+    },
+    potion(ctx, x, y) {
+      ctx.fillStyle = '#ff7ad9'; ctx.beginPath(); ctx.arc(x, y + 1.5, 4.5, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = '#2a0a20'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#e8eef8'; ctx.fillRect(x - 1.5, y - 5, 3, 3);
+    },
+    item(ctx, x, y) {
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 4, y); ctx.lineTo(x, y + 5); ctx.lineTo(x - 4, y); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#5a3a00'; ctx.lineWidth = 1; ctx.stroke();
+    },
+    bigchest(ctx, x, y) {
+      ctx.fillStyle = '#7a4a1a'; ctx.fillRect(x - 5, y - 4, 10, 8);
+      ctx.fillStyle = '#c0c8d8'; ctx.fillRect(x - 1.5, y - 2, 3, 4);
+      ctx.strokeStyle = '#1a0e04'; ctx.lineWidth = 1; ctx.strokeRect(x - 5, y - 4, 10, 8);
+    },
+    chest(ctx, x, y) { ctx.fillStyle = '#b07030'; ctx.fillRect(x - 2.5, y - 2, 5, 4); },
+    altar(ctx, x, y) {
+      ctx.fillStyle = '#ff8ad8'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 4.5, y + 4); ctx.lineTo(x - 4.5, y + 4); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#3a0a2a'; ctx.lineWidth = 1; ctx.stroke();
+    },
+    spring(ctx, x, y) {
+      ctx.fillStyle = '#4fb4ff'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.quadraticCurveTo(x + 5, y + 1, x, y + 4); ctx.quadraticCurveTo(x - 5, y + 1, x, y - 5); ctx.fill();
+      ctx.strokeStyle = '#0a2a4a'; ctx.lineWidth = 1; ctx.stroke();
+    },
+    rift(ctx, x, y, on) {
+      ctx.strokeStyle = on ? '#e2d0ff' : '#a06bff'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(x, y, 5.5, 0, 6.2832); ctx.stroke();
+      ctx.fillStyle = '#2a0a4a'; ctx.beginPath(); ctx.arc(x, y, 3, 0, 6.2832); ctx.fill();
+    },
+    boss(ctx, x, y) {
+      ctx.fillStyle = '#ff4d5e'; ctx.beginPath(); ctx.arc(x, y, 6, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = '#3a0008'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.fillRect(x - 3, y - 2, 2, 2); ctx.fillRect(x + 1, y - 2, 2, 2); ctx.fillRect(x - 2, y + 2, 4, 1);
+    },
+    mate(ctx, x, y, dead) {
+      ctx.fillStyle = dead ? '#ff5f6d' : '#5fe08a'; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 6.2832); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+  };
+
+  /*
+   * Minimapa: el terreno de alrededor (unos 40 m) con iconos de lo importante. Tu cofre
+   * de movimientos, tus pociones, la grieta, los jefes y los compañeros salen en el
+   * borde aunque estén más lejos (para saber hacia dónde ir). El recuadro es lo que ves
+   * en pantalla. Debajo, la lista con distancias y direcciones (drawMinimapList).
+   */
   function drawMinimap(ctx, w, pl, touch) {
-    const S = touch ? 96 : 124, x0 = w - S - 14, y0 = touch ? 62 : 48;
-    const cx = x0 + S / 2, cy = y0 + S / 2, k = (S / 2 - 6) / MM_R;
+    const S = touch ? 124 : 172, x0 = w - S - 14, y0 = touch ? 62 : 48;
+    const cx = x0 + S / 2, cy = y0 + S / 2, k = (S / 2) / MM_R;
     const now = performance.now() / 1000;
-    // Los objetos del mapa se buscan sólo cada medio segundo (no cambian deprisa).
-    if (now - mmT > 0.5) {
+    if (now - mmT > 0.5 || !mmAt) {
       mmT = now;
       mmProps = G.World.specialsNear(pl.x, pl.y, MM_R).filter(p => p.type !== 'trap' && !p.used)
         .concat(G.World.propsInCircle(pl.x, pl.y, MM_R).filter(p => p.type === 'chest'));
+      minimapTerrain(pl);
     }
     ctx.save();
-    roundRect(ctx, x0, y0, S, S, 10);
-    ctx.fillStyle = 'rgba(8,12,24,.78)'; ctx.fill();
-    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(200,215,255,.6)'; ctx.stroke();
-    roundRect(ctx, x0, y0, S, S, 10); ctx.clip();
+    roundRect(ctx, x0 - 3, y0 - 3, S + 6, S + 6, 12);
+    ctx.fillStyle = 'rgba(8,12,24,.85)'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(220,230,255,.75)'; ctx.stroke();
+    roundRect(ctx, x0, y0, S, S, 9); ctx.clip();
+    // terreno (algo oscurecido para que resalten los iconos)
+    const scale = mmAt.cell * k;
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = 0.85;
+    ctx.drawImage(mmTer, cx + (mmAt.ox - pl.x) * k, cy + (mmAt.oy - pl.y) * k, MM_N * scale, MM_N * scale);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.fillRect(x0, y0, S, S);
+    // lo que se ve en pantalla
+    const cam = G.Camera;
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1;
+    ctx.strokeRect(cx + (cam.left() - pl.x) * k, cy + (cam.top() - pl.y) * k, cam.w * k, cam.h * k);
     const at = (x, y, edge) => {
       let dx = (x - pl.x) * k, dy = (y - pl.y) * k;
-      const m = S / 2 - 6;
+      const m = S / 2 - 8;
       if (Math.abs(dx) > m || Math.abs(dy) > m) {
         if (!edge) return null;
         const s = m / Math.max(Math.abs(dx), Math.abs(dy)); dx *= s; dy *= s;
       }
       return [cx + dx, cy + dy];
     };
-    const dot = (x, y, col, r, edge, sq) => {
-      const q = at(x, y, edge);
-      if (!q) return;
-      ctx.fillStyle = col;
-      ctx.beginPath();
-      if (sq) ctx.rect(q[0] - r, q[1] - r, r * 2, r * 2); else ctx.arc(q[0], q[1], r, 0, 6.2832);
-      ctx.fill();
-    };
-    const PROP_COL = { altar: '#ff8ad8', spring: '#4fb4ff', bigchest: '#ffb000', chest: '#c47a2c' };
-    for (const p of mmProps) dot(p.x, p.y, PROP_COL[p.type] || '#fff', p.type === 'chest' ? 1.8 : 2.6, false, true);
+    const icon = (name, x, y, edge, arg) => { const q = at(x, y, edge); if (q) MM_ICON[name](ctx, q[0], q[1], arg); };
     const blink = Math.sin(now * 6) > 0;
+    for (const p of mmProps) icon(MM_ICON[p.type] ? p.type : 'chest', p.x, p.y, false);
     for (const p of G.Pickups.all()) {
       if ((p.kind === 'sbox' || p.kind === 'potion') && !G.Loot.visible(p)) continue;
-      if (p.kind === 'sbox') dot(p.x, p.y, blink ? '#ffe14d' : '#ff9a3d', 4.2, true, true);
-      else if (p.kind === 'potion') dot(p.x, p.y, '#ff7ad9', 3.2, true);
-      else if (p.kind === 'item' || p.kind === 'token' || p.kind === 'ticket10') dot(p.x, p.y, '#ffd23f', 2.6, false);
+      if (p.kind === 'sbox') icon('sbox', p.x, p.y, true, blink);
+      else if (p.kind === 'potion') icon('potion', p.x, p.y, true);
+      else if (p.kind === 'item' || p.kind === 'token' || p.kind === 'ticket10') icon('item', p.x, p.y, false);
     }
-    for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) dot(e.x, e.y, '#ff4d5e', 4, true);
     const rift = G.Rift.rift;
-    if (rift) dot(rift.x, rift.y, blink ? '#e2d0ff' : '#a06bff', 4, true);
-    if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl) dot(o.x, o.y, o.dead ? '#ff5f6d' : '#5fe08a', 3, true);
+    if (rift) icon('rift', rift.x, rift.y, true, blink);
+    for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) icon('boss', e.x, e.y, true);
+    if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl) icon('mate', o.x, o.y, true, o.dead);
     // Tú: flecha blanca hacia donde miras.
     const a = pl.moveAngle || 0;
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(a) * 6, cy + Math.sin(a) * 6);
-    ctx.lineTo(cx + Math.cos(a + 2.5) * 4.5, cy + Math.sin(a + 2.5) * 4.5);
-    ctx.lineTo(cx + Math.cos(a - 2.5) * 4.5, cy + Math.sin(a - 2.5) * 4.5);
-    ctx.closePath(); ctx.fill();
+    ctx.moveTo(cx + Math.cos(a) * 7, cy + Math.sin(a) * 7);
+    ctx.lineTo(cx + Math.cos(a + 2.5) * 5.5, cy + Math.sin(a + 2.5) * 5.5);
+    ctx.lineTo(cx + Math.cos(a - 2.5) * 5.5, cy + Math.sin(a - 2.5) * 5.5);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    drawMinimapList(ctx, w, pl, x0 + S, y0 + S + 8);
+  }
+
+  /**
+   * Debajo del minimapa: lo más cercano de cada cosa importante, con su distancia y una
+   * flecha hacia dónde está (tu cofre de movimientos, tus pociones, objetos, cofres con
+   * candado, altares, manantiales, la grieta y los jefes).
+   */
+  const ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+  function drawMinimapList(ctx, w, pl, right, top) {
+    const rows = [];
+    const near = (list, fn) => {
+      let best = null, bd = Infinity;
+      for (const o of list) { if (!fn(o)) continue; const d = G.U.dist2(o.x, o.y, pl.x, pl.y); if (d < bd) { bd = d; best = o; } }
+      return best;
+    };
+    const add = (o, name, col, ic) => { if (o) rows.push({ o, name, col, ic, d: G.U.dist(o.x, o.y, pl.x, pl.y) }); };
+    const pk = G.Pickups.all();
+    add(near(pk, p => p.kind === 'sbox' && G.Loot.visible(p)), 'COFRE DE MOVIMIENTOS', '#ffe14d', 'sbox');
+    add(near(pk, p => p.kind === 'potion' && G.Loot.visible(p)), 'Poción', '#ff7ad9', 'potion');
+    add(near(pk, p => p.kind === 'item'), 'Objeto', '#ffd23f', 'item');
+    add(near(mmProps, p => p.type === 'bigchest' && !p.used), 'Cofre con candado', '#ffb000', 'bigchest');
+    add(near(mmProps, p => p.type === 'altar' && !p.used), 'Altar', '#ff8ad8', 'altar');
+    add(near(mmProps, p => p.type === 'spring' && !p.used), 'Manantial', '#4fb4ff', 'spring');
+    if (G.Rift.rift) add(G.Rift.rift, 'Grieta', '#c9a6ff', 'rift');
+    add(near(G.EnemyMgr.all(), e => e.boss && !e.dead), 'Jefe', '#ff5f6d', 'boss');
+    if (!rows.length) return;
+    ctx.save();
+    ctx.font = F(800, 10);
+    ctx.textAlign = 'right';
+    rows.slice(0, 6).forEach((r, k) => {
+      const a = Math.atan2(r.o.y - pl.y, r.o.x - pl.x);
+      const arrow = ARROWS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
+      const txt = G.T(r.name) + ' ' + Math.round(r.d / 32) + 'm ' + arrow;
+      const tw = ctx.measureText(txt).width + 26, y = top + k * 19;
+      roundRect(ctx, right - tw, y, tw, 17, 6);
+      ctx.fillStyle = 'rgba(8,12,24,.8)'; ctx.fill();
+      ctx.save(); MM_ICON[r.ic](ctx, right - tw + 9, y + 8.5, false); ctx.restore();
+      ctx.font = F(800, 10);
+      ctx.fillStyle = r.col;
+      ctx.fillText(txt, right - 5, y + 12);
+    });
     ctx.restore();
   }
 
