@@ -27,6 +27,8 @@
    `"/mnt/c/Program Files/Git/cmd/git.exe" push origin main`（Linux 的 git 沒有登入）。
 8. 不能 `git commit --amend`（會被擋）→ 要補就再開一個新 commit。
 
+- **有協作者一起開發（2026-10-15 起）**：推送前一定先 `git fetch origin`，看 `git log main..origin/main` 有沒有對方的提交；有就先合併（不能 force push、不能丟掉對方的改動），衝突兩邊都保留，產生的檔案（index.html、js/app.min.js、version.json）不要手動合併，合併後重跑 build 和 export_data，測過再推，並跟主人說對方改了什麼。
+
 ## 三、已定案的設計
 
 | 項目 | 現在的設定 |
@@ -64,6 +66,7 @@
 | PK 命中 | **攻擊者判定**（2026-10-15 改）：combat.js 的 `enemiesIn` 在 PK 時把對手（`G.PvP.foesIn`）當成敵人，`hit()`／子彈碰撞遇到 `G.Player` 就交給 `G.PvP.deal`：攻擊者當下顯示停頓、X 標記、數字、衝擊特效，送 `['pv','d',被打者,攻擊者,傷害,屬性,暴擊]`；被打者 `hurt` 時清掉長無敵（只留 0.1 秒），停頓、震動、擊退。**PK 不要畫面閃色、不要鏡頭震動、不要停頓／慢動作**（主人：「閃得太紅了 眼睛很痛」「不要震動感覺會暈」「短暫停頓會不會被硬控」）；`timeScale` 固定 1，`Player.hurt` 的震動在 PK 受擊與安全區扣血時還原，擊倒再送 `['pv','h',…]` 給擊倒訊息。減速送 `['pv','s',…]`。舊的受害者判定（circle/arc/seg）已停用。**房主用 broadcast、房客要用 request** |
 | PK 被打者的畫面 | 重播對手招式（ghost）時 `enemiesIn` 會把自己（`G.PvP.meFor`）當目標，只畫不扣血；子彈不跟發射者、ghost 子彈不跟其他玩家碰撞（否則一發射就消失）；`['pv','d',…]` 附上攻擊者看到的位置，被打者實際位置差超過 95px 算閃避 |
 | PK 第二輪修正 | 守住／星星／選卡中被打 → 回 `['pv','m',…,'b']` 顯示格擋；閃避回 `'d'`；**傷害數字只在被打者回報 `'h'` 後才顯示**（不先猜）；70ms 內多次命中累加後一起送（不丟）；近戰（melee/dash/fist）×1.3；對手頭上血條、受擊方向小箭頭（`hitDirs`）；野外也縮圈 240→420 秒 1800→300；出生 420×300；手機放開拇指恢復自動瞄準；群體治療 `'shl'` 帶隊伍，PK 不治對手 |
+| 水面緩速 | 水、沼澤：水系和飛行系免疫；雙屬性只要有一個符合就不變慢（`world.js LIQ` 的 `immune`，`types.some`） |
 | 頭目模式 | 開場 +5 級（和冒險的 headStart 同一套），先選 5 次卡 |
 | PK 招式檢查 | 22 種攻擊類型都實測打得到玩家（`pkkinds.js`）；近戰類要靠近才打得到 |
 | PK 選招 | 5 選 3：至少 3 個遠程、最多 2 個近戰（melee/dash/aura/flameshield/orbit/trail/mine） |
