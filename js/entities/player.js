@@ -659,6 +659,21 @@ G.Player = class Player {
         G.FX.burst(this.x + G.U.rand(-this.r, this.r), cy + G.U.rand(-this.bodyH * 0.4, this.bodyH * 0.3), `hsl(${(hue + G.U.rand(0, 180)) % 360},100%,72%)`, 2, 70);
       }
     }
+    // Grupo: eligiendo cartas (la partida sigue): burbuja que aparta a los enemigos y "Eligiendo…".
+    const choosing = !this.dead && G.Coop.active && (this.remote ? this.net && this.net.ch === 1 : this.picking);
+    if (choosing) {
+      const R = 110, pulse = 0.85 + Math.sin(now / 200) * 0.15;
+      ctx.save();
+      ctx.globalAlpha = 0.16 * pulse; ctx.fillStyle = '#7fe0ff';
+      ctx.beginPath(); ctx.arc(this.x, this.y - 8, R, 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = 0.7; ctx.lineWidth = 3; ctx.strokeStyle = '#bff3ff'; ctx.setLineDash([10, 8]);
+      ctx.beginPath(); ctx.arc(this.x, this.y - 8, R, 0, 6.2832); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      ctx.font = '800 12px Pixelify,"Segoe UI",system-ui,sans-serif'; ctx.textAlign = 'center';
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(G.T('Eligiendo…'), this.x, this.y - this.bodyH - 26);
+      ctx.fillStyle = '#bff3ff'; ctx.fillText(G.T('Eligiendo…'), this.x, this.y - this.bodyH - 26);
+      ctx.restore();
+    }
     const alpha = this.invuln > 0 && !this.dead && !starOn ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
     const starFlash = starOn && Math.floor(now / 120) % 3 !== 2;
     this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0 || starFlash, softFlash: true, alpha, color: starFlash ? `hsl(${hue},100%,70%)` : '#ffcb3d' });

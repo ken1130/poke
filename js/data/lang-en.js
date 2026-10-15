@@ -1191,4 +1191,5 @@ G.I18n.add({
   'Kecleon': 'Kecleon’s thanks',
   'Momento de calma: menos Pokémon salvajes durante 20 s': 'A moment of calm: fewer wild Pokémon for 20 s',
   '¡Vuelven los Pokémon salvajes!': 'The wild Pokémon are back!',
+  'Eligiendo…': 'Choosing…',
 }, 'en');

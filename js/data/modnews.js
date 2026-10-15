@@ -66,6 +66,7 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '組隊時有人升級選技能，其他人不用再停下來等：選的人原地不動、不會受傷，周圍有防護罩把怪物推開（按暫停才會全隊暫停）', en: 'In co-op, picking level-up cards no longer pauses everyone: the picker stands still, takes no damage and a shield pushes enemies away (only the pause button pauses the group)' },
       { zh: '迷宮難度再下修：怪物移動速度成長從最多 +35% 降為 +15%，普通怪速度上限 92（比大多數寶可夢慢）；怪物數量和傷害成長也放慢', en: 'Dungeon difficulty lowered again: enemy speed growth capped at +15 % (was +35 %) and normal enemies max out at 92 speed (slower than most Pokémon); spawn count and damage grow more slowly' },
       { zh: '小地圖下方的距離列表字放大、比較好讀', en: 'The distance list under the minimap uses bigger, easier-to-read text' },
       { zh: '無敵星星更醒目：全身彩虹光暈、閃爍和星光粒子', en: 'The Star potion is much more visible: a rainbow glow, flashing and sparkles' },

@@ -769,7 +769,9 @@ G.Game = (() => {
 
     handleKeys();
 
-    if (state === 'playing') update(dt);
+    // Grupo (2026-10-15): eligiendo cartas la partida sigue para todos (no se espera a nadie);
+    // tu Pokémon se queda quieto, no recibe daño y aparta a los enemigos (ver update).
+    if (state === 'playing' || (state === 'choice' && G.Coop.active && !coopPause)) update(dt);
     else if (pl && state !== 'ui') { G.FX.update(dt * 0.25); pl.anim.update(dt * 0.25); }
     if (state !== 'playing') G.Tips.tick(0);      // (esconde el consejo encima de cartas, pausa...)
     // Grupo: nadie puede dejar a los demás esperando para siempre: a los 25 s se elige solo.
@@ -822,7 +824,7 @@ G.Game = (() => {
       G.FX.ring(pl.x, pl.y, 10, G.Camera.outerRadius(), '#ffffff', 0.7, 6);
     }
 
-    const picking = coop && G.UI.isOpen('scr-levelup');
+    const picking = coop && (state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon'].some(G.UI.isOpen));
     pl.frozen = coop && (G.UI.isOpen('scr-pause') || G.UI.isOpen('scr-item') || picking);
     pl.picking = picking;   // eligiendo cartas: nada te hace daño (Player.hurt)
     pl.update(dt);
@@ -846,6 +848,7 @@ G.Game = (() => {
     if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, time + G.Stages.tOffset()); }
     else G.Spawner.tickBanner(dt);
     G.EnemyMgr.update(dt, all);
+    if (coop && G.Coop.isHost) shieldPickers(all);               // los que eligen cartas apartan a los enemigos
     G.EnemyMgr.rebuildGrid();
     G.Combat.tick(dt, pl, time);
     G.Projectiles.update(dt, pl, G.EnemyMgr.all());
@@ -910,7 +913,7 @@ G.Game = (() => {
   function nextCoopCard() {
     const level = coopCards.shift();
     if (level == null || !pl || state === 'over' || state === 'ui') return;
-    // Se para todo mientras eliges (y los demás esperan: coop.js lo sabe por tu estado).
+    // Eliges sin parar a nadie: la partida sigue (frame) y tu Pokémon queda quieto y protegido.
     if (state === 'playing' || state === 'held') state = 'choice';
     choiceT = 0;
     G.Audio.sfx('levelup');
@@ -924,6 +927,19 @@ G.Game = (() => {
     G.Coop.holdStart();
   }
   let fixedScene = null;   // índice de bioma si se eligió escenario (no se va turnando)   // PK: quién seguía en pie cuando quedó uno
+
+  /** Anfitrión (grupo): alrededor de quien está eligiendo cartas no puede quedarse ningún enemigo. */
+  const PICK_R = 110;
+  function shieldPickers(all) {
+    for (const p of all) {
+      if (p.dead || !(p === pl ? pl.picking : p.net && p.net.ch === 1)) continue;
+      for (const e of G.EnemyMgr.queryCircle(p.x, p.y, PICK_R)) {
+        if (e.dead) continue;
+        const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy) || 1;
+        e.x = p.x + dx / d * PICK_R; e.y = p.y + dy / d * PICK_R;
+      }
+    }
+  }
 
   /** Anfitrión: si caéis todos, se acaba (tras ver caer al último). */
   function checkAllDown(dt) {

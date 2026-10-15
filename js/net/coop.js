@@ -655,10 +655,10 @@ G.Coop = (() => {
   /** Anfitrión: quién está eligiendo según el último estado de cada uno. */
   function syncHolds() {
     const now = new Map();
-    // Elegir cartas (1) o la pausa (2): las dos paran la partida para todos.
-    if (api.choosing && api.choosing()) now.set(me, 1);
-    else if (api.paused && api.paused()) now.set(me, 2);
-    for (const m of mates.values()) if (m.connected && m.pl && m.pl.net && m.pl.net.ch) now.set(m.uid, m.pl.net.ch);
+    // Sólo la pausa (2) para la partida para todos. Elegir cartas (1) ya no (2026-10-15:
+    // esperar a cada uno era muy lento): quien elige se queda quieto y protegido (game.js).
+    if (api.paused && api.paused()) now.set(me, 2);
+    for (const m of mates.values()) if (m.connected && m.pl && m.pl.net && m.pl.net.ch === 2) now.set(m.uid, 2);
     const key = [...now].map(([u, k]) => u + ':' + k).sort().join(',');
     if (key === holdKey) return;
     holdKey = key; holds = now;

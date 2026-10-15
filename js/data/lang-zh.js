@@ -2191,4 +2191,5 @@ G.I18n.add({
   'Un ticket ×10 del gacha (para el grupo).': '一張十連扭蛋券（全隊共用）。',
   'Momento de calma: menos Pokémon salvajes durante 20 s': '寧靜時刻：接下來 20 秒野生寶可夢變少',
   '¡Vuelven los Pokémon salvajes!': '野生寶可夢又回來了！',
+  'Eligiendo…': '選擇中…',
 }, 'zh');
