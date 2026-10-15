@@ -38,6 +38,7 @@ G.Coop = (() => {
   // todo se para para todos. Antes los enemigos se quedaban quietos y los demás
   // seguían jugando con una ventaja enorme.
   let hostAway = false, stalled = false, lastHostAt = 0;
+  const lastTs = new Map();             // uid -> reloj (ts) del último mensaje suyo con posiciones
   const STALL_MS = 2500;
   let members = [];
   // MVP (esta versión): quién derriba (último golpe, en el anfitrión) y quién levanta a quién.
@@ -64,6 +65,7 @@ G.Coop = (() => {
     members = cfg.members;
     mates.clear();
     outEv = []; flushT = 0; waiting = new Set(); holds = new Map(); holdKey = ''; gotHolds = '';
+    lastTs.clear();
     kills.clear(); revives.clear();
     hostAway = false; stalled = false; lastHostAt = performance.now();
     G.PvP.begin(cfg);
@@ -130,6 +132,8 @@ G.Coop = (() => {
   // ---------------- estado de un jugador ----------------
 
   const r1 = v => Math.round(v), r2 = v => Math.round(v * 100) / 100;
+  /** Reloj de quien manda (s): las velocidades se calculan con él, no con la hora de llegada (que baila). */
+  const clock = () => Math.round(performance.now()) / 1000;
 
   function myState() {
     // Con un vínculo se manda la órbita si la hay (es lo único que los demás no ven por los 'c').
@@ -137,12 +141,13 @@ G.Coop = (() => {
     const m = g.find(x => x.kind === 'orbit') || g[0];
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
-            r2(local.reviveT || 0), r1(local.dmgDealt || 0), local.dex, api.choosing && api.choosing() ? 1 : api.paused && api.paused() ? 2 : 0];
+            r2(local.reviveT || 0), r1(local.dmgDealt || 0), local.dex, api.choosing && api.choosing() ? 1 : api.paused && api.paused() ? 2 : 0,
+            clock()];
   }
 
   function readState(a) {
     return { x: a[0], y: a[1], ang: a[2], walk: a[3], hp: a[4], maxHp: a[5], dead: a[6], mv: a[7], ml: a[8],
-             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0, dex: a[14] || 0, ch: a[15] || 0 };
+             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0, dex: a[14] || 0, ch: a[15] || 0, t: a[16] || 0 };
   }
 
   // ---------------- envío ----------------
@@ -185,15 +190,18 @@ G.Coop = (() => {
       if (o.connected && o.uid !== m.uid && o.state) p[o.uid] = o.state;
     }
     const ev = m.q; m.q = [];
-    return { k: 'f', t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10],
+    return { k: 'f', ts: clock(), t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10],
              p, e: enemyList(m.pl), ev, h: holdList() };
   }
 
   function flushAll() { for (const m of mates.values()) if (m.connected) G.Net.send(m.uid, hostFrame(m)); }
 
+  /** Un mensaje con eventos va por el canal fiable; si sólo lleva posiciones, por el rápido. */
+  function sendFrame(to, f) { if (f.ev && f.ev.length) G.Net.send(to, f); else G.Net.sendFast(to, f); }
+
   function flushClient(force) {
     if (!force && !outEv.length && flushT > 0) return;
-    G.Net.toHost({ k: 'f', p: myState(), ev: outEv });
+    G.Net.toHost({ k: 'f', ts: clock(), p: myState(), ev: outEv });
     outEv = [];
   }
 
@@ -207,14 +215,14 @@ G.Coop = (() => {
         m.flushT -= dt;
         if (m.flushT > 0) continue;
         m.flushT = rateFor(m.uid);
-        G.Net.send(m.uid, hostFrame(m));
+        sendFrame(m.uid, hostFrame(m));
       }
     } else {
       if (!stalled && performance.now() - lastHostAt > STALL_MS) { stalled = true; updateAway(); }
       flushT -= dt;
       if (flushT <= 0) {
         flushT = rateFor(hostUid);
-        G.Net.toHost({ k: 'f', p: myState(), ev: outEv });
+        if (hostUid) sendFrame(hostUid, { k: 'f', ts: clock(), p: myState(), ev: outEv });
         outEv = [];
       }
     }
@@ -226,6 +234,11 @@ G.Coop = (() => {
     if (!msg) return;
     if (msg.k === 'start') { if (G.Flow.startCoop) G.Flow.startCoop(msg); return; }
     if (!active || msg.k !== 'f') return;
+    // Por el canal rápido pueden llegar desordenados: las posiciones de un mensaje más
+    // viejo que el último se ignoran (sus eventos, si los lleva, sí cuentan).
+    const last = lastTs.get(from) || 0;
+    msg.fresh = !msg.ts || msg.ts > last || last - msg.ts > 5;     // (reloj que vuelve atrás: recargó la página)
+    if (msg.fresh && msg.ts) lastTs.set(from, msg.ts);
     if (host) onClientFrame(from, msg); else if (from === hostUid) onHostFrame(msg);
   });
 
@@ -251,7 +264,7 @@ G.Coop = (() => {
   function onClientFrame(from, msg) {
     const m = mates.get(from);
     if (!m || !m.connected) return;
-    if (msg.p) { m.state = msg.p; m.pl.net = readState(msg.p); m.xpMul = m.pl.net.xpMul || 1; }
+    if (msg.p && msg.fresh) { m.state = msg.p; m.pl.net = readState(msg.p); m.xpMul = m.pl.net.xpMul || 1; }
     for (const ev of msg.ev || []) {
       switch (ev[0]) {
         case 'h': {
@@ -315,16 +328,18 @@ G.Coop = (() => {
 
   function onHostFrame(msg) {
     lastHostAt = performance.now();
-    if (msg.h) applyHolds(msg.h);
+    if (msg.h && msg.fresh) applyHolds(msg.h);
     if (stalled) { stalled = false; updateAway(); }
     for (const ev of msg.ev || []) applyHostEvent(ev);
+    if (!msg.fresh) return;
     api.syncTeam({ time: msg.t, level: msg.lv, xp: msg.xp, xpNext: msg.xn, kills: msg.ki, bosses: msg.bo, coins: msg.co,
                    t1: (msg.tk || [])[0], t10: (msg.tk || [])[1] });
     for (const u in msg.p || {}) {
       const m = mates.get(u);
       if (m) m.pl.net = readState(msg.p[u]);
     }
-    const now = performance.now();
+    // Velocidad con el reloj del anfitrión (ts) si lo manda: la hora de llegada baila con la red.
+    const now = msg.ts ? msg.ts * 1000 : performance.now();
     for (const a of msg.e || []) {
       const e = G.EnemyMgr.get(a[0]);
       if (!e || !e.remote || e.dead) continue;

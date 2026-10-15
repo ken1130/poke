@@ -443,7 +443,8 @@ G.Player = class Player {
     // (si no, se ve a los demás siempre un poco por detrás y a saltos).
     this.netAge = (this.netAge || 0) + dt;
     if (n !== this.netPrev) {
-      const p = this.netPrev, gap = this.netAge;
+      // Con el reloj de quien lo manda (n.t) el hueco es el de verdad, no el de llegada.
+      const p = this.netPrev, gap = p && n.t && p.t && n.t > p.t ? n.t - p.t : this.netAge;
       if (p && gap > 0.01 && n.walk && !n.dead) { this.netVx = (n.x - p.x) / gap; this.netVy = (n.y - p.y) / gap; }
       else { this.netVx = 0; this.netVy = 0; }
       const vmax = 900;   // un salto (teletransporte, revivir) no es velocidad

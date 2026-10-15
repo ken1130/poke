@@ -16,7 +16,12 @@
  * Se envía por el canal directo si está abierto; si no, por el relé. El que
  * recibe escucha los dos, así que no hace falta ponerse de acuerdo.
  *
- * API:  open(roomId, isHost, hostUid) · close() · send(to, msg) · toHost(msg)
+ * Canal rápido (2026-10-15): además del canal fiable 'g' hay otro 'u' SIN orden ni
+ * reenvíos, para los mensajes que sólo llevan posiciones (si uno se pierde, el
+ * siguiente llega 0,05 s después). Por el fiable, un paquete perdido retenía todos
+ * los siguientes y se veía a tirones. Lo que lleva eventos sigue yendo por 'g'.
+ *
+ * API:  open(roomId, isHost, hostUid) · close() · send(to, msg) · sendFast(to, msg) · toHost(msg)
  *       broadcast(msg) · on(fn(from, msg)) · onPeer(fn(uid, state))
  *       peers() · mode(uid) -> 'connecting' | 'direct' | 'relay' | 'closed'
  */
@@ -135,6 +140,11 @@ G.Net = (() => {
   }
 
   function wireChannel(u, p, dc) {
+    if (dc.label === 'u') {                     // canal rápido: sólo recibir y mandar posiciones
+      p.du = dc;
+      dc.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } deliver(u, m); };
+      return;
+    }
     p.dc = dc;
     dc.onopen = () => { clearTimeout(p.timer); p.mode = 'direct'; emitPeer(u); checkTurn(p); };
     dc.onclose = () => { if (p.mode === 'direct') { p.mode = 'connecting'; useRelay(u); } };
@@ -179,6 +189,7 @@ G.Net = (() => {
     const p = newPeer(u);
     if (!p.pc) return;
     wireChannel(u, p, p.pc.createDataChannel('g', { ordered: true }));
+    wireChannel(u, p, p.pc.createDataChannel('u', { ordered: false, maxRetransmits: 0 }));
     try {
       const offer = await p.pc.createOffer();
       await p.pc.setLocalDescription(offer);
@@ -224,6 +235,7 @@ G.Net = (() => {
     clearTimeout(p.timer);
     p.mode = 'closed';
     try { if (p.dc) p.dc.close(); } catch (e) { /* nada */ }
+    try { if (p.du) p.du.close(); } catch (e) { /* nada */ }
     try { if (p.pc) p.pc.close(); } catch (e) { /* nada */ }
     peers.delete(u);
     if (!silent) emitPeer(u);
@@ -250,6 +262,15 @@ G.Net = (() => {
     relayPush(to, { f: uid, d: msg });
   }
 
+  /** Sólo posiciones: por el canal rápido si está abierto (si no, como send). */
+  function sendFast(to, msg) {
+    const p = peers.get(to);
+    if (roomId && p && p.mode === 'direct' && p.du && p.du.readyState === 'open') {
+      try { p.du.send(JSON.stringify(msg)); stats.sent++; return; } catch (e) { /* por el fiable */ }
+    }
+    send(to, msg);
+  }
+
   function toHost(msg) { if (!isHost && hostUid) send(hostUid, msg); }
   function broadcast(msg, except) { for (const u of peers.keys()) if (u !== except) send(u, msg); }
 
@@ -259,7 +280,7 @@ G.Net = (() => {
   }
 
   return {
-    open, close, syncMembers, send, toHost, broadcast,
+    open, close, syncMembers, send, sendFast, toHost, broadcast,
     on(fn) { handlers.add(fn); }, off(fn) { handlers.delete(fn); },
     onPeer(fn) { peerHandlers.add(fn); },
     mode(u) { const p = peers.get(u); return p ? p.mode : 'closed'; },

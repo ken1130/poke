@@ -13,7 +13,8 @@ G.MODNEWS = [
     ],
     chg: [
       { zh: '冒險模式結算畫面新增「下一關」與「再挑戰」按鈕', en: 'Adventure results: new “Next stage” and “Retry” buttons' },
-      { zh: '組隊時每個人用自己的經驗值與經驗加成各自升級', en: 'In groups, everyone levels up with their own XP and XP bonus' }
+      { zh: '組隊時每個人用自己的經驗值與經驗加成各自升級', en: 'In groups, everyone levels up with their own XP and XP bonus' },
+      { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
       { zh: '修正組隊時按暫停不會真的暫停：現在任何人按暫停，全隊都會停下，畫面會顯示誰按了暫停', en: 'Fixed pause not pausing in groups: now when anyone pauses, the game stops for the whole group and shows who paused' }
