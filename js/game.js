@@ -111,6 +111,7 @@ G.Game = (() => {
 
   /** @param coop  { seed, host, members } para una partida en grupo */
   function startRun(coop = null) {
+    offerQ.length = 0; orphanT = 0;
     holdBy = []; holdPaused = []; awayBy = null; coopPause = false;
     const save = G.DB.save;
     // PK con personaje al azar: el Pokémon que le ha tocado a cada uno (cfg.members), sin mejoras.
@@ -360,6 +361,16 @@ G.Game = (() => {
     G.Coop.holdEnd();
   }
   let choiceT = 0;          // grupo: segundos que llevas eligiendo (a los 25, elige solo)
+  let orphanT = 0;          // segundos eligiendo sin ninguna ventana de elección abierta (frame)
+  const CHOICE_SCR = ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick'];
+  /**
+   * Elecciones en cola (2026-10-15): si ya hay una ventana de elección abierta, la nueva espera
+   * a que se cierre (frame). Antes la segunda escondía la primera: en la casa de monstruos (mucha
+   * XP + un objeto a la vez) se quedaba todo el grupo "eligiendo…" sin ninguna ventana.
+   */
+  const offerQ = [];
+  const busyChoosing = () => CHOICE_SCR.some(G.UI.isOpen);
+  const queued = fn => { if (!busyChoosing()) return false; if (offerQ.length < 20) offerQ.push(fn); return true; };
   const awayText = () => 'Pausa: esperando a ' + awayBy + ' (anfitrión)…';
 
   /** Has llevado a casa a un Pokémon perdido y se une a ti (events.js). */
@@ -528,6 +539,7 @@ G.Game = (() => {
    */
   function openChoice(show) {
     if (!pl || pl.dead) return;
+    if (queued(() => openChoice(show))) return;
     let mine = false;
     if (state === 'playing' || state === 'held') {
       mine = true;
@@ -544,6 +556,7 @@ G.Game = (() => {
   /** Bendición inicial del modo normal (boons.js): se para el juego mientras eliges. */
   function offerBoon() {
     if (!pl || pl.dead) return;
+    if (queued(offerBoon)) return;
     let mine = false;
     if (state === 'playing' || state === 'held') {
       mine = true;
@@ -560,6 +573,7 @@ G.Game = (() => {
   /** Disco de movimientos (loot.js): 1-4 mejoras al azar; se para el juego mientras lo miras. */
   function offerBox() {
     if (!pl || pl.dead) return;
+    if (queued(offerBox)) return;
     let mine = false;
     if (state === 'playing' || state === 'held') {
       mine = true;
@@ -592,6 +606,7 @@ G.Game = (() => {
     };
     if (pl.hasItem(id)) { G.Spawner.say('Ya llevas ' + G.Items.BY[id].name, 2, true); return; }
     if (pl.items.length < G.Player.MAX_ITEMS) { take(undefined); return; }
+    if (queued(() => offerItem(id))) return;
     // Se para el juego mientras eliges; en grupo, para todos (como con las
     // fusiones). Antes en grupo seguía y te pegaban mientras elegías.
     if (state === 'playing' || state === 'held') {
@@ -777,6 +792,22 @@ G.Game = (() => {
     if (state === 'playing' || (state === 'choice' && G.Coop.active && !coopPause)) update(dt);
     else if (pl && state !== 'ui') { G.FX.update(dt * 0.25); pl.anim.update(dt * 0.25); }
     if (state !== 'playing') G.Tips.tick(0);      // (esconde el consejo encima de cartas, pausa...)
+    // Red de seguridad (2026-10-15): eligiendo pero sin ninguna ventana de elección a la vista
+    // (otra ventana la cerró y su aviso de "elegido" ya no llegará): la partida sigue sola
+    // en vez de quedarse parada para siempre (no se movía nada ni respondía Esc).
+    if (pl && (state === 'choice' || state === 'levelup') && !CHOICE_SCR.some(G.UI.isOpen)) {
+      orphanT += real;
+      if (orphanT > 0.5) {
+        orphanT = 0;
+        console.warn('[Game] elección sin ventana: se sigue jugando');
+        if (G.Coop.active) { coopCards = []; doneChoosing(); } else state = 'playing';
+      }
+    } else orphanT = 0;
+    // Lo que esperaba en cola (o cartas de nivel del grupo que se quedaron sin abrir), cuando no hay nada abierto.
+    if (pl && !pl.dead && (state === 'playing' || state === 'held') && !busyChoosing()) {
+      if (offerQ.length) offerQ.shift()();
+      else if (G.Coop.active && coopCards.length && !coopPause) nextCoopCard();
+    }
     // Grupo: nadie puede dejar a los demás esperando para siempre: a los 25 s se elige solo.
     if (G.Coop.active && state === 'choice') {
       choiceT += real;

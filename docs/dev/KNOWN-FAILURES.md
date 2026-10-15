@@ -47,3 +47,18 @@
 - **原因**：GitHub 登入資訊和 git 作者設定都在 Windows 那邊，WSL 裡的 git 沒有。
 - **處理**：推送改用 Windows 的 `git.exe push origin main`（在 WSL 裡也能直接執行）；提交用 `git -c user.name=ken1130 -c user.email=<主人的信箱> commit ...`。
 - **換行**：這份專案已設定 `git config core.autocrlf input`，Windows 換行（CRLF）不會再被當成改動。
+
+## 7. 「選擇中…」卡住不能動（迷宮／怪物屋／商店，2026-10-15）
+
+- **症狀**：遊戲停住或角色不能動，頭上一直顯示「選擇中…」，但畫面上沒有任何選擇視窗；按 Esc 沒反應，換房間也一樣。組隊時特別容易發生（怪物屋清完時）。
+- **原因**：
+  - `G.UI.show(id)` 會把 `SCREENS` 裡**其他所有畫面藏起來**。第二個選擇視窗（升級卡、換道具）一打開，就把第一個藏掉了，第一個的回呼永遠不會被呼叫。
+  - 第二個選擇的回呼又因為「不是它讓遊戲暫停的」（`mine === false`）而不讓遊戲繼續。
+  - 卡克隆商店的面板在選擇中照樣能點，所以連買兩樣也會觸發。
+- **修法**：
+  - `game.js`：`offerItem`／`offerBox`／`offerBoon`／`openChoice` 在已有選擇視窗時改成排隊（`offerQ`），沒有視窗時才依序打開。
+  - 安全網：`state` 是 choice／levelup 但沒有任何選擇視窗超過 0.5 秒，就自動恢復；組隊時沒打開的升級卡（`coopCards`）會自動補開。
+  - `dungeon.js`／`roulette.js`：商店和輪盤不用 `G.UI.show`，選擇中不開商店、按鈕無效；`#scr-shop` 的 z-index 改成 19，選擇視窗永遠在上面。
+- **以後怎麼避免**：
+  - 新增任何「會暫停等玩家選」的視窗，一律走 `game.js` 的 offer／openChoice（會排隊），並把畫面 id 加進 `CHOICE_SCR`。
+  - 遊戲進行中開的面板，不要用 `G.UI.show`（會關掉別的視窗），改用 `classList.remove('hidden')`。

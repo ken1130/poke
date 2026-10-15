@@ -888,7 +888,8 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 #scr-roul [data-frac] small { display: block; font-size: 11px; opacity: .85; }
 #scr-roul button[disabled] { opacity: .45; pointer-events: none; }
 /* Tienda de Kecleon = refugio (2026-10-15): menú a la derecha, el juego sigue visible. */
-#scr-shop { background: none; pointer-events: none; justify-content: flex-end; align-items: center; }
+/* z-index 19: las elecciones (cartas, objeto, disco) siempre por encima del menú de la tienda */
+#scr-shop { z-index: 19; background: none; pointer-events: none; justify-content: flex-end; align-items: center; }
 #scr-shop > .box { pointer-events: auto; width: min(420px, calc(100% - 24px)); margin-right: 16px; max-height: calc(100dvh - 40px); overflow-y: auto; }
 .shop-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 .shop-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.25); border: 2px solid rgba(160,190,255,.25); }

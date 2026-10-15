@@ -35,11 +35,15 @@ G.Floors = (() => {
 
   function spawnStairs(live) {
     const p = G.U.pick(live);
+    const reach = reachable(p);
     for (let k = 0; k < 60; k++) {
       const a = Math.random() * 6.2832, d = G.U.rand(700, 1000);
       const x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
       let ok = G.World.isFree(x, y, 30);
       for (let j = 0; ok && j < 8; j++) ok = G.World.isFree(x + Math.cos(j * 0.785) * 44, y + Math.sin(j * 0.785) * 32, 10);
+      // Que se pueda llegar andando (2026-10-15: a veces salían en un hueco rodeado de paredes
+      // y ya no se podía bajar de piso en toda la run). Los 20 últimos intentos, sin exigirlo.
+      if (ok && k < 40 && !reach(x, y)) ok = false;
       if (!ok) continue;
       setStairs(Math.round(x), Math.round(y));
       if (G.Coop.active) G.Coop.broadcast(['st', stairs.x, stairs.y]);
@@ -47,6 +51,31 @@ G.Floors = (() => {
       G.Audio.sfx('surge');
       return;
     }
+  }
+  /**
+   * Casillas a las que se llega andando desde `p` (BFS por G.World.walkable, 36 casillas
+   * alrededor: las escaleras salen a 700-1000 px = 22-31 casillas). Devuelve reach(x, y).
+   */
+  function reachable(p) {
+    const TS = G.World.TS, R = 36, N = R * 2 + 1;
+    const ox = Math.floor(p.x / TS) - R, oy = Math.floor(p.y / TS) - R;
+    const seen = new Uint8Array(N * N), q = new Int32Array(N * N);
+    let head = 0, tail = 0;
+    seen[R * N + R] = 1; q[tail++] = R * N + R;
+    while (head < tail) {
+      const c = q[head++], cx = c % N, cy = (c - cx) / N;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+        const n = ny * N + nx;
+        if (seen[n] || !G.World.walkable(ox + nx, oy + ny)) continue;
+        seen[n] = 1; q[tail++] = n;
+      }
+    }
+    return (x, y) => {
+      const i = Math.floor(x / TS) - ox, j = Math.floor(y / TS) - oy;
+      return i >= 0 && j >= 0 && i < N && j < N && seen[j * N + i] === 1;
+    };
   }
   function setStairs(x, y) { stairs = x == null ? null : { x, y, t: 0 }; standT = 0; }
 

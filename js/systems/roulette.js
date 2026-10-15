@@ -56,7 +56,7 @@ G.Roulette = (() => {
       render();
       for (const b of document.querySelectorAll('#scr-roul [data-frac]')) b.onclick = () => spin(+b.dataset.frac);
       $('roul-leave').onclick = close;
-      G.UI.show('scr-roul');
+      $('scr-roul').classList.remove('hidden');     // (sin G.UI.show: no cierra las cartas u objetos abiertos)
       G.Audio.sfx('select');
       draw();
     }

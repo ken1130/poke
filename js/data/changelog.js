@@ -15,6 +15,12 @@ G.CHANGELOG = [
   ], fix: [
     ['La frase de arriba de esa ventana ("Llevas dos: elige cuál cambias") salía siempre en español.',
      'The line at the top of that window ("You carry two: choose which to swap") always showed in Spanish.'],
+    ['En la mazmorra la partida podía quedarse parada ("eligiendo…" sin ninguna ventana): si salían a la vez cartas de nivel y un objeto (casa de monstruos), la segunda ventana escondía la primera. Ahora se eligen una detrás de otra y, si aun así se queda parada, sigue sola.',
+     'In the dungeon the run could freeze ("choosing…" with no window): when level-up cards and an item came at once (Monster House), the second window hid the first. Now they come one after another and, if it still gets stuck, the game recovers by itself.'],
+    ['Tienda de Kecleon: mientras eliges no se puede comprar, robar ni usar la ruleta (comprar dos cosas seguidas podía dejar la partida parada).',
+     'Kecleon shop: while choosing you cannot buy, steal or use the roulette (buying two things in a row could freeze the run).'],
+    ['Las escaleras ya no salen en sitios a los que no se puede llegar.',
+     'Stairs no longer appear in places you cannot reach.'],
     ['Lluvia Corrosiva y Nanolluvia no hacían daño ni frenaban (y el sangrado de Puño Lee tampoco funcionaba).',
      'Corrosive Rain and Nano Rain dealt no damage and did not slow (and Lee Fist bleeding did not work either).'],
     ['El campo de Shaq no frenaba a los enemigos: ahora rebotan y se quedan fuera del anillo, que se ve siempre (también en grupo, siendo invitado).',

@@ -183,9 +183,13 @@ G.Dungeon = (() => {
     // Dentro de la tienda: el menú se abre solo (y otra vez si vuelves al mostrador).
     const shop = byId(room.siteId);
     if (!shop || (shop.state !== 'open' && shop.state !== 'free')) { closeShop(); return; }
+    // Eligiendo algo (cartas, objeto, disco...): la tienda se cierra y vuelve a abrirse después.
+    // (2026-10-15: se ponía encima y, al comprar otra cosa, la elección se perdía y la partida
+    // se quedaba parada para siempre: el "cuelgue" de la mazmorra.)
+    if (choosing()) { if (openShop) { closeShop(); shopKey = ''; } return; }
     // Ruleta (2026-10-15): al acercarte a ella se abre sola (también desde el menú).
     const [rx, ry] = roulP(), nearR = G.U.dist2(pl.x, pl.y, rx, ry + 12) < 70 * 70;
-    if (nearR && !room.atRoul && !G.Roulette.busy) {
+    if (nearR && !room.atRoul && !G.Roulette.busy) {      // (con una elección abierta ya se ha salido arriba)
       if ((shop.spins == null ? 3 : shop.spins) > 0) openRoulette(shop);
       else G.Spawner.say(G.T('Ya no quedan tiradas en esta ruleta'), 2, true);
     }
@@ -201,6 +205,9 @@ G.Dungeon = (() => {
 
   // ---------------- menú de la tienda ----------------
   let openShop = null, shopKey = '', shopSkip = null;
+  /** ¿Hay una elección abierta? (mientras, nada de tienda ni ruleta) */
+  const CHOICE_SCR = ['scr-levelup', 'scr-item', 'scr-bond', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick'];
+  const choosing = () => CHOICE_SCR.some(id => document.getElementById(id) && G.UI.isOpen(id));
   const WARE_DESC = { potion: 'Una poción al azar.', upgrade: 'Una mejora de las cartas de nivel (sobre todo movimientos).', heal: 'Recuperas el 60 % de la vida.',
                       rerolls: '+3 cambios de cartas de nivel.', disc: 'Un disco de movimientos: de 1 a 4 mejoras.', tm: 'Aprendes un movimiento nuevo (o una mejora si no caben más).',
                       protein: '+10 % de daño el resto de la run.', hpup: '+30 de vida máxima.', revive: 'Si caes, vuelves con la mitad de la vida (una vez).',
@@ -213,14 +220,14 @@ G.Dungeon = (() => {
     openShop = s; shopKey = '';
     const el = document.getElementById('shop-leave');
     el.onclick = () => { shopSkip = s.id; closeShop(); requestExit(); };
-    document.getElementById('shop-roul').onclick = () => { if ((s.spins == null ? 3 : s.spins) > 0) openRoulette(s); };
+    document.getElementById('shop-roul').onclick = () => { if (!choosing() && (s.spins == null ? 3 : s.spins) > 0) openRoulette(s); };
     refreshShop();
-    G.UI.show('scr-shop');
+    document.getElementById('scr-shop').classList.remove('hidden');    // (sin G.UI.show: no cierra otras ventanas)
     G.Audio.sfx('select');
   }
   function openRoulette(s) {
     G.UI.hide('scr-shop');
-    G.Roulette.open(s, () => { if (openShop === s) { shopKey = ''; G.UI.show('scr-shop'); refreshShop(); } });
+    G.Roulette.open(s, () => { if (openShop === s) { shopKey = ''; document.getElementById('scr-shop').classList.remove('hidden'); refreshShop(); } });
   }
   function closeShop() {
     if (!openShop) return;
@@ -252,8 +259,9 @@ G.Dungeon = (() => {
           (free ? '' : `<button class="btn small steal" data-steal="${i}" title="${G.T('Kecleon se enfadará')}">${G.T('Robar')}</button>`) + '</div></div>');
       box.appendChild(row);
     });
-    box.querySelectorAll('[data-buy]').forEach(b => { b.onclick = () => { G.Audio.sfx('coin'); request(s, +b.dataset.buy, false); }; });
+    box.querySelectorAll('[data-buy]').forEach(b => { b.onclick = () => { if (choosing()) return; G.Audio.sfx('coin'); request(s, +b.dataset.buy, false); }; });
     box.querySelectorAll('[data-steal]').forEach(b => { b.onclick = async () => {
+      if (choosing()) return;
       if (!(await G.Dialog.confirm('¿Robarlo? Kecleon se enfadará y te perseguirá (si lo vences, todo será gratis).', { ok: 'Robar', danger: true }))) return;
       if (openShop !== s) return;
       request(s, +b.dataset.steal, true); closeShop(); shopSkip = s.id;

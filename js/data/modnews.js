@@ -113,6 +113,9 @@ G.MODNEWS = [
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
+      { zh: '修正迷宮卡住不能動（一直顯示「選擇中…」但沒有視窗）：怪物屋等同時跳出升級卡和道具時，後面的視窗會把前面的藏掉；現在改成排隊一個一個選，萬一還是卡住也會自動恢復', en: 'Fixed getting stuck in the dungeon ("Choosing…" with no window): when level-up cards and an item came at once (e.g. Monster House), the second window hid the first; choices now queue one by one, and the game recovers by itself if it ever gets stuck' },
+      { zh: '卡克隆商店：選擇中不能再按購買／偷／輪盤（以前連買兩樣會卡死），選擇視窗永遠在商店上面', en: 'Kecleon shop: buying, stealing and the roulette are disabled while you are choosing (buying twice could freeze the game); choice windows always show above the shop' },
+      { zh: '樓梯不會再生在走不到的地方', en: 'Stairs no longer appear in unreachable spots' },
       { zh: '修正腐蝕酸雨／奈米屌雨沒有傷害、沒有緩速（李拳的流血也一起修好）', en: 'Fixed Corrosive Rain / Nano Rain dealing no damage and not slowing (Lee Fist bleeding fixed too)' },
       { zh: '修正俠客歐尼爾（歐美肥佬進化）的力場擋不住怪：現在敵人會被彈開、停在力場圈外，腳下也會一直顯示力場；組隊當客人時也有效', en: 'Fixed Shaq (evolved Heavyweight) force field not stopping enemies: they now bounce off and stay outside the ring, which is always shown; also works for guests in co-op' },
       { zh: '樹倒下的木刺看得見了：會從地上冒出木刺再收回去（之前有傷害但幾乎看不到）', en: 'The tree\'s wooden spikes are now visible, sprouting from the ground (they hit before, but could barely be seen)' },
