@@ -44,6 +44,12 @@ G.PvP = (() => {
   /** Te dan: daño, empujón y aviso al que te ha dado (para su marca de impacto). */
   function hurt(pl, dmg, type, owner, crit) {
     const before = pl.hp;
+    // Protegido de verdad (Protección, estrella, eligiendo cartas...): no entra, y el que pega lo ve.
+    if (pl.protectT > 0 || pl.star || pl.safe || pl.god || pl.picking) {
+      if (owner) send(['pv', 'm', owner.uid, pl.uid || G.Net.uid, 'b']);
+      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, G.T('¡Bloqueado!'), '#bff3ff');
+      return true;
+    }
     // Entre jugadores no vale la invulnerabilidad larga tras un golpe (0,45 s): si no, la mitad
     // de los golpes "acertados" no hacían nada. Un respiro corto (0,1 s) sí.
     pl.invuln = 0;
@@ -53,6 +59,7 @@ G.PvP = (() => {
     pl.invuln = Math.min(pl.invuln, 0.1);
     const d = before - pl.hp;
     if (d <= 0) return true;
+    if (owner) hitDirs.push({ a: Math.atan2(owner.y - pl.y, owner.x - pl.x), t: 0.9 });   // de dónde vino (drawWorld)
     // Lo que notas al recibir (2026-10-15, a petición del dueño): sin destellos de pantalla (le
     // dolían los ojos), sin sacudidas (mareaban) y sin parones (con golpes seguidos eran como un
     // aturdimiento). Queda: tu Pokémon destella (Player.hurt), un empujón corto, el sonido y el número.
@@ -117,20 +124,34 @@ G.PvP = (() => {
   const lastHit = new Map();      // uid del rival -> último golpe tuyo (ms): como mucho uno cada 70 ms
   const send = ev => { if (G.Coop.isHost) G.Coop.broadcast(ev); else if (G.Coop.active) G.Coop.request(ev); };
   /** Le has dado a un rival (en TU pantalla): se nota al momento y se le avisa para que pierda vida. */
-  function deal(attacker, foe, dmg, type, crit) {
+  const MELEE_K = 1.3;            // cuerpo a cuerpo: hay que arriesgarse a pegarse (y te pueden alejar)
+  const pending = new Map();      // uid del rival -> golpes de los últimos 70 ms (se mandan sumados)
+  function deal(attacker, foe, dmg, type, crit, kind) {
     if (attacker !== G.Coop.local || !foe || foe.dead || !armed()) return;
-    const now = performance.now();
-    if (now - (lastHit.get(foe.uid) || 0) < 70) return;
-    lastHit.set(foe.uid, now);
-    const k = (arena ? K_ARENA : K) * G.Types.mult(type, foe.mon.types);
-    const shown = Math.max(1, Math.round(dmg * k));
-    // Lo que ves tú al acertar: parón, marca de impacto, número grande, destello y golpe.
+    if (kind === 'melee' || kind === 'dash' || kind === 'fist') dmg *= MELEE_K;
+    // Lo que ves tú al acertar (al momento): marca de impacto, destello del rival, chispas y golpe.
+    // El número sale cuando él confirma cuánto le ha quitado (['pv','h']), así nunca miente.
     hitMark = 0.25;
     foe.flash = 0.14;
-    G.FX.dmgText(foe.x + G.U.rand(-8, 8), foe.y - foe.bodyH - 6, crit ? shown + '!' : String(shown), crit ? '#ff5f6d' : '#ffe14d', true);
     G.FX.sp('impact', type || 'normal', foe.x, foe.y - foe.bodyH * 0.5, { life: 0.16, scale: crit ? 2.4 : 1.7 });
     G.FX.burst(foe.x, foe.y - foe.bodyH * 0.5, '#ffffff', crit ? 14 : 8, 160);
     G.Audio.sfx(crit ? 'break' : 'hit');
+    // Varios golpes casi a la vez (Lanzallamas, Hoja Afilada...): se suman en un solo aviso.
+    const now = performance.now(), last = lastHit.get(foe.uid) || 0;
+    const p = pending.get(foe.uid);
+    if (p) { p.dmg += dmg; p.crit = p.crit || crit; return; }
+    if (now - last < 70) {
+      pending.set(foe.uid, { dmg, type, crit });
+      setTimeout(() => {
+        const q = pending.get(foe.uid); pending.delete(foe.uid);
+        if (q && !foe.dead) { lastHit.set(foe.uid, performance.now()); sendHit(foe, q.dmg, q.type, q.crit); }
+      }, 70 - (now - last));
+      return;
+    }
+    lastHit.set(foe.uid, now);
+    sendHit(foe, dmg, type, crit);
+  }
+  function sendHit(foe, dmg, type, crit) {
     send(['pv', 'd', foe.uid, G.Net.uid, +(dmg).toFixed(1), type || null, crit ? 1 : 0, Math.round(foe.x), Math.round(foe.y)]);
   }
   /** Frenar a un rival (Grava, charcos...): se le pide a él. */
@@ -212,7 +233,7 @@ G.PvP = (() => {
   }
 
   // ================= golpes que se notan =================
-  let feed = [], hitMark = 0, stopT = 0, slowT = 0;
+  let feed = [], hitMark = 0, stopT = 0, slowT = 0, hitDirs = [];
   const nameOf = uid => {
     if (!uid) return '?';
     if (uid === G.Net.uid) return (G.Social.me && G.Social.me.name) || G.T('Tú');
@@ -232,6 +253,7 @@ G.PvP = (() => {
       // lo has esquivado (si no, recibías golpes "de la nada" corriendo).
       if (ev[7] != null && G.U.dist2(ev[7], ev[8], pl.x, pl.y) > DODGE * DODGE) {
         G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, G.T('¡Esquivado!'), '#bff3ff');
+        send(['pv', 'm', ev[3], me, 'd']);
         return;
       }
       hurt(pl, ev[4], ev[5], owner, !!ev[6]);
@@ -239,10 +261,22 @@ G.PvP = (() => {
     }
     // ['pv','s', víctima, segundos]: te frenan.
     if (ev[1] === 's') { if (ev[2] === me && G.Game.player) G.Game.player.slowT = Math.max(G.Game.player.slowT || 0, ev[3]); return; }
+    // ['pv','m', atacante, víctima, 'b'|'d']: tu golpe no entró (bloqueado o esquivado).
+    if (ev[1] === 'm') {
+      if (ev[2] !== me) return;
+      const v = G.Coop.mate(ev[3]), p = v && v.pl;
+      if (p) G.FX.dmgText(p.x, p.y - p.bodyH - 6, G.T(ev[4] === 'b' ? '¡Bloqueado!' : '¡Esquivado!'), '#bff3ff');
+      return;
+    }
     if (ev[1] !== 'h') return;
     const [, , vic, atk, d, ko] = ev;
+    // Tu golpe confirmado: el número que de verdad le has quitado.
+    if (atk && atk === me && vic !== me) {
+      const v = G.Coop.mate(vic), p = v && v.pl;
+      if (p) G.FX.dmgText(p.x + G.U.rand(-8, 8), p.y - p.bodyH - 6, String(d), ko ? '#ff5f6d' : '#ffe14d', true);
+    }
     if (ko) {
-      feed.unshift({ text: G.I18n.f('{x} ha tumbado a {x}', nameOf(atk), nameOf(vic)), t: 5, mine: atk === me || vic === me });
+      feed.unshift({ text: atk ? G.I18n.f('{x} ha tumbado a {x}', nameOf(atk), nameOf(vic)) : G.I18n.f('{x} ha quedado fuera de la zona', nameOf(vic)), t: 5, mine: atk === me || vic === me });
       feed = feed.slice(0, 4);
       if (atk === me) { G.FX.dmgText(G.Game.player.x, G.Game.player.y - 70, G.T('¡K.O.!'), '#ffd23f', true); G.Audio.sfx('bossDown'); }
       else G.Audio.sfx('faint');
@@ -256,7 +290,9 @@ G.PvP = (() => {
   /** player.js: hacia dónde apunta tu Pokémon (radianes) o null si no se apunta a mano. */
   function manualAim(pl) {
     if (!aiming() || pl.remote || pl.dead) return null;
-    if (G.Touch.active) { const v = G.Touch.aimVector(); return v ? Math.atan2(v[1], v[0]) : (pl.manualAim != null ? pl.manualAim : null); }
+    // Móvil: mientras arrastras, apuntas tú; al soltar, vuelve a apuntar solo al rival más cercano
+    // (antes se quedaba mirando a donde soltaste y fallaba todo).
+    if (G.Touch.active) { const v = G.Touch.aimVector(); return v ? Math.atan2(v[1], v[0]) : null; }
     const w = mouseWorld();
     return w ? Math.atan2(w[1] - pl.y, w[0] - pl.x) : null;
   }
@@ -267,7 +303,11 @@ G.PvP = (() => {
   }
 
   // ================= arena =================
-  const ZONE_FROM = 90, ZONE_TO = 150, ZONE_R0 = 820, ZONE_R1 = 240;
+  // Arena: se cierra de 1:30 a 2:30. Campo abierto (2026-10-15): de 4:00 a 7:00 y desde más lejos,
+  // para que nadie pueda esconderse para siempre.
+  const ZONE = { arena: [90, 150, 820, 240], wild: [240, 420, 1800, 300] };
+  const zp = () => ZONE[arena ? 'arena' : 'wild'];
+  let ZONE_FROM = 90, ZONE_TO = 150, ZONE_R0 = 820, ZONE_R1 = 240;
   let berryT = 0, zoneT = 0, picked = false;
   function zoneR(t = G.Game.st.time) {
     if (t <= ZONE_FROM) return ZONE_R0;
@@ -275,7 +315,10 @@ G.PvP = (() => {
   }
   /** Cada fotograma (todos): zona segura y bayas (anfitrión). */
   function arenaTick(dt, pl) {
-    if (!arena || !on) return;
+    if (!on || !G.Coop.active) return;
+    [ZONE_FROM, ZONE_TO, ZONE_R0, ZONE_R1] = zp();
+    for (const h of hitDirs) h.t -= dt;
+    hitDirs = hitDirs.filter(h => h.t > 0);
     const t = G.Game.st.time;
     for (const f of feed) f.t -= dt;
     feed = feed.filter(f => f.t > 0);
@@ -283,9 +326,12 @@ G.PvP = (() => {
     // Fuera de la zona: se pierde vida.
     if (pl && !pl.dead && t > ZONE_FROM && Math.hypot(pl.x, pl.y) > zoneR(t)) {
       zoneT -= dt;
-      if (zoneT <= 0) { zoneT = 0.5; pl.invuln = 0; const sh = G.Camera.shake; pl.hurt(pl.maxHp * 0.04); G.Camera.shake = sh; }
+      if (zoneT <= 0) {
+        zoneT = 0.5; pl.invuln = 0; const sh = G.Camera.shake; pl.hurt(pl.maxHp * 0.04); G.Camera.shake = sh;
+        if (pl.dead) { const ev = ['pv', 'h', pl.uid || G.Net.uid, null, 0, 1]; send(ev); onNet(ev); }
+      }
     }
-    if (G.Coop.isHost && t >= berryT) {
+    if (arena && G.Coop.isHost && t >= berryT) {
       berryT = t + 20;
       if (G.Pickups.all().filter(p => p.kind === 'heal').length < 2) {
         const r = Math.min(160, zoneR(t) * 0.4);
@@ -397,7 +443,7 @@ G.PvP = (() => {
   function drawWorld(ctx) {
     if (!on || !G.Coop.active) return;
     const cam = G.Camera, pl = G.Game.player;
-    if (arena && G.Game.st.time > ZONE_FROM - 10) {
+    if (G.Game.st.time > ZONE_FROM - 10) {
       const R = zoneR();
       ctx.save();
       ctx.beginPath();
@@ -410,10 +456,27 @@ G.PvP = (() => {
       ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.2832); ctx.stroke();
       ctx.restore();
     }
+    // Vida de los rivales encima de su cabeza (antes había que mirar la lista de arriba).
+    const me = G.Coop.local;
+    for (const p of G.Coop.puppets()) {
+      if (p.dead || (teams && me && p.team === me.team) || !G.Camera.sees(p.x, p.y, 40)) continue;
+      const f = Math.max(0, Math.min(1, p.hp / (p.maxHp || 1))), bw = 40, bx = Math.round(p.x - bw / 2), by = Math.round(p.y - p.bodyH - 30);
+      ctx.fillStyle = 'rgba(10,12,24,.85)'; ctx.fillRect(bx - 1, by - 1, bw + 2, 7);
+      ctx.fillStyle = f > 0.5 ? '#5fe08a' : f > 0.25 ? '#ffd23f' : '#ff5f6d'; ctx.fillRect(bx, by, Math.round(bw * f), 5);
+    }
+    // De dónde te han dado: flechita roja junto a tu Pokémon, que se apaga sola (sin destellos).
+    if (pl && !pl.dead) for (const hd of hitDirs) {
+      const r = 46, x = pl.x + Math.cos(hd.a) * r, y = pl.y - 14 + Math.sin(hd.a) * r * 0.8;
+      ctx.save(); ctx.globalAlpha = Math.min(1, hd.t / 0.4) * 0.85;
+      ctx.translate(x, y); ctx.rotate(hd.a);
+      ctx.fillStyle = '#1a1220'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-6, -8); ctx.lineTo(-6, 8); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ff6b7a'; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-4, -5.5); ctx.lineTo(-4, 5.5); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
     if (!pl || pl.dead || !aiming()) return;
     let tx, ty;
     if (G.Touch.active) {
-      if (!G.Touch.aimVector() && pl.manualAim == null) return;
+      if (!G.Touch.aimVector()) return;
       tx = pl.x + Math.cos(pl.aim) * 150; ty = pl.y + Math.sin(pl.aim) * 150;
     } else {
       const w = mouseWorld();
@@ -459,7 +522,7 @@ G.PvP = (() => {
     });
     ctx.globalAlpha = 1;
     const pl = G.Game.player, t = G.Game.st.time;
-    if (arena && pl && !pl.dead) {
+    if (pl && !pl.dead) {
       let msg = null, col = '#ffd23f';
       if (t > ZONE_FROM && Math.hypot(pl.x, pl.y) > zoneR(t)) { msg = G.T('¡Estás fuera de la zona! Vuelve al centro'); col = '#ff5f6d'; }
       else if (t > ZONE_FROM - 10 && t < ZONE_TO) msg = t < ZONE_FROM ? G.I18n.f('La zona se cierra en {x} s', Math.ceil(ZONE_FROM - t)) : G.T('La zona se está cerrando…');

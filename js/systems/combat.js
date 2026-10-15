@@ -426,14 +426,17 @@ G.Combat = (() => {
     healText(pl, pl.hp - before, col);
     G.FX.ring(pl.x, pl.y, 8, r, col, 0.6, 3);
     if (G.Coop.active) {
-      const ev = ['sh', Math.round(pl.x), Math.round(pl.y), frac, r];
+      // ('shl': antes 'sh', que en el invitado ya era "shiny capturado" y nunca llegaba a curar.)
+      const ev = ['shl', Math.round(pl.x), Math.round(pl.y), frac, r, pl.team == null ? -1 : pl.team];
       if (G.Coop.isHost) G.Coop.broadcast(ev); else G.Coop.toHost(ev);
     }
   }
   /** Cooperativo: un compañero ha curado en (x, y): si estás cerca, te cura a ti. */
-  function supportHeal(x, y, frac, r) {
+  function supportHeal(x, y, frac, r, team) {
     const pl = G.Game.player;
     if (!pl || pl.dead || G.U.dist2(pl.x, pl.y, x, y) > r * r) return;
+    // PK: no se cura al rival (2026-10-15). Por equipos, sólo a los tuyos.
+    if (G.PvP.on && (!G.PvP.teams || team == null || team !== pl.team)) return;
     const before = pl.hp;
     pl.heal(pl.maxHp * frac);
     healText(pl, pl.hp - before, '#9fe0ff');
@@ -1168,7 +1171,7 @@ G.Combat = (() => {
     if (isFoe(e)) {
       if (ghost) return;
       const crit = opt && opt.crit != null ? opt.crit : isCrit(pl);
-      G.PvP.deal(pl, e, dmg * (crit ? (opt && opt.cmul) || pl.critMul || CRIT_MUL : 1), m.type, crit);
+      G.PvP.deal(pl, e, dmg * (crit ? (opt && opt.cmul) || pl.critMul || CRIT_MUL : 1), m.type, crit, m.kind);
       return;
     }
     let k = typeK(m.type, e);

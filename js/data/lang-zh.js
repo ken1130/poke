@@ -2193,4 +2193,6 @@ G.I18n.add({
   '¡Vuelven los Pokémon salvajes!': '野生寶可夢又回來了！',
   'Eligiendo…': '選擇中…',
   'Salid primero de la sala para entrar en la grieta': '請先離開房間，才能進入裂縫',
+  '¡Bloqueado!': '格擋！',
+  '{x} ha quedado fuera de la zona': '{x} 被安全區淘汰了',
 }, 'zh');

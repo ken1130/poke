@@ -177,7 +177,9 @@ G.Game = (() => {
       pl.setActive(0);
     }
     // Aventura: empiezas con unos niveles ya ganados (cartas al empezar), más cuanto más lejos.
-    const head = G.Stages.headStart();
+    // Modo jefes (2026-10-15): empiezas con 5 niveles (y sus cartas): con un solo movimiento a
+    // nivel 1, el primer jefe apenas notaba los golpes.
+    const head = G.Stages.headStart() || (G.Modes.on('boss') && !G.PvP.on ? 5 : 0);
     if (head) { pl.level += head; pl.xpNext = G.Player.xpFor(pl.level); pendingLevels += head; }
 
     if (coop) {

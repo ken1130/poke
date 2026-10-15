@@ -5,6 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '頭目模式開場直接升 5 級並選 5 次卡片，不會再一開始打頭目很癢', en: 'Boss mode now starts you at level 6 with 5 card picks, so the first boss isn’t a slog' },
+      { zh: 'PK 對手頭上有血條；被打時角色旁邊會有小紅箭頭指向攻擊來源（不閃畫面）', en: 'PvP: opponents show a health bar above their head; when hit, a small red arrow beside you points to the attacker (no screen flashing)' },
       { zh: '寧靜時刻：10 分鐘後每 3 分鐘有 20 秒野生寶可夢大幅減少（生成 25%、上限減半、沒有怪物潮），可以喘口氣', en: 'Moments of calm: after 10 minutes, every 3 minutes there are 20 s with far fewer wild Pokémon (25 % spawns, half the cap, no surges)' },
       { zh: '卡克隆熟客：一場買滿 3 次，之後的商店打 8 折，還多一樣特選商品（道具或十連扭蛋券）', en: 'Kecleon loyalty: buy 3 times in a run and later shops are 20 % off with an extra special item (held item or ×10 ticket)' },
       { zh: '卡克隆記仇：打倒過老闆的話，這場之後的商店全部貴 50%，下一個老闆也更強', en: 'Kecleon holds grudges: beat him once and later shops cost 50 % more, with a tougher shopkeeper' },
@@ -66,6 +68,9 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: 'PK 野外模式也會縮安全區（4 分鐘開始，7 分鐘縮到最小），不會一直躲', en: 'Open-field PvP now has a shrinking zone too (from 4:00 to 7:00), so nobody can hide forever' },
+      { zh: 'PK 近戰招式傷害 ×1.3；開場出生點拉遠，不會一開打就貼在一起', en: 'PvP melee moves deal ×1.3 damage; spawn points are farther apart so you don’t start face to face' },
+      { zh: 'PK 手機瞄準：放開右手拇指後恢復自動瞄準最近的對手', en: 'PvP on phones: releasing your right thumb goes back to auto-aiming at the nearest opponent' },
       { zh: '組隊時有人升級選技能，其他人不用再停下來等：選的人原地不動、不會受傷，周圍有防護罩把怪物推開（按暫停才會全隊暫停）', en: 'In co-op, picking level-up cards no longer pauses everyone: the picker stands still, takes no damage and a shield pushes enemies away (only the pause button pauses the group)' },
       { zh: '迷宮難度再下修：怪物移動速度成長從最多 +35% 降為 +15%，普通怪速度上限 92（比大多數寶可夢慢）；怪物數量和傷害成長也放慢', en: 'Dungeon difficulty lowered again: enemy speed growth capped at +15 % (was +35 %) and normal enemies max out at 92 speed (slower than most Pokémon); spawn count and damage grow more slowly' },
       { zh: '小地圖下方的距離列表字放大、比較好讀', en: 'The distance list under the minimap uses bigger, easier-to-read text' },
@@ -104,6 +109,9 @@ G.MODNEWS = [
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
+      { zh: '修正 PK：守住、無敵星星等防禦被破；攻擊者看到的傷害數字現在一定等於實際扣的血，被擋或閃掉會顯示「格擋／閃避」', en: 'PvP fixes: Protect, Star and other defenses now work; the damage numbers you see always match the real HP lost, and blocked or dodged hits say so' },
+      { zh: '修正 PK：群體治療（祈願、生命水滴）會治到對手；噴射火焰等多發型招式大部分命中被吃掉；被安全區淘汰顯示「? 擊倒了」', en: 'PvP fixes: group heals (Wish, Life Dew) healed opponents; most pellets of multi-shot moves like Flamethrower were dropped; zone eliminations showed “? knocked out”' },
+      { zh: '修正組隊：隊友的祈願、生命水滴從來沒治到房客（訊息代碼和閃光寶可夢撞在一起）', en: 'Co-op fix: teammates’ Wish and Life Dew never healed guests (the message code clashed with shiny catches)' },
       { zh: '修正：PK 被打倒後還會跳出升級選卡（現在倒下就不能再升級，開著的選卡也會自動關掉；團隊 PK 可被救起所以不受影響）', en: 'Fixed: knocked-out players in PvP still got level-up cards (no more level-ups once you’re out; an open card window closes; team PvP is unaffected since you can be revived)' },
       { zh: '修正：寶箱會擋住攻擊。現在你的招式會穿過寶箱打到後面的怪（小寶箱一樣會被打壞），走路還是不能穿過，敵人的子彈也還是會被寶箱擋住', en: 'Fixed: chests blocked your attacks. Your moves now pass through chests and hit enemies behind them (small chests still break); you still can’t walk through them and they still block enemy shots' },
       { zh: '修正 PK「看不到攻擊卻一直扣血」：對手的子彈不會再一發射就消失；李家拳、落雷、倒樹、精神箭等招式也會畫在被打的人身上；已經跑遠的話算閃避，不會被延遲的攻擊打中', en: 'Fixed PvP “losing HP without seeing anything”: enemy shots no longer vanish right after firing; Lee Fist, lightning, trees, Psychic Arrow and others are now drawn on the victim; if you had already moved far away, delayed hits count as dodged' },

@@ -1193,4 +1193,6 @@ G.I18n.add({
   '¡Vuelven los Pokémon salvajes!': 'The wild Pokémon are back!',
   'Eligiendo…': 'Choosing…',
   'Salid primero de la sala para entrar en la grieta': 'Leave the room first to enter the rift',
+  '¡Bloqueado!': 'Blocked!',
+  '{x} ha quedado fuera de la zona': '{x} was eliminated by the zone',
 }, 'en');
