@@ -494,7 +494,76 @@
       cd: 0.95, dmg: 26, radius: 320 },
     { id: 'nature-tree', name: 'Bautismo Natural', type: 'grass', kind: 'treefall',
       desc: 'Un árbol cae en diagonal del cielo y aplasta a los enemigos donde cae.',
-      cd: 1.5, dmg: 30, radius: 384 }
+      cd: 1.5, dmg: 30, radius: 384 },
+    // ---------------- 2026-10-15 · tipos con pocos movimientos (19 nuevos) ----------------
+    // Campos extra que mira combat.js: rootCh/rootT (parálisis o retroceso: inmoviliza),
+    // weakCh (baja el ataque del enemigo un 30 %), critBonus, superVs (×2 contra ese tipo),
+    // boostCh + boost (a veces te sube stats), recoil (te quita % de vida), confuseEvery.
+    // Roca
+    { id: 'stealth-rock', name: 'Trampa Rocas', type: 'rock', kind: 'mine',
+      desc: 'Siembra piedras afiladas a tu alrededor que estallan al pisarlas.',
+      cd: 1.2, dmg: 20, count: 2, radius: 58, dur: 9, knock: 30 },
+    { id: 'ancient-power', name: 'Poder Pasado', type: 'rock', kind: 'nova',
+      desc: 'Rocas en todas direcciones. A veces te sube ataque, velocidad y defensa.',
+      cd: 1.2, dmg: 10, speed: 240, count: 8, pierce: 1, life: 1.1, size: 9, boostCh: 0.12, boost: 'all' },
+    { id: 'rock-tomb', name: 'Tumba Rocas', type: 'rock', kind: 'meteor',
+      desc: 'Bloques de roca caen junto a los enemigos y los frenan mucho.',
+      cd: 1.3, dmg: 17, count: 3, radius: 48, slow: 0.6 },
+    // Dragón
+    { id: 'dragon-breath', name: 'Dragoaliento', type: 'dragon', kind: 'cone',
+      desc: 'Aliento de dragón en abanico. Puede paralizar.',
+      cd: 0.7, dmg: 7, count: 7, arc: 0.9, speed: 360, life: 0.45, size: 7, rootCh: 0.12, rootT: 0.8 },
+    { id: 'outrage', name: 'Enfado', type: 'dragon', kind: 'dash',
+      desc: 'Embestidas furiosas sin parar. Cada pocas, te quedas confuso un momento.',
+      cd: 0.55, dmg: 22, radius: 120, width: 44, knock: 50, confuseEvery: 6 },
+    { id: 'draco-meteor', name: 'Cometa Draco', type: 'dragon', kind: 'meteor',
+      desc: 'Lluvia de meteoros enorme y devastadora, pero tarda en recargar.',
+      cd: 3.4, dmg: 36, count: 5, radius: 54, knock: 90 },
+    // Hada
+    { id: 'disarming-voice', name: 'Voz Cautivadora', type: 'fairy', kind: 'chain',
+      desc: 'Una voz que salta de enemigo en enemigo. Nunca falla.',
+      cd: 0.85, dmg: 18, count: 4, radius: 150 },
+    { id: 'draining-kiss', name: 'Beso Drenaje', type: 'fairy', kind: 'aura',
+      desc: 'Besa a los que tienes cerca y te curas con cada beso.',
+      cd: 0.6, dmg: 9, radius: 74, drain: 1 },
+    { id: 'play-rough', name: 'Carantoña', type: 'fairy', kind: 'dash',
+      desc: 'Te lanzas a jugar con los enemigos. Puede bajarles el ataque.',
+      cd: 0.8, dmg: 22, radius: 110, width: 40, knock: 60, weakCh: 0.3 },
+    // Volador
+    { id: 'air-slash', name: 'Tajo Aéreo', type: 'flying', kind: 'cone',
+      desc: 'Cuchillas de aire en abanico. Pueden hacer retroceder.',
+      cd: 0.75, dmg: 9, count: 6, arc: 1.0, speed: 420, life: 0.45, size: 7, pierce: 1, rootCh: 0.1, rootT: 0.5 },
+    { id: 'brave-bird', name: 'Pájaro Osado', type: 'flying', kind: 'dash',
+      desc: 'Embestida en picado brutal. Te hace un poco de daño a ti.',
+      cd: 1.0, dmg: 32, radius: 150, width: 46, knock: 90, recoil: 0.03 },
+    // Hielo
+    { id: 'ice-shard', name: 'Canto Helado', type: 'ice', kind: 'projectile',
+      desc: 'Esquirlas de hielo rapidísimas, casi sin recarga.',
+      cd: 0.3, dmg: 10, speed: 520, count: 1, spread: 0.1, pierce: 0, life: 0.8, size: 6 },
+    { id: 'freeze-dry', name: 'Liofilización', type: 'ice', kind: 'beam',
+      desc: 'Rayo helado que frena. Hace el doble a los de tipo Agua.',
+      cd: 1.1, dmg: 19, radius: 220, width: 32, slow: 0.5, superVs: 'water' },
+    // Lucha
+    { id: 'force-palm', name: 'Palmeo', type: 'fighting', kind: 'melee',
+      desc: 'Palmada que empuja lejos y puede paralizar.',
+      cd: 0.55, dmg: 17, radius: 48, arc: 1.3, knock: 140, rootCh: 0.2, rootT: 0.7 },
+    { id: 'vacuum-wave', name: 'Onda Vacío', type: 'fighting', kind: 'aura',
+      desc: 'Onda de choque a tu alrededor que golpea a todo lo que está pegado.',
+      cd: 0.6, dmg: 10, radius: 80 },
+    // Acero
+    { id: 'bullet-punch', name: 'Puño Bala', type: 'steel', kind: 'dash',
+      desc: 'Puñetazos rapidísimos con pequeños saltos.',
+      cd: 0.35, dmg: 11, radius: 70, width: 30, knock: 30 },
+    { id: 'steel-wing', name: 'Ala de Acero', type: 'steel', kind: 'boomerang',
+      desc: 'Alas de acero que van y vuelven. A veces te suben la defensa.',
+      cd: 0.95, dmg: 15, speed: 320, count: 1, radius: 220, size: 9, boostCh: 0.25, boost: 'def' },
+    // Siniestro
+    { id: 'night-slash', name: 'Tajo Umbrío', type: 'dark', kind: 'dash',
+      desc: 'Tajo veloz entre las sombras. Mucha probabilidad de crítico.',
+      cd: 0.75, dmg: 18, radius: 110, width: 36, knock: 40, critBonus: 0.3 },
+    { id: 'snarl', name: 'Alarido Feroz', type: 'dark', kind: 'cone',
+      desc: 'Rugido en abanico que frena y puede bajar el ataque de los enemigos.',
+      cd: 0.7, dmg: 6, count: 7, arc: 1.1, speed: 340, life: 0.45, size: 7, slow: 0.35, weakCh: 0.25 }
   ];
 
   /*
@@ -678,13 +747,13 @@
     'psychic': ['Vasta Fuerza', 'mag'],      'sludge': ['Bomba Lodo', 'atk'],
     'poison-sting': ['Puya Nociva', 'spd'],  'toxic': ['Gas Venenoso', 'rgn'],
     'mud-shot': ['Tierra Viva', 'atk'],      'bulldoze': ['Terremoto', 'atk'],
-    'gust': ['Vendaval', 'spd'],             'wing-attack': ['Pájaro Osado', 'atk'],
+    'gust': ['Vendaval', 'spd'],             'wing-attack': ['Ala Mortífera', 'atk'],
     'bug-bite': ['Tijera X', 'atk'],         'string-shot': ['Red Viscosa', 'cd'],
     'bug-buzz': ['Enjambre', 'rgn'],         'rock-throw': ['Roca Afilada', 'atk'],
-    'rock-slide': ['Trampa Rocas', 'cd'],    'ice-beam': ['Ventisca', 'atk'],
+    'rock-slide': ['Joya de Luz', 'cd'],    'ice-beam': ['Ventisca', 'atk'],
     'powder-snow': ['Viento Hielo', 'spd'],  'karate-chop': ['A Bocajarro', 'atk'],
     'aura-sphere': ['Onda Certera', 'cd'],   'lick': ['Puño Sombra', 'atk'],
-    'shadow-ball': ['Golpe Fantasma', 'cd'], 'dragon-rage': ['Cometa Draco', 'atk'],
+    'shadow-ball': ['Golpe Fantasma', 'cd'], 'dragon-rage': ['Pulso Dragón', 'atk'],
     'fairy-wind': ['Fuerza Lunar', 'atk'],   'dazzling-gleam': ['Campo de Niebla', 'rgn'],
     'metal-claw': ['Cabeza de Hierro', 'atk'], 'flash-cannon': ['Rayo Metálico', 'def'],
     'bite': ['Triturar', 'atk'],             'dark-pulse': ['Alarido', 'spd'],
@@ -699,7 +768,18 @@
     'vampire-fang': ['Colmillo Eterno', 'rgn'], 'psy-arrow': ['Flecha Psíquica Eterna', 'cd'],
     'acid-rain': ['Nanolluvia', 'rgn'],      'lee-fist': ['Puño Furioso', 'atk'],
     'heavyweight': ['Shaq', 'hp'],           'ghost-spear': ['Lanza Sombría', 'cd'],
-    'nature-tree': ['¡Árbol Va!', 'mag']
+    'nature-tree': ['¡Árbol Va!', 'mag'],
+    // 2026-10-15 · los 19 nuevos
+    'stealth-rock': ['Campo de Agujas', 'cd'],     'ancient-power': ['Meteoro Ancestral', 'atk'],
+    'rock-tomb': ['Mausoleo', 'def'],              'dragon-breath': ['Aliento Real', 'cd'],
+    'outrage': ['Furia Ancestral', 'hp'],          'draco-meteor': ['Lluvia de Cometas', 'atk'],
+    'disarming-voice': ['Canto Encantador', 'cd'], 'draining-kiss': ['Beso Vital', 'rgn'],
+    'play-rough': ['Juego Salvaje', 'spd'],        'air-slash': ['Tajo Huracán', 'spd'],
+    'brave-bird': ['Ave Divina', 'hp'],            'ice-shard': ['Lanzas de Hielo', 'cd'],
+    'freeze-dry': ['Liofilización Total', 'atk'],  'force-palm': ['Palma Celestial', 'atk'],
+    'vacuum-wave': ['Onda de Vacío', 'def'],       'bullet-punch': ['Ráfaga de Balas', 'spd'],
+    'steel-wing': ['Ala de Acero Pura', 'def'],    'night-slash': ['Tajo Abismal', 'atk'],
+    'snarl': ['Rugido Abismal', 'mag']
   };
   // Lo que gana al evolucionar, según cómo funcione.
   const EVO_MODS = {

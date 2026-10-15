@@ -1,0 +1,83 @@
+/* ============ lang-moves3.js — los 19 movimientos nuevos (2026-10-15) ============
+ * Nombres oficiales de Pokémon en chino tradicional e inglés; las evoluciones
+ * (inventadas para el juego) con nombres a juego.
+ */
+G.I18n.add({
+  // nombres
+  'Trampa Rocas': '隱形岩', 'Poder Pasado': '原始之力', 'Tumba Rocas': '岩石封鎖',
+  'Dragoaliento': '龍息', 'Enfado': '逆鱗', 'Cometa Draco': '流星群',
+  'Voz Cautivadora': '魅惑之聲', 'Beso Drenaje': '吸取之吻', 'Carantoña': '嬉鬧',
+  'Tajo Aéreo': '空氣斬', 'Pájaro Osado': '勇鳥猛攻',
+  'Canto Helado': '冰礫', 'Liofilización': '冷凍乾燥',
+  'Palmeo': '發勁', 'Onda Vacío': '真空波',
+  'Puño Bala': '子彈拳', 'Ala de Acero': '鋼翼',
+  'Tajo Umbrío': '暗襲要害', 'Alarido Feroz': '大聲咆哮',
+  // descripciones
+  'Siembra piedras afiladas a tu alrededor que estallan al pisarlas.': '在身邊撒下尖銳的石頭，怪物踩到就會被刺。',
+  'Rocas en todas direcciones. A veces te sube ataque, velocidad y defensa.': '往四面八方射出岩石，有機率讓自己的攻擊、速度、防禦提升。',
+  'Bloques de roca caen junto a los enemigos y los frenan mucho.': '岩石砸在敵人身邊，讓牠們大幅緩速。',
+  'Aliento de dragón en abanico. Puede paralizar.': '扇形的龍之吐息，有機率讓敵人麻痺。',
+  'Embestidas furiosas sin parar. Cada pocas, te quedas confuso un momento.': '狂暴地連續衝撞，每撞幾次自己會混亂一下。',
+  'Lluvia de meteoros enorme y devastadora, pero tarda en recargar.': '超大範圍的隕石雨，威力驚人，但冷卻很久。',
+  'Una voz que salta de enemigo en enemigo. Nunca falla.': '在敵人之間連鎖跳躍的聲音，必定命中。',
+  'Besa a los que tienes cerca y te curas con cada beso.': '親吻身邊的敵人，每親一下就回血。',
+  'Te lanzas a jugar con los enemigos. Puede bajarles el ataque.': '衝進敵人堆裡嬉鬧，有機率降低牠們的攻擊。',
+  'Cuchillas de aire en abanico. Pueden hacer retroceder.': '扇形的空氣刃，有機率讓敵人畏縮。',
+  'Embestida en picado brutal. Te hace un poco de daño a ti.': '從空中猛力俯衝，自己也會受到一點反作用傷害。',
+  'Esquirlas de hielo rapidísimas, casi sin recarga.': '超快速射出冰塊，幾乎沒有冷卻。',
+  'Rayo helado que frena. Hace el doble a los de tipo Agua.': '讓敵人緩速的冰凍光線，對水屬性造成雙倍傷害。',
+  'Palmada que empuja lejos y puede paralizar.': '把敵人推得很遠的掌擊，有機率麻痺。',
+  'Onda de choque a tu alrededor que golpea a todo lo que está pegado.': '以自己為中心的衝擊波，打中身邊所有敵人。',
+  'Puñetazos rapidísimos con pequeños saltos.': '超快的連續短距離衝拳。',
+  'Alas de acero que van y vuelven. A veces te suben la defensa.': '飛出去再飛回來的鋼鐵之翼，有機率提升自己的防禦。',
+  'Tajo veloz entre las sombras. Mucha probabilidad de crítico.': '在暗影中高速斬擊，暴擊率很高。',
+  'Rugido en abanico que frena y puede bajar el ataque de los enemigos.': '扇形的咆哮，讓敵人緩速，並可能降低攻擊。',
+  // evoluciones
+  'Campo de Agujas': '尖岩陣地', 'Meteoro Ancestral': '遠古隕石', 'Mausoleo': '岩石墓園',
+  'Aliento Real': '真龍吐息', 'Furia Ancestral': '狂龍逆鱗', 'Lluvia de Cometas': '流星風暴',
+  'Canto Encantador': '魅惑之歌', 'Beso Vital': '生命之吻', 'Juego Salvaje': '狂歡嬉鬧',
+  'Tajo Huracán': '颶風斬', 'Ave Divina': '神鳥猛擊', 'Lanzas de Hielo': '冰槍連射',
+  'Liofilización Total': '絕對冷凍', 'Palma Celestial': '天掌發勁', 'Onda de Vacío': '真空颶波',
+  'Ráfaga de Balas': '機關槍拳', 'Ala de Acero Pura': '純鋼之翼', 'Tajo Abismal': '暗影絕斬',
+  'Rugido Abismal': '深淵咆哮',
+  // evoluciones renombradas (antes coincidían con nombres nuevos)
+  'Joya de Luz': '力量寶石', 'Ala Mortífera': '死亡羽翼', 'Pulso Dragón': '龍之波動'
+}, 'zh');
+
+G.I18n.add({
+  'Trampa Rocas': 'Stealth Rock', 'Poder Pasado': 'Ancient Power', 'Tumba Rocas': 'Rock Tomb',
+  'Dragoaliento': 'Dragon Breath', 'Enfado': 'Outrage', 'Cometa Draco': 'Draco Meteor',
+  'Voz Cautivadora': 'Disarming Voice', 'Beso Drenaje': 'Draining Kiss', 'Carantoña': 'Play Rough',
+  'Tajo Aéreo': 'Air Slash', 'Pájaro Osado': 'Brave Bird',
+  'Canto Helado': 'Ice Shard', 'Liofilización': 'Freeze-Dry',
+  'Palmeo': 'Force Palm', 'Onda Vacío': 'Vacuum Wave',
+  'Puño Bala': 'Bullet Punch', 'Ala de Acero': 'Steel Wing',
+  'Tajo Umbrío': 'Night Slash', 'Alarido Feroz': 'Snarl',
+  'Siembra piedras afiladas a tu alrededor que estallan al pisarlas.': 'Scatters sharp stones around you that burst when stepped on.',
+  'Rocas en todas direcciones. A veces te sube ataque, velocidad y defensa.': 'Rocks in every direction. Sometimes raises your attack, speed and defense.',
+  'Bloques de roca caen junto a los enemigos y los frenan mucho.': 'Rock blocks drop next to enemies and slow them down a lot.',
+  'Aliento de dragón en abanico. Puede paralizar.': 'A fan of dragon breath. May paralyze.',
+  'Embestidas furiosas sin parar. Cada pocas, te quedas confuso un momento.': 'Nonstop furious rams. Every few, you get confused for a moment.',
+  'Lluvia de meteoros enorme y devastadora, pero tarda en recargar.': 'A huge, devastating meteor shower, but it takes a while to recharge.',
+  'Una voz que salta de enemigo en enemigo. Nunca falla.': 'A voice that jumps from enemy to enemy. Never misses.',
+  'Besa a los que tienes cerca y te curas con cada beso.': 'Kisses nearby enemies and heals you with every kiss.',
+  'Te lanzas a jugar con los enemigos. Puede bajarles el ataque.': 'Rough-and-tumble charge. May lower enemies’ attack.',
+  'Cuchillas de aire en abanico. Pueden hacer retroceder.': 'A fan of air blades. May make enemies flinch.',
+  'Embestida en picado brutal. Te hace un poco de daño a ti.': 'A brutal diving charge. It hurts you a little too.',
+  'Esquirlas de hielo rapidísimas, casi sin recarga.': 'Super-fast ice shards with almost no cooldown.',
+  'Rayo helado que frena. Hace el doble a los de tipo Agua.': 'A chilling, slowing beam. Double damage to Water types.',
+  'Palmada que empuja lejos y puede paralizar.': 'A palm strike that knocks far back and may paralyze.',
+  'Onda de choque a tu alrededor que golpea a todo lo que está pegado.': 'A shockwave around you that hits everything close by.',
+  'Puñetazos rapidísimos con pequeños saltos.': 'Lightning-fast punches with short dashes.',
+  'Alas de acero que van y vuelven. A veces te suben la defensa.': 'Steel wings that fly out and back. Sometimes raise your defense.',
+  'Tajo veloz entre las sombras. Mucha probabilidad de crítico.': 'A swift slash from the shadows. High critical chance.',
+  'Rugido en abanico que frena y puede bajar el ataque de los enemigos.': 'A fan-shaped roar that slows and may lower enemies’ attack.',
+  'Campo de Agujas': 'Needle Field', 'Meteoro Ancestral': 'Ancient Meteor', 'Mausoleo': 'Mausoleum',
+  'Aliento Real': 'Royal Breath', 'Furia Ancestral': 'Ancestral Fury', 'Lluvia de Cometas': 'Comet Storm',
+  'Canto Encantador': 'Charming Song', 'Beso Vital': 'Life Kiss', 'Juego Salvaje': 'Wild Romp',
+  'Tajo Huracán': 'Hurricane Slash', 'Ave Divina': 'Divine Bird', 'Lanzas de Hielo': 'Ice Lances',
+  'Liofilización Total': 'Absolute Freeze', 'Palma Celestial': 'Heavenly Palm', 'Onda de Vacío': 'Void Wave',
+  'Ráfaga de Balas': 'Bullet Barrage', 'Ala de Acero Pura': 'Pure Steel Wing', 'Tajo Abismal': 'Abyss Slash',
+  'Rugido Abismal': 'Abyss Roar',
+  'Joya de Luz': 'Power Gem', 'Ala Mortífera': 'Oblivion Wing', 'Pulso Dragón': 'Dragon Pulse'
+});
