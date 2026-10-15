@@ -5,6 +5,7 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '暫停畫面新增「我的能力值」：等級、生命、攻擊力、移動速度、冷卻縮短、暴擊率／暴擊傷害、減傷、每秒回血、拾取範圍、經驗與金幣加成', en: 'The pause screen now shows your stats: level, HP, attack, speed, cooldown, crit chance/damage, damage reduction, regeneration, pickup range and XP/coin bonuses' },
       { zh: '頭目模式開場直接升 5 級並選 5 次卡片，不會再一開始打頭目很癢', en: 'Boss mode now starts you at level 6 with 5 card picks, so the first boss isn’t a slog' },
       { zh: 'PK 對手頭上有血條；被打時角色旁邊會有小紅箭頭指向攻擊來源（不閃畫面）', en: 'PvP: opponents show a health bar above their head; when hit, a small red arrow beside you points to the attacker (no screen flashing)' },
       { zh: '寧靜時刻：10 分鐘後每 3 分鐘有 20 秒野生寶可夢大幅減少（生成 25%、上限減半、沒有怪物潮），可以喘口氣', en: 'Moments of calm: after 10 minutes, every 3 minutes there are 20 s with far fewer wild Pokémon (25 % spawns, half the cap, no surges)' },

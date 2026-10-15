@@ -1195,4 +1195,12 @@ G.I18n.add({
   'Salid primero de la sala para entrar en la grieta': 'Leave the room first to enter the rift',
   '¡Bloqueado!': 'Blocked!',
   '{x} ha quedado fuera de la zona': '{x} was eliminated by the zone',
+  'Tus estadísticas': 'Your stats',
+  'Recarga': 'Cooldown',
+  'Crítico': 'Crit chance',
+  'Daño crítico': 'Crit damage',
+  'Reducción de daño': 'Damage reduction',
+  'Alcance de recogida': 'Pickup range',
+  'Bonus de experiencia': 'XP bonus',
+  'Bonus de monedas': 'Coin bonus',
 }, 'en');

@@ -2195,4 +2195,12 @@ G.I18n.add({
   'Salid primero de la sala para entrar en la grieta': '請先離開房間，才能進入裂縫',
   '¡Bloqueado!': '格擋！',
   '{x} ha quedado fuera de la zona': '{x} 被安全區淘汰了',
+  'Tus estadísticas': '我的能力值',
+  'Recarga': '冷卻縮短',
+  'Crítico': '暴擊率',
+  'Daño crítico': '暴擊傷害',
+  'Reducción de daño': '減傷',
+  'Alcance de recogida': '拾取範圍',
+  'Bonus de experiencia': '經驗加成',
+  'Bonus de monedas': '金幣加成',
 }, 'zh');

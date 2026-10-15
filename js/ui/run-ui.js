@@ -223,7 +223,32 @@ G.RunUI = (() => {
     renderBond();
   }
 
+  /** Estadísticas de tu Pokémon ahora mismo (2026-10-15: se pidió ver la velocidad, la vida...). */
+  function renderPauseStats() {
+    const pl = G.Game.player, box = $('pause-stats');
+    if (!box) return;
+    if (!pl) { box.innerHTML = ''; return; }
+    const pct = v => Math.round(v * 100) + '%';
+    const mul = v => '×' + (+v.toFixed(2)).toString().replace('.', G.I18n.lang === 'es' ? ',' : '.');
+    const rows = [
+      ['Nivel', 'Lv.' + pl.level],
+      ['Vida', Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp)],
+      ['Ataque', mul(pl.atk)],
+      ['Velocidad', String(Math.round(pl.spd))],
+      ['Recarga', pl.cdMul < 1 ? '−' + pct(1 - pl.cdMul) : '—'],
+      ['Crítico', pct(pl.critChance || 0)],
+      ['Daño crítico', mul(pl.critMul || 1.5)],
+      ['Reducción de daño', pl.reduction > 0 ? pct(pl.reduction) : '—'],
+      ['Regeneración', pl.regen > 0 ? (+pl.regen.toFixed(1)) + ' /s' : '—'],
+      ['Alcance de recogida', String(Math.round(pl.magnet))],
+      ['Bonus de experiencia', mul(pl.xpMul)],
+      ['Bonus de monedas', mul(pl.coinMul)]
+    ];
+    box.innerHTML = rows.map(([k, v]) => `<div><span>${G.T(k)}</span><b>${v}</b></div>`).join('');
+  }
+
   function showPause(coop = false) {
+    renderPauseStats();
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
     $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';

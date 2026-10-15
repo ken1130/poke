@@ -904,3 +904,17 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 #scr-pkpick .card.pk-sel .key { color: #ffd23f; border-color: #ffd23f; }
 #scr-pkpick #pk-ok[disabled] { opacity: .5; pointer-events: none; }
 @media (max-height: 520px) { #scr-pkpick .card { padding-top: 4px; padding-bottom: 4px; } #scr-pkpick .card .ds { font-size: 12px; } }
+
+/* Estadísticas en la pausa (run-ui.js renderPauseStats, 2026-10-15) */
+.pause-stats-title { margin: 10px 0 4px; font-size: 15px; color: var(--gold, #ffd23f); }
+.pause-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; margin: 0 0 10px; text-align: left; }
+.pause-stats > div { display: flex; justify-content: space-between; gap: 6px; background: rgba(5, 10, 30, .35); border-radius: 6px; padding: 4px 8px; font-size: 13px; }
+.pause-stats span { color: var(--muted, #b8c4dc); }
+.pause-stats b { color: #fff; white-space: nowrap; }
+@media (max-height: 520px) {
+  .pause-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px 6px; margin-bottom: 6px; }
+  .pause-stats > div { padding: 1px 6px; font-size: 11px; }
+  .pause-stats-title { margin: 2px 0 2px; font-size: 13px; }
+  #scr-pause .box { max-height: calc(100vh - 12px); overflow-y: auto; padding-top: 10px; padding-bottom: 10px; }
+  #scr-pause h2 { margin: 0 0 2px; }
+}
