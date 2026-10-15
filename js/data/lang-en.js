@@ -1058,4 +1058,5 @@ G.I18n.add({
   'Escaleras: si os quedáis todos encima, bajáis al piso siguiente (más difícil, pero con más premios).': 'Stairs: if everyone stands on them, you go down to the next floor (harder, but more rewards).',
   'Enemigo de élite (aro de color): más fuerte y con una habilidad especial, pero suelta mucha más experiencia.': 'Elite enemy (colored ring): stronger and with a special ability, but drops much more XP.',
   'En grupo: quedaos cerca para cargar el ataque combinado y pulsa F (o el botón) cuando esté lleno.': 'In a group: stay close to charge the combo attack and press F (or the button) when it is full.',
+  'Élite': 'Elite',
 }, 'en');

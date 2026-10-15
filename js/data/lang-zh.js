@@ -2058,4 +2058,5 @@ G.I18n.add({
   'Escaleras: si os quedáis todos encima, bajáis al piso siguiente (más difícil, pero con más premios).': '樓梯：全員站上去就會進入下一層（更難，但獎勵更多）。',
   'Enemigo de élite (aro de color): más fuerte y con una habilidad especial, pero suelta mucha más experiencia.': '精英怪（腳下有彩色光環）：更強、有特殊能力，但掉很多經驗值。',
   'En grupo: quedaos cerca para cargar el ataque combinado y pulsa F (o el botón) cuando esté lleno.': '組隊時：靠近隊友就會集氣，滿了按 F（或手機按鈕）發動合體技。',
+  'Élite': '精英怪',
 }, 'zh');

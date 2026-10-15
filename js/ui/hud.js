@@ -711,6 +711,10 @@ G.HUD = (() => {
       ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, y + 0.5, 2.5, 0, 6.2832); ctx.fill();
     },
     statue(ctx, x, y) { G.Pickups.sprite(ctx, 'statue', Math.floor(performance.now() / 600) % 6, x, y, 0.45); },
+    elite(ctx, x, y, on) {
+      ctx.fillStyle = on ? '#ffd23f' : '#ff9a3d'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 5, y); ctx.lineTo(x, y + 5); ctx.lineTo(x - 5, y); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#3a1a00'; ctx.lineWidth = 1; ctx.stroke();
+    },
     mate(ctx, x, y, dead) {
       ctx.fillStyle = dead ? '#ff5f6d' : '#5fe08a'; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 6.2832); ctx.fill();
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
@@ -773,6 +777,7 @@ G.HUD = (() => {
     for (const s of G.Dungeon.sites) icon(s.type, s.x, s.y, true, blink);
     if (G.Floors.stairs) icon('stairs', G.Floors.stairs.x, G.Floors.stairs.y, true);
     for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) icon('boss', e.x, e.y, true);
+    for (const e of G.EnemyMgr.all()) if (e.elite && !e.boss && !e.dead) icon('elite', e.x, e.y, false, blink);
     if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl) icon('mate', o.x, o.y, true, o.dead);
     // Tú: flecha blanca hacia donde miras.
     const a = pl.moveAngle || 0;
@@ -816,12 +821,13 @@ G.HUD = (() => {
     }
     if (G.Floors.stairs) add(G.Floors.stairs, 'Escaleras', '#9fc8ff', 'stairs');
     add(near(G.EnemyMgr.all(), e => e.boss && !e.dead), 'Jefe', '#ff5f6d', 'boss');
+    add(near(G.EnemyMgr.all(), e => e.elite && !e.boss && !e.dead), 'Élite', '#ffb84d', 'elite');
     if (!rows.length) return;
     ctx.save();
     ctx.font = F(800, 10);
     ctx.textAlign = 'right';
     // Lo más importante primero (caben 6).
-    const PRI = ['sbox', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'item', 'bigchest', 'altar', 'spring'];
+    const PRI = ['sbox', 'egg', 'stairs', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'elite', 'item', 'bigchest', 'altar', 'spring'];
     rows.sort((a, b) => PRI.indexOf(a.ic) - PRI.indexOf(b.ic));
     rows.slice(0, 6).forEach((r, k) => {
       const a = Math.atan2(r.o.y - pl.y, r.o.x - pl.x);
