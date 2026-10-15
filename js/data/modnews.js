@@ -5,6 +5,7 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '圖鑑可依屬性篩選（彩色屬性按鈕，跨所有地區），搜尋框也能直接打屬性名稱，例如「火」', en: 'Pokédex type filter (colored type chips, across all regions); you can also type a type name in the search box, e.g. “fire”' },
       { zh: '無盡塔：每 5 層三選一「遺物」，整座塔都有效（吸血、雙子火球、獵人之眼、永恆之芽、引爆器等 8 種）', en: 'Endless Tower: every 5 floors pick 1 of 3 relics that last the whole climb (lifesteal, twin fireballs, hunter’s eye, revive, detonator and more — 8 in all)' },
       { zh: '每日挑戰連續天數：連續 3／7／14／30 天有扭蛋券與稱號', en: 'Daily challenge streaks: tickets and titles at 3, 7, 14 and 30 days in a row' },
       { zh: '每週挑戰新增 4 種規則：只能一個攻擊、精英週、疾速惡魔、孤注一擲（從下週開始輪替）', en: 'Four new weekly rules: one attack only, elite week, speed demons, all or nothing (in rotation from next week)' },

@@ -873,3 +873,6 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 @media (max-height: 520px) { .ch-btns { flex-direction: row !important; flex-wrap: wrap; justify-content: flex-end; } .ch-btns .btn { padding: 6px 10px; font-size: 14px; } }
 /* Sala: el botón de empezar siempre a la vista (en el móvil la sala es más alta que la pantalla). */
 .lobby-startbar { position: sticky; bottom: -18px; z-index: 3; padding: 12px 0 8px; background: linear-gradient(rgba(22,42,92,0), rgba(22,42,92,.97) 35%); }
+/* Pokédex: fila de tipos (2026-10-15). */
+.dex-types { flex-basis: 100%; margin-top: 4px; gap: 4px; }
+.dex-types .chip { padding: 2px 8px; font-size: 12px; border-width: 2px; }

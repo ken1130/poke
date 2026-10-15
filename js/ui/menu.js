@@ -2,7 +2,7 @@
 G.MenuUI = (() => {
   const $ = G.UI.$;
   const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
-  let dexFilter = 'all', dexGen = 1, dexSel = null, dexQuery = '';
+  let dexFilter = 'all', dexGen = 1, dexSel = null, dexQuery = '', dexType = null;
 
   function init() {
     const ICON = { play: 'ball', adventure: 'trophy', challenge: 'crown', dex: 'book', upgrades: 'up', gacha: 'ball4', goals: 'medal3', party: 'friends', modes: 'cards', cheat: 'star', settings: 'gear' };
@@ -157,11 +157,24 @@ G.MenuUI = (() => {
       c.onclick = () => { dexFilter = k; openDex(); };
       fb.appendChild(c);
     }
+    // Por tipo (2026-10-15): una fila de chips de colores; con un tipo elegido se buscan
+    // en todas las regiones. Otra vez el mismo, se quita.
+    const tb = document.createElement('div');
+    tb.className = 'filters dex-types';
+    for (const t of Object.keys(G.U.TYPE_NAME)) {
+      const c = document.createElement('button');
+      c.className = 'chip' + (t === dexType ? ' on' : '');
+      c.style.cssText = `border-color:${G.U.TYPE_COLOR[t]};${t === dexType ? `background:${G.U.TYPE_COLOR[t]};color:#10131c` : `color:${G.U.TYPE_COLOR[t]}`}`;
+      c.textContent = G.U.TYPE_NAME[t];
+      c.onclick = () => { dexType = dexType === t ? null : t; openDex(); };
+      tb.appendChild(c);
+    }
+    fb.appendChild(tb);
     // Buscador: por nombre (traducido o no) o número, en todas las regiones.
     const search = $('dex-search');
     search.value = dexQuery;
     search.oninput = () => { dexQuery = search.value; tabs.classList.toggle('dim', !!dexQuery.trim()); renderGrid(); };
-    tabs.classList.toggle('dim', !!dexQuery.trim());
+    tabs.classList.toggle('dim', !!dexQuery.trim() || !!dexType);
     renderGrid();
     showDetail(dexSel);
   }
@@ -169,6 +182,9 @@ G.MenuUI = (() => {
   /** ¿Coincide el Pokémon con lo buscado? Nombre (como se ve o el original) o número. */
   function matches(p, q) {
     if (/^\d+$/.test(q)) return p.dex === +q;   // número exacto: 25 o 025 -> Pikachu
+    // También por tipo escrito ("fuego", "火", "fire"...).
+    const byType = Object.keys(G.U.TYPE_NAME).find(t => [G.U.TYPE_NAME[t], G.T(G.U.TYPE_NAME[t]), t].some(n => String(n).toLowerCase() === q));
+    if (byType) return p.types.includes(byType);
     return p.name.toLowerCase().includes(q) || G.T(p.name).toLowerCase().includes(q);
   }
 
@@ -178,7 +194,8 @@ G.MenuUI = (() => {
     grid.innerHTML = '';
     const q = dexQuery.trim().toLowerCase();
     for (const p of G.DEX) {
-      if (q ? !matches(p, q) : p.gen !== dexGen) continue;
+      if (q ? !matches(p, q) : !dexType && p.gen !== dexGen) continue;
+      if (dexType && !p.types.includes(dexType)) continue;
       const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
       if (dexFilter === 'own' && !own) continue;
       if (dexFilter === 'miss' && own) continue;
