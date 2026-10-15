@@ -359,6 +359,7 @@ G.Dungeon = (() => {
 
   /** Anfitrión: alguien toca la puerta del sitio `s` → entra todo el grupo. */
   function enterRoom(s, live) {
+    if (room || G.Rift.inArena) return;          // nunca una sala dentro de otra o de la arena (ver rift.js start)
     const kind = s.type === 'shop' ? 'shop' : 'myst';
     const r = Math.random();
     const ev = kind === 'shop' ? null : r < 0.5 ? 'house' : r < 0.7 ? 'treasure' : r < 0.85 ? 'heal' : 'trap';

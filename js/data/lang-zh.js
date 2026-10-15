@@ -2192,4 +2192,5 @@ G.I18n.add({
   'Momento de calma: menos Pokémon salvajes durante 20 s': '寧靜時刻：接下來 20 秒野生寶可夢變少',
   '¡Vuelven los Pokémon salvajes!': '野生寶可夢又回來了！',
   'Eligiendo…': '選擇中…',
+  'Salid primero de la sala para entrar en la grieta': '請先離開房間，才能進入裂縫',
 }, 'zh');

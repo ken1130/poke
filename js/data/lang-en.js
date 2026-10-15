@@ -1192,4 +1192,5 @@ G.I18n.add({
   'Momento de calma: menos Pokémon salvajes durante 20 s': 'A moment of calm: fewer wild Pokémon for 20 s',
   '¡Vuelven los Pokémon salvajes!': 'The wild Pokémon are back!',
   'Eligiendo…': 'Choosing…',
+  'Salid primero de la sala para entrar en la grieta': 'Leave the room first to enter the rift',
 }, 'en');

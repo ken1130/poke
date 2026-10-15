@@ -85,8 +85,10 @@ G.Rift = (() => {
   }
 
   function enter() {
-    if (asked) return;
-    asked = true;
+    // (asked = hora del último intento: si el anfitrión dice que no, se puede volver a probar.)
+    const now = performance.now();
+    if (asked && now - asked < 2000) return;
+    asked = now;
     if (authority()) start();
     else G.Coop.toHost(['re']);
   }
@@ -98,6 +100,12 @@ G.Rift = (() => {
 
   function start(forceType) {
     if (arena) return;
+    // (2026-10-15) Con el grupo dentro de la tienda o de una sala no se abre la arena: las dos
+    // guardan los enemigos de fuera (EnemyMgr.stash) y, una encima de otra, al volver se quedaba colgado.
+    if (G.Dungeon && G.Dungeon.inRoom) {
+      G.Spawner.say('Salid primero de la sala para entrar en la grieta', 2.6);
+      return;
+    }
     forceType = forceType || nextType; nextType = null;
     let pool = G.DEX.filter(p => p.leg && G.SPRITE_META[p.dex]);
     if (forceType && pool.some(p => p.types.includes(forceType))) pool = pool.filter(p => p.types.includes(forceType));

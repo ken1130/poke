@@ -245,7 +245,8 @@ G.Floors = (() => {
       ctx.fillText('B' + (floor + 1) + 'F', w / 2 - 62, 42);
     }
     if (G.Coop.active && !G.PvP.on && pl && !pl.dead) {
-      const x = 16 + 48 + 168 + 10, y = 37, bw = 74;
+      // A la derecha de las monedas de la run (hud.js), no encima (2026-10-15: se tapaban).
+      const x = (G.HUD.coinEnd || 16 + 48 + 168 + 8) + 12, y = 37, bw = 74;
       ctx.textAlign = 'left';
       ctx.font = F(800, 9);
       ctx.fillStyle = combo >= 1 ? '#ffe14d' : '#cfd8ea';

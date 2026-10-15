@@ -104,6 +104,8 @@ G.MODNEWS = [
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
+      { zh: '修正：組隊時一人進裂縫、另一人同時進商店或神秘房間，打完裂縫頭目後遊戲卡住（現在房間裡不能開裂縫，裂縫中也不能進房間）', en: 'Fixed: in co-op, one player entering a rift while another entered a shop or mystery room froze the game after the rift boss (rifts can’t open from inside a room and rooms can’t be entered during a rift)' },
+      { zh: '修正：組隊時「合體技」充能條疊在金幣上', en: 'Fixed: the co-op Combo meter overlapped the run coins' },
       { zh: '在商店或沒有怪物的房間裡不會再一直自動放招式（卡克隆暴怒或怪物屋有怪時照常攻擊）', en: 'Moves no longer fire on their own inside the shop or empty rooms (they still do against an angry Kecleon or Monster House)' },
       { zh: '打倒卡克隆後牠不會再留在櫃台後面', en: 'Kecleon no longer stays behind the counter after you beat him' },
       { zh: '修正升級選卡畫面在說明很長時卡片擠到左邊', en: 'Fixed level-up cards sticking to the left when a description was long' },

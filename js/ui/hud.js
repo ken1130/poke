@@ -82,6 +82,7 @@ G.HUD = (() => {
       const txt = String(Math.floor(pl.coins || 0));
       const tw = ctx.measureText(txt).width + 30;
       roundRect(ctx, cx0, cy0, tw, 19, 9);
+      G.HUD.coinEnd = cx0 + tw;             // floors.js pone la barra del ataque combinado a su derecha
       ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
       ctx.lineWidth = 1.5; ctx.strokeStyle = '#ffd23f'; ctx.stroke();
       G.Icons.draw(ctx, 'coin', cx0 + 4, cy0 + 2, 15);
