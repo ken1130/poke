@@ -145,7 +145,13 @@ G.RunUI = (() => {
     const box = $('item-cards');
     box.innerHTML = '';
     const nx = G.Items.BY[next];
-    const opts = cur.map(id => ({ icon: id, title: G.I18n.f('Cambiar {x} por {x}', G.T(G.Items.BY[id].name), G.T(nx.name)), desc: G.T(nx.desc), val: id, evo: true }))
+    const opts = cur.map(id => {
+      const it = G.Items.BY[id];
+      return { icon: id, title: G.I18n.f('Cambiar {x} por {x}', G.T(it.name), G.T(nx.name)),
+        desc: `<span class="swap-lose">${G.I18n.f('Pierdes {x}: {x}', G.T(it.name), G.T(it.desc))}</span><br>` +
+              `<span class="swap-gain">${G.I18n.f('Ganas {x}: {x}', G.T(nx.name), G.T(nx.desc))}</span>`,
+        val: id, evo: true };
+    })
       .concat([{ icon: next, title: G.I18n.f('No coger {x}', G.T(nx.name)), desc: G.T('Te quedas con los dos que llevas.'), val: null }]);
     opts.forEach((o, i) => {
       const el = document.createElement('div');

@@ -673,6 +673,8 @@ a.plink:hover { color: var(--gold); }
 .ach-pop small { color: var(--muted); }
 .card.evo { border-color: var(--gold); background: linear-gradient(90deg, rgba(255,210,63,.18), rgba(255,210,63,.04)); }
 .card.evo .nm { color: var(--gold); }
+.card .ds .swap-lose { opacity: .75; }
+.card .ds .swap-gain { color: var(--ink); }
 /* Vínculo (premio de los legendarios): rosa */
 .bond-title { color: #ff8ad8; }
 .card.bond { border-color: #ff8ad8; background: linear-gradient(90deg, rgba(255,138,216,.18), rgba(255,138,216,.04)); }
