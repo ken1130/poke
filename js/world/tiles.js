@@ -401,6 +401,26 @@ G.Tiles = (() => {
   }
 
   const PAINT = {
+    /** Huevo Pokémon (companion.js): crema con manchas verdes, brillo arriba a la izquierda. */
+    egg() {
+      const P = Pix(16, 20);
+      const base = pack('#fff6dc'), mid = pack('#f2e2b4'), dark = pack('#d8c48c'), spot = pack('#6fc86a'), spotD = pack('#3f9a48'), shine = pack('#ffffff');
+      for (let y = 0; y < 20; y++) for (let x = 0; x < 16; x++) {
+        // Óvalo más estrecho arriba (forma de huevo).
+        const ny = (y - 11.5) / 9.5, rx = 7.4 * (ny < 0 ? 0.86 + 0.14 * (1 + ny) : 1);
+        const nx = (x - 7.5) / rx;
+        if (nx * nx + ny * ny > 1) continue;
+        const lit = -nx * 0.5 - ny * 0.7;
+        P.set(x, y, lit > 0.45 ? base : lit > -0.35 ? mid : dark);
+      }
+      // Manchas (como el huevo de los juegos).
+      const blob = (cx, cy, r) => disc(P, cx, cy, r, (x, y, d) => (P.get(x, y) >>> 24 ? (d > 0.7 ? spotD : spot) : null));
+      blob(4.5, 13, 2.2); blob(10.5, 8, 2.4); blob(11, 15.5, 1.8); blob(6, 5.5, 1.3);
+      [[4, 4], [5, 3], [4, 5]].forEach(([x, y]) => P.set(x, y, shine));
+      outline(P, pack('#3a2a14'));
+      return P.canvas();
+    },
+
     tree(B) {
       const P = Pix(30, 40);
       const L = B.leaf.map(h => pack(h)), Tr = B.trunk.map(h => pack(h));

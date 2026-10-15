@@ -79,7 +79,7 @@ G.Floors = (() => {
   function descend(seed, n) {
     const host = authority();
     // Discos y pociones de cada uno: se vuelven a dejar cerca en el piso nuevo.
-    const keep = host ? G.Pickups.all().filter(p => p.kind === 'sbox' || p.kind === 'potion').map(p => [p.kind, p.value]) : [];
+    const keep = host ? G.Pickups.all().filter(p => p.kind === 'sbox' || p.kind === 'potion' || p.kind === 'egg').map(p => [p.kind, p.value]) : [];
     floor = n; stairs = null; standT = 0; nextAt = T() + EVERY;
     G.World.reset(seed);
     if (!G.Game.fixedScene) G.World.setBiome(Math.floor(T() / 240) + floor, true);

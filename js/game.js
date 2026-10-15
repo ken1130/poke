@@ -128,6 +128,7 @@ G.Game = (() => {
     G.Loot.reset();
     G.Dungeon.reset();
     G.Floors.reset();
+    G.Companion.reset();
     if (coop) { G.Modes.reset(); G.Modes.setRoom(coop.mods || {}); }
     // Desafíos / aventura: sus reglas (las "Reglas a medida" sólo valen en la run normal).
     G.Challenges.prepare();
@@ -507,7 +508,7 @@ G.Game = (() => {
   // ---------------- recogida ----------------
 
   const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend', token: 'shiny',
-                     sbox: 'legend', potion: 'confirm' };
+                     sbox: 'legend', potion: 'confirm', egg: 'shiny' };
 
   /** Disco de movimientos (loot.js): 1-4 mejoras al azar; se para el juego mientras lo miras. */
   function offerBox() {
@@ -564,6 +565,7 @@ G.Game = (() => {
     if (G.Coop.active) G.Coop.collected(p, who);
     if (mine || p.kind === 'bomb') G.Audio.sfx(PICK_SFX[p.kind]);
     if (p.kind === 'sbox') { if (mine) offerBox(); return; }
+    if (p.kind === 'egg') { if (mine) G.Companion.gotEgg(pl); else who.eggTaken = true; return; }
     if (p.kind === 'potion') {
       if (p.eff === 'magnet') G.Pickups.pullAll();
       if (mine) G.Loot.drink(pl, p.eff);
@@ -788,6 +790,8 @@ G.Game = (() => {
     if (!coop || G.Coop.isHost) G.Dungeon.tick(dt, all);          // casa de monstruos, tienda de Kecleon, estatua
     G.Dungeon.update(dt, pl);
     G.Floors.update(dt, all);                                    // escaleras y ataque combinado
+    if (!coop || G.Coop.isHost) G.Companion.tick(dt, time, all); // huevo Pokémon
+    G.Companion.update(dt, pl);
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
@@ -911,6 +915,7 @@ G.Game = (() => {
     for (const p of G.World.visibleProps(cam)) items.push({ y: p.flat ? p.y - 4000 : p.y, prop: p });
     for (const e of G.EnemyMgr.drawables(cam)) items.push({ y: e.y, ent: e });
     for (const e of extra) items.push({ y: e.y, ent: e });
+    for (const c of G.Companion.drawables()) items.push({ y: c.y, ent: c });
     const rift = G.Rift.drawable();
     if (rift) items.push({ y: rift.y, ent: rift });
     const stairs = G.Floors.drawable();

@@ -96,6 +96,20 @@ G.HUD = (() => {
       ctx.fillText(txt, bx + 6, py + 45);
       bx += tw + 5;
     }
+    // huevo Pokémon (companion.js): cuánto le falta para eclosionar
+    const egg = G.Companion.eggProgress(pl);
+    if (egg != null) {
+      ctx.font = F(800, 9);
+      const done = Math.round(egg * G.Companion.KILLS);
+      const txt = G.T('Huevo') + ' ' + done + '/' + G.Companion.KILLS;
+      const tw = ctx.measureText(txt).width + 50;
+      roundRect(ctx, bx, py + 34, tw, 15, 7);
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
+      ctx.fillStyle = '#fff3c8';
+      ctx.fillText(txt, bx + 6, py + 45);
+      bar(ctx, bx + tw - 40, py + 39, 34, 5, egg, '#ffd23f', 'rgba(255,255,255,.18)');
+      bx += tw + 5;
+    }
 
     // bendición o maldición de la estatua (dungeon.js), para todo el grupo
     const bl = G.Dungeon.blessingInfo();
@@ -650,6 +664,13 @@ G.HUD = (() => {
       ctx.beginPath(); ctx.arc(x, y, 10, 0, 6.2832); ctx.fill();
       G.Pickups.sprite(ctx, 'disc', Math.floor(performance.now() / 160) % 6, x, y, 0.85);
     },
+    egg(ctx, x, y) {
+      const img = G.Tiles.propSprite(G.World.biome, 'egg', 0);
+      const prev = ctx.imageSmoothingEnabled;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, Math.round(x - img.width * 0.4), Math.round(y - img.height * 0.4), img.width * 0.8, img.height * 0.8);
+      ctx.imageSmoothingEnabled = prev;
+    },
     potion(ctx, x, y) { G.Pickups.sprite(ctx, 'potion', 5, x, y, 0.75); },
     item(ctx, x, y) {
       ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 4, y); ctx.lineTo(x, y + 5); ctx.lineTo(x - 4, y); ctx.closePath(); ctx.fill();
@@ -741,8 +762,9 @@ G.HUD = (() => {
     const blink = Math.sin(now * 6) > 0;
     for (const p of mmProps) icon(MM_ICON[p.type] ? p.type : 'chest', p.x, p.y, false);
     for (const p of G.Pickups.all()) {
-      if ((p.kind === 'sbox' || p.kind === 'potion') && !G.Loot.visible(p)) continue;
+      if ((p.kind === 'sbox' || p.kind === 'potion' || p.kind === 'egg') && !G.Loot.visible(p)) continue;
       if (p.kind === 'sbox') icon('sbox', p.x, p.y, true, blink);
+      else if (p.kind === 'egg') icon('egg', p.x, p.y, true);
       else if (p.kind === 'potion') icon('potion', p.x, p.y, true);
       else if (p.kind === 'item' || p.kind === 'token' || p.kind === 'ticket10') icon('item', p.x, p.y, false);
     }
@@ -781,6 +803,7 @@ G.HUD = (() => {
     const pk = G.Pickups.all();
     add(near(pk, p => p.kind === 'sbox' && G.Loot.visible(p)), 'DISCO DE MOVIMIENTOS', '#7fe0ff', 'sbox');
     add(near(pk, p => p.kind === 'potion' && G.Loot.visible(p)), 'Poción', '#ff7ad9', 'potion');
+    add(near(pk, p => p.kind === 'egg' && G.Loot.visible(p)), 'Huevo', '#fff3c8', 'egg');
     add(near(pk, p => p.kind === 'item'), 'Objeto', '#ffd23f', 'item');
     add(near(mmProps, p => p.type === 'bigchest' && !p.used), 'Cofre con candado', '#ffb000', 'bigchest');
     add(near(mmProps, p => p.type === 'altar' && !p.used), 'Altar', '#ff8ad8', 'altar');
