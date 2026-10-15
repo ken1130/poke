@@ -80,6 +80,7 @@ G.Combat = (() => {
       case 'spear':      spears(pl, m); break;
       case 'treefall':   trees(pl, m); break;
     }
+    if (!ghost && (m.boostCh || m.recoil || m.confuseEvery)) afterCast(pl, m);
   }
 
   // ---------------- movimientos de esta versión ----------------
@@ -509,7 +510,36 @@ G.Combat = (() => {
   }
 
   function payload(m) {
-    return { burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, knock: m.knock || 0, mtype: m.type };
+    return { burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, knock: m.knock || 0, mtype: m.type,
+             rootCh: m.rootCh || 0, rootT: m.rootT || 0, weakCh: m.weakCh || 0 };
+  }
+
+  // ---------------- efectos de los 19 movimientos nuevos (2026-10-15) ----------------
+  /** Parálisis / retroceso (inmoviliza un rato) y bajada de ataque, por probabilidad. */
+  function extraFx(e, rootCh, rootT, weakCh) {
+    if (e.dead) return;
+    if (rootCh && !e.boss && Math.random() < rootCh) {
+      e.applyRoot(rootT || 0.6);
+      if (G.Camera.sees(e.x, e.y, 20)) G.FX.dmgText(e.x, e.y - e.bodyH - 10, '⚡', '#ffe14d');
+    }
+    if (weakCh && !e.weakened && Math.random() < weakCh) {
+      e.weakened = true; e.dmg *= 0.7;
+      if (G.Camera.sees(e.x, e.y, 20)) G.FX.dmgText(e.x, e.y - e.bodyH - 10, 'ATK↓', '#ff9ec4');
+    }
+  }
+  /** Tras lanzar (no en los fantasmas): subir stats, retroceso propio, confusión. */
+  function afterCast(pl, m) {
+    if (m.boostCh && Math.random() < m.boostCh) {
+      if (m.boost === 'all') { pl.addBuff('atk', 0.12, 6, 3); pl.addBuff('spd', 0.08, 6, 3); pl.addBuff('def', 0.06, 6, 3); }
+      else pl.addBuff('def', 0.1, 5, 3);
+      G.FX.ring(pl.x, pl.y, pl.r, pl.r * 3, G.U.TYPE_COLOR[m.type], 0.4, 3);
+      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 12, m.boost === 'all' ? '▲▲▲' : 'DEF▲', '#ffd23f');
+    }
+    if (m.recoil && !pl.god && !pl.safe) pl.hp = Math.max(1, pl.hp - pl.maxHp * m.recoil);
+    if (m.confuseEvery) {
+      m.casts = (m.casts || 0) + 1;
+      if (m.casts % m.confuseEvery === 0) { pl.confuseT = 1.2; G.FX.dmgText(pl.x, pl.y - pl.bodyH - 12, '?!', '#ff8ad8', true); }
+    }
   }
 
   /** Tabla de tipos × clima para un ataque de tipo `type` contra `e`. */
@@ -1111,8 +1141,10 @@ G.Combat = (() => {
 
   /** @param opt  { crit: forzar sí/no, cmul: multiplicador del crítico } (Puño Lee y los estados) */
   function hit(pl, e, dmg, col, dx, dy, knock, m, opt) {
-    const k = typeK(m.type, e);
-    const crit = !ghost && (opt && opt.crit != null ? opt.crit : isCrit(pl));
+    let k = typeK(m.type, e);
+    if (m.superVs && e.types.includes(m.superVs)) k = Math.max(1, k) * 2;     // Liofilización contra Agua
+    const crit = !ghost && (opt && opt.crit != null ? opt.crit
+      : m.critBonus ? Math.random() < (pl.critChance || 0) + m.critBonus : isCrit(pl));
     dmg *= k * (crit ? (opt && opt.cmul) || pl.critMul || CRIT_MUL : 1) * itemK(pl, m.type, e);
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
@@ -1120,6 +1152,7 @@ G.Combat = (() => {
     if (m.burn) e.applyBurn(m.burn);
     if (m.poison) e.applyPoison(m.poison);
     if (m.slow) e.applySlow(m.slow);
+    if (!ghost && (m.rootCh || m.weakCh)) extraFx(e, m.rootCh, m.rootT, m.weakCh);
   }
 
   /**
@@ -1252,6 +1285,7 @@ G.Combat = (() => {
         if (p.burn) e.applyBurn(p.burn);
         if (p.poison) e.applyPoison(p.poison);
         if (p.slow) e.applySlow(p.slow);
+        if (p.rootCh || p.weakCh) extraFx(e, p.rootCh, p.rootT, p.weakCh);
 
         if (!p.orb) {
           if (p.split && p.pierce > 0) splitSpear(p, e);   // Lanza Sombría: se parte al perforar

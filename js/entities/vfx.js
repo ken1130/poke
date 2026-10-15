@@ -380,7 +380,27 @@ G.VFX = (() => {
     'aerial-ace':    { proj: 'wind' },
     'flame-wheel':   { proj: 'fire', aura: 'fire' },
     'bubble-beam':   { proj: 'bubble' },
-    'hex':           { beam: 'shadow', proj: 'shadow' }
+    'hex':           { beam: 'shadow', proj: 'shadow' },
+    // 2026-10-15 · los 19 nuevos
+    'stealth-rock':  { proj: 'rock' },
+    'ancient-power': { proj: 'rock', trail: 'dirt' },
+    'rock-tomb':     { proj: 'rock', trail: 'dirt' },
+    'dragon-breath': { proj: 'fire', pal: 'dragon', trail: 'spark' },
+    'outrage':       { proj: 'streak', pal: 'dragon' },
+    'draco-meteor':  { proj: 'fire', pal: 'dragon', trail: 'ember' },
+    'disarming-voice': { beam: 'ring', proj: 'note' },
+    'draining-kiss': { aura: 'heart', inward: true },
+    'play-rough':    { proj: 'star' },
+    'air-slash':     { proj: 'crescent', pal: 'flying' },
+    'brave-bird':    { proj: 'wind' },
+    'ice-shard':     { proj: 'shard' },
+    'freeze-dry':    { beam: 'shard' },
+    'force-palm':    { melee: 'impact' },
+    'vacuum-wave':   { aura: 'ring' },
+    'bullet-punch':  { proj: 'streak', pal: 'steel' },
+    'steel-wing':    { proj: 'crescent', pal: 'steel' },
+    'night-slash':   { proj: 'crescent', pal: 'dark' },
+    'snarl':         { proj: 'note', pal: 'dark' }
   };
 
   const TYPE_SHAPE = {

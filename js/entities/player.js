@@ -432,6 +432,12 @@ G.Player = class Player {
     // (En cooperativo la pausa no para el juego: sólo te quedas quieto.)
     let [ax, ay] = this.frozen || this.sleepT > 0 ? [0, 0] : G.Input.axis();      // (sleepT: Descanso)
     if (this.reversed) { ax = -ax; ay = -ay; }        // poción del revés (loot.js)
+    // Confusión (Enfado, moves.js): la dirección se tuerce un poco, a vaivén.
+    if (this.confuseT > 0) {
+      this.confuseT -= dt;
+      const a = Math.sin(performance.now() / 160) * 1.1, c = Math.cos(a), s = Math.sin(a);
+      [ax, ay] = [ax * c - ay * s, ax * s + ay * c];
+    }
     this.walking = ax !== 0 || ay !== 0;
     const s = this.spd;
     // Hielo: resbalas (la velocidad cambia despacio).
