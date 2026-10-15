@@ -3,7 +3,8 @@
  * pasa al tocarlos. Todo se mira alrededor de TU Pokémon:
  *
  *   altar     da un poder de 25 s (Furia, Rayo, Imán o Prisa) y se apaga
- *   spring    cura mientras estás encima; se agota y se recarga sola
+ *   spring    cura mientras estás encima; se agota y ya no vuelve (2026-10-15: antes se
+ *             recargaba sola y bastaba con quedarse al lado)
  *   bigchest  quédate a su lado CHEST_TIME segundos (mientras te atacan) y se
  *             abre: monedas, tickets y experiencia para subir un nivel
  *   trap      salta al pisarla (tú o un enemigo) y afecta a todo lo cercano:
@@ -24,7 +25,6 @@ G.Interact = (() => {
   ];
   const TRAP_R = 74;
   const authority = () => !G.Coop.active || G.Coop.isHost;
-  let healShown = 0, healAcc = 0;
 
   function update(dt, pl) {
     if (!pl) return;
@@ -52,22 +52,17 @@ G.Interact = (() => {
     }
   }
 
+  /** Manantial: al pisarlo te cura del todo de una vez y se seca para siempre (uno por manantial). */
   function spring(dt, pl, p, d2) {
-    if (p.charge < 1) p.charge = Math.min(1, p.charge + dt / 45);
-    if (pl.dead || d2 > 26 * 26 || p.charge <= 0.02 || pl.hp >= pl.maxHp) return;
-    const before = pl.hp;
-    pl.hp = Math.min(pl.maxHp, pl.hp + pl.maxHp * 0.14 * dt);
-    healAcc += pl.hp - before;
-    p.charge = Math.max(0, p.charge - dt * 0.09);
-    if (Math.random() < dt * 14) G.FX.px(pl.x + G.U.rand(-pl.r, pl.r), pl.y - G.U.rand(0, pl.bodyH), '#7dffb0', { vy: -50, life: 0.5 });
-    healShown -= dt;
-    if (healShown <= 0 && healAcc >= 1) {
-      healShown = 0.6;
-      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '+' + Math.round(healAcc), '#5fe08a');
-      healAcc = 0;
-      G.Audio.sfx('xp');
-    }
-    if (p.charge <= 0.02) G.Spawner.say('El manantial se ha secado (se recarga solo)', 2.2, true);
+    if (p.used || pl.dead || d2 > 26 * 26 || pl.hp >= pl.maxHp) return;
+    const healed = Math.round(pl.maxHp - pl.hp);
+    pl.hp = pl.maxHp;
+    p.used = true; p.charge = 0;
+    G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '+' + healed, '#5fe08a', true);
+    G.FX.ring(p.x, p.y - 8, 6, 80, '#7dffb0', 0.6, 4);
+    for (let i = 0; i < 16; i++) G.FX.px(pl.x + G.U.rand(-pl.r, pl.r), pl.y - G.U.rand(0, pl.bodyH), '#7dffb0', { vy: -60, life: 0.6 });
+    G.Audio.sfx('heal');
+    G.Spawner.say(G.T('¡El manantial te ha curado del todo! (y se ha secado)'), 2.6, true);
   }
 
   function usePower(pl, p) {

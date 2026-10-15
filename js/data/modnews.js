@@ -55,6 +55,7 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '泉水改成一次性：踩上去立刻補滿血，然後永久乾涸（不再慢慢恢復），不能再守在泉水旁邊', en: 'Springs are now single-use: step on one to heal to full instantly, then it dries up for good (no more camping next to it)' },
       { zh: '三個舊招式的進化名稱改為力量寶石、死亡羽翼、龍之波動（避免與新招同名）', en: 'Three old evolutions renamed to Power Gem, Oblivion Wing and Dragon Pulse so they don’t share names with new moves' },
       { zh: '安全屋更安全：有人在裡面時附近的怪物會被嚇跑、不會圍在外面；離開時卡克隆放出衝擊波彈開周圍的怪，並給 3 秒無敵', en: 'Safer safe house: while someone is inside, nearby enemies get scared off instead of waiting around it; when you leave, Kecleon’s shockwave knocks back nearby enemies and you get 3 s of invincibility' },
       { zh: '連線再優化：敵人資料只傳有變動的部分（訊息約小 70%，怪多時比較不會卡），隊友和敵人的移動改用平滑插值，網路不穩時抖動更少', en: 'Smoother online play: enemy updates now only send what changed (messages about 70% smaller, fewer hitches with big hordes), and teammates and enemies are smoothly interpolated, jittering less on unstable connections' },

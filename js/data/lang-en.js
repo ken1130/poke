@@ -1140,4 +1140,6 @@ G.I18n.add({
   'Salir de la tienda': 'Leave the shop',
   'Kecleon se enfadará': 'Kecleon will get angry',
   '¡Kecleon te despide! Tienes 3 s para escapar': 'Kecleon sees you off! 3 s to get away',
+  'El manantial se ha secado': 'The spring has dried up',
+  '¡El manantial te ha curado del todo! (y se ha secado)': 'The spring fully healed you! (and dried up)',
 }, 'en');

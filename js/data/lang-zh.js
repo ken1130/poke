@@ -2141,4 +2141,6 @@ G.I18n.add({
   'Salir de la tienda': '離開商店',
   'Kecleon se enfadará': '卡克隆會暴怒',
   '¡Kecleon te despide! Tienes 3 s para escapar': '卡克隆送你出門！3 秒內無敵，快離開',
+  'El manantial se ha secado': '泉水乾涸了',
+  '¡El manantial te ha curado del todo! (y se ha secado)': '泉水讓你恢復了全部體力！（泉水乾涸了）',
 }, 'zh');
