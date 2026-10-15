@@ -14,6 +14,18 @@
  */
 G.Combat = (() => {
   let ghost = false;
+  /*
+   * PK (2026-10-15): los rivales también son blancos de TUS ataques. Se juzga en la pantalla de
+   * quien ataca (lo que ves es lo que pega) y el daño va a pvp.js (deal), que avisa al rival.
+   * Antes lo juzgaba quien recibía, con retraso, y los ataques que buscan enemigos (Puño Lee,
+   * rayos, flechas, cadena, árboles, meteoros, mordisco...) nunca encontraban a otro jugador.
+   */
+  const isFoe = e => e instanceof G.Player;
+  function enemiesIn(x, y, r) {
+    const l = G.EnemyMgr.queryCircle(x, y, r);
+    return G.PvP.on && !ghost ? l.concat(G.PvP.foesIn(x, y, r)) : l;
+  }
+  const alive = e => isFoe(e) || !!G.EnemyMgr.get(e.id);
   let fields = [];
 
   // ---------------- ejecutar el movimiento activo ----------------
@@ -103,9 +115,9 @@ G.Combat = (() => {
     const row = G.Moves.stat(m), R = row.r * TILE, now = G.Game.st.time;
     const col = G.U.TYPE_COLOR.fire;
     const map = pl.fsMap || (pl.fsMap = new Map());
-    for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, R)) if (!e.dead) map.set(e, now + row.dur);
+    for (const e of enemiesIn(pl.x, pl.y, R)) if (!e.dead) map.set(e, now + row.dur);
     for (const [e, until] of map) {
-      if (e.dead || until < now || !G.EnemyMgr.get(e.id)) { map.delete(e); continue; }
+      if (e.dead || until < now || !alive(e)) { map.delete(e); continue; }
       if (row.vuln) e.vulnUntil = now + 0.6;
       hit(pl, e, row.dps * 0.5 * pl.atk, col, 0, 0, 0, m);
       if (Math.random() < 0.5 && G.Camera.sees(e.x, e.y, 20)) G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#ff8a3d', 2, 40);
@@ -129,7 +141,7 @@ G.Combat = (() => {
    */
   function lightning(pl, m) {
     const row = G.Moves.stat(m), R = row.r * TILE, vis = G.VFX.forMove(m), col = G.U.TYPE_COLOR.electric;
-    const pool = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead);
+    const pool = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead);
     if (!pool.length) return;
     const pts = [];
     for (let i = 0; i < row.n; i++) {
@@ -139,7 +151,7 @@ G.Combat = (() => {
       const t = pool[i < pool.length ? i : k];
       pts.push({ x: t.x, y: t.y });
       boltFx(t.x, t.y, vis);
-      if (!ghost) for (const e of G.EnemyMgr.queryCircle(t.x, t.y, TILE * 0.75)) if (!e.dead) hit(pl, e, row.dmg * pl.atk, col, 0, 0, 0, m);
+      if (!ghost) for (const e of enemiesIn(t.x, t.y, TILE * 0.75)) if (!e.dead) hit(pl, e, row.dmg * pl.atk, col, 0, 0, 0, m);
     }
     if (G.Camera.sees(pl.x, pl.y, 0)) G.Audio.sfx('shot', { kind: 'beam', type: 'electric' });
     if (row.link && pts.length > 1) fields.push({ kind: 'link', owner: pl, ghost, m, col, vis, pts, t: 0, life: 1.0, tick: 0,
@@ -155,7 +167,7 @@ G.Combat = (() => {
   const ARROW_HOP = 8 * TILE;   // hasta dónde busca al siguiente
   function psyArrows(pl, m) {
     const row = G.Moves.stat(m), R = row.r * TILE;
-    const near = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead)
+    const near = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead)
       .sort((a, b) => G.U.dist2(a.x, a.y, pl.x, pl.y) - G.U.dist2(b.x, b.y, pl.x, pl.y));
     if (!near.length) return;
     for (let i = 0; i < row.n; i++) {
@@ -170,7 +182,7 @@ G.Combat = (() => {
   function arrowStep(f, dt) {
     const SPEED = 620;
     let e = f.target;
-    if (!e || e.dead || !G.EnemyMgr.get(e.id)) { e = f.target = nextArrowTarget(f, f.x, f.y, null); if (!e) return false; }
+    if (!e || e.dead || !alive(e)) { e = f.target = nextArrowTarget(f, f.x, f.y, null); if (!e) return false; }
     const tx = e.x, ty = e.y - e.bodyH * 0.5;
     const d = Math.hypot(tx - f.x, ty - f.y);
     f.ang = Math.atan2(ty - f.y, tx - f.x);
@@ -188,7 +200,7 @@ G.Combat = (() => {
 
   function nextArrowTarget(f, x, y, cur) {
     let best = null, bd = ARROW_HOP * ARROW_HOP;
-    for (const e of G.EnemyMgr.queryCircle(x, y, ARROW_HOP)) {
+    for (const e of enemiesIn(x, y, ARROW_HOP)) {
       if (e.dead || e === cur || (!f.repeat && f.hit.has(e.id))) continue;
       const d = G.U.dist2(x, y, e.x, e.y);
       if (d < bd) { bd = d; best = e; }
@@ -202,7 +214,7 @@ G.Combat = (() => {
    */
   function drain(pl, m) {
     const row = G.Moves.stat(m), R = row.r * TILE, vis = G.VFX.forMove(m), col = '#c47bff';
-    const list = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead)
+    const list = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead)
       .sort((a, b) => G.U.dist2(a.x, a.y, pl.x, pl.y) - G.U.dist2(b.x, b.y, pl.x, pl.y)).slice(0, row.n);
     if (!list.length) return;
     for (const e of list) {
@@ -241,7 +253,7 @@ G.Combat = (() => {
     dotT = 0.5;
     const now = G.Game.st.time;
     for (const [e, d] of dots) {
-      if (e.dead || !d.owner || !G.EnemyMgr.get(e.id)) { dots.delete(e); continue; }
+      if (e.dead || !d.owner || !alive(e)) { dots.delete(e); continue; }
       const pl = d.owner;
       let alive = false;
       if (d.pUntil > now) {
@@ -271,7 +283,7 @@ G.Combat = (() => {
    */
   function acidRain(pl, m) {
     const row = G.Moves.stat(m), R = row.r * TILE;
-    const list = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead);
+    const list = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead);
     fields.push({ kind: 'rain', owner: pl, ghost, m, col: '#a043d0', x: pl.x, y: pl.y, t: 0, life: 0.9, r: R,
                   spots: row.over ? list.slice(0, 30).map(e => [e.x, e.y]) : null });
     if (!ghost) for (const e of list) poisonWith(pl, e, row, m);
@@ -299,7 +311,7 @@ G.Combat = (() => {
    */
   function fist(pl, m) {
     const row = G.Moves.stat(m), R = row.r * TILE, col = G.U.TYPE_COLOR.fighting;
-    const list = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl)).slice(0, row.n || 1);
+    const list = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl)).slice(0, row.n || 1);
     if (!list.length) return;
     m.punches = (m.punches || 0) + 1;
     const sure = m.punches % row.every === 0;
@@ -377,7 +389,7 @@ G.Combat = (() => {
    */
   function trees(pl, m) {
     const row = G.Moves.stat(m), R = row.r * TILE, vis = G.VFX.forMove(m);
-    const list = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl));
+    const list = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl));
     let pick;
     if (row.n >= 12) pick = list.slice(0, row.n);
     else {
@@ -447,14 +459,14 @@ G.Combat = (() => {
         if (pl.protectT > 0) pl.protectT -= dt;
         if (!ready) break;
         let near = 0;
-        for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, 90)) if (!e.dead) near++;
+        for (const e of enemiesIn(pl.x, pl.y, 90)) if (!e.dead) near++;
         if (near >= row.n || pl.hp < pl.maxHp * 0.4) {
           m.t = cd; pl.protectT = row.dur; pl.invuln = Math.max(pl.invuln || 0, row.dur);
           G.Audio.sfx('select');
           G.FX.dmgText(pl.x, pl.y - pl.bodyH - 14, G.T('¡Protección!'), '#7dffb0', true);
           if (row.blast) {
             G.FX.ring(pl.x, pl.y, 10, 200, '#7dffb0', 0.5, 5);
-            for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, 200)) if (!e.dead && !e.boss) e.hurt(1, '#7dffb0', e.x - pl.x, e.y - pl.y, 520);
+            for (const e of enemiesIn(pl.x, pl.y, 200)) if (!e.dead && !e.boss) e.hurt(1, '#7dffb0', e.x - pl.x, e.y - pl.y, 520);
           }
         }
         break;
@@ -600,7 +612,7 @@ G.Combat = (() => {
     G.FX.slash(pl.x, pl.y - G.LIFT * 0.5, pl.aim, m.radius, m.arc, col, G.VFX.forMove(m));
     if (ghost) { G.PvP.arc(pl, pl.x, pl.y, m.radius, pl.aim, half, m.dmg * pl.atk, m.type); return; }
 
-    for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, m.radius)) {
+    for (const e of enemiesIn(pl.x, pl.y, m.radius)) {
       if (!inArc(pl.x, pl.y, e.x, e.y, pl.aim, half)) continue;
       hit(pl, e, m.dmg * pl.atk, col, e.x - pl.x, e.y - pl.y, m.knock || 0, m);
     }
@@ -630,7 +642,7 @@ G.Combat = (() => {
       if (along < -r || along > len + r) return false;
       return Math.abs(-px * sa + py * ca) <= w / 2 + r;
     };
-    for (const e of G.EnemyMgr.queryCircle(mx, my, len / 2 + w)) {
+    for (const e of enemiesIn(mx, my, len / 2 + w)) {
       if (onBeam(e.x, e.y, e.r)) hit(pl, e, m.dmg * pl.atk, col, ca, sa, 0, m);
     }
     for (const p of G.World.propsInCircle(mx, my, len / 2 + w)) {
@@ -656,7 +668,7 @@ G.Combat = (() => {
     }
     if (ghost) { G.PvP.circle(pl, pl.x, pl.y, m.radius, m.dmg * pl.atk, m.type); return; }
     let healed = 0;
-    for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, m.radius)) {
+    for (const e of enemiesIn(pl.x, pl.y, m.radius)) {
       hit(pl, e, m.dmg * pl.atk, col, e.x - pl.x, e.y - pl.y, 0, m);
       if (m.drain) healed += m.drain;
     }
@@ -696,6 +708,7 @@ G.Combat = (() => {
   function chain(pl, m) {
     const col = G.U.TYPE_COLOR[m.type], vis = G.VFX.forMove(m);
     let cur = pl.target && !pl.target.dead && pl.target.hurt ? pl.target : G.Projectiles.nearest(G.EnemyMgr.all(), pl.x, pl.y, reach(m));
+    if (!cur && G.PvP.on && !ghost) cur = G.PvP.foe(pl, reach(m));
     if (!cur) return;
     let fx = pl.x, fy = pl.y - G.LIFT, k = 1;
     const done = new Set();
@@ -712,7 +725,7 @@ G.Combat = (() => {
       k *= 0.85;
       fx = tx; fy = ty;
       let best = null, bd = m.radius * m.radius;
-      for (const e of G.EnemyMgr.queryCircle(cur.x, cur.y, m.radius)) {
+      for (const e of enemiesIn(cur.x, cur.y, m.radius)) {
         if (done.has(e.id)) continue;
         const d = G.U.dist2(cur.x, cur.y, e.x, e.y);
         if (d < bd) { bd = d; best = e; }
@@ -740,7 +753,7 @@ G.Combat = (() => {
   function meteors(pl, m) {
     const col = G.U.TYPE_COLOR[m.type], vis = G.VFX.forMove(m);
     const n = Math.max(1, m.count | 0);
-    const near = G.EnemyMgr.queryCircle(pl.x, pl.y, reach(m)).filter(e => !e.dead);
+    const near = enemiesIn(pl.x, pl.y, reach(m)).filter(e => !e.dead);
     G.U.shuffle ? G.U.shuffle(near) : near.sort(() => Math.random() - 0.5);
     for (let i = 0; i < n; i++) {
       const e = near[i];
@@ -780,7 +793,7 @@ G.Combat = (() => {
     pl.invuln = Math.max(pl.invuln || 0, 0.3);
     const w = m.width || 34;
     const mx = sx + ca * len / 2, my = sy + sa * len / 2;
-    for (const e of G.EnemyMgr.queryCircle(mx, my, len / 2 + w)) {
+    for (const e of enemiesIn(mx, my, len / 2 + w)) {
       if (segDist2(sx, sy, pl.x, pl.y, e.x, e.y) <= (w / 2 + e.r) ** 2) hit(pl, e, m.dmg * pl.atk, col, ca, sa, m.knock || 0, m);
     }
     for (const p of G.World.propsInCircle(mx, my, len / 2 + w)) {
@@ -823,7 +836,7 @@ G.Combat = (() => {
   function blast(f, r, k = 1) {
     if (f.ghost) { G.PvP.circle(f.owner, f.x, f.y, r, f.dmg * k, f.m.type); return; }
     const pl = f.owner, m = f.m;
-    for (const e of G.EnemyMgr.queryCircle(f.x, f.y, r)) hit(pl, e, f.dmg * k, f.col, e.x - f.x, e.y - f.y, m.knock || 0, m);
+    for (const e of enemiesIn(f.x, f.y, r)) hit(pl, e, f.dmg * k, f.col, e.x - f.x, e.y - f.y, m.knock || 0, m);
     for (const p of G.World.propsInCircle(f.x, f.y, r)) G.World.damageProp(p, f.dmg * k, f.col);
   }
 
@@ -835,7 +848,7 @@ G.Combat = (() => {
       if (f.gone || !f.owner || (f.life && f.t >= f.life && f.kind !== 'mine')) { fields.splice(i, 1); continue; }
       if (f.kind === 'mine') {
         const armed = f.t >= f.arm;
-        const trig = armed && G.EnemyMgr.queryCircle(f.x, f.y, 14).length > 0;
+        const trig = armed && enemiesIn(f.x, f.y, 14).length > 0;
         if (trig || f.t >= f.life) {
           G.FX.ring(f.x, f.y, 4, f.r, f.col, 0.3, 4);
           G.FX.burst(f.x, f.y - 6, f.col, 10, 150);
@@ -855,7 +868,7 @@ G.Combat = (() => {
         f.shotT -= dt;
         if (f.shotT <= 0) {
           const m = f.m;
-          const tg = G.Projectiles.nearest(G.EnemyMgr.all(), f.x, f.y, m.range || 300);
+          const tg = G.Projectiles.nearest(G.EnemyMgr.all(), f.x, f.y, m.range || 300) || (G.PvP.on && !f.ghost ? G.PvP.foeNear(f.x, f.y, m.range || 300) : null);
           f.shotT = tg ? m.rate || 0.6 : 0.15;
           if (tg) {
             const a = Math.atan2(tg.y - f.y, tg.x - f.x);
@@ -880,7 +893,7 @@ G.Combat = (() => {
             const len = Math.hypot(b.x - a.x, b.y - a.y);
             if (G.Camera.sees(a.x, a.y, len)) G.FX.beam(a.x, a.y - 8, Math.atan2(b.y - a.y, b.x - a.x), len, 3, '#bfe8ff', f.vis);
             if (f.ghost) continue;
-            for (const e of G.EnemyMgr.queryCircle((a.x + b.x) / 2, (a.y + b.y) / 2, len / 2 + 16)) {
+            for (const e of enemiesIn((a.x + b.x) / 2, (a.y + b.y) / 2, len / 2 + 16)) {
               if (!e.dead && segDist2(a.x, a.y, b.x, b.y, e.x, e.y) <= (14 + e.r) ** 2) hit(f.owner, e, f.dmg, f.col, 0, 0, 0, f.m);
             }
           }
@@ -890,7 +903,7 @@ G.Combat = (() => {
         f.tick -= dt;
         if (f.tick <= 0 && !f.ghost) {
           f.tick = 0.5;
-          for (const e of G.EnemyMgr.queryCircle(f.x, f.y, f.r)) {
+          for (const e of enemiesIn(f.x, f.y, f.r)) {
             if (e.dead) continue;
             if (f.row.pud >= 2) poisonWith(f.owner, e, f.row, f.m); else e.applySlow(f.row.slow, 0.7);
             if (f.row.spread && !e.boss) { const d = dotOf(f.owner, e); d.drip = G.Game.st.time + f.row.spread; d.prow = f.row; d.pm = f.m; }
@@ -924,7 +937,7 @@ G.Combat = (() => {
         f.tick -= dt;
         if (f.tick <= 0 && !f.ghost) {
           f.tick = 0.5;
-          for (const e of G.EnemyMgr.queryCircle(f.x, f.y, f.r)) {
+          for (const e of enemiesIn(f.x, f.y, f.r)) {
             if (e.dead) continue;
             if (f.row.root && !f.rooted.has(e.id)) {
               f.rooted.add(e.id);
@@ -1148,6 +1161,12 @@ G.Combat = (() => {
 
   /** @param opt  { crit: forzar sí/no, cmul: multiplicador del crítico } (Puño Lee y los estados) */
   function hit(pl, e, dmg, col, dx, dy, knock, m, opt) {
+    if (isFoe(e)) {
+      if (ghost) return;
+      const crit = opt && opt.crit != null ? opt.crit : isCrit(pl);
+      G.PvP.deal(pl, e, dmg * (crit ? (opt && opt.cmul) || pl.critMul || CRIT_MUL : 1), m.type, crit);
+      return;
+    }
     let k = typeK(m.type, e);
     if (m.superVs && e.types.includes(m.superVs)) k = Math.max(1, k) * 2;     // Liofilización contra Agua
     const crit = !ghost && (opt && opt.crit != null ? opt.crit
@@ -1212,9 +1231,9 @@ G.Combat = (() => {
 
       // --- disparos de jugadores ---
       // Orbes de un compañero: sólo se ven (en PK, te golpean).
-      if (p.orb && p.ghost) { if (G.PvP.on) G.PvP.orb(p, now); continue; }
-      // PK: el disparo de otro jugador te da a ti.
-      if (p.ghost && !p.orb && G.PvP.on && G.PvP.projectile(p)) {
+      if (p.orb && p.ghost) continue;
+      // PK: el disparo de otro jugador que llega hasta ti se deshace (el daño lo decide quien dispara).
+      if (p.ghost && !p.orb && G.PvP.on && G.PvP.touchesMe(p)) {
         G.FX.burst(p.x, p.y - G.LIFT, p.color, 6, 90);
         projectiles.splice(i, 1);
         continue;
@@ -1259,7 +1278,7 @@ G.Combat = (() => {
       // eran inmunes a todos los movimientos de proyectil.
       const sx = p.orb || p.px == null ? p.x : p.px, sy = p.orb || p.py == null ? p.y : p.py;
       const half = Math.hypot(p.x - sx, p.y - sy) / 2;
-      for (const e of G.EnemyMgr.queryCircle((sx + p.x) / 2, (sy + p.y) / 2, half + p.r)) {
+      for (const e of enemiesIn((sx + p.x) / 2, (sy + p.y) / 2, half + p.r)) {
         if (segDist2(sx, sy, p.x, p.y, e.x, e.y) > (p.r + e.r) * (p.r + e.r)) continue;
         if (p.orb) {
           const last = p.hitLog.get(e.id) || -99;
@@ -1282,6 +1301,17 @@ G.Combat = (() => {
           break;
         }
 
+        if (isFoe(e)) {
+          const crit = isCrit(pl);
+          G.PvP.deal(pl, e, p.dmg * (crit ? pl.critMul || CRIT_MUL : 1), p.mtype, crit);
+          if (!p.orb) {
+            if (p.pierce > 0) { p.pierce--; continue; }
+            G.FX.burst(p.x, p.y - G.LIFT, p.color, 6, 90);
+            projectiles.splice(i, 1);
+            break;
+          }
+          continue;
+        }
         const crit = isCrit(pl);
         const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? pl.critMul || CRIT_MUL : 1) * itemK(pl, p.mtype, e);
         e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
@@ -1308,7 +1338,7 @@ G.Combat = (() => {
 
     // --- contacto enemigo <-> jugador ---
     if (pl.dead) return;
-    for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, pl.r + 40)) {
+    for (const e of enemiesIn(pl.x, pl.y, pl.r + 40)) {
       // Shaq (Peso Pesado evolucionado): los enemigos normales no pueden tocarte (se quedan
       // en el borde del campo). Los jefes y los disparos sí.
       if (pl.bulkField && !e.boss) {

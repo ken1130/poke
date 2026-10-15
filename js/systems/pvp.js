@@ -35,23 +35,32 @@ G.PvP = (() => {
   }
 
   const armed = () => on && G.Game.st.time >= GRACE;
-  /** Tu Pokémon, si se le puede golpear ahora. */
-  function target(owner) {
+  /** Tu Pokémon, si se le puede golpear ahora. (Ya no se usa para el daño: lo decide quien ataca, ver deal.) */
+  function mine(owner) {
     const pl = G.Coop.local;
     if (teams && owner && owner.team === (pl && pl.team)) return null;       // compañero de equipo
     return armed() && pl && !pl.dead && !pl.god && owner && owner !== pl ? pl : null;
   }
   /** Te dan: daño, empujón y aviso al que te ha dado (para su marca de impacto). */
-  function hurt(pl, dmg, type, owner) {
+  function hurt(pl, dmg, type, owner, crit) {
     const before = pl.hp;
+    // Entre jugadores no vale la invulnerabilidad larga tras un golpe (0,45 s): si no, la mitad
+    // de los golpes "acertados" no hacían nada. Un respiro corto (0,1 s) sí.
+    pl.invuln = 0;
     pl.hurt(dmg * (arena ? K_ARENA : K), type);
+    pl.invuln = Math.min(pl.invuln, 0.1);
     const d = before - pl.hp;
     if (d <= 0) return true;
-    stopT = Math.max(stopT, 0.05);
+    // Lo que notas al recibir: parón, pantalla roja, sacudida y empujón.
+    stopT = Math.max(stopT, crit ? 0.08 : 0.05);
+    G.Game.flash('#ff2040', crit ? 0.35 : 0.22);
+    G.Camera.kick(crit ? 0.7 : 0.45);
     if (owner) {
       const a = Math.atan2(pl.y - owner.y, pl.x - owner.x);
-      const nx = pl.x + Math.cos(a) * 16, ny = pl.y + Math.sin(a) * 16;
-      if (G.World.isFree(nx, ny, pl.r * 0.6)) { pl.x = nx; pl.y = ny; }
+      for (let step = crit ? 30 : 22; step > 0; step -= 6) {
+        const nx = pl.x + Math.cos(a) * step, ny = pl.y + Math.sin(a) * step;
+        if (G.World.isFree(nx, ny, pl.r * 0.6)) { pl.x = nx; pl.y = ny; break; }
+      }
     }
     const ko = pl.dead || pl.hp <= 0;
     const ev = ['pv', 'h', pl.uid || G.Net.uid, owner ? owner.uid : null, Math.round(d), ko ? 1 : 0];
@@ -65,6 +74,58 @@ G.PvP = (() => {
     if (teams && G.Coop.local) myTeam = G.Coop.local.team;   // se recuerda: al acabar ya no hay sala
     if (on && !saidGo && armed()) { saidGo = true; G.Spawner.say('¡A luchar!', 2.4, true); G.Audio.sfx('boss'); }
   }
+
+  // Juicio antiguo (lo hacía quien recibía): ya no hace daño. Se dejan para no tocar combat.js.
+  const target = () => null;
+  /** Un disparo de otro jugador que llega hasta ti: sólo se deshace (el daño ya lo ha decidido él). */
+  function touchesMe(p) {
+    const pl = mine(p.owner);
+    return !!pl && G.U.dist2(p.x, p.y, pl.x, pl.y) <= (p.r + pl.r) ** 2;
+  }
+
+  // ================= quien ataca decide (2026-10-15) =================
+  /** combat.js: rivales vivos (a tiro) dentro del círculo, como si fueran enemigos. */
+  function foesIn(x, y, r) {
+    const me = G.Coop.local;
+    if (!armed() || !me) return [];
+    const out = [];
+    for (const p of G.Coop.puppets()) {
+      if (p.dead || (teams && p.team === me.team)) continue;
+      if (G.U.dist2(x, y, p.x, p.y) > (r + p.r) ** 2) continue;
+      if (p.id == null) p.id = 'pv:' + p.uid;
+      if (!p.applySlow) { p.applySlow = (k, t) => status(p, t || 1); p.applyRoot = t => status(p, t || 0.6); p.applyBurn = () => {}; p.applyPoison = () => {}; }
+      out.push(p);
+    }
+    return out;
+  }
+  /** El rival más cercano a un punto (torretas). */
+  function foeNear(x, y, r) {
+    let best = null, bd = r * r;
+    for (const p of foesIn(x, y, r)) { const d = G.U.dist2(x, y, p.x, p.y); if (d < bd) { bd = d; best = p; } }
+    return best;
+  }
+  const lastHit = new Map();      // uid del rival -> último golpe tuyo (ms): como mucho uno cada 70 ms
+  const send = ev => { if (G.Coop.isHost) G.Coop.broadcast(ev); else if (G.Coop.active) G.Coop.request(ev); };
+  /** Le has dado a un rival (en TU pantalla): se nota al momento y se le avisa para que pierda vida. */
+  function deal(attacker, foe, dmg, type, crit) {
+    if (attacker !== G.Coop.local || !foe || foe.dead || !armed()) return;
+    const now = performance.now();
+    if (now - (lastHit.get(foe.uid) || 0) < 70) return;
+    lastHit.set(foe.uid, now);
+    const k = (arena ? K_ARENA : K) * G.Types.mult(type, foe.mon.types);
+    const shown = Math.max(1, Math.round(dmg * k));
+    // Lo que ves tú al acertar: parón, marca de impacto, número grande, destello y golpe.
+    hitMark = 0.25; stopT = Math.max(stopT, crit ? 0.09 : 0.06);
+    foe.flash = 0.14;
+    G.FX.dmgText(foe.x + G.U.rand(-8, 8), foe.y - foe.bodyH - 6, crit ? shown + '!' : String(shown), crit ? '#ff5f6d' : '#ffe14d', true);
+    G.FX.sp('impact', type || 'normal', foe.x, foe.y - foe.bodyH * 0.5, { life: 0.16, scale: crit ? 2.4 : 1.7 });
+    G.FX.burst(foe.x, foe.y - foe.bodyH * 0.5, '#ffffff', crit ? 14 : 8, 160);
+    G.Audio.sfx(crit ? 'break' : 'hit');
+    G.Camera.kick(crit ? 0.3 : 0.16);
+    send(['pv', 'd', foe.uid, G.Net.uid, +(dmg).toFixed(1), type || null, crit ? 1 : 0]);
+  }
+  /** Frenar a un rival (Grava, charcos...): se le pide a él. */
+  function status(foe, t) { if (foe && foe.uid) send(['pv', 's', foe.uid, +t.toFixed(2)]); }
 
   /** Círculo (aura, explosión, charco, golpe de un proyectil). */
   function circle(owner, x, y, r, dmg, type) {
@@ -151,19 +212,20 @@ G.PvP = (() => {
   };
   /** Todos: alguien ha recibido un golpe de otro jugador. ['pv','h', víctima, atacante, daño, ko] */
   function onNet(ev) {
-    if (ev[1] !== 'h') return;
-    const [, , vic, atk, d, ko] = ev, me = G.Net.uid;
-    if (atk && atk === me && vic !== me) {
-      const v = G.Coop.mate(vic), p = v && v.pl;
-      hitMark = 0.22; stopT = Math.max(stopT, 0.04);
-      G.Audio.sfx('hit');
-      if (p) {
-        G.FX.dmgText(p.x, p.y - p.bodyH - 6, String(d), ko ? '#ff5f6d' : '#ffe14d', true);
-        G.FX.burst(p.x, p.y - p.bodyH * 0.5, '#ffffff', 8, 140);
-        p.flash = 0.12;
-      }
-      G.Camera.kick(0.18);
+    const me = G.Net.uid;
+    // ['pv','d', víctima, atacante, daño, tipo, crítico]: te han dado en SU pantalla.
+    if (ev[1] === 'd') {
+      if (ev[2] !== me) return;
+      const pl = G.Game.player, at = G.Coop.mate(ev[3]);
+      const owner = at && at.pl;
+      if (!pl || pl.dead || !armed() || (teams && owner && owner.team === pl.team)) return;
+      hurt(pl, ev[4], ev[5], owner, !!ev[6]);
+      return;
     }
+    // ['pv','s', víctima, segundos]: te frenan.
+    if (ev[1] === 's') { if (ev[2] === me && G.Game.player) G.Game.player.slowT = Math.max(G.Game.player.slowT || 0, ev[3]); return; }
+    if (ev[1] !== 'h') return;
+    const [, , vic, atk, d, ko] = ev;
     if (ko) {
       slowT = 0.7;
       feed.unshift({ text: G.I18n.f('{x} ha tumbado a {x}', nameOf(atk), nameOf(vic)), t: 5, mine: atk === me || vic === me });
@@ -230,12 +292,27 @@ G.PvP = (() => {
   const PICK_N = 3, OFFER_N = 5, PICK_LVL = 3;
   let offers = [], chosen = [], rerolls = 1, pickTimer = 0;
   const attackDef = d => d && !['buff', 'bulk', 'flameshield', 'support'].includes(d.kind);
+  // Cuerpo a cuerpo o muy corto: con muchos de éstos te tienen a distancia todo el combate.
+  const SHORT = ['melee', 'dash', 'aura', 'flameshield', 'orbit', 'trail', 'mine'];
+  const isShort = id => SHORT.includes(G.Moves.BY_ID[id].kind);
+  /** 5 movimientos: al menos 3 de distancia y como mucho 2 cortos (2026-10-15: salían todos cuerpo a cuerpo). */
   function rollOffers(pl) {
     const own = G.Moves.poolFor(pl.mon).filter(id => attackDef(G.Moves.BY_ID[id]));
     const any = G.Moves.ALL.filter(attackDef).map(d => d.id);
-    const out = G.U.pickN(own, OFFER_N);
-    for (const id of G.U.pickN(any, 20)) if (out.length < OFFER_N && !out.includes(id)) out.push(id);
-    return out;
+    const pick = (list, n, ok) => G.U.pickN(list.filter(id => ok(id)), n);
+    const out = [];
+    const add = ids => { for (const id of ids) if (out.length < OFFER_N && !out.includes(id)) out.push(id); };
+    // Distancia: primero los de su tipo, luego cualquiera.
+    add(pick(own, 3, id => !isShort(id)));
+    add(pick(any, 3 - out.length, id => !isShort(id) && !out.includes(id)));
+    // El resto, de su tipo si puede (como mucho 2 cortos).
+    const fill = list => { for (const id of G.U.pickN(list, list.length)) {
+      if (out.length >= OFFER_N || out.includes(id)) continue;
+      if (isShort(id) && out.filter(isShort).length >= 2) continue;
+      out.push(id);
+    } };
+    fill(own); fill(any);
+    return G.U.pickN(out, out.length);      // mezclados
   }
   /** game.js, al empezar: la arena prepara a tu Pokémon y abre la elección. */
   function arenaStart(pl) {
@@ -386,10 +463,11 @@ G.PvP = (() => {
     ctx.restore();
   }
 
-  return { TEAM_NAMES, TEAM_COLORS, teamWinner, get teams() { return on && teams && G.Coop.active; },
+  return { foesIn, foeNear, deal, touchesMe, TEAM_NAMES, TEAM_COLORS, teamWinner, get teams() { return on && teams && G.Coop.active; },
            begin, tick, foe, wonByMe, circle, arc, seg, projectile, orb, setWinner, afterRun, K, GRACE,
            onNet, timeScale, manualAim, arenaTick, arenaStart, pickTick, pickKey, drawWorld, drawHud, zoneR,
            get aiming() { return aiming(); }, get arena() { return on && arena && G.Coop.active; },
+           _roll: rollOffers,   // pruebas
            get _dbg() { return { hitMark, feed, chosen, offers, picked }; },   // pruebas
            get on() { return on && G.Coop.active; } };
 })();
