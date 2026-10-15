@@ -14,6 +14,14 @@ G.HUD = (() => {
     ctx.closePath();
   }
 
+  /** Color de tipo aclarado (mitad hacia el blanco) para que se lea sobre fondo oscuro. */
+  function lighten(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+    if (!m) return '#ffffff';
+    const n = parseInt(m[1], 16), c = k => Math.round(((n >> k) & 255) * 0.45 + 255 * 0.55);
+    return `rgb(${c(16)},${c(8)},${c(0)})`;
+  }
+
   function bar(ctx, x, y, w, h, frac, col, bg = 'rgba(0,0,0,.55)') {
     roundRect(ctx, x, y, w, h, h / 2); ctx.fillStyle = bg; ctx.fill();
     if (frac > 0) {
@@ -480,10 +488,17 @@ G.HUD = (() => {
 
       // nombre encima del activo (con un vínculo: "Ascuas +2")
       if (on) {
-        ctx.font = F(700, 10);
+        // Sobre una pastilla oscura y con el color del tipo aclarado: el morado de Fantasma
+        // o el azul de Dragón no se leían encima del mapa.
+        ctx.font = F(800, 11);
         ctx.textAlign = 'center';
-        ctx.fillStyle = fused ? BOND : col;
-        ctx.fillText(fused ? m.name + ' +' + (g.length - 1) : m.name, x + S / 2, y - 7);
+        const label = G.T(fused ? m.name + ' +' + (g.length - 1) : m.name);
+        const lw = ctx.measureText(label).width + 12;
+        roundRect(ctx, x + S / 2 - lw / 2, y - 21, lw, 16, 7);
+        ctx.fillStyle = 'rgba(8,12,24,.85)'; ctx.fill();
+        ctx.lineWidth = 1.5; ctx.strokeStyle = fused ? BOND : col; ctx.stroke();
+        ctx.fillStyle = fused ? '#ffd0f0' : lighten(col);
+        ctx.fillText(label, x + S / 2, y - 9);
       }
     }
 

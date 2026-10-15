@@ -5,6 +5,10 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '一般模式開場祝福：開局從 3 個隨機祝福選 1 個（禮物光碟、開局夥伴、經驗 +30%、從 3 級開始、開局道具、傷害 +20%、速度 +15%、重抽 +3、復活種子、煉金術士、血量 +40）', en: 'Normal mode opening blessing: pick 1 of 3 random boons at the start (gift disc, starting partner, +30% XP, start at Lv 3, starting item, +20% damage, +15% speed, +3 rerolls, Revive Seed, Alchemist, +40 HP)' },
+      { zh: '一般模式里程碑：撐過 10／20／30 分鐘各有獎勵（技能光碟／道具＋扭蛋券／十連扭蛋券＋金幣）', en: 'Normal mode milestones: rewards for surviving 10/20/30 minutes (move disc / item + ticket / ×10 ticket + coins)' },
+      { zh: '冒險模式困難版：三星通關後解鎖，敵人血量 ×1.8、傷害 ×1.4，通關得第 4 顆星（粉紅色）和十連扭蛋券；每區館主最後一隻必掉道具', en: 'Adventure Hard: unlocked after 3 stars, enemies ×1.8 HP and ×1.4 damage, clearing it gives a pink 4th star and a ×10 ticket; each region’s final leader always drops an item' },
+      { zh: '組隊名單顯示每位隊友的連線方式與延遲（直連／中繼、毫秒）', en: 'The group list shows each teammate’s connection type and latency (direct/relay, ms)' },
       { zh: '圖鑑可依屬性篩選（彩色屬性按鈕，跨所有地區），搜尋框也能直接打屬性名稱，例如「火」', en: 'Pokédex type filter (colored type chips, across all regions); you can also type a type name in the search box, e.g. “fire”' },
       { zh: '無盡塔：每 5 層三選一「遺物」，整座塔都有效（吸血、雙子火球、獵人之眼、永恆之芽、引爆器等 8 種）', en: 'Endless Tower: every 5 floors pick 1 of 3 relics that last the whole climb (lifesteal, twin fireballs, hunter’s eye, revive, detonator and more — 8 in all)' },
       { zh: '每日挑戰連續天數：連續 3／7／14／30 天有扭蛋券與稱號', en: 'Daily challenge streaks: tickets and titles at 3, 7, 14 and 30 days in a row' },
@@ -40,6 +44,8 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '連線再優化：敵人資料只傳有變動的部分（訊息約小 70%，怪多時比較不會卡），隊友和敵人的移動改用平滑插值，網路不穩時抖動更少', en: 'Smoother online play: enemy updates now only send what changed (messages about 70% smaller, fewer hitches with big hordes), and teammates and enemies are smoothly interpolated, jittering less on unstable connections' },
+      { zh: '招式欄上方的招式名稱改成深色底＋亮色字，更清楚', en: 'The move name above your move bar now has a dark backing and brighter text so it’s easier to read' },
       { zh: '冒險模式的關卡比較短：技能光碟、寶可夢蛋、怪物屋、商店、雕像會依關卡長度平均出現，短關卡也拿得到', en: 'Adventure stages are shorter, so move discs, eggs, Monster Houses, shops and statues are now spread across each stage’s length' },
       { zh: '美術統一：小地圖圖示、怪物屋邊界（符文石圈）、技能光碟光柱都改成像素風格', en: 'Art pass: minimap icons, the Monster House border (a ring of rune stones) and the move disc light beam are now pixel art' },
       { zh: '手機橫向畫面：小地圖縮小、清單只列 3 項，不再擋到畫面', en: 'Phones in landscape: smaller minimap and a 3-item list so it no longer covers the screen' },
