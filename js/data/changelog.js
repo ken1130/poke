@@ -6,6 +6,13 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-15', title: ['Cambio de objetos más claro', 'Clearer item swaps'], chg: [
+    ['Al encontrar un objeto llevando ya dos, cada opción muestra el efecto del objeto que dejas y el del nuevo (antes sólo se veía el del nuevo).',
+     'When you find an item while already carrying two, each option now shows the effect of the item you give up and of the new one (before, only the new one was shown).']
+  ], fix: [
+    ['La frase de arriba de esa ventana ("Llevas dos: elige cuál cambias") salía siempre en español.',
+     'The line at the top of that window ("You carry two: choose which to swap") always showed in Spanish.']
+  ] },
   { d: '2026-10-13', title: ['Todas las partidas cuentan', 'Every run counts'], chg: [
     ['Ya no hay comprobaciones contra trampas: todas las partidas cuentan para el ranking y los récords, y no se pierde nada de lo ganado.',
      'No more anti-cheat checks: every run counts for the leaderboard and your records, and nothing you earn is taken away.']

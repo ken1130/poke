@@ -27,7 +27,13 @@
    `"/mnt/c/Program Files/Git/cmd/git.exe" push origin main`（Linux 的 git 沒有登入）。
 8. 不能 `git commit --amend`（會被擋）→ 要補就再開一個新 commit。
 
-- **有協作者一起開發（2026-10-15 起）**：推送前一定先 `git fetch origin`，看 `git log main..origin/main` 有沒有對方的提交；有就先合併（不能 force push、不能丟掉對方的改動），衝突兩邊都保留，產生的檔案（index.html、js/app.min.js、version.json）不要手動合併，合併後重跑 build 和 export_data，測過再推，並跟主人說對方改了什麼。
+- **有協作者一起開發（2026-10-15 起，主人＋peter）**：推送前**每次**照下面做，避免互相蓋掉：
+  1. `git fetch origin`，用 `git log main..origin/main`、`git diff --stat main...origin/main` 看對方改了什麼，告訴主人。
+  2. 先提交自己的改動（指定檔案，不加 .claude/），再 `git merge --no-edit origin/main`。**只用 merge**，不要 rebase、不要 force push、不要 reset 掉對方的提交。
+  3. 衝突在產生檔（`index.html`、`js/app.min.js`、`version.json`）：不要手動合併，`git checkout --ours` 後用合併後的原始碼重跑 `node tools/build.js --sin-seo` 和 `node tools/export_data.js`。原始碼衝突：兩邊的意圖都保留。
+  4. 不要自己覆蓋或還原對方的檔案；對方的改動如果跟主人的決定衝突，先拿給主人決定。
+  5. 合併後跑一次無頭測試，沒錯誤才提交合併、推送。
+  - 注意：`tools/make_seo_pages.py` 會把原作者的捐款頁（`apoyar/`、`en/support/`）和舊 SEO 頁重新產生出來；我們的流程只用 `--sin-seo`，不跑它。
 
 ## 三、已定案的設計
 
