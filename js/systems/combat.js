@@ -72,6 +72,11 @@ G.Combat = (() => {
       case 'lightning':  lightning(pl, m); break;
       case 'drain':      drain(pl, m); break;
       case 'psyarrow':   psyArrows(pl, m); break;
+      case 'acidrain':   acidRain(pl, m); break;
+      case 'fist':       fist(pl, m); break;
+      case 'bulk':       bulk(pl, m); break;
+      case 'spear':      spears(pl, m); break;
+      case 'treefall':   trees(pl, m); break;
     }
   }
 
@@ -199,7 +204,183 @@ G.Combat = (() => {
     G.FX.ring(pl.x, pl.y, pl.r, pl.r * 2.5, '#7dffb0', 0.3, 2);
   }
 
-  const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone', 'lightning', 'drain', 'psyarrow'];
+  // ---------------- movimientos de 2026-10-15 ----------------
+  const byDist = pl => (a, b) => G.U.dist2(a.x, a.y, pl.x, pl.y) - G.U.dist2(b.x, b.y, pl.x, pl.y);
+  const NOCRIT = { crit: false };
+
+  /*
+   * Estados que dejan los movimientos y siguen haciendo daño: el veneno de Lluvia
+   * Corrosiva (con su frenado), el sangrado de Puño Lee y los "charcos andantes"
+   * (quien pisa un charco va dejando más). Enemigo -> { owner, pm, pUntil, pDps, slow,
+   * bm, bleed, drip, prow }. Se cuentan cada 0,5 s en tickDots.
+   */
+  let dots = new Map(), dotT = 0;
+  function dotOf(pl, e) {
+    let d = dots.get(e);
+    if (!d) { d = { owner: pl, pUntil: 0, pDps: 0, slow: 0, bleed: 0, drip: 0 }; dots.set(e, d); }
+    d.owner = pl;
+    return d;
+  }
+  function poisonWith(pl, e, row, m) {
+    const d = dotOf(pl, e), now = G.Game.st.time;
+    d.pm = m; d.pUntil = Math.max(d.pUntil, now + row.dur); d.pDps = row.dps; d.slow = row.slow;
+  }
+  function tickDots(dt) {
+    dotT -= dt;
+    if (dotT > 0 || !dots.size) return;
+    dotT = 0.5;
+    const now = G.Game.st.time;
+    for (const [e, d] of dots) {
+      if (e.dead || !d.owner || !G.EnemyMgr.get(e.id)) { dots.delete(e); continue; }
+      const pl = d.owner;
+      let alive = false;
+      if (d.pUntil > now) {
+        alive = true;
+        hit(pl, e, d.pDps * 0.5 * pl.atk, '#c46cf0', 0, 0, 0, d.pm, NOCRIT);
+        if (!e.dead && d.slow) e.applySlow(d.slow, 0.7);
+      }
+      if (d.bleed && !e.dead) {
+        alive = true;
+        hit(pl, e, d.bleed * 0.5 * pl.atk, '#e0303a', 0, 0, 0, d.bm, NOCRIT);
+        if (Math.random() < 0.5 && G.Camera.sees(e.x, e.y, 20)) G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#e0303a', 2, 40);
+      }
+      if (d.drip > now && !e.dead) {
+        alive = true;
+        if (!d.lx || G.U.dist2(d.lx, d.ly, e.x, e.y) > 26 * 26) { d.lx = e.x; d.ly = e.y; addPuddle(pl, d.pm, d.prow, e.x, e.y, 3, false); }
+      }
+      if (!alive) dots.delete(e);
+    }
+  }
+
+  /**
+   * Lluvia Corrosiva: llueve en un círculo de `r` casillas a tu alrededor; los enemigos
+   * quedan envenenados y frenados `dur` s (aunque salgan). Con `pud`, deja charcos
+   * (1: frenan; 2: también envenenan). Con `spread`, quien pisa un charco va dejando
+   * charcos por donde pasa durante `spread` s. Evolucionado (`over`): la lluvia cae
+   * sobre cada enemigo y los charcos, debajo de ellos.
+   */
+  function acidRain(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE;
+    const list = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead);
+    fields.push({ kind: 'rain', owner: pl, ghost, m, col: '#a043d0', x: pl.x, y: pl.y, t: 0, life: 0.9, r: R,
+                  spots: row.over ? list.slice(0, 30).map(e => [e.x, e.y]) : null });
+    if (!ghost) for (const e of list) poisonWith(pl, e, row, m);
+    if (row.pud) {
+      const n = row.over ? 8 : 3;
+      for (let i = 0; i < n; i++) {
+        const e = list.length ? list[Math.floor(Math.random() * list.length)] : null;
+        const a = Math.random() * 6.2832, d = Math.sqrt(Math.random()) * R * 0.8;
+        addPuddle(pl, m, row, e ? e.x : pl.x + Math.cos(a) * d, e ? e.y : pl.y + Math.sin(a) * d * 0.8, 6, true);
+      }
+    }
+    if (G.Camera.sees(pl.x, pl.y, 0)) G.Audio.sfx('shot', { kind: 'aura', type: 'poison' });
+  }
+  /** Charco de Lluvia Corrosiva (como mucho 40 por jugador: los más viejos se secan). */
+  function addPuddle(pl, m, row, x, y, life, big) {
+    fields.push({ kind: 'puddle', owner: pl, ghost, m, row, col: '#a043d0', x, y, t: 0, life, r: TILE * (big ? 1.2 : 0.8), tick: 0 });
+    const mine = fields.filter(f => f.kind === 'puddle' && f.owner === pl && !f.gone);
+    for (const f of mine.slice(0, Math.max(0, mine.length - 40))) f.gone = true;
+  }
+
+  /**
+   * Puño Lee: puñetazo al más cercano a `r` casillas (evolucionado: a los `n` más cercanos).
+   * Crítico con probabilidad `crit` (más la tuya) y seguro cada `every` puñetazos; los
+   * críticos hacen ×1,5 (evolucionado ×`cmul`) y, con `bleed`, sangran hasta que caen.
+   */
+  function fist(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE, col = G.U.TYPE_COLOR.fighting;
+    const list = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl)).slice(0, row.n || 1);
+    if (!list.length) return;
+    m.punches = (m.punches || 0) + 1;
+    const sure = m.punches % row.every === 0;
+    for (const e of list) {
+      const a = Math.atan2(e.y - pl.y, e.x - pl.x);
+      if (G.Camera.sees(e.x, e.y, 20)) {
+        G.FX.sp('impact', 'fighting', e.x, e.y - e.bodyH * 0.5, { life: 0.16, scale: sure ? 2.2 : 1.4 });
+        if (row.n) G.FX.beam(pl.x, pl.y - G.LIFT * 0.5, a, Math.hypot(e.x - pl.x, e.y - pl.y), 2, col, G.VFX.forMove(m));
+      }
+      if (ghost) continue;
+      const crit = sure || Math.random() < row.crit + (pl.critChance || 0);
+      hit(pl, e, row.dmg * pl.atk, col, Math.cos(a), Math.sin(a), row.knock || 0, m, { crit, cmul: row.cmul });
+      if (crit && row.bleed && !e.dead) { const d = dotOf(pl, e); d.bleed = row.bleed; d.bm = m; }
+    }
+    if (!row.n) G.FX.spark(pl.x, pl.y - G.LIFT * 0.5, col, Math.cos(pl.aim), Math.sin(pl.aim), 3);
+    if (sure && !ghost) G.Camera.kick(0.06);
+  }
+
+  /**
+   * Peso Pesado (pasivo): armadura (menos daño al chocar con enemigos) y reducción de
+   * todo el daño, según el tamaño del Pokémon (del más pequeño ×0,4 a Rayquaza ×1), y
+   * vida extra. Evolucionado (Shaq): campo de fuerza, ver resolve().
+   */
+  function bulk(pl, m) {
+    if (ghost) return;
+    const row = G.Moves.stat(m);
+    const k = 0.4 + 0.6 * G.U.clamp((pl.r - 10) / 42, 0, 1);
+    pl.bulkArmor = row.armor * k;
+    pl.bulkRed = row.red * k;
+    pl.bulkField = !!row.field;
+    const add = row.hp - (pl.bulkHp || 0);
+    if (add > 0) { pl.maxHp += add; pl.hp = Math.min(pl.maxHp, pl.hp + add); pl.bulkHp = row.hp; }
+    if (row.field) {
+      pl.fieldFx = (pl.fieldFx || 0) + 1;
+      if (pl.fieldFx % 3 === 0) G.FX.ring(pl.x, pl.y, pl.r + 10, pl.r + 22, '#ffe9a0', 0.5, 2);
+    }
+  }
+
+  /**
+   * Lanza Espectral: `n` lanzas hacia el enemigo que perforan `pierce`. Evolucionado
+   * (Lanza Sombría): 8 lanzas en todas direcciones; cada vez que una perfora salen 2
+   * lanzas pequeñas (que golpean a 2 como mucho y ya no se parten).
+   */
+  const SPEAR_SPEED = 460;
+  function spearProj(pl, x, y, a, o) {
+    return G.Projectiles.spawn(Object.assign({
+      x: x + Math.cos(a) * 4, y: y + Math.sin(a) * 4, vx: Math.cos(a) * SPEAR_SPEED, vy: Math.sin(a) * SPEAR_SPEED,
+      color: G.U.TYPE_COLOR.ghost, mtype: 'ghost', owner: pl, hits: new Set()
+    }, o));
+  }
+  function spears(pl, m) {
+    const row = G.Moves.stat(m), vis = G.VFX.forMove(m);
+    const o = { dmg: row.dmg * pl.atk, r: 8 * row.size, scale: 1.6 * row.size, life: row.r * TILE / SPEAR_SPEED,
+                pierce: row.pierce, vis, ghost, split: row.split || 0, sdmg: (row.sdmg || 0) * pl.atk };
+    if (row.radial) {
+      const rot = Math.random() * 0.785;
+      for (let i = 0; i < 8; i++) spearProj(pl, pl.x, pl.y, rot + i * 0.785, o);
+    } else {
+      for (let i = 0; i < row.n; i++) spearProj(pl, pl.x, pl.y, pl.aim + (i - (row.n - 1) / 2) * 0.16, o);
+    }
+  }
+  function splitSpear(p, e) {
+    const a = Math.atan2(p.vy, p.vx);
+    for (const s of [-0.5, 0.5]) {
+      spearProj(p.owner, e.x, e.y, a + s, { dmg: p.sdmg, r: 6, scale: 1.1, life: 0.55, pierce: 1, vis: p.vis,
+                                            ghost: p.ghost, hits: new Set([e.id]) });
+    }
+  }
+
+  /**
+   * Bautismo Natural: `n` árboles caen en diagonal sobre enemigos cercanos (a menos de
+   * `r` casillas) y aplastan en un círculo de 54 × `size`. Con `zone`, deja 3 s una zona
+   * que frena. Evolucionado (¡Árbol Va!): un árbol por enemigo (los `n` más cercanos),
+   * pinchos que golpean otra vez (`spikes`) y enredaderas que inmovilizan `root` s.
+   */
+  function trees(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE, vis = G.VFX.forMove(m);
+    const list = G.EnemyMgr.queryCircle(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl));
+    let pick;
+    if (row.n >= 12) pick = list.slice(0, row.n);
+    else {
+      pick = list.slice(0, 8);
+      for (let i = pick.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pick[i], pick[j]] = [pick[j], pick[i]]; }
+      pick = pick.slice(0, row.n);
+    }
+    pick.forEach((e, i) => fields.push({ kind: 'tree', owner: pl, ghost, m, row, col: G.U.TYPE_COLOR.grass, vis,
+      x: e.x, y: e.y, t: -i * 0.07, fall: 0.55, r: 54 * row.size, dmg: row.dmg * pl.atk }));
+  }
+
+  const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone', 'lightning', 'drain', 'psyarrow',
+                    'acidrain', 'fist', 'spear', 'treefall'];
   function needsTarget(m) { return TARGETED.includes(m.kind); }
   function reach(m) {
     if (m.kind === 'melee') return m.radius + 30;
@@ -208,7 +389,7 @@ G.Combat = (() => {
     if (m.kind === 'chain') return 280;
     if (m.kind === 'meteor') return 340;
     if (m.kind === 'dash') return m.radius + 60;
-    if (m.kind === 'lightning' || m.kind === 'drain' || m.kind === 'psyarrow') return G.Moves.stat(m).r * 32;
+    if (['lightning', 'drain', 'psyarrow', 'acidrain', 'fist', 'spear', 'treefall'].includes(m.kind)) return G.Moves.stat(m).r * 32;
     if (m.kind === 'cone') return m.speed * m.life + 30;
     return 520;
   }
@@ -496,6 +677,7 @@ G.Combat = (() => {
   }
 
   function updateFields(dt) {
+    tickDots(dt);
     for (let i = fields.length - 1; i >= 0; i--) {
       const f = fields[i];
       f.t += dt;
@@ -552,6 +734,53 @@ G.Combat = (() => {
             }
           }
         }
+      } else if (f.kind === 'puddle') {
+        // Charco de Lluvia Corrosiva: cada 0,5 s, a lo que lo pise.
+        f.tick -= dt;
+        if (f.tick <= 0 && !f.ghost) {
+          f.tick = 0.5;
+          for (const e of G.EnemyMgr.queryCircle(f.x, f.y, f.r)) {
+            if (e.dead) continue;
+            if (f.row.pud >= 2) poisonWith(f.owner, e, f.row, f.m); else e.applySlow(f.row.slow, 0.7);
+            if (f.row.spread && !e.boss) { const d = dotOf(f.owner, e); d.drip = G.Game.st.time + f.row.spread; d.prow = f.row; d.pm = f.m; }
+          }
+        }
+      } else if (f.kind === 'tree') {
+        if (f.t >= f.fall) {
+          G.FX.ring(f.x, f.y, 4, f.r, '#97e36c', 0.35, 4);
+          G.FX.burst(f.x, f.y - 6, '#45b23c', 14, 170);
+          G.FX.burst(f.x, f.y - 4, '#8a5a2b', 6, 120);
+          if (G.Camera.sees(f.x, f.y, 40)) { G.Audio.sfx('break'); G.Camera.kick(0.1); }
+          blast(f, f.r);
+          const row = f.row;
+          if (row.zone) fields.push({ kind: 'grove', owner: f.owner, ghost: f.ghost, m: f.m, row, col: f.col, x: f.x, y: f.y,
+                                      t: 0, life: 3, r: f.r, tick: 0, rooted: new Set() });
+          if (row.spikes) fields.push({ kind: 'spikes', owner: f.owner, ghost: f.ghost, m: f.m, col: '#8a5a2b', x: f.x, y: f.y,
+                                        t: 0, fall: 0.3, r: f.r * 0.8, dmg: row.spikes * f.owner.atk });
+          fields.splice(i, 1);
+        }
+      } else if (f.kind === 'spikes') {
+        if (f.t >= f.fall) {
+          for (let k = 0; k < 6; k++) {
+            const a = Math.random() * 6.2832, d = Math.random() * f.r * 0.8;
+            G.FX.spark(f.x + Math.cos(a) * d, f.y + Math.sin(a) * d * 0.6, '#c89a5a', 0, -1, 2);
+          }
+          blast(f, f.r);
+          fields.splice(i, 1);
+        }
+      } else if (f.kind === 'grove') {
+        // Zona del árbol caído: frena (evolucionado: enredaderas que inmovilizan una vez a cada uno).
+        f.tick -= dt;
+        if (f.tick <= 0 && !f.ghost) {
+          f.tick = 0.5;
+          for (const e of G.EnemyMgr.queryCircle(f.x, f.y, f.r)) {
+            if (e.dead) continue;
+            if (f.row.root && !f.rooted.has(e.id)) {
+              f.rooted.add(e.id);
+              if (e.boss) e.applySlow(0.5, 1); else e.applyRoot(f.row.root);
+            } else e.applySlow(0.4, 0.7);
+          }
+        }
       } else if (f.kind === 'patch') {
         f.tick -= dt;
         if (f.tick <= 0) { f.tick = 0.5; blast(f, f.r); }
@@ -576,6 +805,37 @@ G.Combat = (() => {
         ctx.globalAlpha = 0.5 * a;
         ctx.strokeStyle = f.col; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * 0.8, f.r * 0.5, 0, 0, 6.2832); ctx.stroke();
+      } else if (f.kind === 'puddle' || f.kind === 'grove') {
+        const a = Math.min(1, (f.life - f.t) * 1.5, f.t * 6);
+        const vine = f.kind === 'grove';
+        ctx.globalAlpha = (vine ? 0.28 : 0.38) * a;
+        ctx.fillStyle = vine ? (f.row.root ? '#2f7a28' : '#5fae3a') : '#7a2fa0';
+        ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r, f.r * 0.6, 0, 0, 6.2832); ctx.fill();
+        ctx.globalAlpha = 0.55 * a;
+        ctx.strokeStyle = vine ? '#97e36c' : '#d995f2'; ctx.lineWidth = 1.5;
+        if (vine) {
+          // Enredaderas: unas curvas que salen del centro.
+          for (let k = 0; k < 5; k++) {
+            const ang = k * 1.2566 + f.x * 0.01;
+            ctx.beginPath(); ctx.moveTo(f.x, f.y);
+            ctx.quadraticCurveTo(f.x + Math.cos(ang + 0.6) * f.r * 0.5, f.y + Math.sin(ang + 0.6) * f.r * 0.3,
+                                 f.x + Math.cos(ang) * f.r * 0.9, f.y + Math.sin(ang) * f.r * 0.55);
+            ctx.stroke();
+          }
+        } else {
+          const w = Math.sin(now * 3 + f.x) * 0.08 + 0.7;
+          ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * w, f.r * w * 0.6, 0, 0, 6.2832); ctx.stroke();
+        }
+      } else if (f.kind === 'tree' || f.kind === 'spikes') {
+        const k = G.U.clamp(f.t / f.fall, 0, 1);
+        ctx.globalAlpha = f.kind === 'tree' ? 0.15 + k * 0.3 : 0.3;
+        ctx.fillStyle = f.kind === 'tree' ? '#000' : '#5a3a1a';
+        ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * (0.3 + k * 0.7), f.r * 0.6 * (0.3 + k * 0.7), 0, 0, 6.2832); ctx.fill();
+        if (f.kind === 'tree') {
+          ctx.globalAlpha = 0.6;
+          ctx.strokeStyle = '#97e36c'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+          ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r, f.r * 0.6, 0, 0, 6.2832); ctx.stroke();
+        }
       } else if (f.kind === 'mine') {
         const armed = f.t >= f.arm, blink = armed && Math.sin(now * 8 + f.x) > 0.3;
         ctx.globalAlpha = 0.18;
@@ -622,6 +882,41 @@ G.Combat = (() => {
         ctx.restore();
         continue;
       }
+      if (f.kind === 'rain') {
+        // Lluvia: rayitas moradas que caen (sobre el círculo, o sobre cada enemigo si evolucionó).
+        const fade = Math.min(1, (f.life - f.t) * 3, f.t * 8);
+        ctx.save();
+        ctx.strokeStyle = '#c46cf0'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.7 * fade;
+        const n = f.spots ? f.spots.length * 2 : 46;
+        ctx.beginPath();
+        for (let k = 0; k < n; k++) {
+          const h = (Math.sin(k * 12.9898 + f.x) * 43758.5453) % 1, h2 = (Math.sin(k * 78.233 + f.y) * 12543.13) % 1;
+          let x, y;
+          if (f.spots) { const s = f.spots[k >> 1]; x = s[0] + h * 18; y = s[1] + h2 * 10; }
+          else { const a = h * 6.2832, d = Math.sqrt(Math.abs(h2)) * f.r; x = f.x + Math.cos(a) * d; y = f.y + Math.sin(a) * d * 0.7; }
+          const fall = ((f.t * 3 + Math.abs(h)) % 1) * 90;
+          ctx.moveTo(x + 6 - fall * 0.06, y - 96 + fall); ctx.lineTo(x + 4 - fall * 0.06, y - 84 + fall);
+        }
+        ctx.stroke();
+        ctx.restore();
+        continue;
+      }
+      if (f.kind === 'tree' && f.t > 0) {
+        // Árbol que cae del cielo en diagonal (45°), girando hasta quedar tumbado.
+        const k = G.U.clamp(f.t / f.fall, 0, 1), s = f.r / 54;
+        ctx.save();
+        ctx.translate(f.x - (1 - k) * 150, f.y - (1 - k) * 150 - 10);
+        ctx.rotate(-0.785 + k * 0.785 + 0.6);
+        ctx.scale(s, s);
+        ctx.fillStyle = '#6b4220'; ctx.strokeStyle = '#3a220c'; ctx.lineWidth = 2;
+        ctx.fillRect(-6, -8, 12, 46); ctx.strokeRect(-6, -8, 12, 46);
+        for (const [cx, cy, rr, c] of [[0, -26, 26, '#24721e'], [-12, -14, 16, '#2f8a28'], [12, -16, 17, '#2f8a28'], [0, -34, 15, '#45b23c']]) {
+          ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 6.2832); ctx.fill();
+        }
+        ctx.strokeStyle = '#14400f'; ctx.beginPath(); ctx.arc(0, -26, 26, 0, 6.2832); ctx.stroke();
+        ctx.restore();
+        continue;
+      }
       if (f.kind === 'meteor' && f.t > 0) {
         const k = G.U.clamp(f.t / f.fall, 0, 1);
         G.VFX.draw(ctx, f.vis.proj, f.vis.pal, f.x + (1 - k) * 40, f.y - (1 - k) * 170 - 6,
@@ -634,7 +929,10 @@ G.Combat = (() => {
     }
   }
 
-  function clearFields(owner) { fields = owner ? fields.filter(f => f.owner !== owner) : []; }
+  function clearFields(owner) {
+    fields = owner ? fields.filter(f => f.owner !== owner) : [];
+    if (owner) { for (const [e, d] of dots) if (d.owner === owner) dots.delete(e); } else dots = new Map();
+  }
 
   function orbit(pl, m, dt, now, isGhost = false) {
     const col = G.U.TYPE_COLOR[m.type];
@@ -697,10 +995,11 @@ G.Combat = (() => {
   const CRIT_MUL = 1.5;
   const isCrit = pl => !ghost && pl.critChance > 0 && Math.random() < pl.critChance;
 
-  function hit(pl, e, dmg, col, dx, dy, knock, m) {
+  /** @param opt  { crit: forzar sí/no, cmul: multiplicador del crítico } (Puño Lee y los estados) */
+  function hit(pl, e, dmg, col, dx, dy, knock, m, opt) {
     const k = typeK(m.type, e);
-    const crit = isCrit(pl);
-    dmg *= k * (crit ? CRIT_MUL : 1);
+    const crit = !ghost && (opt && opt.crit != null ? opt.crit : isCrit(pl));
+    dmg *= k * (crit ? (opt && opt.cmul) || CRIT_MUL : 1);
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
     pl.dmgDealt += dmg;
@@ -806,6 +1105,7 @@ G.Combat = (() => {
         // Disparo fantasma de un compañero: choca y se ve, pero no daña.
         if (p.ghost) {
           G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
+          if (p.split && p.pierce > 0) splitSpear(p, e);
           if (p.pierce > 0) { p.pierce--; continue; }
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 5, 80);
           projectiles.splice(i, 1);
@@ -824,6 +1124,7 @@ G.Combat = (() => {
         if (p.slow) e.applySlow(p.slow);
 
         if (!p.orb) {
+          if (p.split && p.pierce > 0) splitSpear(p, e);   // Lanza Sombría: se parte al perforar
           if (p.pierce > 0) { p.pierce--; }
           else {
             G.FX.burst(p.x, p.y - G.LIFT, p.color, 5, 80);
@@ -837,11 +1138,22 @@ G.Combat = (() => {
     // --- contacto enemigo <-> jugador ---
     if (pl.dead) return;
     for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, pl.r + 40)) {
+      // Shaq (Peso Pesado evolucionado): los enemigos normales no pueden tocarte (se quedan
+      // en el borde del campo). Los jefes y los disparos sí.
+      if (pl.bulkField && !e.boss) {
+        const d = Math.max(1, G.U.dist(e.x, e.y, pl.x, pl.y)), min = pl.r + e.r + 4;
+        if (d < min && !e.remote) {
+          const x = pl.x + (e.x - pl.x) / d * min, y = pl.y + (e.y - pl.y) / d * min;
+          if (!G.World.isWall(x, y)) { e.x = x; e.y = y; }
+        }
+        continue;
+      }
       if (G.U.dist2(e.x, e.y, pl.x, pl.y) > (e.r + pl.r) * (e.r + pl.r)) continue;
       if (e.touchCd > 0 || e.behavior === 'thief') continue;
       e.touchCd = 0.55;
       e.strike(pl);
-      pl.hurt(e.dmg, e.atkType);
+      // Peso Pesado: la armadura quita parte del daño de los choques.
+      pl.hurt(e.dmg * (1 - (pl.bulkArmor || 0)), e.atkType);
       if (pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
       const [nx, ny] = G.U.norm(e.x - pl.x, e.y - pl.y);
       e.kx += nx * 150; e.ky += ny * 150;

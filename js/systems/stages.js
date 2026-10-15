@@ -320,9 +320,35 @@ G.Stages = (() => {
         <div style="font-size:12px;color:var(--muted)">${lines.map((t, i) => (i < stars ? '★ ' : '☆ ') + t).join(' · ')}</div>
         ${rw ? `<div class="gold" style="margin-top:4px">${G.T('Premio')}: ${rw}</div>` : ''}
         ${win && LIST[s.id + 1] && unlocked(s.id + 1) && !before ? `<div style="color:#5fe08a">${G.I18n.f('¡Desbloqueada la fase {x}!', LIST[s.id + 1].code)}</div>` : ''}
+        <div class="row" data-next-row style="justify-content:center;gap:8px;margin-top:8px"></div>
       </div>`);
+      nextButtons(box.querySelector('[data-next-row]'), s, win, stars);
     }
     st = null; result = null; net = null;
+  }
+
+  /**
+   * Botones del resumen: "Siguiente fase" (si está desbloqueada) y "Repetir". En solitario
+   * empiezan ya; en una sala, el anfitrión vuelve a la sala con esa fase elegida (los
+   * demás esperan a que empiece).
+   */
+  function nextButtons(row, s, win, stars) {
+    if (!row) return;
+    const room = G.Social.room, next = LIST[s.id + 1];
+    if (room && !room.isHost) { row.innerHTML = `<small style="color:var(--muted)">${G.T('El anfitrión elige la siguiente fase.')}</small>`; return; }
+    const go = id => {
+      const again = document.getElementById('btn-again');
+      if (again) again.click();               // vuelve al menú o a la sala (y guarda como siempre)
+      setTimeout(() => {
+        if (room) { G.Social.setMods(Object.assign({}, room.mods, { stage: id, ch: null, rush: false })); return; }
+        select(id); G.Modes.start('stage');
+      }, 60);
+    };
+    const btns = [];
+    if (win && next && unlocked(next.id)) btns.push(['next', '▶ ' + G.I18n.f(room ? 'Siguiente: {x} (a la sala)' : 'Siguiente fase: {x}', next.code), next.id, true]);
+    if (!win || stars < 3) btns.push(['retry', '↻ ' + G.T(win ? 'Repetir (a por las 3 ★)' : 'Reintentar'), s.id, !win]);
+    row.innerHTML = btns.map(([k, l, , gold]) => `<button class="btn ${gold ? 'gold' : ''}" data-k="${k}">${l}</button>`).join('');
+    btns.forEach(([k, , id]) => { row.querySelector(`[data-k="${k}"]`).onclick = () => go(id); });
   }
 
   function merge(r, older) {

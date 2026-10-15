@@ -34,7 +34,7 @@ G.Game = (() => {
     G.Touch.init(cv);
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
     document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); else if (pl && state !== 'over' && state !== 'ui') keepAwake(true); });
-    G.RunUI.wirePause(() => { state = 'playing'; G.UI.hideAll(); }, quitRun);
+    G.RunUI.wirePause(() => { if (coopPause) { resumeCoop(); return; } state = 'playing'; G.UI.hideAll(); }, quitRun);
     Backdrop.init();
     last = performance.now();
     requestAnimationFrame(loop);
@@ -78,25 +78,40 @@ G.Game = (() => {
   }
 
   /** Pausa/continúa (tecla Esc o P, o el botón de pausa del móvil). */
-  let holdBy = [];                   // grupo: quién está eligiendo fusión (todo parado)
+  let holdBy = [];                   // grupo: quién para la partida (eligiendo o en pausa)
+  let holdPaused = [];               // de ellos, los que están en pausa
+  let coopPause = false;             // grupo: TÚ has pausado (la partida se para para todos)
 
   function togglePause() {
-    // En grupo la pausa no para el juego (los demás siguen jugando).
+    // En grupo la pausa para la partida a todos (como al elegir cartas, coop.js).
     if (G.Coop.active) {
-      if (state !== 'playing') return;
-      if (G.UI.isOpen('scr-pause')) G.UI.hide('scr-pause');
-      else { G.RunUI.showPause(true); G.Audio.sfx('pause'); }
+      if (coopPause) { resumeCoop(); return; }
+      if (state !== 'playing' && state !== 'held') return;
+      coopPause = true; state = 'held';
+      G.RunUI.showPause(true); G.Audio.sfx('pause');
+      G.Coop.holdStart();
       return;
     }
     if (state === 'playing') { state = 'paused'; G.RunUI.showPause(); G.Audio.sfx('pause'); }
     else if (state === 'paused') { state = 'playing'; G.UI.hideAll(); }
   }
 
+  /** Grupo: quitas tu pausa; si nadie más para la partida, sigue. */
+  function resumeCoop() {
+    coopPause = false;
+    G.UI.hide('scr-pause');
+    if (coopCards.length) { nextCoopCard(); G.Coop.holdEnd(); return; }   // cartas que llegaron mientras tanto
+    if (state === 'held') state = holdBy.length || awayBy ? 'held' : 'playing';
+    if (state === 'held') { if (awayBy) G.Spawner.say(awayText(), 999, true); else holdText(); }
+    else G.Spawner.say('', 0, true);
+    G.Coop.holdEnd();
+  }
+
   // ---------------- run ----------------
 
   /** @param coop  { seed, host, members } para una partida en grupo */
   function startRun(coop = null) {
-    holdBy = []; awayBy = null;
+    holdBy = []; holdPaused = []; awayBy = null; coopPause = false;
     const save = G.DB.save;
     // PK con personaje al azar: el Pokémon que le ha tocado a cada uno (cfg.members), sin mejoras.
     const randomMe = coop && coop.rand ? (coop.members.find(m => m.uid === G.Net.uid) || {}).dex : null;
@@ -156,7 +171,7 @@ G.Game = (() => {
     }
     // Aventura: empiezas con unos niveles ya ganados (cartas al empezar), más cuanto más lejos.
     const head = G.Stages.headStart();
-    if (head && (!coop || coop.host === G.Net.uid)) { pl.level += head; pl.xpNext = G.Player.xpFor(pl.level); pendingLevels += head; }
+    if (head) { pl.level += head; pl.xpNext = G.Player.xpFor(pl.level); pendingLevels += head; }
 
     if (coop) {
       G.Coop.begin(coop, pl, coopApi);
@@ -240,24 +255,26 @@ G.Game = (() => {
   const coopApi = {
     team: teamState,
     summary,
-    // Invitado: el anfitrión manda el reloj y lo del equipo.
+    // Invitado: el anfitrión manda el reloj y lo del equipo (el nivel no: cada uno el suyo).
     syncTeam(t) {
       if (Math.abs(t.time - time) > 0.4) time = t.time;
-      if (t.level > pl.level) G.Audio.sfx('xp');
-      pl.level = t.level; pl.xp = t.xp; pl.xpNext = t.xpNext;
       pl.kills = t.kills; pl.bosses = t.bosses; pl.coins = t.coins;
       if (t.t1 > pl.t1 || t.t10 > pl.t10) G.Audio.sfx('shiny');
       pl.t1 = t.t1 || 0; pl.t10 = t.t10 || 0;
       bankTickets();
     },
+    /** Invitado: experiencia recogida por el grupo (con TU bonus). */
+    gainXp(v) { if (pl && state !== 'over') pendingLevels += pl.gainXp(v * G.Coop.xpFactor()); },
     levelStart(level) {
       // Las cartas se ponen en cola; mientras alguien elige, la partida se para para todos
       // (2026-10-14: antes seguía y te rodeaban mientras elegías).
       coopCards.push(level);
-      if (!['scr-levelup', 'scr-bond', 'scr-item'].some(G.UI.isOpen)) nextCoopCard();
+      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item'].some(G.UI.isOpen)) nextCoopCard();
     },
     /** ¿Estás eligiendo algo? (lo manda coop.js en tu estado; si alguien elige, todo parado) */
     choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond'].some(G.UI.isOpen) || coopCards.length > 0; },
+    /** ¿Has pausado tú? (en grupo, también para a todos) */
+    paused() { return coopPause; },
     waiting(names) { G.RunUI.setWaiting(names); },
     resume() { G.RunUI.closeLevelUp(); if (state === 'levelup') state = 'playing'; },
     shiny(dex) { G.onShinyCaught({ dex, name: (G.DEX_BY[dex] || {}).name || '' }); },
@@ -265,7 +282,7 @@ G.Game = (() => {
       if (d && 'pvpWin' in d) G.PvP.setWinner(d.pvpWin);
       if (d && d.stage) G.Stages.setResult(d.stage.win);
       if (d && d.team) lastTeam = d.team;
-      if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, level: Math.max(pl.level, d.lv || 1), t1: d.t1 || pl.t1, t10: d.t10 || pl.t10 });
+      if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, t1: d.t1 || pl.t1, t10: d.t10 || pl.t10 });
       if (d && d.t) time = d.t;
       if (d && d.why === 'host') G.UI.toast('El anfitrión ha terminado la partida', 3200);
       // Sonido de derrota sólo si de verdad lo es (fase superada o PK ganado: no).
@@ -278,8 +295,11 @@ G.Game = (() => {
     hold(list) {
       // list = [[uid, nombre], ...] de quién está eligiendo; tú no cuentas (eso ya es 'choice').
       const me = pl && pl.uid;
-      holdBy = (list || []).filter(x => (Array.isArray(x) ? x[0] : x) !== me).map(x => (Array.isArray(x) ? x[1] : x));
+      const others = (list || []).filter(x => (Array.isArray(x) ? x[0] : x) !== me);
+      holdBy = others.map(x => (Array.isArray(x) ? x[1] : x));
+      holdPaused = others.filter(x => Array.isArray(x) && x[2] === 2).map(x => x[1]);
       if (state === 'choice') return;                 // estás eligiendo: al terminar se mira (doneChoosing)
+      if (coopPause) return;                          // estás en pausa: al seguir se mira (resumeCoop)
       if (holdBy.length) {
         if (state === 'playing') state = 'held';
         if (coopCards.length) nextCoopCard();          // tus cartas pendientes, a la vez que los demás
@@ -296,7 +316,7 @@ G.Game = (() => {
       if (awayBy) {
         if (state === 'playing') state = 'held';
         G.Spawner.say(awayText(), 999, true);
-      } else if (!holdBy.length) {
+      } else if (!holdBy.length && !coopPause) {
         if (state === 'held') state = 'playing';
         G.Spawner.say('', 0, true);
       }
@@ -306,7 +326,9 @@ G.Game = (() => {
   /** Aviso "Pausa: X está eligiendo…" (o que no hay nadie). */
   function holdText() {
     if (!holdBy.length) return;
-    G.Spawner.say(G.I18n.f(holdBy.length > 1 ? 'Pausa: {x} están eligiendo…' : 'Pausa: {x} está eligiendo…', holdBy.join('、')), 999, true);
+    // Si sólo hay gente en pausa (nadie eligiendo), se dice quién la ha puesto.
+    if (holdPaused.length === holdBy.length) G.Spawner.say(G.I18n.f('Pausa: {x} ha pausado la partida', holdBy.join('、')), 999, true);
+    else G.Spawner.say(G.I18n.f(holdBy.length > 1 ? 'Pausa: {x} están eligiendo…' : 'Pausa: {x} está eligiendo…', holdBy.join('、')), 999, true);
   }
   /**
    * Grupo: has terminado una elección (carta, vínculo, objeto). Si te queda otra, la
@@ -316,7 +338,7 @@ G.Game = (() => {
     if (!G.Coop.active) return;
     if (coopCards.length) { nextCoopCard(); return; }
     if (pl && pl.bonds > 0 && pl.bondOptions && pl.bondOptions()) { state = 'held'; offerBond(true); if (state === 'choice') return; }
-    if (state === 'choice' || state === 'held') state = holdBy.length || awayBy ? 'held' : 'playing';
+    if (state === 'choice' || state === 'held') state = holdBy.length || awayBy || coopPause ? 'held' : 'playing';
     if (state === 'held') { if (awayBy) G.Spawner.say(awayText(), 999, true); else holdText(); }
     else G.Spawner.say('', 0, true);
     G.Coop.holdEnd();
@@ -426,10 +448,10 @@ G.Game = (() => {
   function maybeLevelUp() {
     if (pendingLevels <= 0 || state !== 'playing') return;
     if (G.Coop.active) {
-      // En grupo, las cartas salen a la vez para todos y cada uno elige sin esperar a los demás.
+      // En grupo cada uno sube con SU experiencia; mientras eliges, el grupo espera (coop.js).
       if (G.Coop.players().every(p => p.dead)) return;
       pendingLevels--;
-      G.Coop.levelStart(pl.level);
+      coopApi.levelStart(pl.level);
       return;
     }
     // Nunca abras cartas con el Pokémon caído (morir y recoger XP en el mismo frame).
@@ -517,6 +539,7 @@ G.Game = (() => {
     if (G.Coop.active) G.Coop.collected(p, who);
     if (mine || p.kind === 'bomb') G.Audio.sfx(PICK_SFX[p.kind]);
     if (p.kind === 'xp' || p.kind === 'xpBig') {
+      if (G.Coop.active) G.Coop.xpShare(p.value);       // a cada uno, con su bonus
       pendingLevels += pl.gainXp(p.value * (G.Coop.active ? G.Coop.xpFactor() : 1));
       return;
     }
@@ -736,7 +759,7 @@ G.Game = (() => {
     G.FX.update(dt);
 
     G.Audio.music(G.Rift.inArena ? 'rift' : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
-    if (!coop || G.Coop.isHost) maybeLevelUp();
+    maybeLevelUp();
     if (pl.bonds > 0) offerBond(true);
     if (G.Coop.isHost) checkAllDown(dt);
     G.PvP.tick();

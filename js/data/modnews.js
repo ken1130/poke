@@ -3,6 +3,22 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-15', title: { zh: '五個新招式', en: 'Five new moves' },
+    new: [
+      { zh: '毒系新招「腐蝕酸雨」：以自己為中心下毒雨，中毒＋緩速，升級後留下會擴散的毒水窪；進化「奈米屌雨」', en: 'New Poison move “Corrosive Rain”: poison rain around you that poisons and slows, later leaving spreading puddles; evolves into “Nano Rain”' },
+      { zh: '格鬥系新招「李家拳」：快速單體連拳，每幾拳必定暴擊，滿級暴擊會流鼻血；進化「家暴神拳」打 12 隻', en: 'New Fighting move “Lee Fist”: fast single-target punches with a guaranteed crit every few hits, crits make enemies bleed at max level; evolves into “Fury Fist” (hits 12)' },
+      { zh: '一般系新被動「歐美肥佬」：依寶可夢體型獲得護甲與減傷；進化「俠客歐尼爾」力場讓一般敵人碰不到你', en: 'New Normal passive “Heavyweight”: armor and damage reduction based on your Pokémon’s size; evolves into “Shaq”, a force field normal enemies cannot get through' },
+      { zh: '幽靈系新招「幽冥矛」：射出穿透的矛；進化「暗影神槍」8 方向射出，穿透時分裂', en: 'New Ghost move “Spectral Spear”: piercing spears; evolves into “Shadow Lance”, 8 directions that split when piercing' },
+      { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
+    ],
+    chg: [
+      { zh: '冒險模式結算畫面新增「下一關」與「再挑戰」按鈕', en: 'Adventure results: new “Next stage” and “Retry” buttons' },
+      { zh: '組隊時每個人用自己的經驗值與經驗加成各自升級', en: 'In groups, everyone levels up with their own XP and XP bonus' }
+    ],
+    fix: [
+      { zh: '修正組隊時按暫停不會真的暫停：現在任何人按暫停，全隊都會停下，畫面會顯示誰按了暫停', en: 'Fixed pause not pausing in groups: now when anyone pauses, the game stops for the whole group and shows who paused' }
+    ]
+  },
   { d: '2026-10-14', title: { zh: '冒險模式、挑戰大更新', en: 'Adventure & challenges update' },
     new: [
       { zh: '冒險模式：8 個地區 24 關，道館館主、火箭隊、四天王與冠軍，每關最多 3 顆星（可組隊）', en: 'Adventure: 8 regions, 24 stages with Gym Leaders, Team Rocket, the Elite Four and the Champion; up to 3 stars per stage (co-op too)' },

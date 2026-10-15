@@ -128,7 +128,7 @@ G.Projectiles = (() => {
       if (G.VFX.isDir(shape)) angle = p.orb ? p.oa + Math.PI / 2 : Math.atan2(p.vy, p.vx);
       else if (G.VFX.spins(shape)) angle = p.t * 9;
       G.VFX.draw(ctx, shape, v.pal, p.x, p.y - L, {
-        angle, alpha: a, scale: p.r >= 8 ? 1.5 : 1,
+        angle, alpha: a, scale: p.scale || (p.r >= 8 ? 1.5 : 1),
         frame: Math.floor(p.t * 12)
       });
     }

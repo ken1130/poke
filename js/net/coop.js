@@ -33,7 +33,7 @@ G.Coop = (() => {
   let hitFrom = null;                   // invitado cuyo golpe se está aplicando (no repetirle el número)
   let api = {};                         // callbacks del juego (game.js)
   let waiting = new Set();              // subida de nivel: quién falta por elegir
-  let holds = new Set();                // quién está eligiendo una fusión (la partida se para para todos)
+  let holds = new Map();                // uid -> 1 eligiendo / 2 en pausa (la partida se para para todos)
   // El anfitrión mueve a los enemigos: si cambia de pestaña (o se le congela),
   // todo se para para todos. Antes los enemigos se quedaban quietos y los demás
   // seguían jugando con una ventaja enorme.
@@ -63,7 +63,7 @@ G.Coop = (() => {
     api = cb;
     members = cfg.members;
     mates.clear();
-    outEv = []; flushT = 0; waiting = new Set(); holds = new Set(); holdKey = ''; gotHolds = '';
+    outEv = []; flushT = 0; waiting = new Set(); holds = new Map(); holdKey = ''; gotHolds = '';
     kills.clear(); revives.clear();
     hostAway = false; stalled = false; lastHostAt = performance.now();
     G.PvP.begin(cfg);
@@ -87,7 +87,7 @@ G.Coop = (() => {
 
   function end() {
     active = false; host = false; local = null;
-    mates.clear(); outEv = []; waiting = new Set(); holds = new Set();
+    mates.clear(); outEv = []; waiting = new Set(); holds = new Map();
   }
 
   /** Te vas de la partida (los demás siguen). */
@@ -114,15 +114,18 @@ G.Coop = (() => {
   function puppets() { const out = []; for (const m of mates.values()) if (m.connected) out.push(m.pl); return out; }
 
   /**
-   * Multiplicador de la experiencia del equipo: la media de los bonus de
-   * cada uno, y repartida entre los que sois (en grupo cae mucho más, y si no
-   * se subiría de nivel el triple de rápido que en solitario).
+   * Experiencia en grupo (2026-10-14): cada uno tiene SU nivel y su barra. Toda la
+   * experiencia que se recoge le llega a todos ('xg'), repartida según cuántos sois
+   * (si no se subiría de nivel el triple de rápido que en solitario), y cada uno le
+   * aplica SU bonus (Mejoras, objetos): el tuyo ya no lo disfrutan los demás.
    */
   function xpFactor() {
-    let s = local.xpMul, n = 1;
-    for (const m of mates.values()) if (m.connected) { s += m.xpMul || 1; n++; }
-    return (s / n) / local.xpMul / (1 + 0.6 * (n - 1));
+    let n = 1;
+    for (const m of mates.values()) if (m.connected) n++;
+    return 1 / (1 + 0.6 * (n - 1));
   }
+  /** Anfitrión: se ha recogido experiencia (para todos). */
+  function xpShare(v) { emit(['xg', Math.round(v * 10) / 10]); }
 
   // ---------------- estado de un jugador ----------------
 
@@ -134,12 +137,12 @@ G.Coop = (() => {
     const m = g.find(x => x.kind === 'orbit') || g[0];
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
-            r2(local.reviveT || 0), r1(local.dmgDealt || 0), local.dex, api.choosing && api.choosing() ? 1 : 0];
+            r2(local.reviveT || 0), r1(local.dmgDealt || 0), local.dex, api.choosing && api.choosing() ? 1 : api.paused && api.paused() ? 2 : 0];
   }
 
   function readState(a) {
     return { x: a[0], y: a[1], ang: a[2], walk: a[3], hp: a[4], maxHp: a[5], dead: a[6], mv: a[7], ml: a[8],
-             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0, dex: a[14] || 0, ch: a[15] ? 1 : 0 };
+             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0, dex: a[14] || 0, ch: a[15] || 0 };
   }
 
   // ---------------- envío ----------------
@@ -172,8 +175,8 @@ G.Coop = (() => {
     return out;
   }
 
-  /** Quién está eligiendo ahora: [[uid, nombre], ...]. */
-  function holdList() { return [...holds].map(u => [u, nameOf(u)]); }
+  /** Quién para la partida ahora: [[uid, nombre, 1 eligiendo | 2 en pausa], ...]. */
+  function holdList() { return [...holds].map(([u, k]) => [u, nameOf(u), k]); }
 
   function hostFrame(m) {
     const st = api.team();
@@ -265,6 +268,7 @@ G.Coop = (() => {
           if (ev[2] === 'b') e.applyBurn(ev[3]);
           else if (ev[2] === 'p') e.applyPoison(ev[3]);
           else if (ev[2] === 's') e.applySlow(ev[3]);
+          else if (ev[2] === 'r') e.applyRoot(ev[3]);
           break;
         }
         case 'c':
@@ -303,7 +307,7 @@ G.Coop = (() => {
   let gotHolds = '';
   function applyHolds(list) {
     if (!Array.isArray(list)) return;
-    const k = list.map(x => (Array.isArray(x) ? x[0] : x)).sort().join(',');
+    const k = list.map(x => (Array.isArray(x) ? x[0] + ':' + (x[2] || 1) : x)).sort().join(',');
     if (k === gotHolds) return;
     gotHolds = k;
     api.hold && api.hold(list);
@@ -362,6 +366,7 @@ G.Coop = (() => {
       case 'say': G.Spawner.say(ev[1], ev[2]); break;
       case 'heal': if (!local.dead) { local.heal(local.maxHp * ev[1]); G.FX.ring(local.x, local.y, 6, 60, '#5fe08a', 0.4, 3); } break;
       case 'lu': api.levelStart(ev[1]); break;
+      case 'xg': api.gainXp && api.gainXp(ev[1]); break;
       case 'lw': api.waiting(ev[1]); break;
       case 'lr': api.resume(); break;
       case 'hp': applyHolds(ev[1]); break;
@@ -462,10 +467,12 @@ G.Coop = (() => {
   let holdKey = '';
   /** Anfitrión: quién está eligiendo según el último estado de cada uno. */
   function syncHolds() {
-    const now = new Set();
-    if (api.choosing && api.choosing()) now.add(me);
-    for (const m of mates.values()) if (m.connected && m.pl && m.pl.net && m.pl.net.ch) now.add(m.uid);
-    const key = [...now].sort().join(',');
+    const now = new Map();
+    // Elegir cartas (1) o la pausa (2): las dos paran la partida para todos.
+    if (api.choosing && api.choosing()) now.set(me, 1);
+    else if (api.paused && api.paused()) now.set(me, 2);
+    for (const m of mates.values()) if (m.connected && m.pl && m.pl.net && m.pl.net.ch) now.set(m.uid, m.pl.net.ch);
+    const key = [...now].map(([u, k]) => u + ':' + k).sort().join(',');
     if (key === holdKey) return;
     holdKey = key; holds = now;
     emit(['hp', holdList()]); flushAll();
@@ -511,7 +518,7 @@ G.Coop = (() => {
   }
 
   return {
-    ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, scaleRate, scaleHp,
+    ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, xpShare, scaleRate, scaleHp,
     hitter, creditKill, creditRevive, teamStats,
     cast, hit, status, hurtShown, enemyAdded, enemyGone, enemyShot, pickupAdded, pickupGone, say,
     propBroken, collected, shinyCaught, levelStart, localPicked, over, holdStart, holdEnd,

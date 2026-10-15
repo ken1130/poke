@@ -22,6 +22,12 @@
  *   lightning   rayos que caen sobre enemigos al azar en un radio
  *   drain       muerde a los N más cercanos y te cura (evolucionado: PASIVO)
  *   psyarrow    flechas que vuelan a un enemigo y saltan a los siguientes más cercanos
+ *   ---- 2026-10-15 (también con TABLE) ----
+ *   acidrain    lluvia venenosa a tu alrededor: veneno + frenado que dura aunque se alejen; charcos
+ *   fist        puñetazos rápidos al más cercano, con críticos seguros cada N golpes
+ *   bulk        PASIVO: defensa según el tamaño de tu Pokémon (evolucionado: campo de fuerza)
+ *   spear       lanzas al enemigo que perforan (evolucionado: 8 direcciones y se parten)
+ *   treefall    árboles que caen en diagonal sobre enemigos (aplastan en un círculo)
  *
  * Sólo el movimiento ACTIVO se ejecuta. Se cambia con 1-4 / Q / E.
  *
@@ -142,6 +148,36 @@
       { t: '+1 flecha',                                              m: {} },
       { t: '+1 perforación, +8 al primero y +5 a los demás',         m: {} },
       { t: '+6 de daño al primero y +4 a los demás',                 m: {} }
+    ],
+    acidrain: [
+      { t: '+3 de daño/s, +4 s y +1 casilla',                         m: {} },
+      { t: '+5 de daño/s y +6 s; deja charcos que frenan',            m: {} },
+      { t: '+6 de daño/s, +5 s y +1 casilla; los charcos envenenan', m: {} },
+      { t: '+6 de daño/s y +8 s; los que pisan un charco van dejando más', m: {} }
+    ],
+    fist: [
+      { t: '+4 de daño y +5% de crítico; crítico seguro cada 8 golpes',                m: {} },
+      { t: '+8 de daño y +7,5% de crítico; crítico cada 7 golpes y empuja 3 casillas', m: {} },
+      { t: '+10 de daño, +7,5% de crítico, +2 casillas; crítico cada 6 golpes',          m: {} },
+      { t: '+10% de crítico, crítico cada 5 golpes; los críticos hacen sangrar',       m: {} }
+    ],
+    bulk: [
+      { t: '+5% de armadura y +5% de reducción de daño',              m: {} },
+      { t: '+10% de armadura, +7,5% de reducción y +50 de vida',      m: {} },
+      { t: '+13% de armadura y +7,5% de reducción',                   m: {} },
+      { t: '+12% de armadura, +10% de reducción y +60 de vida',       m: {} }
+    ],
+    spear: [
+      { t: '+1 lanza y +6 de daño',                                   m: {} },
+      { t: '+1 perforación y +8 de daño',                             m: {} },
+      { t: '+10 de daño, lanzas un 15% más grandes y +2 casillas',     m: {} },
+      { t: '+1 lanza, +1 perforación y +10 de daño',                   m: {} }
+    ],
+    treefall: [
+      { t: '+10 de daño y árbol más grande',                          m: {} },
+      { t: '+6 de daño y +1 árbol',                                   m: {} },
+      { t: '+8 de daño; donde cae deja una zona que frena',           m: {} },
+      { t: '+10 de daño y +1 árbol',                                  m: {} }
     ],
     buff: [
       { t: '+1 acumulación máxima',         m: { stacks: 1 } },
@@ -442,7 +478,23 @@
       cd: 1.7, dmg: 14, count: 5, radius: 160 },
     { id: 'psy-arrow', name: 'Flecha Psíquica', type: 'psychic', kind: 'psyarrow',
       desc: 'Flecha que vuela a un enemigo y salta a los siguientes más cercanos.',
-      cd: 1.2, dmg: 14, count: 1, radius: 512 }
+      cd: 1.2, dmg: 14, count: 1, radius: 512 },
+    // ---------------- 2026-10-15 (números en TABLE) ----------------
+    { id: 'acid-rain', name: 'Lluvia Corrosiva', type: 'poison', kind: 'acidrain',
+      desc: 'Lluvia venenosa a tu alrededor: envenena y frena a los enemigos un buen rato.',
+      cd: 1.5, dmg: 6, radius: 192 },
+    { id: 'lee-fist', name: 'Puño Lee', type: 'fighting', kind: 'fist',
+      desc: 'Puñetazos rápidos al enemigo más cercano. Cada pocos golpes, uno es crítico seguro.',
+      cd: 0.28, dmg: 16, radius: 160 },
+    { id: 'heavyweight', name: 'Peso Pesado', type: 'normal', kind: 'bulk',
+      desc: 'PASIVO: armadura (menos daño al chocar) y reducción de daño. Cuanto más grande tu Pokémon, más.',
+      cd: 0.5, dmg: 0, radius: 0 },
+    { id: 'ghost-spear', name: 'Lanza Espectral', type: 'ghost', kind: 'spear',
+      desc: 'Lanza fantasmal contra el enemigo más cercano.',
+      cd: 0.95, dmg: 26, radius: 320 },
+    { id: 'nature-tree', name: 'Bautismo Natural', type: 'grass', kind: 'treefall',
+      desc: 'Un árbol cae en diagonal del cielo y aplasta a los enemigos donde cae.',
+      cd: 1.5, dmg: 30, radius: 384 }
   ];
 
   /*
@@ -470,12 +522,54 @@
       { n: 1, d1: 14, d2: 8, pierce: 4, r: 16 },  { n: 1, d1: 20, d2: 11, pierce: 4, r: 16 },
       { n: 2, d1: 20, d2: 11, pierce: 4, r: 16 },  { n: 2, d1: 28, d2: 16, pierce: 5, r: 16 },
       { n: 2, d1: 34, d2: 20, pierce: 5, r: 16 },  { n: 3, d1: 34, d2: 34, pierce: 6, r: 16, repeat: true }
+    ],
+    // ---- 2026-10-15 ----
+    // dps de veneno, dur (s) del veneno y el frenado, r (casillas), slow (frenado), pud (charcos:
+    // 1 frenan, 2 también envenenan), spread (s que deja charcos quien pisa uno); evolucionado: over
+    // (la lluvia cae sobre cada enemigo del radio y deja charcos bajo ellos)
+    'acid-rain': [
+      { dps: 6,  dur: 5,  r: 6, slow: 0.25 },          { dps: 9,  dur: 9,  r: 7, slow: 0.25 },
+      { dps: 14, dur: 15, r: 7, slow: 0.25, pud: 1 },  { dps: 20, dur: 20, r: 8, slow: 0.3, pud: 2 },
+      { dps: 26, dur: 28, r: 8, slow: 0.3, pud: 2, spread: 8 },
+      { dps: 50, dur: 28, r: 12, slow: 0.3, pud: 2, spread: 8, over: true }
+    ],
+    // dmg por puñetazo, crit (probabilidad, se suma a la tuya), every (crítico seguro cada N), r,
+    // knock (empuja 3 casillas), bleed (daño/s hasta que muera, a los que reciben un crítico);
+    // evolucionado: n (golpea a los n más cercanos), cmul (multiplicador del crítico)
+    'lee-fist': [
+      { dmg: 16, crit: 0.10, every: 9, r: 5 },  { dmg: 20, crit: 0.15, every: 8, r: 5 },
+      { dmg: 28, crit: 0.225, every: 7, r: 5, knock: 600 },  { dmg: 38, crit: 0.30, every: 6, r: 7, knock: 600 },
+      { dmg: 38, crit: 0.40, every: 5, r: 7, knock: 600, bleed: 6 },
+      { dmg: 40, crit: 0.50, every: 5, r: 10, knock: 600, bleed: 6, cmul: 1.8, n: 12, cd: 0.55 }
+    ],
+    // Para el Pokémon más grande (×0,4 el más pequeño): armor (menos daño al chocar), red (reducción
+    // de todo el daño), hp (vida extra total); evolucionado: field (los enemigos normales no te tocan)
+    'heavyweight': [
+      { armor: 0.10, red: 0.10, hp: 0 },   { armor: 0.15, red: 0.15, hp: 0 },
+      { armor: 0.25, red: 0.225, hp: 50 }, { armor: 0.38, red: 0.30, hp: 50 },
+      { armor: 0.50, red: 0.40, hp: 110 }, { armor: 0.70, red: 0.45, hp: 190, field: true }
+    ],
+    // dmg, n lanzas, pierce, size, r; evolucionado: radial (8 direcciones), split (al perforar salen
+    // 2 lanzas más pequeñas que golpean a 2 como mucho), sdmg (su daño)
+    'ghost-spear': [
+      { dmg: 26, n: 1, pierce: 0, size: 1, r: 10 },    { dmg: 32, n: 2, pierce: 0, size: 1, r: 10 },
+      { dmg: 40, n: 2, pierce: 1, size: 1, r: 10 },    { dmg: 50, n: 2, pierce: 1, size: 1.15, r: 12 },
+      { dmg: 60, n: 3, pierce: 2, size: 1.15, r: 12 },
+      { dmg: 60, n: 8, pierce: 4, size: 1.15, r: 12, radial: true, split: 2, sdmg: 30 }
+    ],
+    // dmg, n árboles, size (radio del golpe ×54), r; zone (deja una zona que frena 3 s);
+    // evolucionado: hasta n árboles (uno por enemigo), spikes (pinchos: 2º golpe), root (s inmovilizados)
+    'nature-tree': [
+      { dmg: 30, n: 1, size: 1, r: 12 },       { dmg: 40, n: 1, size: 1.25, r: 12 },
+      { dmg: 46, n: 2, size: 1.25, r: 12 },    { dmg: 54, n: 2, size: 1.25, r: 12, zone: true },
+      { dmg: 64, n: 3, size: 1.25, r: 12, zone: true },
+      { dmg: 80, n: 12, size: 1.25, r: 15, zone: true, spikes: 40, root: 2, cd: 2.6 }
     ]
   };
   /** Fila de TABLE para una instancia (según su nivel y si ha evolucionado). */
   const stat = m => (TABLE[m.id] ? TABLE[m.id][m.evolved ? 5 : Math.max(0, Math.min(4, m.lvl - 1))] : null);
   /** ¿Funciona aunque no sea el movimiento activo? */
-  const isPassive = m => m.kind === 'flameshield' || !!(m.evolved && stat(m) && stat(m).passive);
+  const isPassive = m => m.kind === 'flameshield' || m.kind === 'bulk' || !!(m.evolved && stat(m) && stat(m).passive);
 
   // Cuerpo a cuerpo (12-10-2026): +20 % de daño y +25 % de alcance y de arco
   // (y -25 % de daño recibido mientras sea tu ataque activo, en player.js).
@@ -595,7 +689,10 @@
     'aerial-ace': ['Acróbata', 'spd'],       'flame-wheel': ['Envite Ígneo', 'spd'],
     'bubble-beam': ['Acua Cola', 'atk'],     'hex': ['Poltergeist', 'mag'],
     'flame-shield': ['Escudo Ígneo', 'def'], 'thunder-strike': ['Tormenta Eléctrica', 'atk'],
-    'vampire-fang': ['Colmillo Eterno', 'rgn'], 'psy-arrow': ['Flecha Psíquica Eterna', 'cd']
+    'vampire-fang': ['Colmillo Eterno', 'rgn'], 'psy-arrow': ['Flecha Psíquica Eterna', 'cd'],
+    'acid-rain': ['Nanolluvia', 'rgn'],      'lee-fist': ['Puño Furioso', 'atk'],
+    'heavyweight': ['Shaq', 'hp'],           'ghost-spear': ['Lanza Sombría', 'cd'],
+    'nature-tree': ['¡Árbol Va!', 'mag']
   };
   // Lo que gana al evolucionar, según cómo funcione.
   const EVO_MODS = {
@@ -616,7 +713,12 @@
     flameshield: { t: '60 de daño/s durante 50 s; los quemados reciben +15% de daño', m: {} },
     lightning:   { t: '12 rayos de 40 y descargas entre ellos (+50 de daño/s)', m: {} },
     drain:       { t: 'Pasa a ser PASIVO: cada 1 s muerde a 12 (35 de daño) y te cura 8', m: {} },
-    psyarrow:    { t: 'Todos reciben 34, +1 flecha, +1 perforación y puede volver a perforar al mismo', m: {} }
+    psyarrow:    { t: 'Todos reciben 34, +1 flecha, +1 perforación y puede volver a perforar al mismo', m: {} },
+    acidrain:    { t: 'Llueve sobre cada enemigo a 12 casillas (50 de daño/s) y deja charcos bajo ellos', m: {} },
+    fist:        { t: 'Golpea a los 12 más cercanos a 10 casillas; 50% de crítico y los críticos hacen ×1,8', m: {} },
+    bulk:        { t: 'Campo de fuerza: los enemigos normales no pueden tocarte; armadura 70%, reducción 45% y +80 de vida', m: {} },
+    spear:       { t: '8 lanzas en todas direcciones que perforan 4; cada vez que perforan salen 2 más', m: {} },
+    treefall:    { t: 'Un árbol por cada enemigo cercano (hasta 12), pinchos de +40 e inmoviliza 2 s', m: {} }
   };
 
   /** ¿Puede evolucionar ya? → { name, needs, needName, text, ready } o null */

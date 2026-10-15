@@ -95,7 +95,8 @@ G.Player = class Player {
     const slow = this.inLiquid ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
     return s * slow * w;
   }
-  get reduction() { return Math.min(0.8, this.dmgReduce + this.buffs.def.n * this.buffs.def.amount); }
+  // bulkRed: Peso Pesado (combat.js), que también da bulkArmor contra los choques.
+  get reduction() { return Math.min(0.8, this.dmgReduce + (this.bulkRed || 0) + this.buffs.def.n * this.buffs.def.amount); }
   get regen() { return this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount; }
 
   // ---------------- movimientos ----------------
@@ -208,10 +209,12 @@ G.Player = class Player {
     const anim = { melee: 'Attack', beam: 'Shoot', projectile: 'Shoot', nova: 'Attack',
                    aura: 'Charge', buff: 'Charge', orbit: 'Charge', boomerang: 'Shoot', chain: 'Shoot',
                    mine: 'Charge', meteor: 'Charge', turret: 'Charge', dash: 'Attack', trail: 'Walk', cone: 'Shoot',
-                   lightning: 'Charge', drain: 'Attack', psyarrow: 'Shoot' }[m.kind] || 'Attack';
+                   lightning: 'Charge', drain: 'Attack', psyarrow: 'Shoot',
+                   acidrain: 'Charge', fist: 'Attack', spear: 'Shoot', treefall: 'Charge' }[m.kind] || 'Attack';
     // Las familias nuevas suenan como la parecida de las de siempre.
     const SND = { boomerang: 'projectile', chain: 'beam', mine: 'nova', meteor: 'nova', turret: 'buff', dash: 'melee', trail: 'aura', cone: 'projectile',
-                  lightning: 'beam', drain: 'melee', flameshield: 'aura', psyarrow: 'projectile' };
+                  lightning: 'beam', drain: 'melee', flameshield: 'aura', psyarrow: 'projectile',
+                  acidrain: 'aura', fist: 'melee', spear: 'projectile', treefall: 'nova' };
     // El rastro no suena a cada charco (sería un zumbido constante).
     if (m.kind !== 'trail') G.Audio.sfx('shot', { kind: SND[m.kind] || m.kind, type: m.type });
     if (m.kind === 'trail') return;

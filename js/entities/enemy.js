@@ -51,6 +51,7 @@
 
       this.flash = 0;
       this.slow = 0; this.slowT = 0;
+      this.rootT = 0;            // inmovilizado (enredaderas de ¡Árbol Va!)
       this.burn = 0; this.burnT = 0; this.burnTick = 0;
       this.poison = 0; this.poisonT = 0; this.poisonTick = 0;
       this.lavaTick = 0;
@@ -152,6 +153,11 @@
       if (this.remote) { G.Coop.status(this, 's', factor); return; }
       this.slow = Math.max(this.slow, factor);
       this.slowT = Math.max(this.slowT, dur);
+    }
+    /** Inmovilizado `dur` s (aparte del frenado: el veneno que frena no lo alarga). */
+    applyRoot(dur) {
+      if (this.remote) { G.Coop.status(this, 'r', dur); return; }
+      this.rootT = Math.max(this.rootT, dur);
     }
     applyBurn(stacks = 1) {
       if (this.remote) { G.Coop.status(this, 'b', stacks); return; }
@@ -263,6 +269,7 @@
 
       // --- estados ---
       if (this.slowT > 0) { this.slowT -= dt; if (this.slowT <= 0) this.slow = 0; }
+      if (this.rootT > 0) this.rootT -= dt;
       if (this.burn > 0) {
         this.burnT -= dt; this.burnTick -= dt;
         if (this.burnTick <= 0) { this.burnTick = 0.5; this.hurt(1.6 * this.burn * (1 + pl.level * 0.06), '#ff9a4d'); }
@@ -287,7 +294,7 @@
         } else if (le.slow) terrainMul = le.slow < 0.5 ? 0.45 : 0.55;
       }
 
-      const spd = this.spd * (1 - this.slow) * terrainMul * G.Weather.speedFor(this.types);
+      const spd = this.spd * (1 - this.slow) * (this.rootT > 0 ? 0 : 1) * terrainMul * G.Weather.speedFor(this.types);
       let [dx, dy] = G.U.norm(pl.x - this.x, pl.y - this.y);
       const dist = G.U.dist(this.x, this.y, pl.x, pl.y);
       // Duende del tesoro: huye de ti (en zigzag) en cuanto te acercas.

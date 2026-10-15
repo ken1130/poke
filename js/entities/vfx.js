@@ -356,6 +356,7 @@ G.VFX = (() => {
     'aura-sphere':   { proj: 'ball', pal: 'aura', trail: 'spark' },
     'lick':          { melee: 'impact' },
     'shadow-ball':   { proj: 'shadow', trail: 'wisp' },
+    'ghost-spear':   { proj: 'needle', trail: 'wisp' },
     'dragon-rage':   { beam: 'fire' },
     'dragon-dance':  { buff: 'arrow' },
     'fairy-wind':    { proj: 'star' },
