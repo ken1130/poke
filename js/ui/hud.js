@@ -513,10 +513,12 @@ G.HUD = (() => {
       if (passive) {
         ctx.textAlign = 'center';
         ctx.font = F(800, 8);
-        const lbl = G.T('PASIVO');
+        // Apoyo (curar/defender) se marca aparte: también funciona solo.
+        const sup = g.every(gm => gm.kind === 'support');
+        const lbl = G.T(sup ? 'APOYO' : 'PASIVO');
         const lw = ctx.measureText(lbl).width + 8;
         roundRect(ctx, x + (S - lw) / 2, y - 7, lw, 12, 5);
-        ctx.fillStyle = '#5fe08a'; ctx.fill();
+        ctx.fillStyle = sup ? '#7fe0ff' : '#5fe08a'; ctx.fill();
         ctx.fillStyle = '#0a1a10';
         ctx.fillText(lbl, x + S / 2, y + 2);
         ctx.textAlign = 'left';
@@ -697,10 +699,10 @@ G.HUD = (() => {
     const rows = [];                 // [texto, color, negrita]
     for (const m of group) {
       const passive = G.Moves.isPassive(m);
-      rows.push([G.T(m.name) + '  Lv.' + m.lvl + '/' + m.def.maxLvl + (passive ? '  · ' + G.T('PASIVO') : ''), G.U.TYPE_COLOR[m.type], true]);
+      rows.push([G.T(m.name) + '  Lv.' + m.lvl + '/' + m.def.maxLvl + (passive ? '  · ' + G.T(m.kind === 'support' ? 'APOYO' : 'PASIVO') : ''), G.U.TYPE_COLOR[m.type], true]);
       rows.push([G.T(m.def.desc), '#dfe8ff']);
       for (let k = 0; k < m.lvl - 1 && m.def.ups[k]; k++) rows.push(['✓ ' + G.T(m.def.ups[k].t), '#9fe0b0']);
-      if (m.evolved && G.Moves.EVO_MODS[m.kind]) rows.push(['★ ' + G.T(m.name) + ': ' + G.T(G.Moves.EVO_MODS[m.kind].t), '#ffd23f']);
+      if (m.evolved && G.Moves.EVO_MODS[m.kind]) rows.push(['★ ' + G.T(m.name) + ': ' + G.T(m.def.evoText || G.Moves.EVO_MODS[m.kind].t), '#ffd23f']);
       const next = G.Moves.nextUpText(m);
       if (next) rows.push(['→ ' + G.I18n.f('Siguiente nivel: {x}', G.T(next)), '#8fa3c4']);
     }

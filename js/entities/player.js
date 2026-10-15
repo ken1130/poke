@@ -88,7 +88,8 @@ G.Player = class Player {
   cy() { return this.y; }
 
   // ---------------- stats efectivos ----------------
-  get atk() { return this.baseAtk * this.atkMul * (1 + this.buffs.atk.n * this.buffs.atk.amount); }
+  // calmN/calmAmt: Paz Mental (apoyo, combat.js)
+  get atk() { return this.baseAtk * this.atkMul * (1 + this.buffs.atk.n * this.buffs.atk.amount) * (1 + (this.calmN || 0) * (this.calmAmt || 0)); }
   get spd() {
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
     const w = G.Weather.speedFor(this.mon.types);
@@ -96,7 +97,8 @@ G.Player = class Player {
     return s * slow * w;
   }
   // bulkRed: Peso Pesado (combat.js), que también da bulkArmor contra los choques.
-  get reduction() { return Math.min(0.8, this.dmgReduce + (this.bulkRed || 0) + (this.potionRed || 0) + this.buffs.def.n * this.buffs.def.amount); }
+  // + Paz Mental y Velo Sagrado evolucionado (apoyo)
+  get reduction() { return Math.min(0.8, this.dmgReduce + (this.bulkRed || 0) + (this.potionRed || 0) + this.buffs.def.n * this.buffs.def.amount + (this.calmN || 0) * (this.calmAmt || 0) + (this.supRed || 0)); }
   get regen() { return this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount; }
 
   // ---------------- movimientos ----------------
@@ -264,7 +266,9 @@ G.Player = class Player {
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
     // curseTaken: maldición de cristal (dungeon.js)
     // taken: reto semanal "Todo o nada" (×2)
-    const d = Math.max(1, amount * (1 - this.reduction) * close * (1 + (this.curseTaken || 0)) * (G.Modes.rule('taken') || 1));
+    // Pantalla de Luz (apoyo): para parte del daño mientras dura.
+    const screen = this.screenT > 0 ? 1 - (this.screenCut || 0.5) : 1;
+    const d = Math.max(1, amount * (1 - this.reduction) * close * screen * (1 + (this.curseTaken || 0)) * (G.Modes.rule('taken') || 1));
     this.hp -= d;
     // Globo Helio: al recibir un golpe explota (vuelve a los 30 s, ver update).
     if (this.hasItem('airballoon') && this.balloon) {
@@ -426,7 +430,7 @@ G.Player = class Player {
 
     // --- movimiento con colisiones ---
     // (En cooperativo la pausa no para el juego: sólo te quedas quieto.)
-    let [ax, ay] = this.frozen ? [0, 0] : G.Input.axis();
+    let [ax, ay] = this.frozen || this.sleepT > 0 ? [0, 0] : G.Input.axis();      // (sleepT: Descanso)
     if (this.reversed) { ax = -ax; ay = -ay; }        // poción del revés (loot.js)
     this.walking = ax !== 0 || ay !== 0;
     const s = this.spd;
@@ -577,6 +581,39 @@ G.Player = class Player {
       ctx.restore();
     }
 
+    // Apoyo (2026-10-15): pantalla de luz (anillo de bloques dorados), protección (cúpula
+    // verde), concentración (orbes rosas) y dormido (Zzz).
+    if (!this.dead) {
+      const t = performance.now() / 1000;
+      if (this.screenT > 0) {
+        ctx.save(); ctx.globalAlpha = 0.6;
+        for (let i = 0; i < 16; i++) {
+          const a = i / 16 * 6.2832 + t;
+          ctx.fillStyle = i % 2 ? '#ffe9a0' : '#ffd23f';
+          ctx.fillRect(Math.round(this.x + Math.cos(a) * this.r * 1.9) - 3, Math.round(this.y - this.bodyH * 0.45 + Math.sin(a) * this.r * 1.3) - 3, 6, 6);
+        }
+        ctx.restore();
+      }
+      if (this.protectT > 0) {
+        ctx.save(); ctx.globalAlpha = 0.35 + Math.sin(t * 12) * 0.1; ctx.fillStyle = '#7dffb0'; ctx.strokeStyle = '#2f9a52'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(this.x, this.y - this.bodyH * 0.45, this.r * 2.1, this.bodyH * 0.85, 0, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 0.9; ctx.stroke();
+        ctx.restore();
+      }
+      if (this.calmN > 0) {
+        for (let i = 0; i < this.calmN; i++) {
+          const a = t * 2.5 + i * 6.2832 / this.calmN;
+          ctx.fillStyle = '#ff8ad8';
+          ctx.fillRect(Math.round(this.x + Math.cos(a) * this.r * 1.6) - 3, Math.round(this.y - this.bodyH - 6 + Math.sin(a) * 6) - 3, 6, 6);
+        }
+      }
+      if (this.sleepT > 0) {
+        ctx.save(); ctx.font = '800 14px Pixelify,"Segoe UI",system-ui,sans-serif'; ctx.textAlign = 'center';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.fillStyle = '#bfe8ff';
+        const zt = 'Zz' + (Math.floor(t * 3) % 2 ? 'z' : '');
+        ctx.strokeText(zt, this.x + 14, this.y - this.bodyH - 10); ctx.fillText(zt, this.x + 14, this.y - this.bodyH - 10);
+        ctx.restore();
+      }
+    }
     // Poción de estrella: aro de colores que gira.
     if (this.star && !this.dead) {
       ctx.save();

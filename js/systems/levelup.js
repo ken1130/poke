@@ -36,16 +36,18 @@ G.LevelUp = (() => {
       // Con 2 potenciadores ya no se ofrecen más: los buff no hacen daño y
       // llenar los 4 huecos con ellos deja la run sin salida.
       const buffs = pl.moves.filter(m => m.kind === 'buff').length;
+      const supports = pl.moves.filter(m => m.kind === 'support').length;      // apoyo: como mucho 2
       const oneMove = G.Modes.rule('oneMove') && pl.moves.some(m => m.kind !== 'buff');      // reto "Un solo ataque"
       const pool = G.Moves.poolFor(pl.mon).filter(id =>
-        !pl.hasMove(id) && !(pl.banned && pl.banned.has(id)) && !(buffs >= 2 && G.Moves.BY_ID[id].kind === 'buff')
+        !pl.hasMove(id) && !(pl.banned && pl.banned.has(id)) && !(buffs >= 2 && G.Moves.BY_ID[id].kind === 'buff') && !(supports >= 2 && G.Moves.BY_ID[id].kind === 'support')
         && !(oneMove && G.Moves.BY_ID[id].kind !== 'buff'));
       for (const id of G.U.pickN(pool, 6)) {
         const d = G.Moves.BY_ID[id];
         out.push({
           w: 10, type: 'new', key: 'new:' + id,
           icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
-          tag: G.U.TYPE_NAME[d.type],
+          // Apoyo: se dice claro que funciona solo (no se elige como ataque).
+          tag: d.kind === 'support' ? 'Apoyo · automático' : G.U.TYPE_NAME[d.type],
           title: d.name, desc: d.desc,
           apply: p => p.addMove(id)
         });

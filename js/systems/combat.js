@@ -22,13 +22,15 @@ G.Combat = (() => {
     if (pl.dead) return;
     // Vínculos: todos los movimientos del hueco activo, cada uno con su recarga.
     const group = pl.activeGroup();
-    for (const m of group) tickMove(dt, pl, m, now);
+    // Durmiendo (Descanso) no se ataca; los de apoyo y pasivos siguen.
+    if (!(pl.sleepT > 0)) for (const m of group) tickMove(dt, pl, m, now);
     // Pasivos (Escudo de Llamas, Colmillo Vampiro evolucionado): siempre, aunque no estén activos.
     for (const m of pl.moves) if (!group.includes(m) && G.Moves.isPassive(m)) tickMove(dt, pl, m, now);
   }
 
   function tickMove(dt, pl, m, now) {
     if (m.kind === 'orbit') { orbit(pl, m, dt, now); return; }
+    if (m.kind === 'support') { support(dt, pl, m); return; }
 
     m.t -= dt;
     if (m.t > 0) return;
@@ -377,6 +379,118 @@ G.Combat = (() => {
     }
     pick.forEach((e, i) => fields.push({ kind: 'tree', owner: pl, ghost, m, row, col: G.U.TYPE_COLOR.grass, vis,
       x: e.x, y: e.y, t: -i * 0.07, fall: 0.55, r: 54 * row.size, dmg: row.dmg * pl.atk }));
+  }
+
+  // ---------------- apoyo (2026-10-15): curar y defender ----------------
+  /*
+   * Funcionan solos (como los pasivos), cada uno con su recarga (TABLE en moves.js).
+   * Lo que dura (pantalla, protección, sueño, concentración) se guarda en el jugador y
+   * player.js lo usa (hurt, atk, reduction, movimiento) y lo dibuja.
+   */
+  const BAD_POTIONS = ['toxic', 'heavy', 'reverse'];
+  function cleanse(pl) {
+    pl.slowT = 0;
+    if (pl.potion && BAD_POTIONS.includes(pl.potion.id)) pl.endPotion();
+  }
+  function healText(pl, n, col = '#5fe08a') {
+    if (n >= 1) G.FX.dmgText(pl.x, pl.y - pl.bodyH - 8, '+' + Math.round(n), col);
+  }
+  /** Cura en grupo (Deseo, Rocío Vital): a ti y, en cooperativo, a los compañeros cerca. */
+  function groupHeal(pl, frac, r, col) {
+    const before = pl.hp;
+    pl.heal(pl.maxHp * frac);
+    healText(pl, pl.hp - before, col);
+    G.FX.ring(pl.x, pl.y, 8, r, col, 0.6, 3);
+    if (G.Coop.active) {
+      const ev = ['sh', Math.round(pl.x), Math.round(pl.y), frac, r];
+      if (G.Coop.isHost) G.Coop.broadcast(ev); else G.Coop.toHost(ev);
+    }
+  }
+  /** Cooperativo: un compañero ha curado en (x, y): si estás cerca, te cura a ti. */
+  function supportHeal(x, y, frac, r) {
+    const pl = G.Game.player;
+    if (!pl || pl.dead || G.U.dist2(pl.x, pl.y, x, y) > r * r) return;
+    const before = pl.hp;
+    pl.heal(pl.maxHp * frac);
+    healText(pl, pl.hp - before, '#9fe0ff');
+  }
+
+  function support(dt, pl, m) {
+    if (ghost || pl.dead) return;
+    const row = G.Moves.stat(m);
+    m.cd = row.cd;                                   // (la barra de recarga del HUD)
+    if (m.t > 0) m.t -= dt;
+    const ready = m.t <= 0, cd = row.cd * pl.cdMul;
+    switch (m.id) {
+      case 'recover':
+        if (ready && pl.hp < pl.maxHp) {
+          m.t = cd;
+          const b = pl.hp; pl.heal(pl.maxHp * row.heal); healText(pl, pl.hp - b);
+          if (row.cleanse) cleanse(pl);
+          G.FX.ring(pl.x, pl.y, 6, 60, '#7dffb0', 0.5, 3);
+          G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#b8ffd0', 12, 90);
+        }
+        break;
+      case 'light-screen':
+        if (pl.screenT > 0) pl.screenT -= dt;
+        if (ready) { m.t = cd; pl.screenT = row.dur; pl.screenCut = row.cut; G.Audio.sfx('select'); G.FX.ring(pl.x, pl.y, 10, pl.r * 3, '#ffe9a0', 0.4, 3); }
+        break;
+      case 'protect': {
+        if (pl.protectT > 0) pl.protectT -= dt;
+        if (!ready) break;
+        let near = 0;
+        for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, 90)) if (!e.dead) near++;
+        if (near >= row.n || pl.hp < pl.maxHp * 0.4) {
+          m.t = cd; pl.protectT = row.dur; pl.invuln = Math.max(pl.invuln || 0, row.dur);
+          G.Audio.sfx('select');
+          G.FX.dmgText(pl.x, pl.y - pl.bodyH - 14, G.T('¡Protección!'), '#7dffb0', true);
+          if (row.blast) {
+            G.FX.ring(pl.x, pl.y, 10, 200, '#7dffb0', 0.5, 5);
+            for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, 200)) if (!e.dead && !e.boss) e.hurt(1, '#7dffb0', e.x - pl.x, e.y - pl.y, 520);
+          }
+        }
+        break;
+      }
+      case 'wish':
+        if (m.wishT > 0) {
+          m.wishT -= dt;
+          if (Math.random() < dt * 6) G.FX.twinkle(pl.x + G.U.rand(-14, 14), pl.y - pl.bodyH - G.U.rand(10, 40));
+          if (m.wishT <= 0) groupHeal(pl, row.heal, row.r, '#ffe14d');
+        }
+        if (ready) { m.t = cd; m.wishT = 2; G.FX.dmgText(pl.x, pl.y - pl.bodyH - 14, G.T('Deseo…'), '#ffe14d'); }
+        break;
+      case 'calm-mind':
+        if (pl.calmT > 0) { pl.calmT -= dt; if (pl.calmT <= 0) pl.calmN = 0; }
+        if (ready) {
+          m.t = cd; pl.calmN = Math.min(row.max, (pl.calmN || 0) + 1); pl.calmAmt = row.amt; pl.calmT = row.dur;
+          G.FX.ring(pl.x, pl.y, 6, pl.r * 2.6, '#ff8ad8', 0.5, 3);
+        }
+        break;
+      case 'life-dew':
+        if (ready) { m.t = cd; groupHeal(pl, row.heal, row.r, '#7fe0ff'); G.FX.burst(pl.x, pl.y - pl.bodyH, '#9fd8ff', 14, 80); }
+        break;
+      case 'rest':
+        if (pl.sleepT > 0) {
+          pl.sleepT -= dt;
+          if (pl.restGuard) pl.invuln = Math.max(pl.invuln || 0, 0.1);
+          if (pl.sleepT <= 0) {
+            const b = pl.hp; pl.heal(pl.maxHp); healText(pl, pl.hp - b);
+            pl.restGuard = false;
+            G.FX.ring(pl.x, pl.y, 6, 80, '#7dffb0', 0.6, 4);
+          }
+        } else if (ready && pl.hp < pl.maxHp * 0.3) {
+          m.t = cd; pl.sleepT = row.sleep; pl.restGuard = !!row.guard;
+          G.FX.dmgText(pl.x, pl.y - pl.bodyH - 14, G.T('¡A dormir!'), '#bfe8ff', true);
+        }
+        break;
+      case 'safeguard':
+        pl.supRed = row.red || 0;
+        // Los estados malos no le hacen nada.
+        if (pl.slowT > 0) pl.slowT = 0;
+        if (pl.potion && BAD_POTIONS.includes(pl.potion.id)) pl.endPotion();
+        if (ready) { m.t = cd; cleanse(pl); G.FX.ring(pl.x, pl.y, 6, pl.r * 2.8, '#ffc4e6', 0.5, 3); }
+        break;
+    }
   }
 
   const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone', 'lightning', 'drain', 'psyarrow',
@@ -1179,6 +1293,6 @@ G.Combat = (() => {
     }
   }
 
-  return { tick, resolve, ghostCast, ghostOrbit, updateFields, drawGroundFields, drawAirFields, clearFields,
+  return { supportHeal, tick, resolve, ghostCast, ghostOrbit, updateFields, drawGroundFields, drawAirFields, clearFields,
            get fieldCount() { return fields.length; } };
 })();

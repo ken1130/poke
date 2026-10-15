@@ -28,6 +28,9 @@
  *   bulk        PASIVO: defensa según el tamaño de tu Pokémon (evolucionado: campo de fuerza)
  *   spear       lanzas al enemigo que perforan (evolucionado: 8 direcciones y se parten)
  *   treefall    árboles que caen en diagonal sobre enemigos (aplastan en un círculo)
+ *   ---- apoyo (2026-10-15, también con TABLE) ----
+ *   support     movimientos de apoyo (curar, defender): funcionan solos con su recarga,
+ *               como los pasivos (no se eligen como ataque). Cada uno en combat.js support().
  *
  * Sólo el movimiento ACTIVO se ejecuta. Se cambia con 1-4 / Q / E.
  *
@@ -179,6 +182,9 @@
       { t: '+8 de daño; donde cae deja una zona que frena',           m: {} },
       { t: '+10 de daño y +1 árbol',                                  m: {} }
     ],
+    // Apoyo: el texto de cada nivel va en el propio movimiento (def.upTexts), porque cada
+    // uno mejora cosas distintas; esta escalera sólo da la longitud (4 mejoras).
+    support: [{ t: '', m: {} }, { t: '', m: {} }, { t: '', m: {} }, { t: '', m: {} }],
     buff: [
       { t: '+1 acumulación máxima',         m: { stacks: 1 } },
       { t: '+40% potencia',                 m: { amount: 1.40 } },
@@ -494,7 +500,40 @@
       cd: 0.95, dmg: 26, radius: 320 },
     { id: 'nature-tree', name: 'Bautismo Natural', type: 'grass', kind: 'treefall',
       desc: 'Un árbol cae en diagonal del cielo y aplasta a los enemigos donde cae.',
-      cd: 1.5, dmg: 30, radius: 384 }
+      cd: 1.5, dmg: 30, radius: 384 },
+    // ---------------- apoyo (2026-10-15): curar y defender ----------------
+    { id: 'recover', name: 'Recuperación', type: 'psychic', kind: 'support', cd: 12, dmg: 0, radius: 0,
+      desc: 'APOYO: cada pocos segundos recuperas parte de tu vida máxima.',
+      upTexts: ['+3% de curación y -1 s de recarga', '+3% de curación y -1 s de recarga', '+3% de curación y -1 s de recarga', '+4% de curación y -1 s de recarga'],
+      evoText: 'Cura un 30% cada 7 s y quita los estados malos' },
+    { id: 'light-screen', name: 'Pantalla de Luz', type: 'psychic', kind: 'support', cd: 15, dmg: 0, radius: 0,
+      desc: 'APOYO: cada pocos segundos levanta una pantalla que reduce a la mitad el daño que recibes.',
+      upTexts: ['+0,5 s de pantalla y -1 s de recarga', '+0,5 s, -1 s de recarga y para un 55%', '+0,5 s de pantalla y -1 s de recarga', '+0,5 s, -1 s de recarga y para un 60%'],
+      evoText: 'Pantalla de 7 s que para un 65% del daño, cada 10 s' },
+    { id: 'protect', name: 'Protección', type: 'normal', kind: 'support', cd: 20, dmg: 0, radius: 0,
+      desc: 'APOYO: si te rodean (o te queda poca vida), te vuelves invulnerable un momento.',
+      upTexts: ['+0,1 s de protección y -2 s de recarga', 'Salta con 4 enemigos cerca, +0,2 s y -2 s', '+0,2 s de protección y -1 s de recarga', '+0,2 s de protección y -1 s de recarga'],
+      evoText: '2,5 s de protección cada 12 s y una onda que aparta a los enemigos' },
+    { id: 'wish', name: 'Deseo', type: 'normal', kind: 'support', cd: 18, dmg: 0, radius: 0,
+      desc: 'APOYO: pides un deseo y a los 2 s te curas (y a los compañeros cercanos).',
+      upTexts: ['+3% de curación y -1 s de recarga', '+3% de curación y -1 s de recarga', '+3% de curación y -1 s de recarga', '+4% de curación y -1 s de recarga'],
+      evoText: 'Cura un 40% cada 12 s, a ti y al grupo en un radio mayor' },
+    { id: 'calm-mind', name: 'Paz Mental', type: 'psychic', kind: 'support', cd: 10, dmg: 0, radius: 0,
+      desc: 'APOYO: cada pocos segundos te concentras: +10% de daño y -10% de daño recibido un rato (se acumula).',
+      upTexts: ['Dura 1 s más', 'Se acumula hasta 2 veces y -1 s de recarga', 'Dura 1 s más', 'Se acumula hasta 3 veces y -1 s de recarga'],
+      evoText: '+12% por acumulación (hasta 3), cada 7 s' },
+    { id: 'life-dew', name: 'Rocío Vital', type: 'water', kind: 'support', cd: 10, dmg: 0, radius: 0,
+      desc: 'APOYO: cada pocos segundos os curáis un poco tú y los compañeros cercanos.',
+      upTexts: ['+1% de curación y -0,5 s de recarga', '+1% de curación y -0,5 s de recarga', '+1% de curación y -0,5 s de recarga', '+2% de curación y -0,5 s de recarga'],
+      evoText: 'Cura un 16% cada 7 s en un radio mayor' },
+    { id: 'rest', name: 'Descanso', type: 'normal', kind: 'support', cd: 40, dmg: 0, radius: 0,
+      desc: 'APOYO: con poca vida te echas a dormir un momento (no te mueves ni atacas) y despiertas con la vida llena.',
+      upTexts: ['-4 s de recarga', '-4 s de recarga y duermes menos', '-4 s de recarga y duermes menos', '-3 s de recarga y duermes menos'],
+      evoText: 'Duermes sólo 1,2 s, cada 22 s, y durmiendo no te hacen daño' },
+    { id: 'safeguard', name: 'Velo Sagrado', type: 'fairy', kind: 'support', cd: 30, dmg: 0, radius: 0,
+      desc: 'APOYO: los estados malos no te afectan (frenado, pociones malas) y cada cierto tiempo te limpia.',
+      upTexts: ['-3 s de recarga', '-3 s de recarga', '-3 s de recarga', '-3 s de recarga'],
+      evoText: 'Además, -10% de daño recibido' }
   ];
 
   /*
@@ -564,12 +603,51 @@
       { dmg: 46, n: 2, size: 1.25, r: 12 },    { dmg: 54, n: 2, size: 1.25, r: 12, zone: true },
       { dmg: 64, n: 3, size: 1.25, r: 12, zone: true },
       { dmg: 80, n: 12, size: 1.25, r: 15, zone: true, spikes: 40, root: 2, cd: 2.6 }
+    ],
+    // ---- apoyo (2026-10-15): cd en s; heal = fracción de la vida máxima ----
+    'recover': [
+      { cd: 12, heal: 0.15 }, { cd: 11, heal: 0.18 }, { cd: 10, heal: 0.21 }, { cd: 9, heal: 0.24 }, { cd: 8, heal: 0.28 },
+      { cd: 7, heal: 0.30, cleanse: true }
+    ],
+    // dur s de pantalla; cut = parte del daño que para
+    'light-screen': [
+      { cd: 15, dur: 4, cut: 0.5 }, { cd: 14, dur: 4.5, cut: 0.5 }, { cd: 13, dur: 5, cut: 0.55 }, { cd: 12, dur: 5.5, cut: 0.55 }, { cd: 11, dur: 6, cut: 0.6 },
+      { cd: 10, dur: 7, cut: 0.65 }
+    ],
+    // n = enemigos a menos de 90 px para saltar (o vida < 40 %); dur s invulnerable
+    'protect': [
+      { cd: 20, dur: 1.5, n: 5 }, { cd: 18, dur: 1.6, n: 5 }, { cd: 16, dur: 1.8, n: 4 }, { cd: 15, dur: 2, n: 4 }, { cd: 14, dur: 2.2, n: 4 },
+      { cd: 12, dur: 2.5, n: 3, blast: true }
+    ],
+    // r = radio para curar compañeros
+    'wish': [
+      { cd: 18, heal: 0.25, r: 200 }, { cd: 17, heal: 0.28, r: 200 }, { cd: 16, heal: 0.31, r: 200 }, { cd: 15, heal: 0.34, r: 200 }, { cd: 14, heal: 0.38, r: 200 },
+      { cd: 12, heal: 0.40, r: 280 }
+    ],
+    // max = acumulaciones; amt por acumulación; dur s
+    'calm-mind': [
+      { cd: 10, dur: 6, max: 1, amt: 0.1 }, { cd: 10, dur: 7, max: 1, amt: 0.1 }, { cd: 9, dur: 7, max: 2, amt: 0.1 }, { cd: 9, dur: 8, max: 2, amt: 0.1 }, { cd: 8, dur: 8, max: 3, amt: 0.1 },
+      { cd: 7, dur: 8, max: 3, amt: 0.12 }
+    ],
+    'life-dew': [
+      { cd: 10, heal: 0.10, r: 200 }, { cd: 9.5, heal: 0.11, r: 200 }, { cd: 9, heal: 0.12, r: 200 }, { cd: 8.5, heal: 0.13, r: 200 }, { cd: 8, heal: 0.15, r: 200 },
+      { cd: 7, heal: 0.16, r: 280 }
+    ],
+    // sleep = s dormido; con vida < 30 %
+    'rest': [
+      { cd: 40, sleep: 2 }, { cd: 36, sleep: 2 }, { cd: 32, sleep: 1.8 }, { cd: 28, sleep: 1.6 }, { cd: 25, sleep: 1.5 },
+      { cd: 22, sleep: 1.2, guard: true }
+    ],
+    // cd = cada cuánto limpia; red = reducción de daño (evolucionado)
+    'safeguard': [
+      { cd: 30 }, { cd: 27 }, { cd: 24 }, { cd: 21 }, { cd: 18 },
+      { cd: 15, red: 0.1 }
     ]
   };
   /** Fila de TABLE para una instancia (según su nivel y si ha evolucionado). */
   const stat = m => (TABLE[m.id] ? TABLE[m.id][m.evolved ? 5 : Math.max(0, Math.min(4, m.lvl - 1))] : null);
   /** ¿Funciona aunque no sea el movimiento activo? */
-  const isPassive = m => m.kind === 'flameshield' || m.kind === 'bulk' || !!(m.evolved && stat(m) && stat(m).passive);
+  const isPassive = m => m.kind === 'flameshield' || m.kind === 'bulk' || m.kind === 'support' || !!(m.evolved && stat(m) && stat(m).passive);
 
   // Cuerpo a cuerpo (12-10-2026): +20 % de daño y +25 % de alcance y de arco
   // (y -25 % de daño recibido mientras sea tu ataque activo, en player.js).
@@ -639,7 +717,8 @@
 
   /** Texto de la próxima mejora, para la carta de subida de nivel. */
   function nextUpText(s) {
-    return s.lvl >= s.def.maxLvl ? null : s.def.ups[s.lvl - 1].t;
+    if (s.lvl >= s.def.maxLvl) return null;
+    return s.def.upTexts ? s.def.upTexts[s.lvl - 1] : s.def.ups[s.lvl - 1].t;      // (apoyo: texto propio)
   }
 
   /** Movimiento inicial según el tipo principal (si el Pokémon no trae uno). */
@@ -699,7 +778,12 @@
     'vampire-fang': ['Colmillo Eterno', 'rgn'], 'psy-arrow': ['Flecha Psíquica Eterna', 'cd'],
     'acid-rain': ['Nanolluvia', 'rgn'],      'lee-fist': ['Puño Furioso', 'atk'],
     'heavyweight': ['Shaq', 'hp'],           'ghost-spear': ['Lanza Sombría', 'cd'],
-    'nature-tree': ['¡Árbol Va!', 'mag']
+    'nature-tree': ['¡Árbol Va!', 'mag'],
+    // apoyo (2026-10-15)
+    'recover': ['Luz Lunar', 'rgn'],         'light-screen': ['Velo Aurora', 'def'],
+    'protect': ['Escudo Real', 'def'],       'wish': ['Deseo Milenario', 'hp'],
+    'calm-mind': ['Paz Absoluta', 'atk'],    'life-dew': ['Lluvia Vital', 'rgn'],
+    'rest': ['Sueño Profundo', 'hp'],        'safeguard': ['Guardia Divina', 'def']
   };
   // Lo que gana al evolucionar, según cómo funcione.
   const EVO_MODS = {
@@ -725,7 +809,8 @@
     fist:        { t: 'Golpea a los 12 más cercanos a 10 casillas; 50% de crítico y los críticos hacen ×1,8', m: {} },
     bulk:        { t: 'Campo de fuerza: los enemigos normales no pueden tocarte; armadura 70%, reducción 45% y +80 de vida', m: {} },
     spear:       { t: '8 lanzas en todas direcciones que perforan 4; cada vez que perforan salen 2 más', m: {} },
-    treefall:    { t: 'Un árbol por cada enemigo cercano (hasta 12), pinchos de +40 e inmoviliza 2 s', m: {} }
+    treefall:    { t: 'Un árbol por cada enemigo cercano (hasta 12), pinchos de +40 e inmoviliza 2 s', m: {} },
+    support:     { t: 'Más fuerte y más a menudo', m: {} }       // (el texto de verdad: def.evoText)
   };
 
   // Al evolucionar casi no ganaban nada (la prueba fija daba lo mismo o menos que al Nv.5):
@@ -737,7 +822,7 @@
     const e = EVO[m.id];
     if (!e || m.evolved || m.lvl < m.def.maxLvl || !EVO_MODS[m.kind]) return null;
     const [name, needs] = e;
-    return { name, needs, needName: NEED_NAME[needs], text: EVO_MODS[m.kind].t,
+    return { name, needs, needName: NEED_NAME[needs], text: m.def.evoText || EVO_MODS[m.kind].t,
              ready: !!(statsTaken && statsTaken[needs]) };
   }
 

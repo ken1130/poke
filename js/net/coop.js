@@ -430,7 +430,8 @@ G.Coop = (() => {
         case 'qc': G.Chat.show(from, ev[1]); emit(['qc', from, ev[1]], from); break;   // mensaje rápido
         case 'po': m.rtt = Math.max(1, Math.round((clock() - ev[1]) * 1000)); break;       // latencia
         case 'rv': creditRevive(ev[1]); break;                                         // `from` fue levantado por ev[1]
-        case 'dg': G.Dungeon.onClient(from, ev); break;                               // tienda de Kecleon
+        case 'dg': G.Dungeon.onClient(from, ev); break;
+        case 'sh': G.Combat.supportHeal(ev[1], ev[2], ev[3], ev[4]); emit(ev, from); break;                               // tienda de Kecleon
         case 'cb': G.Floors.comboFx(ev[1], ev[2], ev[3], ev[4]); emit(ev, from); break;   // ataque combinado (floors.js)
       }
     }
@@ -559,6 +560,7 @@ G.Coop = (() => {
       case 'twr': G.Challenges.onNet(ev); break;
       case 'pi': outEv.push(['po', ev[1]]); flushClient(true); break;            // latencia: se devuelve al momento
       case 'dg': G.Dungeon.onNet(ev); break;
+      case 'sh': G.Combat.supportHeal(ev[1], ev[2], ev[3], ev[4]); break;      // Deseo / Rocío Vital de un compañero
     }
   }
 
