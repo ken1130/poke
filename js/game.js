@@ -125,6 +125,7 @@ G.Game = (() => {
     G.Combat.clearFields();
     G.EnemyMgr.clear();
     G.Pickups.clear();
+    G.Loot.reset();
     if (coop) { G.Modes.reset(); G.Modes.setRoom(coop.mods || {}); }
     // Desafíos / aventura: sus reglas (las "Reglas a medida" sólo valen en la run normal).
     G.Challenges.prepare();
@@ -269,10 +270,13 @@ G.Game = (() => {
       // Las cartas se ponen en cola; mientras alguien elige, la partida se para para todos
       // (2026-10-14: antes seguía y te rodeaban mientras elegías).
       coopCards.push(level);
-      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item'].some(G.UI.isOpen)) nextCoopCard();
+      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox'].some(G.UI.isOpen)) nextCoopCard();
     },
     /** ¿Estás eligiendo algo? (lo manda coop.js en tu estado; si alguien elige, todo parado) */
-    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond'].some(G.UI.isOpen) || coopCards.length > 0; },
+    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox'].some(G.UI.isOpen) || coopCards.length > 0; },
+    /** Invitado: has cogido un cofre de movimientos / una poción (lo decide el anfitrión). */
+    sbox() { if (pl) { pl.sboxes = (pl.sboxes || 0) + 1; offerBox(); } },
+    potion(id) { if (pl && !pl.dead) G.Loot.drink(pl, id); },
     /** ¿Has pausado tú? (en grupo, también para a todos) */
     paused() { return coopPause; },
     waiting(names) { G.RunUI.setWaiting(names); },
@@ -477,7 +481,7 @@ G.Game = (() => {
    */
   function offerBond(quiet = false) {
     if (!pl || pl.bonds <= 0 || pl.dead || (state !== 'playing' && state !== 'held') || G.Rift.inArena) return;
-    if (['scr-bond', 'scr-pause', 'scr-item', 'scr-levelup'].some(G.UI.isOpen)) return;
+    if (['scr-bond', 'scr-pause', 'scr-item', 'scr-levelup', 'scr-sbox'].some(G.UI.isOpen)) return;
     const opt = pl.bondOptions();
     if (!opt) {
       if (!quiet) G.Spawner.say('Guardas el vínculo: aprende otro movimiento para usarlo', 3, true);
@@ -500,7 +504,24 @@ G.Game = (() => {
 
   // ---------------- recogida ----------------
 
-  const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend', token: 'shiny' };
+  const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend', token: 'shiny',
+                     sbox: 'legend', potion: 'confirm' };
+
+  /** Cofre de movimientos (loot.js): 1-4 mejoras al azar; se para el juego mientras lo miras. */
+  function offerBox() {
+    if (!pl || pl.dead) return;
+    let mine = false;
+    if (state === 'playing' || state === 'held') {
+      mine = true;
+      state = 'choice';
+      if (G.Coop.active) G.Coop.holdStart();
+    }
+    G.Loot.showBox(pl, () => {
+      if (!mine) return;
+      if (G.Coop.active) doneChoosing();
+      else if (state === 'choice') state = 'playing';
+    });
+  }
 
   /** Has cogido un objeto: si no llevas ninguno te lo pones; si no, eliges. */
   function offerItem(id) {
@@ -536,8 +557,17 @@ G.Game = (() => {
       if (mine) G.Audio.sfx(PICK_SFX[p.kind]);
       return;
     }
+    if (p.kind === 'sbox') who.sboxes = (who.sboxes || 0) + 1;
+    if (p.kind === 'potion') p.eff = G.Loot.rollPotion();
     if (G.Coop.active) G.Coop.collected(p, who);
     if (mine || p.kind === 'bomb') G.Audio.sfx(PICK_SFX[p.kind]);
+    if (p.kind === 'sbox') { if (mine) offerBox(); return; }
+    if (p.kind === 'potion') {
+      if (p.eff === 'magnet') G.Pickups.pullAll();
+      if (mine) G.Loot.drink(pl, p.eff);
+      else G.FX.ring(who.x, who.y, 6, 70, G.Loot.POTIONS[p.eff].color, 0.5, 3);
+      return;
+    }
     if (p.kind === 'xp' || p.kind === 'xpBig') {
       if (G.Coop.active) G.Coop.xpShare(p.value);       // a cada uno, con su bonus
       pendingLevels += pl.gainXp(p.value * (G.Coop.active ? G.Coop.xpFactor() : 1));
@@ -590,6 +620,11 @@ G.Game = (() => {
         if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pick(i);
       }
       if (G.Input.tap('keyr')) G.RunUI.reroll();
+      return;
+    }
+    if (G.UI.isOpen('scr-sbox')) {
+      if (G.Input.tap('keyr')) document.getElementById('sbox-reroll').click();
+      else if (G.Input.tap('enter') || G.Input.tap('space') || G.Input.tap('digit1')) document.getElementById('sbox-ok').click();
       return;
     }
     if (G.UI.isOpen('scr-bond')) {
@@ -680,6 +715,7 @@ G.Game = (() => {
         if (G.UI.isOpen('scr-levelup')) G.RunUI.pick(0);
         else if (G.UI.isOpen('scr-bond')) G.RunUI.pickBond(0);
         else if (G.UI.isOpen('scr-item')) { const c = document.querySelector('#item-cards .card'); if (c) c.click(); }
+        else if (G.UI.isOpen('scr-sbox')) document.getElementById('sbox-ok').click();
       }
     } else choiceT = 0;
     // La red se atiende siempre (también con las cartas de nivel abiertas).
@@ -746,6 +782,7 @@ G.Game = (() => {
     G.Combat.resolve(dt, pl, time);
     G.Combat.updateFields(dt);
     G.Pickups.update(dt, all, onCollect);
+    if (!coop || G.Coop.isHost) G.Loot.tick(dt, time, all);      // cofres de movimientos y pociones
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);

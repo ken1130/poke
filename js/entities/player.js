@@ -96,7 +96,7 @@ G.Player = class Player {
     return s * slow * w;
   }
   // bulkRed: Peso Pesado (combat.js), que también da bulkArmor contra los choques.
-  get reduction() { return Math.min(0.8, this.dmgReduce + (this.bulkRed || 0) + this.buffs.def.n * this.buffs.def.amount); }
+  get reduction() { return Math.min(0.8, this.dmgReduce + (this.bulkRed || 0) + (this.potionRed || 0) + this.buffs.def.n * this.buffs.def.amount); }
   get regen() { return this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount; }
 
   // ---------------- movimientos ----------------
@@ -138,8 +138,11 @@ G.Player = class Player {
 
   hasMove(id) { return this.moves.some(m => m.id === id); }
 
+  /** ¿Ese hueco es sólo de pasivos? (funcionan siempre: no se eligen como ataque) */
+  passiveSlot(i) { const g = this.slots[i]; return !!g && g.length > 0 && g.every(m => G.Moves.isPassive(m)); }
+
   setActive(i) {
-    if (i < 0 || i >= this.slots.length || i === this.active) return;
+    if (i < 0 || i >= this.slots.length || i === this.active || this.passiveSlot(i)) return;
     // Cinta Elección: no se puede cambiar de movimiento.
     if (this.hasItem('choiceband') && this.slots[this.active]) {
       G.FX.dmgText(this.x, this.y - this.bodyH - 8, 'Cinta Elección', '#ff8ad8');
@@ -154,8 +157,13 @@ G.Player = class Player {
   }
 
   cycle(dir) {
-    if (!this.slots.length) return;
-    this.setActive((this.active + dir + this.slots.length) % this.slots.length);
+    const n = this.slots.length;
+    if (!n) return;
+    // Se saltan los huecos de pasivos.
+    for (let k = 1; k < n; k++) {
+      const i = ((this.active + dir * k) % n + n) % n;
+      if (!this.passiveSlot(i)) { this.setActive(i); return; }
+    }
   }
 
   // ---------------- vínculos (fusiones) ----------------
@@ -232,7 +240,8 @@ G.Player = class Player {
   hurt(amount, type = null) {
     // god: truco de invencible · picking: eligiendo cartas en grupo (no le llega nada, ni los ataques con aviso)
     // (won: fase de la Aventura ya superada, en los 2 s antes del resumen)
-    if (this.invuln > 0 || this.dead || this.god || this.picking || G.Stages.won) return;
+    // star: poción de estrella (loot.js)
+    if (this.invuln > 0 || this.dead || this.god || this.picking || this.star || G.Stages.won) return;
     let eff = null;
     if (type) {
       const k = G.Types.mult(type, this.mon.types);
@@ -263,6 +272,20 @@ G.Player = class Player {
       G.Projectiles.clearOrbs(this);
       this.reviveT = 0;
     }
+  }
+
+  /** Poción (loot.js): su efecto dura def.dur s; la que tuvieras antes se acaba. */
+  drinkPotion(id, def) {
+    this.endPotion();
+    def.on(this);
+    if (def.dur > 0) this.potion = { id, def, t: def.dur };
+    else def.off(this);
+  }
+  endPotion() {
+    if (!this.potion) return;
+    const d = this.potion.def;
+    this.potion = null;
+    d.off(this);
   }
 
   heal(amount) {
@@ -342,10 +365,22 @@ G.Player = class Player {
   // ---------------- ciclo ----------------
   update(dt) {
     this.anim.update(dt);
-    if (this.dead) return;
+    this.anim.scale = this.sizeK || 1;            // gigante / diminuto (pociones)
+    if (this.dead) { if (this.potion) this.endPotion(); return; }
+    if (this.potion) {
+      this.potion.t -= dt;
+      if (this.toxic) this.hp = Math.max(1, this.hp - this.maxHp * 0.03 * dt);
+      if (this.potion.t <= 0) this.endPotion();
+    }
     if (this.invuln > 0) this.invuln -= dt;
     if (this.flash > 0) this.flash -= dt;
     if (this.attackFace > 0) this.attackFace -= dt;
+    // Si el hueco activo se ha quedado sólo con pasivos (p. ej. Colmillo Vampiro al
+    // evolucionar), se pasa a un ataque de verdad: los pasivos funcionan igual.
+    if (this.passiveSlot(this.active)) {
+      const i = this.slots.findIndex((g, k) => !this.passiveSlot(k));
+      if (i >= 0) this.active = i;
+    }
 
     for (const k in this.buffs) {
       const b = this.buffs[k];
@@ -437,6 +472,7 @@ G.Player = class Player {
     this.anim.update(dt);
     const n = this.net;
     if (!n) return;
+    this.anim.scale = n.sz || 1;                  // gigante / diminuto (pociones)
     if (this.flash > 0) this.flash -= dt;
     if (this.attackFace > 0) this.attackFace -= dt;
     // Predicción: entre paquete y paquete sigue andando a la velocidad que llevaba
@@ -499,6 +535,14 @@ G.Player = class Player {
       ctx.restore();
     }
 
+    // Poción de estrella: aro de colores que gira.
+    if (this.star && !this.dead) {
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = `hsl(${(performance.now() / 4) % 360},90%,65%)`;
+      ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.9, this.r * 0.8, 0, 0, 6.2832); ctx.stroke();
+      ctx.restore();
+    }
     const alpha = this.invuln > 0 && !this.dead ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
     this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });
 

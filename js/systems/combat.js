@@ -1154,6 +1154,8 @@ G.Combat = (() => {
       e.strike(pl);
       // Peso Pesado: la armadura quita parte del daño de los choques.
       pl.hurt(e.dmg * (1 - (pl.bulkArmor || 0)), e.atkType);
+      // Poción de gigante: aplastas a los que te tocan (y salen despedidos).
+      if (pl.giant && !e.boss) e.hurt((20 + pl.level * 4) * pl.atk / Math.max(1, pl.baseAtk), '#ff7b3d', e.x - pl.x, e.y - pl.y, 320);
       if (pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
       const [nx, ny] = G.U.norm(e.x - pl.x, e.y - pl.y);
       e.kx += nx * 150; e.ky += ny * 150;

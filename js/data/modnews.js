@@ -3,8 +3,11 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
-  { d: '2026-10-15', title: { zh: '五個新招式', en: 'Five new moves' },
+  { d: '2026-10-15', title: { zh: '五個新招式、技能寶箱與藥水', en: 'Five new moves, move chests and potions' },
     new: [
+      { zh: '技能寶箱：第 4 和第 11 分鐘在每個人附近出現，打開隨機得到 1～4 個技能強化（一場可重抽 15 次，每人最多開 2 箱）', en: 'Move chests: one appears near each player at minutes 4 and 11 and gives 1–4 random move upgrades (15 rerolls per run, up to 2 chests each)' },
+      { zh: '藥水：地圖上會隨機出現，效果隨機——變大、變小、狂暴、無敵星星、磁鐵、幸運，也可能是壞藥水', en: 'Potions: they appear around the map with a random effect — giant, tiny, fury, star, magnet, lucky… or a bad one' },
+      { zh: '右上角小地圖：顯示技能寶箱、藥水、寶箱、祭壇、泉水、頭目、裂縫與隊友', en: 'Minimap (top right): move chests, potions, chests, altars, springs, bosses, rifts and teammates' },
       { zh: '毒系新招「腐蝕酸雨」：以自己為中心下毒雨，中毒＋緩速，升級後留下會擴散的毒水窪；進化「奈米屌雨」', en: 'New Poison move “Corrosive Rain”: poison rain around you that poisons and slows, later leaving spreading puddles; evolves into “Nano Rain”' },
       { zh: '格鬥系新招「李家拳」：快速單體連拳，每幾拳必定暴擊，滿級暴擊會流鼻血；進化「家暴神拳」打 12 隻', en: 'New Fighting move “Lee Fist”: fast single-target punches with a guaranteed crit every few hits, crits make enemies bleed at max level; evolves into “Fury Fist” (hits 12)' },
       { zh: '一般系新被動「歐美肥佬」：依寶可夢體型獲得護甲與減傷；進化「俠客歐尼爾」力場讓一般敵人碰不到你', en: 'New Normal passive “Heavyweight”: armor and damage reduction based on your Pokémon’s size; evolves into “Shaq”, a force field normal enemies cannot get through' },
@@ -17,6 +20,7 @@ G.MODNEWS = [
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
+      { zh: '被動技（火焰盾、歐美肥佬、進化後的吸血鬼之牙）一直有效，招式欄上標示「被動」，不能也不需要點選', en: 'Passive moves (Flame Shield, Heavyweight, evolved Vampire Fang) are always on: they show “Passive” in the move bar and can no longer be selected' },
       { zh: '修正組隊時按暫停不會真的暫停：現在任何人按暫停，全隊都會停下，畫面會顯示誰按了暫停', en: 'Fixed pause not pausing in groups: now when anyone pauses, the game stops for the whole group and shows who paused' }
     ]
   },

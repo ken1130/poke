@@ -22,8 +22,12 @@ G.Pickups = (() => {
     ticket:   { color: '#ffd23f', glow: '#c08a10', r: 7 },
     ticket10: { color: '#c47bff', glow: '#8a3fd0', r: 8 },
     item:     { color: '#ffd23f', glow: '#c08a10', r: 9 },      // value = id del objeto
-    token:    { color: '#ffd23f', glow: '#ffb000', r: 10 }      // baya dorada (aventura)
+    token:    { color: '#ffd23f', glow: '#ffb000', r: 10 },     // baya dorada (aventura)
+    sbox:     { color: '#ffd23f', glow: '#ffb000', r: 12 },     // cofre de movimientos (loot.js)
+    potion:   { color: '#ff7ad9', glow: '#b03d9a', r: 9 }       // poción de efecto al azar (loot.js)
   };
+  // Se quedan quietos donde salen (ni el imán los mueve): hay que ir a por ellos.
+  const STAY = { sbox: true, potion: true };
   /** Probabilidad de que un Pokémon normal suelte un ticket del gacha. */
   const BOSS_T10 = 1 / 3;               // ticket ×10 de un jefe normal
   const LEGEND_T10 = 1 / 2;             // ticket ×10 del legendario de la grieta
@@ -47,7 +51,8 @@ G.Pickups = (() => {
         if (j >= 0) { list[j].value += a.value; list[j].kind = 'xpBig'; }
         if (G.Coop.isHost) G.Coop.pickupGone(a.id);
       } else {
-        const a = list.shift();
+        const k = list.findIndex(p => !STAY[p.kind]);
+        const a = list.splice(k < 0 ? 0 : k, 1)[0];
         if (G.Coop.isHost) G.Coop.pickupGone(a.id);
       }
     }
@@ -68,7 +73,7 @@ G.Pickups = (() => {
   }
 
   /** Imán: todo vuela hacia el jugador más cercano. */
-  function pullAll() { for (const o of list) o.pulled = true; }
+  function pullAll() { for (const o of list) if (!STAY[o.kind]) o.pulled = true; }
 
   function dropXp(x, y, value, boss = false, legend = false) {
     if (boss) {
@@ -100,10 +105,10 @@ G.Pickups = (() => {
   }
 
   function orb(kind, x, y, value) {
-    const a = Math.random() * 6.2832;
+    const a = Math.random() * 6.2832, v = STAY[kind] ? 0 : 1;
     return {
       kind, x, y, value,
-      vx: Math.cos(a) * G.U.rand(10, 46), vy: Math.sin(a) * G.U.rand(10, 46),
+      vx: Math.cos(a) * G.U.rand(10, 46) * v, vy: Math.sin(a) * G.U.rand(10, 46) * v,
       t: Math.random() * 6.28, pulled: false
     };
   }
@@ -126,6 +131,11 @@ G.Pickups = (() => {
         if (dd < d2) { d2 = dd; pl = o; }
       }
       if (!pl) continue;
+      if (STAY[p.kind]) {
+        // Cofre / poción: se coge al pisarlo (el cofre, si aún puedes abrir más).
+        if (d2 < (24 + pl.r * 0.5) ** 2 && G.Loot.canTake(p.kind, pl)) { list.splice(i, 1); onCollect(p, pl); }
+        continue;
+      }
       const dx = pl.x - p.x, dy = pl.y - p.y;
       const mag2 = pl.magnet * pl.magnet;
 
@@ -167,6 +177,7 @@ G.Pickups = (() => {
       ctx.beginPath(); ctx.arc(p.x, y, r * 2, 0, 6.2832); ctx.fill();
 
       ctx.globalAlpha = 1;
+      if (p.kind === 'sbox' || p.kind === 'potion') { drawLoot(ctx, p, y); continue; }
       ctx.fillStyle = k.color;
       if (p.kind === 'xp' || p.kind === 'xpBig') {
         ctx.beginPath();
@@ -197,6 +208,33 @@ G.Pickups = (() => {
       ctx.beginPath(); ctx.arc(p.x - r * 0.25, y - r * 0.3, r * 0.28, 0, 6.2832); ctx.fill();
     }
     ctx.globalAlpha = 1;
+  }
+
+  /** Cofre de movimientos (dorado, con brillo) y poción (frasco rosa). */
+  function drawLoot(ctx, p, y) {
+    const beat = Math.sin(p.t * 1.5);
+    ctx.save();
+    ctx.globalAlpha = 0.35 + beat * 0.15;
+    ctx.fillStyle = p.kind === 'sbox' ? '#ffe14d' : '#ff9ee6';
+    ctx.beginPath(); ctx.arc(p.x, y, p.kind === 'sbox' ? 24 : 18, 0, 6.2832); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 2; ctx.strokeStyle = '#2a1a08';
+    if (p.kind === 'sbox') {
+      // Cofre: caja marrón con tapa y cierre dorados.
+      ctx.fillStyle = '#9a5a22'; ctx.fillRect(p.x - 13, y - 6, 26, 15); ctx.strokeRect(p.x - 13, y - 6, 26, 15);
+      ctx.fillStyle = '#c47a2c'; ctx.fillRect(p.x - 14, y - 13, 28, 8); ctx.strokeRect(p.x - 14, y - 13, 28, 8);
+      ctx.fillStyle = '#ffd23f'; ctx.fillRect(p.x - 3, y - 8, 6, 8); ctx.strokeRect(p.x - 3, y - 8, 6, 8);
+      ctx.fillRect(p.x - 14, y - 6, 28, 2);
+    } else {
+      // Poción: frasco redondo con tapón y líquido que cambia de color.
+      const hue = (p.t * 40) % 360;
+      ctx.fillStyle = `hsl(${hue},85%,62%)`;
+      ctx.beginPath(); ctx.arc(p.x, y + 2, 8, 0, 6.2832); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#e8eef8'; ctx.fillRect(p.x - 3, y - 10, 6, 6); ctx.strokeRect(p.x - 3, y - 10, 6, 6);
+      ctx.fillStyle = '#8a5a2b'; ctx.fillRect(p.x - 3.5, y - 13, 7, 3);
+      ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(p.x - 3, y, 2.2, 0, 6.2832); ctx.fill();
+    }
+    ctx.restore();
   }
 
   return { clear, all, dropXp, drop, update, draw, addRemote, removeId, pullAll, KIND, get count() { return list.length; } };

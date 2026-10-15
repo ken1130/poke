@@ -84,6 +84,18 @@ G.HUD = (() => {
       ctx.fillText(txt, bx + 6, py + 45);
       bx += tw + 5;
     }
+    // poción activa (loot.js): nombre y segundos que le quedan
+    if (pl.potion) {
+      const d = pl.potion.def;
+      ctx.font = F(800, 9);
+      const txt = G.T(d.name).replace(/^¡|[!！]$/g, '') + ' ' + Math.ceil(pl.potion.t) + 's';
+      const tw = ctx.measureText(txt).width + 12;
+      roundRect(ctx, bx, py + 34, tw, 15, 7);
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
+      ctx.fillStyle = d.color;
+      ctx.fillText(txt, bx + 6, py + 45);
+      bx += tw + 5;
+    }
 
     // ---------- reloj / bioma / kills ----------
     ctx.textAlign = 'center';
@@ -108,6 +120,9 @@ G.HUD = (() => {
       ctx.fillStyle = wx.color;
       ctx.fillText(txt, x0 + 32, y0 + 17);
     }
+
+    // ---------- minimapa (arriba a la derecha) ----------
+    if (!G.Modes.rule('dark')) drawMinimap(ctx, w, pl, touch);
 
     // ---------- barra del jefe ----------
     const boss = G.EnemyMgr.all().find(e => e.boss && !e.dead);
@@ -327,7 +342,9 @@ G.HUD = (() => {
       const x = sx + i * (S + GAP);
       const y = on ? sy - 6 : sy;
       // Tocar (o hacer clic en) un icono activa ese movimiento.
-      if (m) G.Touch.addButton(x, y, S, S, () => { if (G.Game.state === 'playing' && pl.active !== i) { pl.setActive(i); G.Audio.sfx('click'); } }, GAP / 2 + 3);
+      // Los huecos de pasivos no se tocan: funcionan siempre.
+      const passive = pl.passiveSlot(i);
+      if (m && !passive) G.Touch.addButton(x, y, S, S, () => { if (G.Game.state === 'playing' && pl.active !== i) { pl.setActive(i); G.Audio.sfx('click'); } }, GAP / 2 + 3);
       const col = m ? G.U.TYPE_COLOR[m.type] : '#4a5468';
 
       // fondo
@@ -378,11 +395,21 @@ G.HUD = (() => {
         }
       }
 
-      // tecla
+      // tecla (los pasivos, en vez de número: "PASIVO", siempre activos)
       ctx.font = F(800, 9);
       ctx.fillStyle = fused ? BOND : on ? col : 'rgba(180,200,230,.6)';
       ctx.textAlign = 'left';
-      ctx.fillText(String(i + 1), x + 3, y + 10);
+      if (passive) {
+        ctx.textAlign = 'center';
+        ctx.font = F(800, 8);
+        const lbl = G.T('PASIVO');
+        const lw = ctx.measureText(lbl).width + 8;
+        roundRect(ctx, x + (S - lw) / 2, y - 7, lw, 12, 5);
+        ctx.fillStyle = '#5fe08a'; ctx.fill();
+        ctx.fillStyle = '#0a1a10';
+        ctx.fillText(lbl, x + S / 2, y + 2);
+        ctx.textAlign = 'left';
+      } else ctx.fillText(String(i + 1), x + 3, y + 10);
 
       // nombre encima del activo (con un vínculo: "Ascuas +2")
       if (on) {
@@ -479,6 +506,70 @@ G.HUD = (() => {
                          : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa' + (G.Coop.active ? '  ·  T mensajes' : ''), w / 2, h - 4);
     }
 
+    ctx.restore();
+  }
+
+  // ---------------- minimapa ----------------
+
+  /*
+   * Lo importante de alrededor (unos 40 m): cofres de movimientos y pociones (en el
+   * borde si están más lejos, para saber hacia dónde ir), objetos, cofres y
+   * altares/manantiales del mapa, jefes, la grieta y los compañeros.
+   */
+  const MM_R = 1300;                 // radio del mundo que se ve (unidades)
+  let mmProps = [], mmT = 0;
+  function drawMinimap(ctx, w, pl, touch) {
+    const S = touch ? 96 : 124, x0 = w - S - 14, y0 = touch ? 62 : 48;
+    const cx = x0 + S / 2, cy = y0 + S / 2, k = (S / 2 - 6) / MM_R;
+    const now = performance.now() / 1000;
+    // Los objetos del mapa se buscan sólo cada medio segundo (no cambian deprisa).
+    if (now - mmT > 0.5) {
+      mmT = now;
+      mmProps = G.World.specialsNear(pl.x, pl.y, MM_R).filter(p => p.type !== 'trap' && !p.used)
+        .concat(G.World.propsInCircle(pl.x, pl.y, MM_R).filter(p => p.type === 'chest'));
+    }
+    ctx.save();
+    roundRect(ctx, x0, y0, S, S, 10);
+    ctx.fillStyle = 'rgba(8,12,24,.78)'; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(200,215,255,.6)'; ctx.stroke();
+    roundRect(ctx, x0, y0, S, S, 10); ctx.clip();
+    const at = (x, y, edge) => {
+      let dx = (x - pl.x) * k, dy = (y - pl.y) * k;
+      const m = S / 2 - 6;
+      if (Math.abs(dx) > m || Math.abs(dy) > m) {
+        if (!edge) return null;
+        const s = m / Math.max(Math.abs(dx), Math.abs(dy)); dx *= s; dy *= s;
+      }
+      return [cx + dx, cy + dy];
+    };
+    const dot = (x, y, col, r, edge, sq) => {
+      const q = at(x, y, edge);
+      if (!q) return;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      if (sq) ctx.rect(q[0] - r, q[1] - r, r * 2, r * 2); else ctx.arc(q[0], q[1], r, 0, 6.2832);
+      ctx.fill();
+    };
+    const PROP_COL = { altar: '#ff8ad8', spring: '#4fb4ff', bigchest: '#ffb000', chest: '#c47a2c' };
+    for (const p of mmProps) dot(p.x, p.y, PROP_COL[p.type] || '#fff', p.type === 'chest' ? 1.8 : 2.6, false, true);
+    const blink = Math.sin(now * 6) > 0;
+    for (const p of G.Pickups.all()) {
+      if (p.kind === 'sbox') dot(p.x, p.y, blink ? '#ffe14d' : '#ff9a3d', 4.2, true, true);
+      else if (p.kind === 'potion') dot(p.x, p.y, '#ff7ad9', 3.2, true);
+      else if (p.kind === 'item' || p.kind === 'token' || p.kind === 'ticket10') dot(p.x, p.y, '#ffd23f', 2.6, false);
+    }
+    for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) dot(e.x, e.y, '#ff4d5e', 4, true);
+    const rift = G.Rift.rift;
+    if (rift) dot(rift.x, rift.y, blink ? '#e2d0ff' : '#a06bff', 4, true);
+    if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl) dot(o.x, o.y, o.dead ? '#ff5f6d' : '#5fe08a', 3, true);
+    // Tú: flecha blanca hacia donde miras.
+    const a = pl.moveAngle || 0;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * 6, cy + Math.sin(a) * 6);
+    ctx.lineTo(cx + Math.cos(a + 2.5) * 4.5, cy + Math.sin(a + 2.5) * 4.5);
+    ctx.lineTo(cx + Math.cos(a - 2.5) * 4.5, cy + Math.sin(a - 2.5) * 4.5);
+    ctx.closePath(); ctx.fill();
     ctx.restore();
   }
 

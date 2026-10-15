@@ -557,6 +557,18 @@
   </div>
 </section>
 
+<section id="scr-sbox" class="scr dim hidden">
+  <div class="box center">
+    <h2>¡Cofre de movimientos!</h2>
+    <p id="sbox-sub" class="sub"></p>
+    <div id="sbox-cards" class="cards"></div>
+    <div class="row" style="justify-content:center;gap:8px;margin-top:10px">
+      <button id="sbox-reroll" class="btn">Volver a tirar (<span id="sbox-rr-n">15</span>) <kbd>R</kbd></button>
+      <button id="sbox-ok" class="btn gold">¡Lo quiero! <kbd>Enter</kbd></button>
+    </div>
+  </div>
+</section>
+
 <section id="scr-pause" class="scr dim hidden">
   <div class="box center" style="width:min(460px,100%)">
     <h2>Pausa</h2>
@@ -626,6 +638,7 @@
 <script defer src="js/systems/combat.js"></script>
 <script defer src="js/systems/spawner.js"></script>
 <script defer src="js/systems/levelup.js"></script>
+<script defer src="js/systems/loot.js"></script>
 <script defer src="js/systems/gacha.js"></script>
 <script defer src="js/systems/interact.js"></script>
 <script defer src="js/systems/rift.js"></script>
