@@ -53,8 +53,9 @@ G.PvP = (() => {
     if (d <= 0) return true;
     // Lo que notas al recibir: parón, pantalla roja, sacudida y empujón.
     stopT = Math.max(stopT, crit ? 0.08 : 0.05);
-    G.Game.flash('#ff2040', crit ? 0.35 : 0.22);
-    G.Camera.kick(crit ? 0.7 : 0.45);
+    // (2026-10-15: nada de destellos de pantalla, molestaban a la vista: el golpe se nota con el
+    // parón, el empujón, una sacudida moderada, el sonido y el número.)
+    G.Camera.kick(crit ? 0.45 : 0.3);
     if (owner) {
       const a = Math.atan2(pl.y - owner.y, pl.x - owner.x);
       for (let step = crit ? 30 : 22; step > 0; step -= 6) {

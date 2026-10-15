@@ -105,7 +105,7 @@ G.MODNEWS = [
     ],
     fix: [
       { zh: 'PK 命中改成「攻擊者畫面打中就算中」：不會再明明打到卻沒扣血；李家拳、落雷、精神箭、吸取、連鎖、倒樹、隕石、毒等原本打不到玩家的招式現在都有效', en: 'PvP hits are now decided on the attacker’s screen: no more hits that do nothing; Lee Fist, lightning, Psychic Arrow, drain, chain, falling trees, meteors, poison and more now damage players' },
-      { zh: 'PK 打擊感加強：打中有停頓、X 命中標記、大傷害數字（暴擊紅字）、衝擊特效；被打的人畫面閃紅、震動並被擊退；連續攻擊不會再被受傷無敵吃掉', en: 'Stronger PvP hit feel: hit-stop, X hit marker, big damage numbers (red crits) and impact effects; the victim gets a red flash, shake and knockback; rapid hits are no longer swallowed by i-frames' },
+      { zh: 'PK 打擊感加強：打中有停頓、X 命中標記、大傷害數字（暴擊紅字）、衝擊特效；被打的人會停頓、震動並被擊退（畫面不閃）；連續攻擊不會再被受傷無敵吃掉', en: 'Stronger PvP hit feel: hit-stop, X hit marker, big damage numbers (red crits) and impact effects; the victim gets a hit-stop, shake and knockback (no screen flashing); rapid hits are no longer swallowed by i-frames' },
       { zh: 'PK 競技場選招：5 個選項至少 3 個遠程、近戰最多 2 個，不會再全是近戰被風箏', en: 'Arena move picks: at least 3 ranged and at most 2 melee among the 5 options, so you’re never stuck with only melee' },
       { zh: '修正：組隊時一人進裂縫、另一人同時進商店或神秘房間，打完裂縫頭目後遊戲卡住（現在房間裡不能開裂縫，裂縫中也不能進房間）', en: 'Fixed: in co-op, one player entering a rift while another entered a shop or mystery room froze the game after the rift boss (rifts can’t open from inside a room and rooms can’t be entered during a rift)' },
       { zh: '修正：組隊時「合體技」充能條疊在金幣上', en: 'Fixed: the co-op Combo meter overlapped the run coins' },
