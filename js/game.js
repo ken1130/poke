@@ -466,6 +466,7 @@ G.Game = (() => {
     if (G.Coop.active) {
       // En grupo cada uno sube con SU experiencia; mientras eliges, el grupo espera (coop.js).
       if (G.Coop.players().every(p => p.dead)) return;
+      if (G.PvP.on && !G.PvP.teams && pl.dead) { pendingLevels = 0; return; }     // PK: caído ya no sube (no hay quien te levante)
       pendingLevels--;
       coopApi.levelStart(pl.level);
       return;
@@ -839,6 +840,13 @@ G.Game = (() => {
         } else if (!p.dead) p.downTold = false;
       }
       if (pl.dead) reviveTick(dt);
+      // PK: al caer se cierran las cartas que tuvieras (2026-10-15: seguían saliendo estando fuera).
+      if (pl.dead && G.PvP.on && !G.PvP.teams && (coopCards.length || G.UI.isOpen('scr-levelup'))) {
+        coopCards = []; pendingLevels = 0;
+        G.RunUI.closeLevelUp();
+        if (state === 'choice') state = 'playing';
+        G.Coop.localPicked();
+      }
     }
     const cam = spectating() || pl;               // PK: caído, miras a quien siga en pie
     G.Camera.follow(cam.x, cam.y, dt);
@@ -911,6 +919,7 @@ G.Game = (() => {
 
   /** Grupo: abre las cartas de la siguiente subida de nivel de la cola. */
   function nextCoopCard() {
+    if (pl && pl.dead && G.PvP.on && !G.PvP.teams) { coopCards = []; return; }
     const level = coopCards.shift();
     if (level == null || !pl || state === 'over' || state === 'ui') return;
     // Eliges sin parar a nadie: la partida sigue (frame) y tu Pokémon queda quieto y protegido.

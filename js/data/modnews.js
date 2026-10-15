@@ -104,6 +104,7 @@ G.MODNEWS = [
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
+      { zh: '修正：PK 被打倒後還會跳出升級選卡（現在倒下就不能再升級，開著的選卡也會自動關掉；團隊 PK 可被救起所以不受影響）', en: 'Fixed: knocked-out players in PvP still got level-up cards (no more level-ups once you’re out; an open card window closes; team PvP is unaffected since you can be revived)' },
       { zh: '修正：寶箱會擋住攻擊。現在你的招式會穿過寶箱打到後面的怪（小寶箱一樣會被打壞），走路還是不能穿過，敵人的子彈也還是會被寶箱擋住', en: 'Fixed: chests blocked your attacks. Your moves now pass through chests and hit enemies behind them (small chests still break); you still can’t walk through them and they still block enemy shots' },
       { zh: '修正 PK「看不到攻擊卻一直扣血」：對手的子彈不會再一發射就消失；李家拳、落雷、倒樹、精神箭等招式也會畫在被打的人身上；已經跑遠的話算閃避，不會被延遲的攻擊打中', en: 'Fixed PvP “losing HP without seeing anything”: enemy shots no longer vanish right after firing; Lee Fist, lightning, trees, Psychic Arrow and others are now drawn on the victim; if you had already moved far away, delayed hits count as dodged' },
       { zh: '修正：上一場結束後還停在結算畫面的玩家，房主開下一場時沒有一起進來（現在會自動關掉結算畫面跟著進場）', en: 'Fixed: players still on the results screen were left out when the host started the next match (they now join automatically)' },
