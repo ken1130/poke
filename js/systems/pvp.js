@@ -47,18 +47,18 @@ G.PvP = (() => {
     // Entre jugadores no vale la invulnerabilidad larga tras un golpe (0,45 s): si no, la mitad
     // de los golpes "acertados" no hacían nada. Un respiro corto (0,1 s) sí.
     pl.invuln = 0;
+    const shake = G.Camera.shake;
     pl.hurt(dmg * (arena ? K_ARENA : K), type);
+    G.Camera.shake = shake;               // (Player.hurt sacude la cámara: en PK, no)
     pl.invuln = Math.min(pl.invuln, 0.1);
     const d = before - pl.hp;
     if (d <= 0) return true;
-    // Lo que notas al recibir: parón, pantalla roja, sacudida y empujón.
-    stopT = Math.max(stopT, crit ? 0.08 : 0.05);
-    // (2026-10-15: nada de destellos de pantalla, molestaban a la vista: el golpe se nota con el
-    // parón, el empujón, una sacudida moderada, el sonido y el número.)
-    G.Camera.kick(crit ? 0.45 : 0.3);
+    // Lo que notas al recibir (2026-10-15, a petición del dueño): sin destellos de pantalla (le
+    // dolían los ojos), sin sacudidas (mareaban) y sin parones (con golpes seguidos eran como un
+    // aturdimiento). Queda: tu Pokémon destella (Player.hurt), un empujón corto, el sonido y el número.
     if (owner) {
       const a = Math.atan2(pl.y - owner.y, pl.x - owner.x);
-      for (let step = crit ? 30 : 22; step > 0; step -= 6) {
+      for (let step = crit ? 20 : 14; step > 0; step -= 4) {
         const nx = pl.x + Math.cos(a) * step, ny = pl.y + Math.sin(a) * step;
         if (G.World.isFree(nx, ny, pl.r * 0.6)) { pl.x = nx; pl.y = ny; break; }
       }
@@ -116,13 +116,12 @@ G.PvP = (() => {
     const k = (arena ? K_ARENA : K) * G.Types.mult(type, foe.mon.types);
     const shown = Math.max(1, Math.round(dmg * k));
     // Lo que ves tú al acertar: parón, marca de impacto, número grande, destello y golpe.
-    hitMark = 0.25; stopT = Math.max(stopT, crit ? 0.09 : 0.06);
+    hitMark = 0.25;
     foe.flash = 0.14;
     G.FX.dmgText(foe.x + G.U.rand(-8, 8), foe.y - foe.bodyH - 6, crit ? shown + '!' : String(shown), crit ? '#ff5f6d' : '#ffe14d', true);
     G.FX.sp('impact', type || 'normal', foe.x, foe.y - foe.bodyH * 0.5, { life: 0.16, scale: crit ? 2.4 : 1.7 });
     G.FX.burst(foe.x, foe.y - foe.bodyH * 0.5, '#ffffff', crit ? 14 : 8, 160);
     G.Audio.sfx(crit ? 'break' : 'hit');
-    G.Camera.kick(crit ? 0.3 : 0.16);
     send(['pv', 'd', foe.uid, G.Net.uid, +(dmg).toFixed(1), type || null, crit ? 1 : 0]);
   }
   /** Frenar a un rival (Grava, charcos...): se le pide a él. */
@@ -228,7 +227,6 @@ G.PvP = (() => {
     if (ev[1] !== 'h') return;
     const [, , vic, atk, d, ko] = ev;
     if (ko) {
-      slowT = 0.7;
       feed.unshift({ text: G.I18n.f('{x} ha tumbado a {x}', nameOf(atk), nameOf(vic)), t: 5, mine: atk === me || vic === me });
       feed = feed.slice(0, 4);
       if (atk === me) { G.FX.dmgText(G.Game.player.x, G.Game.player.y - 70, G.T('¡K.O.!'), '#ffd23f', true); G.Audio.sfx('bossDown'); }
@@ -236,12 +234,7 @@ G.PvP = (() => {
     }
   }
   /** game.js: el reloj del juego va más despacio un instante (parón al golpear, cámara lenta al tumbar). */
-  function timeScale(real) {
-    if (!on) return 1;
-    if (stopT > 0) { stopT -= real; return 0.12; }
-    if (slowT > 0) { slowT -= real; return 0.35; }
-    return 1;
-  }
+  function timeScale() { return 1; }      // (sin parones ni cámara lenta: quitaban el control)
 
   // ================= apuntar =================
   const aiming = () => on && G.Coop.active && G.Game.state === 'playing';
@@ -275,7 +268,7 @@ G.PvP = (() => {
     // Fuera de la zona: se pierde vida.
     if (pl && !pl.dead && t > ZONE_FROM && Math.hypot(pl.x, pl.y) > zoneR(t)) {
       zoneT -= dt;
-      if (zoneT <= 0) { zoneT = 0.5; pl.invuln = 0; pl.hurt(pl.maxHp * 0.04); }
+      if (zoneT <= 0) { zoneT = 0.5; pl.invuln = 0; const sh = G.Camera.shake; pl.hurt(pl.maxHp * 0.04); G.Camera.shake = sh; }
     }
     if (G.Coop.isHost && t >= berryT) {
       berryT = t + 20;
