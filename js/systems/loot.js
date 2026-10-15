@@ -157,6 +157,7 @@ G.Loot = (() => {
         $('sbox-sub').classList.remove('count');
         $('sbox-sub').textContent = n === 1 ? G.T('¡1 mejora!') : G.I18n.f('¡{x} mejoras!', n);
         if (n >= 3) G.Audio.sfx('legend');
+        if (n >= 4 && pl === G.Game.player) G.Progress.event('jackpot');
         if (n >= 4) {
           // Premio gordo: fiesta también en el mapa.
           for (const col of ['#ff5f6d', '#ffd23f', '#5fe08a', '#4fb4ff', '#c47bff']) G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, col, 16, 260);

@@ -19,7 +19,17 @@ G.Tips = (() => {
     raid: 'Jefe de incursión: va a por quien tiene la diana 🎯. Si eres tú, ¡corre! Los demás, ¡a pegarle!',
     teams: 'PK por equipos: no puedes herir a los de tu equipo y puedes levantarlos si caen.',
     group: 'En grupo: pulsa T (o 💬 en el móvil) para mandar mensajes rápidos a tus compañeros.',
-    evolve: 'Tu Pokémon evoluciona al llegar a Nv. 10, 20 y 30 y se hace más fuerte (se puede apagar en Ajustes).'
+    evolve: 'Tu Pokémon evoluciona al llegar a Nv. 10, 20 y 30 y se hace más fuerte (se puede apagar en Ajustes).',
+    // (2026-10-16) lo nuevo del mapa
+    disc: 'Ha aparecido tu disco de movimientos (sigue la flecha celeste): da de 1 a 4 mejoras al azar.',
+    potion: 'Las pociones dan un efecto al azar unos segundos: gigante, diminuto, furia, estrella... o una mala.',
+    egg: 'Recoge tu huevo Pokémon: tras derrotar a 120, nace un compañero que lucha contigo.',
+    mhouse: 'El "?" del minimapa es una sala misteriosa: puede ser una casa de monstruos. ¡Aguanta 30 s y llévate el botín!',
+    shop: 'Tienda de Kecleon: quédate encima de algo para comprarlo con las monedas de la run. Sin dinero... lo robas, y Kecleon se enfada.',
+    statue: 'Toca la estatua misteriosa: bendición (o maldición con premio) para todo el grupo durante 3 minutos.',
+    stairs: 'Escaleras: si os quedáis todos encima, bajáis al piso siguiente (más difícil, pero con más premios).',
+    elite: 'Enemigo de élite (aro de color): más fuerte y con una habilidad especial, pero suelta mucha más experiencia.',
+    combo: 'En grupo: quedaos cerca para cargar el ataque combinado y pulsa F (o el botón) cuando esté lleno.'
   };
   let seen = {};
   try { seen = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { seen = {}; }
@@ -45,7 +55,7 @@ G.Tips = (() => {
 
   /** Cada fotograma: mira qué toca y enseña uno. */
   function tick(dt) {
-    const playing = G.Game.state === 'playing' && !['scr-levelup', 'scr-pause', 'scr-item', 'scr-bond'].some(G.UI.isOpen);
+    const playing = G.Game.state === 'playing' && !['scr-levelup', 'scr-pause', 'scr-item', 'scr-bond', 'scr-sbox'].some(G.UI.isOpen);
     if (!playing) { if (cur) { box.style.display = 'none'; } return; }
     const pl = G.Game.player, run = G.Modes.run;
     if (run === 'stage' && G.Stages.goal) { once('stage'); once('stage-' + G.Stages.goal); }
@@ -55,6 +65,14 @@ G.Tips = (() => {
     if (G.PvP.teams) once('teams');
     if (G.Raid.active) once('raid');
     if (pl && pl.level >= 4 && G.Settings.get('evolve') !== false && G.Evo.levelFor(pl.dex) != null) once('evolve');
+    // Lo nuevo del mapa: la primera vez que aparece cerca (o es tuyo).
+    for (const p of G.Pickups.all()) {
+      if ((p.kind === 'sbox' || p.kind === 'potion' || p.kind === 'egg') && G.Loot.visible(p)) once(p.kind === 'sbox' ? 'disc' : p.kind);
+    }
+    for (const s of G.Dungeon.sites) once(s.type);
+    if (G.Floors.stairs) once('stairs');
+    if (G.Coop.active && !G.PvP.on) once('combo');
+    if (pl && G.EnemyMgr.all().some(e => e.elite && !e.dead && G.Camera.sees(e.x, e.y, 0))) once('elite');
     if (cur) {
       el().style.display = 'flex';
       if ((t -= dt) <= 0) hide();

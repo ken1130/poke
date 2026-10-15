@@ -56,6 +56,7 @@ G.Companion = (() => {
     const shiny = G.Sprites.hasShiny(dex) && Math.random() < 1 / 20;
     pl.egg = null;
     pl.buddy = { dex, shiny };
+    if (pl === G.Game.player) G.Progress.event('hatch', { shiny });
     G.Sprites.preload([dex], 8000, shiny);
     const name = G.T(G.DEX_BY[dex].name);
     G.Spawner.say(G.I18n.f('¡El huevo ha eclosionado! ¡{x} se une a ti!', name) + (shiny ? ' ✨' : ''), 3.5, true);

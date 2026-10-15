@@ -14,7 +14,7 @@ G.AchDefs = (() => {
   const count = k => s => Object.keys(s[k] || {}).length;
 
   const CATS = [['coleccion', 'Colección'], ['supervivencia', 'Supervivencia'], ['combate', 'Combate'],
-                ['grietas', 'Grietas'], ['legendarios', 'Legendarios'], ['modos', 'Modos y amigos'], ['otros', 'Misiones y más']];
+                ['grietas', 'Grietas'], ['legendarios', 'Legendarios'], ['mazmorra', 'Mazmorra'], ['modos', 'Modos y amigos'], ['otros', 'Misiones y más']];
   // Una mejora del Pokémon `u` ({id -> nivel}) al máximo en todo.
   const maxed = u => G.Upgrades.LIST.every(x => (u[x.id] || 0) >= x.max);
 
@@ -85,6 +85,19 @@ G.AchDefs = (() => {
     { id: 'mis10', cat: 'otros', tier: 1, name: 'Cumplidor', desc: 'Completa 10 misiones.', value: st('missionsDone'), goal: 10, reward: { t1: 3 } },
     { id: 'mis50', cat: 'otros', tier: 2, name: 'Constante', desc: 'Completa 50 misiones.', value: st('missionsDone'), goal: 50, reward: { t10: 1 }, title: 'Constante' },
     { id: 'mis200', cat: 'otros', tier: 3, name: 'Incansable', desc: 'Completa 200 misiones.', value: st('missionsDone'), goal: 200, reward: { t10: 3 } },
+    // ---------- mazmorra (2026-10-16) ----------
+    { id: 'jackpot1', cat: 'mazmorra', tier: 2, name: '¡Premio gordo!', desc: 'Saca 4 mejoras de un disco de movimientos.', value: st('jackpots'), goal: 1, reward: { t1: 3 }, title: 'Afortunado' },
+    { id: 'mhouse1', cat: 'mazmorra', tier: 1, name: 'Casa encantada', desc: 'Supera una casa de monstruos.', value: st('mhouses'), goal: 1, reward: { coins: 200 } },
+    { id: 'mhouse10', cat: 'mazmorra', tier: 2, name: 'Domador de casas', desc: 'Supera 10 casas de monstruos.', value: st('mhouses'), goal: 10, reward: { t10: 1 } },
+    { id: 'kecleon1', cat: 'mazmorra', tier: 3, name: 'Gran golpe', desc: 'Roba en la tienda y vence a Kecleon furioso.', value: st('kecleonWins'), goal: 1, reward: { t10: 1 }, title: 'Ladrón de guante blanco' },
+    { id: 'floor3', cat: 'mazmorra', tier: 1, name: 'Hacia abajo', desc: 'Llega al piso B3F.', value: st('maxFloor'), goal: 3, reward: { t1: 2 } },
+    { id: 'floor5', cat: 'mazmorra', tier: 2, name: 'Explorador', desc: 'Llega al piso B5F.', value: st('maxFloor'), goal: 5, reward: { t10: 1 }, title: 'Explorador' },
+    { id: 'floor10', cat: 'mazmorra', tier: 3, name: 'Fondo de la mazmorra', desc: 'Llega al piso B10F.', value: st('maxFloor'), goal: 10, reward: { t10: 3 }, title: 'Señor de la mazmorra' },
+    { id: 'hatch1', cat: 'mazmorra', tier: 1, name: '¡Ha nacido!', desc: 'Haz eclosionar un huevo Pokémon.', value: st('hatches'), goal: 1, reward: { t1: 2 } },
+    { id: 'hatchShiny', cat: 'mazmorra', tier: 3, name: 'Un huevo especial', desc: 'Haz eclosionar un compañero shiny.', value: st('shinyHatches'), goal: 1, reward: { t10: 2 }, title: 'Criador' },
+    { id: 'elite10', cat: 'mazmorra', tier: 1, name: 'Cazador de élites', desc: 'Derrota a 10 enemigos de élite.', value: st('eliteKills'), goal: 10, reward: { t1: 3 } },
+    { id: 'elite100', cat: 'mazmorra', tier: 2, name: 'Azote de élites', desc: 'Derrota a 100 enemigos de élite.', value: st('eliteKills'), goal: 100, reward: { t10: 1 }, title: 'Azote de élites' },
+    { id: 'combo1', cat: 'mazmorra', tier: 1, name: 'Trabajo en equipo', desc: 'Usa un ataque combinado en grupo.', value: st('combos'), goal: 1, reward: { t1: 2 } },
     { id: 'group1', cat: 'otros', tier: 1, name: 'En compañía', desc: 'Juega una partida en grupo.', value: st('groupRuns'), goal: 1, reward: { t1: 2 } },
     { id: 'group10', cat: 'otros', tier: 2, name: 'Compañero fiel', desc: 'Juega 10 partidas en grupo.', value: st('groupRuns'), goal: 10, reward: { t10: 1 }, title: 'Compañero fiel' }
   ];

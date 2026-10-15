@@ -147,6 +147,15 @@ G.Progress = (() => {
       case 'item':
         s.itemsFound = s.itemsFound || {}; s.itemsFound[d.id] = s.itemsFound[d.id] || Date.now();
         break;
+      // Lo nuevo del mapa (2026-10-16): disco con 4 mejoras, Kecleon, casa de monstruos,
+      // pisos, huevos, élites y ataque combinado.
+      case 'jackpot': S.jackpots = (S.jackpots || 0) + 1; break;
+      case 'kecleon': S.kecleonWins = (S.kecleonWins || 0) + 1; break;
+      case 'mhouse': S.mhouses = (S.mhouses || 0) + 1; break;
+      case 'floor': S.maxFloor = Math.max(S.maxFloor || 1, d.n || 1); break;
+      case 'hatch': S.hatches = (S.hatches || 0) + 1; if (d.shiny) S.shinyHatches = (S.shinyHatches || 0) + 1; break;
+      case 'combo': S.combos = (S.combos || 0) + 1; break;
+      case 'eliteKill': S.eliteKills = (S.eliteKills || 0) + 1; break;
       case 'runEnd':
         if (d.group) S.groupRuns = (S.groupRuns || 0) + 1;
         break;
@@ -162,6 +171,7 @@ G.Progress = (() => {
   function kill(e) {
     const legend = e.legend || (G.Rift.inArena && e.boss) ? e.dex : 0;
     event('kill', { types: e.types || [], boss: !!e.boss, legend });
+    if (e.elite) event('eliteKill');
   }
 
   // ---------------- logros ----------------

@@ -49,12 +49,16 @@ G.Dungeon = (() => {
     else if (k === 'got') applyWare(G.Game.player, ev[2]);
     else if (k === 'bless') startBlessing(ev[2], ev[3]);
     else if (k === 'say') G.Spawner.say(G.T(ev[2]), ev[3] || 3, true);
+    else if (k === 'ach') G.Progress.event(ev[2]);
     else if (k === 'poor') G.Spawner.say(G.I18n.f('¡No tienes bastantes monedas! (cuesta {x})', ev[2]), 2, true);
   }
   /** Anfitrión: un invitado pide comprar (o se lleva sin pagar) el artículo `idx`. */
   function onClient(from, ev) {
     if (ev[1] === 'buy') tryBuy(byId(ev[2]), ev[3], from, !!ev[4]);
   }
+
+  /** Logro para todo el grupo (cada uno lo apunta en su partida). */
+  function award(kind) { G.Progress.event(kind); send(['dg', 'ach', kind]); }
 
   function say(text, secs = 3) {
     G.Spawner.say(G.T(text), secs, true);
@@ -184,6 +188,7 @@ G.Dungeon = (() => {
   function houseEnd(s, cleared) {
     remove(s);
     say(cleared ? '¡Casa de monstruos superada! Recoge el botín' : '¡Has aguantado! Recoge el botín', 3);
+    award('mhouse');
     const t = T();
     G.Pickups.dropXp(s.x, s.y, Math.round(140 + t * 0.9), true);
     for (let i = 0; i < 8; i++) G.Pickups.drop('coin', s.x + G.U.rand(-50, 50), s.y + G.U.rand(-35, 35), 5);
@@ -215,6 +220,7 @@ G.Dungeon = (() => {
       if (!e || e.dead) {
         s.until = t + 40;
         setState(s, 'free');
+        award('kecleon');
         say('¡Has vencido a Kecleon! Lo que queda en la tienda es GRATIS', 3.5);
       }
     } else if (s.state === 'free' && t >= s.until) remove(s);

@@ -5,6 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-16', title: { zh: '迷宮新事件：怪物屋、卡克隆商店、神秘雕像', en: 'New dungeon events: Monster House, Kecleon Shop, Mystery Statue' },
     new: [
+      { zh: '第一次遇到光碟、藥水、蛋、怪物屋、商店、雕像、樓梯、精英怪、合體技時，會跳出簡短說明', en: 'Short tips the first time you meet move discs, potions, eggs, Monster Houses, shops, statues, stairs, elites and combo attacks' },
+      { zh: '新成就分類「迷宮」：大獎光碟、怪物屋、打倒暴怒卡克隆、抵達 B3F／B5F／B10F、孵蛋、異色夥伴、精英怪、合體技（含新稱號）', en: 'New “Dungeon” achievements: jackpot discs, Monster Houses, beating furious Kecleon, reaching B3F/B5F/B10F, hatching, shiny partners, elites and combos (with new titles)' },
       { zh: '遊戲改名為「寶可夢迷宮倖存者」', en: 'The game is now called “Pokémon Dungeon Survivors”' },
       { zh: '怪物屋：小地圖上的「？」神秘房間，走進去會湧出大量怪物，撐過 30 秒或全部打倒就有大獎', en: 'Monster House: the “?” room on the minimap — step in, a horde appears; survive 30 s or clear it for big loot' },
       { zh: '卡克隆商店：用這場的金幣買藥水、道具、技能強化；沒錢硬拿就是偷，卡克隆會變成頭目追殺你（強度跟著時間和等級成長），打贏全店免費', en: 'Kecleon Shop: spend this run’s coins on potions, items and upgrades; take something without paying and Kecleon becomes a boss (scales with time and level) — beat it and the shop is free' },

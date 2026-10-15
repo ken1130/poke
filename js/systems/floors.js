@@ -81,6 +81,7 @@ G.Floors = (() => {
     // Discos y pociones de cada uno: se vuelven a dejar cerca en el piso nuevo.
     const keep = host ? G.Pickups.all().filter(p => p.kind === 'sbox' || p.kind === 'potion' || p.kind === 'egg').map(p => [p.kind, p.value]) : [];
     floor = n; stairs = null; standT = 0; nextAt = T() + EVERY;
+    G.Progress.event('floor', { n: n + 1 });             // B2F = 2
     G.World.reset(seed);
     if (!G.Game.fixedScene) G.World.setBiome(Math.floor(T() / 240) + floor, true);
     G.EnemyMgr.clear(); G.Projectiles.clear(); G.Combat.clearFields(); G.Pickups.clear(); G.FX.clear();
@@ -142,6 +143,7 @@ G.Floors = (() => {
     const mate = m ? m.o : pl;
     const x = (pl.x + mate.x) / 2, y = (pl.y + mate.y) / 2;
     combo = 0;
+    G.Progress.event('combo');
     const dmg = 250 * pl.atk * (1 + 0.04 * pl.level);
     for (const e of G.EnemyMgr.queryCircle(x, y, BLAST_R)) {
       if (e.dead) continue;
