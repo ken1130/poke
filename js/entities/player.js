@@ -281,6 +281,14 @@ G.Player = class Player {
       G.FX.dmgText(this.x, this.y - this.bodyH - 16, '¡Banda Focus!', '#ff9a3d', true);
       G.FX.ring(this.x, this.y, 6, 70, '#ff9a3d', 0.5, 4);
     }
+    // Semilla Revivir (tienda de Kecleon): al caer, vuelves con la mitad de la vida (una vez).
+    if (this.hp <= 0 && this.reviveSeed) {
+      this.reviveSeed = false;
+      this.hp = this.maxHp * 0.5; this.invuln = 2;
+      G.FX.dmgText(this.x, this.y - this.bodyH - 16, G.T('¡Semilla Revivir!'), '#5fe08a', true);
+      G.FX.ring(this.x, this.y, 6, 110, '#5fe08a', 0.7, 5);
+      G.Audio.sfx('legend');
+    }
     if (this.hp <= 0) {
       this.hp = 0; this.dead = true;
       this.anim.play('Faint', { hold: true });

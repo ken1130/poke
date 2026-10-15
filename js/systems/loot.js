@@ -104,7 +104,7 @@ G.Loot = (() => {
   }
 
   /** El disco (para la ventana; el arcoíris y el giro van en el CSS). */
-  const CHEST_SVG = '<div class="sb-disc"></div>';
+  // Pixel art del disco (tiles.js), el mismo que en el mapa, con su brillo animado.
 
   /**
    * Abre la ventana del cofre; `done` cuando se acepta. Primero el disco gira y se
@@ -135,7 +135,11 @@ G.Loot = (() => {
       $('sbox-sub').classList.remove('count');
       $('sbox-sub').textContent = G.T('Abriendo…');
       const chest = $('sbox-chest');
-      chest.innerHTML = CHEST_SVG;
+      chest.innerHTML = '<img class="sb-disc" alt="">';
+      const img = chest.firstChild;
+      let fr = 0;
+      const spin = () => { if (!chest.firstChild) return; img.src = G.Tiles.propSprite(G.World.biome, 'disc', fr++ % 6).toDataURL(); setTimeout(spin, quick ? 60 : 90); };
+      spin();
       chest.className = 'on shake';
       G.Audio.sfx('select');
       later(SHAKE, () => { chest.className = 'on open'; G.Audio.sfx('break'); });

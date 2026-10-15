@@ -397,10 +397,8 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 /* ---------- cofre de movimientos: se abre y salen las cartas de una en una ---------- */
 #sbox-chest { display: flex; justify-content: center; align-items: center; height: 0; overflow: visible; transition: height .2s; }
 #sbox-chest.on { height: 76px; }
-.sb-disc { width: 66px; height: 66px; border-radius: 50%; position: relative; border: 3px solid #1a2a44;
-  background: radial-gradient(circle, #0a1020 0 7%, #5a6a88 8% 24%, transparent 25%), conic-gradient(#ff7a9e, #ffd23f, #7dff9a, #7fe0ff, #a98bff, #ff7a9e);
-  box-shadow: 0 0 18px 4px rgba(127, 224, 255, .6); }
-#sbox-chest.shake .sb-disc { animation: sbspin .3s linear infinite; }
+.sb-disc { width: 72px; height: 72px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(127, 224, 255, .7)); }
+#sbox-chest.shake .sb-disc { animation: sbshake .14s linear infinite; }
 @keyframes sbspin { to { transform: rotate(360deg); } }
 #sbox-chest.open .sb-disc { animation: sbopen .4s ease-out forwards; }
 @keyframes sbshake { 0% { transform: none; } 25% { transform: translate(-3px, 1px) rotate(-7deg); } 50% { transform: translate(3px, -1px) rotate(5deg); } 75% { transform: translate(-2px, 0) rotate(-3deg); } 100% { transform: none; } }

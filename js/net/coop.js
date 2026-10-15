@@ -373,6 +373,7 @@ G.Coop = (() => {
       case 'item': api.item(ev[1]); break;
       case 'st': case 'fl': case 'cb': G.Floors.onNet(ev); break;   // escaleras, piso nuevo, ataque combinado
       case 'sbox': api.sbox && api.sbox(); break;
+      case 'fbox': api.fbox && api.fbox(); break;
       case 'egg': G.Companion.gotEgg(local); break;
       case 'potion': api.potion && api.potion(ev[1]); break;
       case 'pk': G.Pickups.addRemote(ev[1], ev[2], ev[3], ev[4], ev[5]); break;
@@ -446,9 +447,9 @@ G.Coop = (() => {
       if (m) m.q.push(p.kind === 'heal' ? ['heal', 0.3] : ['item', p.value]);
     }
     // Cofre de movimientos y poción (loot.js): al que lo ha cogido.
-    if ((p.kind === 'sbox' || p.kind === 'potion' || p.kind === 'egg') && who !== local) {
+    if ((p.kind === 'sbox' || p.kind === 'fbox' || p.kind === 'potion' || p.kind === 'egg') && who !== local) {
       const m = mates.get(who.uid);
-      if (m) m.q.push(p.kind === 'sbox' ? ['sbox'] : p.kind === 'egg' ? ['egg'] : ['potion', p.eff]);
+      if (m) m.q.push(p.kind === 'potion' ? ['potion', p.eff] : [p.kind]);
     }
     if (p.kind === 'potion' && p.eff === 'magnet') emit(['mag']);
   }

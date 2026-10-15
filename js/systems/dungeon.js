@@ -198,17 +198,25 @@ G.Dungeon = (() => {
   // ---------------- tienda de Kecleon ----------------
 
   /*
-   * Lo que vende (precio base en monedas de la run; sube con el tiempo):
-   *   potion   una poción al azar     upgrade  una mejora de las cartas (sobre todo movimientos)
-   *   item     un objeto equipable    heal     te cura el 60 %
-   *   rerolls  +3 cambios de cartas de nivel
+   * Lo que vende (precio base en monedas de la run; sube con el tiempo). Cada tienda pone
+   * 4 al azar (2026-10-16: antes 3 de 5):
+   *   potion   una poción al azar          upgrade  una mejora de las cartas (sobre todo movimientos)
+   *   item     un objeto equipable         heal     te cura el 60 %
+   *   rerolls  +3 cambios de cartas         disc     un disco de movimientos (1-4 mejoras)
+   *   tm       MT: un movimiento nuevo (o una mejora si no caben más)
+   *   protein  +10 % de daño para el resto de la run     hpup  +30 de vida máxima
+   *   revive   Semilla Revivir: al caer, vuelves (una vez)   ticket  un ticket del gacha
+   *   egg      un huevo Pokémon (si aún no tienes compañero)
    */
-  const WARES = { potion: 15, upgrade: 35, item: 40, heal: 12, rerolls: 20 };
+  const WARES = { potion: 15, upgrade: 35, item: 40, heal: 12, rerolls: 20, disc: 55, tm: 30, protein: 35, hpup: 25, revive: 45, ticket: 60, egg: 50 };
   function rollWares(t) {
     const k = 1 + t / 900;
-    return G.U.pickN(Object.keys(WARES), 3).map(kind => ({ kind, price: Math.round(WARES[kind] * k), item: kind === 'item' ? G.Items.roll() : null }));
+    // El huevo sólo si a alguien del grupo le falta compañero.
+    const needEgg = G.Game.everyone().some(p => !p.buddy && !p.egg && !(p.net && p.net.bd));
+    const kinds = Object.keys(WARES).filter(w => w !== 'egg' || needEgg);
+    return G.U.pickN(kinds, 4).map(kind => ({ kind, price: Math.round(WARES[kind] * k), item: kind === 'item' ? G.Items.roll() : null }));
   }
-  const warePos = (s, i) => [s.x + (i - 1) * 64, s.y + 58 - (i === 1 ? -8 : 0)];
+  const warePos = (s, i) => [s.x + (i - 1.5) * 54, s.y + 58 + (i === 1 || i === 2 ? 8 : 0)];
 
   function shopTick(s, live) {
     const t = T();
@@ -239,7 +247,9 @@ G.Dungeon = (() => {
     }
     w.sold = true;
     send(pack(s));
-    if (from) G.Coop.sendTo(from, ['dg', 'got', w]);
+    const buyer = from ? G.Game.everyone().find(p => p.uid === from) : host;
+    if (w.kind === 'ticket') G.Pickups.drop('ticket', buyer ? buyer.x : s.x, buyer ? buyer.y - 10 : s.y, 1);   // el ticket es del grupo
+    else if (from) G.Coop.sendTo(from, ['dg', 'got', w]);
     else applyWare(host, w);
     G.Audio.sfx(steal ? 'hurt' : 'coin');
     if (steal && !free) kecleonRage(s);
@@ -271,6 +281,20 @@ G.Dungeon = (() => {
       case 'item': G.Game.offerItem(w.item); break;
       case 'heal': pl.heal(pl.maxHp * 0.6); G.Spawner.say(G.T('¡Te has curado!'), 2, true); break;
       case 'rerolls': pl.rerollBonus = (pl.rerollBonus || 0) + 3; G.Spawner.say(G.T('+3 cambios de cartas de nivel'), 2.4, true); break;
+      case 'disc': G.Game.offerBox(); break;
+      case 'tm': {
+        const list = G.LevelUp.offer(pl, 12);
+        const c = list.find(o => o.type === 'new') || list.find(o => o.type === 'up') || list[0];
+        if (c) { c.apply(pl); G.Spawner.say(G.T('MT') + ': ' + G.T(c.title), 2.6, true); }
+        break;
+      }
+      case 'protein': pl.atkMul *= 1.1; G.Spawner.say(G.T('+10% de daño (resto de la run)'), 2.4, true); break;
+      case 'hpup': pl.addMaxHp(30); G.Spawner.say(G.T('+30 de vida máxima'), 2.4, true); break;
+      case 'revive': pl.reviveSeed = true; G.Spawner.say(G.T('Llevas una Semilla Revivir: si caes, vuelves'), 2.8, true); break;
+      case 'egg':
+        if (pl.buddy || pl.egg) G.Spawner.say(G.T('Ya tienes compañero (o un huevo)'), 2.4, true);
+        else G.Companion.gotEgg(pl);
+        break;
       case 'upgrade': {
         const list = G.LevelUp.offer(pl, 6);
         const c = list.find(o => o.type !== 'stat') || list[0];
@@ -364,8 +388,11 @@ G.Dungeon = (() => {
       ctx.restore();
     }
   }
-  const WARE_ICON = { potion: null, upgrade: 'up', item: null, heal: 'berry', rerolls: 'cards' };
-  const WARE_NAME = { potion: 'Poción', upgrade: 'Mejora', item: 'Objeto', heal: 'Curación', rerolls: '+3 cambios' };
+  // Iconos: los de G.Icons; el disco, la poción y el huevo, con su pixel art del mapa (tiles.js).
+  const WARE_ICON = { upgrade: 'up', heal: 'berry', rerolls: 'cards', tm: 'book', protein: 'fist', hpup: 'heart', revive: 'sprout', ticket: 'ticket' };
+  const WARE_SPRITE = { potion: 'potion', disc: 'disc', egg: 'egg' };
+  const WARE_NAME = { potion: 'Poción', upgrade: 'Mejora', item: 'Objeto', heal: 'Curación', rerolls: '+3 cambios', disc: 'Disco', tm: 'MT',
+                      protein: 'Proteína', hpup: 'Más PS', revive: 'Semilla Revivir', ticket: 'Ticket', egg: 'Huevo' };
   function drawAir(ctx) {
     const now = performance.now() / 1000;
     const pl = G.Game.player;
@@ -405,7 +432,7 @@ G.Dungeon = (() => {
           if (w.sold) return;
           const [wx, wy] = warePos(s, i);
           const bob = Math.sin(now * 3 + i) * 2;
-          if (w.kind === 'potion') G.Pickups.sprite(ctx, 'potion', Math.floor(now) % 6, wx, wy - 14 + bob, 1.6);
+          if (WARE_SPRITE[w.kind]) G.Pickups.sprite(ctx, WARE_SPRITE[w.kind], w.kind === 'egg' ? 0 : Math.floor(now * 2) % 6, wx, wy - 14 + bob, w.kind === 'egg' ? 1.2 : 1.6);
           else G.Icons.draw(ctx, w.kind === 'item' ? w.item : WARE_ICON[w.kind], wx - 12, wy - 26 + bob, 24);
           const price = s.state === 'free' ? G.T('Gratis') : w.price + ' ' + G.T('monedas');
           label(G.T(w.kind === 'item' && G.Items.BY[w.item] ? G.Items.BY[w.item].name : WARE_NAME[w.kind]), wx, wy + 16, '#ffffff');

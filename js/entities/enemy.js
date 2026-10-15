@@ -234,7 +234,7 @@
       if (this.elite) {
         // Élite: dos orbes grandes de experiencia y a veces un objeto; el "split" se parte en 3.
         for (let i = 0; i < 2; i++) G.Pickups.drop('xpBig', this.x + G.U.rand(-20, 20), this.y + G.U.rand(-14, 14), Math.ceil(this.xp / 4));
-        if (Math.random() < 0.4) G.Pickups.drop('item', this.x + 18, this.y - 8, G.Items.roll());
+        if (Math.random() < Math.min(0.9, 0.4 * (1 + 0.2 * G.Floors.floor))) G.Pickups.drop('item', this.x + 18, this.y - 8, G.Items.roll());
         if (this.elite === 'split') {
           const base = this.maxHp / 4, def = this.def, x0 = this.x, y0 = this.y;
           const sc = { hp: base * 0.75 / Math.max(1, def.hp), dmg: this.dmg / 1.3 / Math.max(0.01, def.dmg), spd: 1 };

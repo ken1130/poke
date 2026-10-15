@@ -106,6 +106,7 @@ G.RunUI = (() => {
       <div><span>Nivel</span><b>${r.level}</b></div>
       <div><span>Derrotados</span><b>${r.kills}</b></div>
       <div><span>Jefes</span><b>${r.bosses}</b></div>
+      ${r.floor ? `<div><span>Piso más hondo</span><b>B${r.floor + 1}F</b></div>` : ''}
       <div style="grid-column:1/-1"><span>Pokémonedas ganadas</span>
         <b class="gold"><span class="coin"></span> +${r.coins}</b>
         <div style="font-size:12px;color:var(--muted)">${r.breakdown}</div></div>

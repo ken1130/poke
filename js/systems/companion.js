@@ -50,12 +50,56 @@ G.Companion = (() => {
   /** 0..1 (o null si no llevas huevo). */
   function eggProgress(pl) { return pl && pl.egg ? G.U.clamp(((pl.kills || 0) - pl.egg.from) / KILLS, 0, 1) : null; }
 
+  /*
+   * Qué puede salir del huevo (2026-10-16): cualquier Pokémon en su primera forma (que no
+   * venga de otro), con sprite, que no sea legendario ni singular (rareza 5). Los comunes
+   * salen más a menudo: rareza 1 ×8, 2 ×5, 3 ×3, 4 ×1.
+   */
+  let pool = null;
+  function hatchPool() {
+    if (pool) return pool;
+    const from = new Set();
+    for (const k in G.EVOS) for (const d of G.EVOS[k]) from.add(d);
+    const W = { 1: 8, 2: 5, 3: 3, 4: 1 };
+    pool = G.DEX.filter(p => !from.has(p.dex) && G.SPRITE_META[p.dex] && W[p.rarity]).map(p => [p.dex, W[p.rarity]]);
+    if (!pool.length) pool = BABIES.map(d => [d, 1]);
+    return pool;
+  }
+  function rollHatch() {
+    const list = hatchPool();
+    let r = Math.random() * list.reduce((a, [, w]) => a + w, 0);
+    for (const [d, w] of list) if ((r -= w) <= 0) return d;
+    return list[0][0];
+  }
+
+  // El compañero sube de nivel con lo que derrotas (1 nivel cada 25) y evoluciona a los Nv. 10 y 20.
+  const PER_LEVEL = 25, EVO_LV = [10, 20], MAX_LV = 50;
+  const buddyLevel = pl => Math.min(MAX_LV, 1 + Math.floor(((pl.kills || 0) - (pl.buddy.k0 || 0)) / PER_LEVEL));
+  function grow(pl) {
+    const b = pl.buddy, lv = buddyLevel(pl);
+    if (lv <= (b.lvl || 1)) return;
+    b.lvl = lv;
+    // Evoluciona al pasar cada umbral (aunque suba varios niveles de golpe).
+    const want = EVO_LV.filter(x => lv >= x).length;
+    if ((b.stage || 0) < want && !b.final) {
+      const opts = (G.EVOS[b.dex] || []).filter(d => G.DEX_BY[d] && G.SPRITE_META[d]);
+      if (!opts.length) { b.final = true; return; }
+      const old = G.T(G.DEX_BY[b.dex].name);
+      b.dex = G.U.pick(opts); b.stage = (b.stage || 0) + 1;
+      G.Sprites.preload([b.dex], 8000, b.shiny);
+      G.Spawner.say(G.I18n.f('¡{x} ha evolucionado en {x}!', old, G.T(G.DEX_BY[b.dex].name)), 3.5, true);
+      G.FX.burst(pl.x, pl.y - 20, '#ffe14d', 40, 260);
+      G.Audio.sfx('legend');
+      return;
+    }
+    G.FX.dmgText(pl.x, pl.y - pl.bodyH - 18, G.I18n.f('Compañero Nv. {x}', lv), '#9fe0b0');
+  }
+
   function hatch(pl) {
-    const pool = BABIES.filter(d => G.SPRITE_META[d] && G.DEX_BY[d]);
-    const dex = G.U.pick(pool.length ? pool : [175]);
+    const dex = rollHatch();
     const shiny = G.Sprites.hasShiny(dex) && Math.random() < 1 / 20;
     pl.egg = null;
-    pl.buddy = { dex, shiny };
+    pl.buddy = { dex, shiny, lvl: 1, stage: 0, k0: pl.kills || 0 };
     if (pl === G.Game.player) G.Progress.event('hatch', { shiny });
     G.Sprites.preload([dex], 8000, shiny);
     const name = G.T(G.DEX_BY[dex].name);
@@ -68,6 +112,7 @@ G.Companion = (() => {
   /** Cada fotograma (todos los ordenadores): tu huevo, y mover/animar los compañeros. */
   function update(dt, pl) {
     if (pl && !pl.dead && pl.egg && eggProgress(pl) >= 1) hatch(pl);
+    if (pl && pl.buddy) grow(pl);
     const players = G.Game.everyone();
     for (const p of players) {
       const info = p === pl ? p.buddy : (p.net && p.net.bd ? { dex: p.net.bd, shiny: !!p.net.bs } : null);
@@ -104,7 +149,9 @@ G.Companion = (() => {
     c.anim.play('Attack', { speed: 1.6 });
     G.Projectiles.spawn({
       x: c.x + Math.cos(a) * 6, y: c.y + Math.sin(a) * 6, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-      dmg: 12 * pl.atk * (1 + 0.06 * Math.max(0, pl.level - 1)), r: 6, life: RANGE / sp + 0.15,
+      // Crece con tu nivel (+6 %), con el suyo (+8 %) y con cada evolución (+25 %).
+      dmg: 12 * pl.atk * (1 + 0.06 * Math.max(0, pl.level - 1)) * (1 + 0.08 * ((pl.buddy.lvl || 1) - 1)) * (1 + 0.25 * (pl.buddy.stage || 0)),
+      r: 6 + 2 * (pl.buddy.stage || 0), life: RANGE / sp + 0.15,
       pierce: 0, color: G.U.TYPE_COLOR[type], hits: new Set(), vis: G.VFX.forType(type), ghost: false,
       owner: pl, mtype: type
     });
@@ -114,9 +161,19 @@ G.Companion = (() => {
   function drawables() {
     const out = [];
     for (const c of live.values()) {
+      const own = c === live.get(G.Game.player) && G.Game.player.buddy;
       out.push({ y: c.y, draw(ctx) {
         G.Sprites.drawShadow(ctx, c.dex, c.x, c.y, 0.8);
         c.anim.draw(ctx, c.x, c.y, {});
+        if (own) {
+          // Su nivel encima (sólo el tuyo).
+          ctx.save();
+          ctx.font = '800 9px Pixelify,"Segoe UI",system-ui,sans-serif'; ctx.textAlign = 'center';
+          ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
+          const t = 'Lv.' + (own.lvl || 1);
+          ctx.strokeText(t, c.x, c.y - 34); ctx.fillStyle = '#9fe0b0'; ctx.fillText(t, c.x, c.y - 34);
+          ctx.restore();
+        }
       } });
     }
     return out;

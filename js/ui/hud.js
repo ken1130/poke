@@ -297,7 +297,7 @@ G.HUD = (() => {
       ctx.restore();
     }
     // Tu disco de movimientos: si no se ve, flecha celeste en el borde con los metros.
-    const box = G.Pickups.all().find(p => p.kind === 'sbox' && G.Loot.visible(p));
+    const box = G.Pickups.all().find(p => (p.kind === 'sbox' || p.kind === 'fbox') && G.Loot.visible(p));
     if (box) {
       const bsx = (box.x - cam.left()) * cam.scale, bsy = (box.y - 20 - cam.top()) * cam.scale;
       if (bsx < 0 || bsx > w || bsy < 0 || bsy > h) {
@@ -766,8 +766,8 @@ G.HUD = (() => {
     const blink = Math.sin(now * 6) > 0;
     for (const p of mmProps) icon(MM_ICON[p.type] ? p.type : 'chest', p.x, p.y, false);
     for (const p of G.Pickups.all()) {
-      if ((p.kind === 'sbox' || p.kind === 'potion' || p.kind === 'egg') && !G.Loot.visible(p)) continue;
-      if (p.kind === 'sbox') icon('sbox', p.x, p.y, true, blink);
+      if ((p.kind === 'sbox' || p.kind === 'fbox' || p.kind === 'potion' || p.kind === 'egg') && !G.Loot.visible(p)) continue;
+      if (p.kind === 'sbox' || p.kind === 'fbox') icon('sbox', p.x, p.y, true, blink);
       else if (p.kind === 'egg') icon('egg', p.x, p.y, true);
       else if (p.kind === 'potion') icon('potion', p.x, p.y, true);
       else if (p.kind === 'item' || p.kind === 'token' || p.kind === 'ticket10') icon('item', p.x, p.y, false);
@@ -806,7 +806,7 @@ G.HUD = (() => {
     };
     const add = (o, name, col, ic) => { if (o) rows.push({ o, name, col, ic, d: G.U.dist(o.x, o.y, pl.x, pl.y) }); };
     const pk = G.Pickups.all();
-    add(near(pk, p => p.kind === 'sbox' && G.Loot.visible(p)), 'DISCO DE MOVIMIENTOS', '#7fe0ff', 'sbox');
+    add(near(pk, p => (p.kind === 'sbox' || p.kind === 'fbox') && G.Loot.visible(p)), 'DISCO DE MOVIMIENTOS', '#7fe0ff', 'sbox');
     add(near(pk, p => p.kind === 'potion' && G.Loot.visible(p)), 'Poción', '#ff7ad9', 'potion');
     add(near(pk, p => p.kind === 'egg' && G.Loot.visible(p)), 'Huevo', '#fff3c8', 'egg');
     add(near(pk, p => p.kind === 'item'), 'Objeto', '#ffd23f', 'item');

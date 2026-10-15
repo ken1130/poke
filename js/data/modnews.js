@@ -5,6 +5,10 @@
 G.MODNEWS = [
   { d: '2026-10-16', title: { zh: '迷宮新事件：怪物屋、卡克隆商店、神秘雕像', en: 'New dungeon events: Monster House, Kecleon Shop, Mystery Statue' },
     new: [
+      { zh: '下樓梯有獎勵：到新樓層回復 30% 血量，並送一片不佔額度的技能光碟；越深扭蛋券越常掉、精英怪越常掉道具；結算畫面顯示最深樓層', en: 'Stairs are now worth it: each new floor heals 30% and gives a bonus move disc (doesn’t count toward the 3); deeper floors drop more tickets and elites drop more items; the results screen shows your deepest floor' },
+      { zh: '寶可夢蛋可孵出約 500 種寶可夢的初始型態（不含傳說與幻之寶可夢，越常見越容易出）；夥伴會自己升級（每打倒 25 隻 +1 級），Lv.10、Lv.20 進化並變強', en: 'Eggs can hatch about 500 first-stage Pokémon (no legendaries or mythicals; common ones more often); partners level up (1 level per 25 defeated) and evolve at Lv.10 and Lv.20' },
+      { zh: '卡克隆商店擴充到 12 種商品、每間隨機擺 4 個：新增技能光碟、招式學習器、能力藥、體力藥、復活種子、扭蛋券、寶可夢蛋', en: 'Kecleon Shop now has 12 kinds of wares, 4 random per shop: new move disc, TM, Protein, HP Up, Revive Seed, gacha ticket and Pokémon Egg' },
+      { zh: '技能光碟開啟視窗改用像素美術的光碟', en: 'The move disc window now uses the pixel-art disc' },
       { zh: '第一次遇到光碟、藥水、蛋、怪物屋、商店、雕像、樓梯、精英怪、合體技時，會跳出簡短說明', en: 'Short tips the first time you meet move discs, potions, eggs, Monster Houses, shops, statues, stairs, elites and combo attacks' },
       { zh: '新成就分類「迷宮」：大獎光碟、怪物屋、打倒暴怒卡克隆、抵達 B3F／B5F／B10F、孵蛋、異色夥伴、精英怪、合體技（含新稱號）', en: 'New “Dungeon” achievements: jackpot discs, Monster Houses, beating furious Kecleon, reaching B3F/B5F/B10F, hatching, shiny partners, elites and combos (with new titles)' },
       { zh: '遊戲改名為「寶可夢迷宮倖存者」', en: 'The game is now called “Pokémon Dungeon Survivors”' },

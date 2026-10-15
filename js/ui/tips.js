@@ -67,7 +67,7 @@ G.Tips = (() => {
     if (pl && pl.level >= 4 && G.Settings.get('evolve') !== false && G.Evo.levelFor(pl.dex) != null) once('evolve');
     // Lo nuevo del mapa: la primera vez que aparece cerca (o es tuyo).
     for (const p of G.Pickups.all()) {
-      if ((p.kind === 'sbox' || p.kind === 'potion' || p.kind === 'egg') && G.Loot.visible(p)) once(p.kind === 'sbox' ? 'disc' : p.kind);
+      if ((p.kind === 'sbox' || p.kind === 'fbox' || p.kind === 'potion' || p.kind === 'egg') && G.Loot.visible(p)) once(p.kind === 'sbox' || p.kind === 'fbox' ? 'disc' : p.kind);
     }
     for (const s of G.Dungeon.sites) once(s.type);
     if (G.Floors.stairs) once('stairs');

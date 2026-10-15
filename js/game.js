@@ -279,6 +279,7 @@ G.Game = (() => {
     choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox'].some(G.UI.isOpen) || coopCards.length > 0; },
     /** Invitado: has cogido un disco de movimientos / una poción (lo decide el anfitrión). */
     sbox() { if (pl) { pl.sboxes = (pl.sboxes || 0) + 1; offerBox(); } },
+    fbox() { if (pl) offerBox(); },
     potion(id) { if (pl && !pl.dead) G.Loot.drink(pl, id); },
     /** ¿Has pausado tú? (en grupo, también para a todos) */
     paused() { return coopPause; },
@@ -434,7 +435,7 @@ G.Game = (() => {
     else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
 
     G.RunUI.showOver({
-      dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10,
+      dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, floor: G.Floors.floor,
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
@@ -561,6 +562,7 @@ G.Game = (() => {
       return;
     }
     if (p.kind === 'sbox') who.sboxes = (who.sboxes || 0) + 1;
+    if (p.kind === 'fbox') { if (G.Coop.active) G.Coop.collected(p, who); if (mine) { G.Audio.sfx('legend'); offerBox(); } return; }
     if (p.kind === 'potion') p.eff = G.Loot.rollPotion();
     if (G.Coop.active) G.Coop.collected(p, who);
     if (mine || p.kind === 'bomb') G.Audio.sfx(PICK_SFX[p.kind]);
@@ -1071,7 +1073,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash, offerBond, offerItem,
+    init, startRun, everyone, levelXp, flash, offerBond, offerItem, offerBox,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */

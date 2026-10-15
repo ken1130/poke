@@ -79,7 +79,7 @@ G.Floors = (() => {
   function descend(seed, n) {
     const host = authority();
     // Discos y pociones de cada uno: se vuelven a dejar cerca en el piso nuevo.
-    const keep = host ? G.Pickups.all().filter(p => p.kind === 'sbox' || p.kind === 'potion' || p.kind === 'egg').map(p => [p.kind, p.value]) : [];
+    const keep = host ? G.Pickups.all().filter(p => p.kind === 'sbox' || p.kind === 'fbox' || p.kind === 'potion' || p.kind === 'egg').map(p => [p.kind, p.value]) : [];
     floor = n; stairs = null; standT = 0; nextAt = T() + EVERY;
     G.Progress.event('floor', { n: n + 1 });             // B2F = 2
     G.World.reset(seed);
@@ -94,6 +94,16 @@ G.Floors = (() => {
       pl.x = (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 40; pl.y = 0;
       G.Camera.x = pl.x; G.Camera.y = pl.y;
       pl.invuln = Math.max(pl.invuln || 0, 2);
+      // Premio por bajar (2026-10-16): recuperas un 30 % de la vida.
+      if (!pl.dead) { pl.heal(pl.maxHp * 0.3); G.FX.ring(pl.x, pl.y, 6, 80, '#5fe08a', 0.6, 4); }
+    }
+    // ...y cada uno tiene un disco de movimientos de regalo cerca (no cuenta para los 3 por run).
+    if (host) for (const p of G.Game.everyone()) {
+      if (p.dead) continue;
+      for (let k = 0; k < 30; k++) {
+        const a = Math.random() * 6.2832, d = G.U.rand(120, 220), x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
+        if (G.World.isFree(x, y, 16)) { G.Pickups.drop('fbox', x, y, G.Loot.ownerKey(p)); break; }
+      }
     }
     if (host) for (const [kind, owner] of keep) {
       for (let k = 0; k < 30; k++) {

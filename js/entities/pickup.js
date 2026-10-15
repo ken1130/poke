@@ -23,12 +23,13 @@ G.Pickups = (() => {
     ticket10: { color: '#c47bff', glow: '#8a3fd0', r: 8 },
     item:     { color: '#ffd23f', glow: '#c08a10', r: 9 },      // value = id del objeto
     token:    { color: '#ffd23f', glow: '#ffb000', r: 10 },     // baya dorada (aventura)
-    sbox:     { color: '#ffd23f', glow: '#ffb000', r: 12 },     // disco de movimientos (loot.js)
+    sbox:     { color: '#ffd23f', glow: '#ffb000', r: 12 },
+    fbox:     { color: '#ffd23f', glow: '#ffb000', r: 12 },     // disco de regalo al bajar de piso (floors.js)     // disco de movimientos (loot.js)
     potion:   { color: '#ff7ad9', glow: '#b03d9a', r: 9 },      // poción de efecto al azar (loot.js)
     egg:      { color: '#fff3c8', glow: '#ffd23f', r: 10 }      // huevo Pokémon (companion.js)
   };
   // Se quedan quietos donde salen (ni el imán los mueve): hay que ir a por ellos.
-  const STAY = { sbox: true, potion: true, egg: true };
+  const STAY = { sbox: true, fbox: true, potion: true, egg: true };
   /** Probabilidad de que un Pokémon normal suelte un ticket del gacha. */
   const BOSS_T10 = 1 / 3;               // ticket ×10 de un jefe normal
   const LEGEND_T10 = 1 / 2;             // ticket ×10 del legendario de la grieta
@@ -91,7 +92,7 @@ G.Pickups = (() => {
       return;
     }
     push(orb(value >= 20 ? 'xpBig' : 'xp', x, y, value));
-    if (Math.random() < TICKET_RATE) push(orb('ticket', x + G.U.rand(-6, 6), y, 1));
+    if (Math.random() < TICKET_RATE * (1 + 0.25 * (G.Floors ? G.Floors.floor : 0))) push(orb('ticket', x + G.U.rand(-6, 6), y, 1));
 
     // Drops ocasionales.
     const r = Math.random();
@@ -180,7 +181,7 @@ G.Pickups = (() => {
       ctx.beginPath(); ctx.arc(p.x, y, r * 2, 0, 6.2832); ctx.fill();
 
       ctx.globalAlpha = 1;
-      if (p.kind === 'sbox' || p.kind === 'potion') { drawLoot(ctx, p, y); continue; }
+      if (p.kind === 'sbox' || p.kind === 'fbox' || p.kind === 'potion') { drawLoot(ctx, p, y); continue; }
       if (p.kind === 'egg') { drawEgg(ctx, p, y); continue; }
       ctx.fillStyle = k.color;
       if (p.kind === 'xp' || p.kind === 'xpBig') {
@@ -280,7 +281,7 @@ G.Pickups = (() => {
     ctx.beginPath(); ctx.arc(p.x, y, p.kind === 'sbox' ? 24 : 18, 0, 6.2832); ctx.fill();
     ctx.globalAlpha = 1;
     ctx.lineWidth = 2; ctx.strokeStyle = '#2a1a08';
-    if (p.kind === 'sbox') {
+    if (p.kind === 'sbox' || p.kind === 'fbox') {
       // Columna de luz celeste hasta el cielo (se ve desde lejos) y destellos.
       const g = ctx.createLinearGradient(0, y - 170, 0, y);
       g.addColorStop(0, 'rgba(127,224,255,0)'); g.addColorStop(1, 'rgba(127,224,255,' + (0.45 + beat * 0.15).toFixed(2) + ')');
