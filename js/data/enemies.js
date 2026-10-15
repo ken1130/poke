@@ -209,7 +209,9 @@ G.Enemies = (() => {
     // partida los normales eran tan duros que pegarles era rascar).
     // (2026-10-15: +1 cada 110 s, antes 95: se ponían duros demasiado pronto.)
     const hpT = t <= 1200 ? 1 + t / 110 : 1 + 1200 / 110 + (t - 1200) * 0.85 / 110;
-    return { hp: hpT * k, dmg: (1 + t / 420) * Math.pow(k, 0.7), spd: 1 + Math.min(0.35, t / 1400) };
+    // (2026-10-15: daño +1 cada 540 s, antes 420; velocidad hasta +15 % en 6 min, antes +35 %:
+    // a los 6 min los rápidos ya corrían más que un Pokémon lento y no había forma de escapar.)
+    return { hp: hpT * k, dmg: (1 + t / 540) * Math.pow(k, 0.7), spd: 1 + Math.min(0.15, t / 2400) };
   }
 
   /*

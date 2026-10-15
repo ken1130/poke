@@ -34,6 +34,7 @@ G.Spawner = (() => {
   let bossModeT = 0;
 
   function reset() {
+    wasCalm = false;
     bossModeT = BOSS_EVERY - 3;
     acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
     G.Enemies.rollRun();
@@ -42,8 +43,17 @@ G.Spawner = (() => {
 
   /** Enemigos por segundo según el minuto de la run. */
   function rate(t) {
-    return (1.6 + t * 0.028 + Math.pow(t / 60, 1.6) * 0.5) * DENSITY;
+    // (2026-10-15: crece algo más despacio; antes 0,028 y 0,5.)
+    return (1.6 + t * 0.022 + Math.pow(t / 60, 1.6) * 0.38) * DENSITY;
   }
+
+  /**
+   * Momento de calma (2026-10-15): desde el minuto 10, cada 3 min hay 20 s con muchos menos
+   * Pokémon (salen al 25 %, tope a la mitad, sin mareas). Para respirar, recoger y buscar tiendas.
+   */
+  const CALM_FROM = 600, CALM_EVERY = 180, CALM_LEN = 20;
+  const calmAt = t => t >= CALM_FROM && (t - CALM_FROM) % CALM_EVERY >= CALM_EVERY - CALM_LEN && G.Modes.run !== 'stage' && !G.Modes.on('boss');
+  let wasCalm = false;
 
   function ringPoint(pl, angle) {
     const d = G.Camera.outerRadius() + G.U.rand(10, 70);
@@ -96,6 +106,7 @@ G.Spawner = (() => {
     const shiny = rollShiny(def.dex);
     const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
     e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
+    e.spd = Math.min(e.spd, 92);           // ninguno normal corre más que la mayoría de Pokémon (mediana 105)
     e.maxHp = e.hp = Math.round(e.maxHp * G.Dungeon.mod('enemyHp'));     // maldición de la avaricia
     // Comienzo más suave (2026-10-14): sin mejoras se moría enseguida. Los primeros
     // 3 minutos los enemigos pegan menos (desde ×0,5) y aguantan menos (desde ×0,7).
@@ -164,16 +175,20 @@ G.Spawner = (() => {
     const bossFight = G.EnemyMgr.bossAlive();
 
     // --- goteo normal ---
-    const cap = grace < 1 ? Math.round(capNow() * (0.15 + 0.85 * grace)) : capNow();
+    const calm = calmAt(t);
+    if (calm && !wasCalm) { say('Momento de calma: menos Pokémon salvajes durante 20 s', 3); G.Audio.sfx('heal'); }
+    else if (!calm && wasCalm) say('¡Vuelven los Pokémon salvajes!', 2.4);
+    wasCalm = calm;
+    const cap = Math.round((grace < 1 ? capNow() * (0.15 + 0.85 * grace) : capNow()) * (calm ? 0.5 : 1));
     if (G.EnemyMgr.count < cap) {
-      acc += rate(t) * G.Modes.countMul() * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * (G.PvP.on ? 0.5 : 1) * grace * dt;
+      acc += rate(t) * G.Modes.countMul() * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * (G.PvP.on ? 0.5 : 1) * grace * (calm ? 0.25 : 1) * dt;
       let n = Math.floor(acc);
       acc -= n;
       while (n-- > 0 && G.EnemyMgr.count < cap) spawnOne(anchor(), t);
     }
 
     // --- marea ---
-    if (!bossFight && grace >= 1) surgeT -= dt;
+    if (!bossFight && grace >= 1 && !calm) surgeT -= dt;
     if (surgeT <= 0) {
       surgeT = G.U.rand(38, 56);
       const base = Math.random() * 6.2832;

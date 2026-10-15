@@ -40,7 +40,18 @@ G.Dungeon = (() => {
   let buyT = 0, buyKey = '';         // tú, encima de un artículo de la tienda
   let room = null, lastExit = -99;   // interior en el que está el grupo (ver beginRoom)
 
+  // Reputación con Kecleon en esta run (2026-10-15: si no, lo mejor era siempre robar y matarle).
+  //   buys    compras pagadas · desde 3, "cliente fiel": tiendas siguientes −20 % y un artículo especial
+  //   robbed  le habéis vencido · las tiendas siguientes +50 % y el siguiente Kecleon es más duro
+  //   stole   alguien robó · sin robos y con alguna compra, al acabar: regalo de Kecleon
+  // La lleva el anfitrión y la manda con ['dg', 'rep', buys, robbed, stole].
+  let kRep = { buys: 0, robbed: false, stole: false };
+  const LOYAL = 3;
+  const loyal = () => kRep.buys >= LOYAL && !kRep.robbed;
+  function sendRep() { send(['dg', 'rep', kRep.buys, kRep.robbed ? 1 : 0, kRep.stole ? 1 : 0]); }
+
   function reset() {
+    kRep = { buys: 0, robbed: false, stole: false };
     sites = []; nextId = 1; blessing = null; buyT = 0; buyKey = ''; room = null; lastExit = -99; shopSkip = null;
     houseT = 150; shopT = 270; statueT = 200;
     G.Funny.reset(); timed = false;
@@ -71,6 +82,7 @@ G.Dungeon = (() => {
     else if (k === 'enter') beginRoom(ev[2]);
     else if (k === 'exit') endRoom();
     else if (k === 'rlock') { if (room) room.locked = !!ev[2]; }
+    else if (k === 'rep') kRep = { buys: ev[2] | 0, robbed: !!ev[3], stole: !!ev[4] };
     else if (k === 'poor') G.Spawner.say(G.I18n.f('¡No tienes bastantes monedas! (cuesta {x})', ev[2]), 2, true);
   }
   /** Anfitrión: un invitado pide comprar (o se lleva sin pagar) el artículo `idx`. */
@@ -192,7 +204,7 @@ G.Dungeon = (() => {
   const WARE_DESC = { potion: 'Una poción al azar.', upgrade: 'Una mejora de las cartas de nivel (sobre todo movimientos).', heal: 'Recuperas el 60 % de la vida.',
                       rerolls: '+3 cambios de cartas de nivel.', disc: 'Un disco de movimientos: de 1 a 4 mejoras.', tm: 'Aprendes un movimiento nuevo (o una mejora si no caben más).',
                       protein: '+10 % de daño el resto de la run.', hpup: '+30 de vida máxima.', revive: 'Si caes, vuelves con la mitad de la vida (una vez).',
-                      ticket: 'Un ticket del gacha (para el grupo).', egg: 'Un huevo Pokémon (si aún no tienes compañero).' };
+                      ticket: 'Un ticket del gacha (para el grupo).', ticket10: 'Un ticket ×10 del gacha (para el grupo).', egg: 'Un huevo Pokémon (si aún no tienes compañero).' };
   function wareIcon(w) {
     if (WARE_SPRITE[w.kind]) return `<img src="${G.Tiles.propSprite(G.World.biome, WARE_SPRITE[w.kind], 0).toDataURL()}" style="width:36px;height:36px;image-rendering:pixelated">`;
     return G.Icons.html(w.kind === 'item' ? w.item : WARE_ICON[w.kind], 36);
@@ -223,7 +235,8 @@ G.Dungeon = (() => {
     const key = s.state + ':' + coins + ':' + left + ':' + s.wares.map(w => w.sold ? 1 : 0).join('');
     if (key === shopKey) return;
     shopKey = key;
-    document.getElementById('shop-sub').textContent = free ? G.T('¡Has vencido a Kecleon! Todo es GRATIS') : G.I18n.f('Monedas de esta run: {x}', coins);
+    document.getElementById('shop-sub').textContent = free ? G.T('¡Has vencido a Kecleon! Todo es GRATIS') : G.I18n.f('Monedas de esta run: {x}', coins)
+      + (kRep.robbed ? ' · ' + G.T('Kecleon te guarda rencor: +50 %') : loyal() ? ' · ' + G.T('Cliente fiel: −20 %') : kRep.buys ? ' · ' + G.I18n.f('Compras: {x}/{x} para ser cliente fiel', kRep.buys, LOYAL) : '');
     const box = document.getElementById('shop-list');
     box.innerHTML = '';
     s.wares.forEach((w, i) => {
@@ -232,7 +245,7 @@ G.Dungeon = (() => {
       const name = w.kind === 'item' && G.Items.BY[w.item] ? G.Items.BY[w.item].name : WARE_NAME[w.kind];
       const desc = w.kind === 'item' && G.Items.BY[w.item] ? G.Items.BY[w.item].desc : WARE_DESC[w.kind];
       const can = free || coins >= w.price;
-      row.innerHTML = `<div class="ico">${wareIcon(w)}</div><div class="txt"><b>${G.T(name)}</b><small>${G.T(desc || '')}</small></div>` +
+      row.innerHTML = `<div class="ico">${wareIcon(w)}</div><div class="txt"><b>${w.feat ? `<span class="tag-chip" style="background:#e0a92e;color:#3a2410;margin-right:4px">★ ${G.T('Especial')}</span>` : ''}${G.T(name)}</b><small>${G.T(desc || '')}</small></div>` +
         (w.sold ? `<span class="sold">${G.T('Vendido')}</span>` :
           `<div class="act"><span class="price ${can ? '' : 'poor'}">${free ? G.T('Gratis') : G.Icons.html('coin', 14) + ' ' + w.price}</span>` +
           `<div class="row" style="gap:4px"><button class="btn small gold" data-buy="${i}" ${can ? '' : 'disabled'}>${G.T('Comprar')}</button>` +
@@ -374,7 +387,10 @@ G.Dungeon = (() => {
     shopSkip = null;
     G.Game.flash(cfg.kind === 'shop' ? '#9fe0b0' : '#c9a6ff', 0.6);
     G.Audio.sfx('select');
-    G.Spawner.say(G.T(cfg.kind === 'shop' ? '¡Bienvenido! ¡Tienda de Kecleon!' : 'Has entrado en la sala misteriosa…'), 2.6, true);
+    G.Spawner.say(G.T(cfg.kind !== 'shop' ? 'Has entrado en la sala misteriosa…'
+      : kRep.robbed ? '¡OTRA VEZ TÚ! Kecleon no olvida: todo un 50 % más caro'
+      : loyal() ? '¡Bienvenido de nuevo, cliente fiel! −20 % y un artículo especial'
+      : '¡Bienvenido! ¡Tienda de Kecleon!'), 3, true);
   }
 
   /** Anfitrión: lo que pasa en la sala misteriosa al entrar. */
@@ -508,7 +524,12 @@ G.Dungeon = (() => {
     // El huevo sólo si a alguien del grupo le falta compañero.
     const needEgg = G.Game.everyone().some(p => !p.buddy && !p.egg && !(p.net && p.net.bd));
     const kinds = Object.keys(WARES).filter(w => w !== 'egg' || needEgg);
-    return G.U.pickN(kinds, 4).map(kind => ({ kind, price: Math.round(WARES[kind] * k), item: kind === 'item' ? G.Items.roll() : null }));
+    const mul = (kRep.robbed ? 1.5 : 1) * (loyal() ? 0.8 : 1);
+    const out = G.U.pickN(kinds, 4).map(kind => ({ kind, price: Math.round(WARES[kind] * k * mul), item: kind === 'item' ? G.Items.roll() : null }));
+    // Cliente fiel: un artículo especial más (un objeto o un ticket ×10), a buen precio.
+    if (loyal()) out.push(Math.random() < 0.7 ? { kind: 'item', price: Math.round(WARES.item * k * 0.9), item: G.Items.roll(), feat: true }
+                                              : { kind: 'ticket10', price: Math.round(150 * k * 0.8), item: null, feat: true });
+    return out;
   }
 
   function shopTick(s, live) {
@@ -523,6 +544,7 @@ G.Dungeon = (() => {
         s.until = t + 40;
         setState(s, 'free');
         award('kecleon');
+        kRep.robbed = true; sendRep();
         say('¡Has vencido a Kecleon! Lo que queda en la tienda es GRATIS', 3.5);
       }
     } else if (s.state === 'free' && t >= s.until) remove(s);
@@ -538,11 +560,15 @@ G.Dungeon = (() => {
     if (!free && !steal) {
       if ((host.coins || 0) < w.price) { if (from) G.Coop.sendTo(from, ['dg', 'poor', w.price]); return; }
       host.coins -= w.price;
+      kRep.buys++;
+      if (kRep.buys === LOYAL && !kRep.robbed) say('¡Ya eres cliente fiel de Kecleon! Las próximas tiendas: −20 % y un artículo especial', 3.5);
+      sendRep();
     }
+    if (steal && !free) { kRep.stole = true; sendRep(); }
     w.sold = true;
     send(pack(s));
     const buyer = from ? G.Game.everyone().find(p => p.uid === from) : host;
-    if (w.kind === 'ticket') G.Pickups.drop('ticket', buyer ? buyer.x : s.x, buyer ? buyer.y - 10 : s.y, 1);   // el ticket es del grupo
+    if (w.kind === 'ticket' || w.kind === 'ticket10') G.Pickups.drop(w.kind, buyer ? buyer.x : s.x, buyer ? buyer.y - 10 : s.y, 1);   // el ticket es del grupo
     else if (from) G.Coop.sendTo(from, ['dg', 'got', w]);
     else applyWare(host, w);
     G.Audio.sfx(steal ? 'hurt' : 'coin');
@@ -566,6 +592,8 @@ G.Dungeon = (() => {
       const floor = Math.round(G.Enemies.bossFloor(t) * 1.8 * G.Coop.scaleHp(G.Game.everyone().length));
       if (e.maxHp < floor) e.maxHp = floor;
       e.hp = e.maxHp; e.dmg *= 1.5; e.spd *= 1.25;
+      // Ya le habíais vencido antes en esta run: viene con ganas de revancha.
+      if (kRep.robbed) { e.maxHp = e.hp = Math.round(e.maxHp * 1.4); e.dmg *= 1.2; }
     }
     // Dentro de la tienda: sale de detrás del mostrador (y la puerta se cierra hasta vencerlo).
     if (e) { e.x = room ? room.cx : s.x; e.y = room ? counterY() + room.ts : s.y; e.name = 'Kecleon'; s.bossId = e.id; }
@@ -703,9 +731,9 @@ G.Dungeon = (() => {
     ctx.restore();
   }
   // Iconos: los de G.Icons; el disco, la poción y el huevo, con su pixel art del mapa (tiles.js).
-  const WARE_ICON = { upgrade: 'up', heal: 'berry', rerolls: 'cards', tm: 'book', protein: 'fist', hpup: 'heart', revive: 'sprout', ticket: 'ticket' };
+  const WARE_ICON = { upgrade: 'up', heal: 'berry', rerolls: 'cards', tm: 'book', protein: 'fist', hpup: 'heart', revive: 'sprout', ticket: 'ticket', ticket10: 'ticket10' };
   const WARE_SPRITE = { potion: 'potion', disc: 'disc', egg: 'egg' };
-  const WARE_NAME = { potion: 'Poción', upgrade: 'Mejora', item: 'Objeto', heal: 'Curación', rerolls: '+3 cambios', disc: 'Disco', tm: 'MT',
+  const WARE_NAME = { ticket10: 'Ticket ×10', potion: 'Poción', upgrade: 'Mejora', item: 'Objeto', heal: 'Curación', rerolls: '+3 cambios', disc: 'Disco', tm: 'MT',
                       protein: 'Proteína', hpup: 'Más PS', revive: 'Semilla Revivir', ticket: 'Ticket', egg: 'Huevo' };
   function drawAir(ctx) {
     G.Funny.drawAir(ctx);
@@ -789,6 +817,8 @@ G.Dungeon = (() => {
            get sites() { return room ? [] : sites; }, BLESS,
            /** ¿Está el grupo dentro de un interior? (spawner, loot, etc. no sacan nada) */
            get inRoom() { return !!room; },
+           /** game.js, al acabar: ¿regalo de Kecleon? (alguna compra y ningún robo en toda la run) */
+           get honest() { return kRep.buys > 0 && !kRep.stole; }, get rep() { return kRep; },
            get room() { return room; },    // pruebas
            get roomName() { return room ? ROOM_NAME[room.kind === 'shop' ? 'shop' : room.ev] || 'Sala misteriosa' : null; },
            get roomDoor() { if (!room) return null; const [x, y] = doorP(); return { x, y }; } };

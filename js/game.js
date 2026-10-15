@@ -407,7 +407,9 @@ G.Game = (() => {
       jefes: pl.bosses * 80,
       recogidas: pl.coins
     };
-    const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas) * mul);
+    // Regalo de Kecleon: alguna compra y ningún robo en toda la run (dungeon.js).
+    if (G.Dungeon.honest) { parts.Kecleon = 40; pl.t1 = (pl.t1 || 0) + 1; }
+    const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas + (parts.Kecleon || 0)) * mul);
     const record = time > save.stats.bestTime;
 
     save.coins += coins;

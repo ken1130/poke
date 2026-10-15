@@ -5,6 +5,10 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '寧靜時刻：10 分鐘後每 3 分鐘有 20 秒野生寶可夢大幅減少（生成 25%、上限減半、沒有怪物潮），可以喘口氣', en: 'Moments of calm: after 10 minutes, every 3 minutes there are 20 s with far fewer wild Pokémon (25 % spawns, half the cap, no surges)' },
+      { zh: '卡克隆熟客：一場買滿 3 次，之後的商店打 8 折，還多一樣特選商品（道具或十連扭蛋券）', en: 'Kecleon loyalty: buy 3 times in a run and later shops are 20 % off with an extra special item (held item or ×10 ticket)' },
+      { zh: '卡克隆記仇：打倒過老闆的話，這場之後的商店全部貴 50%，下一個老闆也更強', en: 'Kecleon holds grudges: beat him once and later shops cost 50 % more, with a tougher shopkeeper' },
+      { zh: '卡克隆的謝禮：整場有買東西又沒偷過，結算時多 40 金幣和 1 張扭蛋券', en: 'Kecleon’s thanks: buy something and never steal in a run to get +40 coins and 1 gacha ticket at the end' },
       { zh: '商店、神秘房間和樓梯不在畫面內時，畫面邊緣會出現箭頭，標示方向和距離（跟技能光碟一樣）', en: 'When a shop, mystery room or stairs is off-screen, an arrow on the screen edge shows its direction and distance (like move discs)' },
       { zh: 'PK 指向技：PK 時招式朝你瞄準的方向發射（電腦用滑鼠，手機用右手拇指在右半邊拖曳），畫面上有準心和瞄準線', en: 'PvP aiming: in PvP your moves fire where you aim (mouse on PC, right thumb on the right half on phones), with a crosshair and aim line' },
       { zh: 'PK 打擊感：打中有命中標記、傷害數字、音效、短暫停頓和擊退；擊倒對手有慢動作、「擊倒！」和擊倒訊息', en: 'PvP hit feedback: hit marker, damage numbers, sound, a brief hit-stop and knockback; knockouts get slow motion, “K.O.!” and a kill feed' },
@@ -62,6 +66,7 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '迷宮難度再下修：怪物移動速度成長從最多 +35% 降為 +15%，普通怪速度上限 92（比大多數寶可夢慢）；怪物數量和傷害成長也放慢', en: 'Dungeon difficulty lowered again: enemy speed growth capped at +15 % (was +35 %) and normal enemies max out at 92 speed (slower than most Pokémon); spawn count and damage grow more slowly' },
       { zh: '小地圖下方的距離列表字放大、比較好讀', en: 'The distance list under the minimap uses bigger, easier-to-read text' },
       { zh: '無敵星星更醒目：全身彩虹光暈、閃爍和星光粒子', en: 'The Star potion is much more visible: a rainbow glow, flashing and sparkles' },
       { zh: '招式欄從 4 格增加為 5 格（按鍵 1～5），輔助和被動招式不會再把攻擊招式擠掉', en: 'Move bar grows from 4 to 5 slots (keys 1-5), so support and passive moves don’t crowd out your attacks' },
