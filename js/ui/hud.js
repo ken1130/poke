@@ -870,6 +870,17 @@ G.HUD = (() => {
         ctx.fillStyle = Math.sin(t * 8) > 0 ? '#ff8a96' : '#ffd0d5';
         ctx.fillText('CAÍDO', lx + 116, y + 9);
       }
+      // Conexión (2026-10-16): punto de color y "Directo 45 ms" / "Relé 300 ms".
+      const ni = G.Coop.netInfo(m.uid);
+      if (ni) {
+        const nx = lx + 116 + (o.dead ? 44 : 0);
+        const nc = ni.ms < 100 ? '#5fe08a' : ni.ms < 200 ? '#ffd23f' : '#ff5f6d';
+        ctx.fillStyle = nc;
+        ctx.beginPath(); ctx.arc(nx + 3, y + 5, 3, 0, 6.2832); ctx.fill();
+        ctx.font = F(700, 9);
+        ctx.fillStyle = 'rgba(220,230,255,.8)';
+        ctx.fillText(G.I18n.f(ni.direct ? 'Directo {x} ms' : 'Relé {x} ms', ni.ms), nx + 9, y + 9);
+      }
       y += 15;
     }
 
