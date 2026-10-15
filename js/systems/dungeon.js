@@ -22,13 +22,13 @@ G.Dungeon = (() => {
 
   let sites = [];                    // { id, type, x, y, state, ... }
   let nextId = 1;
-  let houseT = 0, shopT = 0, statueT = 0;
+  let houseT = 0, shopT = 0, statueT = 0, timed = false;
   let blessing = null;               // { id, until } (todo el grupo)
   let buyT = 0, buyKey = '';         // tú, encima de un artículo de la tienda
 
   function reset() {
     sites = []; nextId = 1; blessing = null; buyT = 0; buyKey = '';
-    houseT = 150; shopT = 270; statueT = 200;
+    houseT = 150; shopT = 270; statueT = 200; timed = false;
   }
   const allowed = () => !G.PvP.on && !G.Rift.inArena && G.Modes.run !== 'legend';
   const byId = id => sites.find(s => s.id === id);
@@ -95,6 +95,12 @@ G.Dungeon = (() => {
     const live = players.filter(p => !p.dead);
     if (!live.length) return;
     const t = T();
+    // Fase de la Aventura (más corta): la primera de cada cosa, repartida en lo que dura.
+    if (!timed) {
+      timed = true;
+      const len = G.Stages.runLength && G.Stages.runLength();
+      if (len) { houseT = Math.round(len * 0.3); statueT = Math.round(len * 0.45); shopT = Math.round(len * 0.6); }
+    }
     if (blessing && t >= blessing.until) endBlessing();
     if (allowed()) {
       if (t >= houseT && !sites.some(s => s.type === 'mhouse' && s.state === 'idle')) {
@@ -365,10 +371,14 @@ G.Dungeon = (() => {
       ctx.save();
       if (s.type === 'mhouse') {
         if (s.state === 'active') {
-          // Borde de la casa: aro rojo que late.
-          ctx.globalAlpha = 0.5 + Math.sin(now * 6) * 0.2;
-          ctx.strokeStyle = '#ff4d5e'; ctx.lineWidth = 4; ctx.setLineDash([12, 8]);
-          ctx.beginPath(); ctx.ellipse(s.x, s.y, HOUSE_R, HOUSE_R * 0.8, 0, 0, 6.2832); ctx.stroke();
+          // Borde de la casa: un anillo de piedras de aviso (pixel art) cuyas runas rojas
+          // se encienden una tras otra, girando.
+          const N = 36, lit = Math.floor(now * 12) % N;
+          for (let i = 0; i < N; i++) {
+            const a = (i / N) * 6.2832;
+            const on = (i - lit + N) % N < 6 || (i - lit + N) % N > N - 2;
+            G.Pickups.sprite(ctx, 'hmark', on ? 1 : 0, s.x + Math.cos(a) * HOUSE_R, s.y + Math.sin(a) * HOUSE_R * 0.8, 2);
+          }
         } else {
           // Trampilla de piedra con un "?" tallado (pixel art, tiles.js) y un halo morado.
           ctx.globalAlpha = 0.25 + Math.sin(now * 3) * 0.12; ctx.fillStyle = '#c47bff';

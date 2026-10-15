@@ -283,10 +283,15 @@ G.Pickups = (() => {
     ctx.lineWidth = 2; ctx.strokeStyle = '#2a1a08';
     if (p.kind === 'sbox' || p.kind === 'fbox') {
       // Columna de luz celeste hasta el cielo (se ve desde lejos) y destellos.
-      const g = ctx.createLinearGradient(0, y - 170, 0, y);
-      g.addColorStop(0, 'rgba(127,224,255,0)'); g.addColorStop(1, 'rgba(127,224,255,' + (0.45 + beat * 0.15).toFixed(2) + ')');
-      ctx.fillStyle = g;
-      ctx.fillRect(p.x - 11 - beat * 2, y - 170, 22 + beat * 4, 170);
+      // En bandas de píxeles (como el resto del juego): cada tramo, más estrecho y transparente.
+      const bx = Math.round(p.x / 2) * 2, by = Math.round(y / 2) * 2, pulse = beat > 0 ? 2 : 0;
+      for (let k = 0; k < 8; k++) {
+        const w = 22 + pulse * 2 - k * 2, h = 22;
+        ctx.fillStyle = 'rgba(127,224,255,' + (0.5 - k * 0.06).toFixed(2) + ')';
+        ctx.fillRect(bx - w / 2, by - (k + 1) * h, w, h);
+        ctx.fillStyle = 'rgba(230,251,255,' + (0.45 - k * 0.055).toFixed(2) + ')';
+        ctx.fillRect(bx - 2, by - (k + 1) * h, 4, h);         // núcleo brillante
+      }
       if (Math.random() < 0.25) G.FX.twinkle(p.x + G.U.rand(-22, 22), y - G.U.rand(0, 60));
       // Cartel encima.
       ctx.font = '800 11px Pixelify,"Segoe UI",system-ui,sans-serif';

@@ -400,6 +400,22 @@ G.Tiles = (() => {
     for (const [x, y] of marks) P.set(x, y, col);
   }
 
+  // Iconos del minimapa (PAINT.mmicon): 0 objeto · 1 jefe · 2 tienda · 3 élite · 4 compañero · 5 compañero caído
+  const MM_ICONS = [
+    { pal: { y: '#ffd23f', o: '#c08a10', w: '#fff6c0' }, rows: [
+      '....k....', '...kwk...', '..kwyyk..', '.kwyyyok.', 'kyyyyyook', '.kyyyook.', '..kyook..', '...kok...', '....k....'] },
+    { pal: { r: '#ff4d5e', d: '#b8283a', w: '#ffffff', b: '#2a0008' }, rows: [
+      '..kkkkk..', '.krrrrrk.', 'krrrrrrrk', 'krwbrwbrk', 'krbbrbbrk', 'krrrbrrdk', '.kdrrrdk.', '.kwkwkwk.', '..k.k.k..'] },
+    { pal: { g: '#2f8a5a', l: '#5fe08a', w: '#fff3c8', y: '#ffd23f', o: '#b5832a', b: '#6b3a1e' }, rows: [
+      '.kkkkkkkkk.', 'kgwgwgwgwgk', 'kgwgwgwgwgk', '.kkkkkkkkk.', '.kbbbbbbbk.', '.kbkyyykbk.', '.kbkyoykbk.', '.kbkyyykbk.', '.kkkkkkkkk.'] },
+    { pal: { y: '#ffd23f', o: '#ff9a3d', w: '#fff6c0' }, rows: [
+      '....k....', '...kwk...', 'kkkkykkkk', 'kwyyyyyok', '.kyyyyok.', '..kyyyk..', '.kyokoyk.', '.kok.kok.', '.kk...kk.'] },
+    { pal: { g: '#5fe08a', d: '#2f9a52', w: '#ffffff' }, rows: [
+      '.wwwww.', 'wkgggkw', 'wggwggw', 'wgggggw', 'wggggdw', 'wkdddkw', '.wwwww.'] },
+    { pal: { g: '#ff5f6d', d: '#b8283a', w: '#ffffff' }, rows: [
+      '.wwwww.', 'wkgggkw', 'wgkgkgw', 'wggkggw', 'wgkgkgw', 'wkdddkw', '.wwwww.'] }
+  ];
+
   const PAINT = {
     /** Huevo Pokémon (companion.js): crema con manchas verdes, brillo arriba a la izquierda. */
     egg() {
@@ -717,6 +733,30 @@ G.Tiles = (() => {
       // Musgo en el marco.
       [[1, 26], [2, 27], [5, 28], [30, 27], [33, 26], [34, 2], [1, 3], [17, 1], [18, 1]].forEach(([x, y]) => P.set(x, y, moss));
       outline(P, pack('#0c0d10'));
+      return P.canvas();
+    },
+
+    /** Piedra de aviso del borde de la casa de monstruos (dungeon.js). variante 1 = runa encendida. */
+    hmark(B, variant) {
+      const P = Pix(9, 9);
+      const R = B.rock.map(h => pack(h));
+      const rune = pack(variant ? '#ff4d5e' : '#6a2a34'), glow = pack(variant ? '#ffd0d6' : '#8a3a44');
+      disc(P, 4, 4.5, 4.2, (x, y, d) => { const lit = (4 - x) * 0.5 + (4.5 - y) * 0.6; return lit > 1.2 ? R[2] : lit < -1.4 ? R[0] : R[1]; });
+      [[4, 2], [3, 3], [5, 3], [4, 4], [4, 5], [4, 6]].forEach(([x, y]) => P.set(x, y, rune));
+      if (variant) P.set(4, 4, glow);
+      outline(P, pack('#14101c'));
+      return P.canvas();
+    },
+
+    /**
+     * Iconitos del minimapa (hud.js), en el mismo estilo que los iconos de objetos:
+     * filas de letras con su paleta, 'k' = contorno. variante = índice de MM_ICONS.
+     */
+    mmicon(B, variant) {
+      const ic = MM_ICONS[variant] || MM_ICONS[0];
+      const P = Pix(ic.rows[0].length, ic.rows.length);
+      const pal = Object.assign({ k: '#14101c' }, ic.pal);
+      ic.rows.forEach((row, y) => [...row].forEach((c, x) => { if (pal[c]) P.set(x, y, pack(pal[c])); }));
       return P.canvas();
     },
 

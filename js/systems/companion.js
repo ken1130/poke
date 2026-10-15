@@ -21,7 +21,10 @@ G.Companion = (() => {
 
   /** Anfitrión o solitario: pone los huevos. */
   function tick(dt, time, players) {
-    if (spawned || time < EGG_AT || G.PvP.on || G.Rift.inArena || G.Modes.run === 'legend') return;
+    // En una fase de la Aventura, al 35 % de lo que dura (si no, al minuto 6).
+    const len = G.Stages.runLength && G.Stages.runLength();
+    const at = len ? Math.max(30, Math.round(len * 0.35)) : EGG_AT;
+    if (spawned || time < at || G.PvP.on || G.Rift.inArena || G.Modes.run === 'legend') return;
     spawned = true;
     let n = 0;
     for (const p of players) if (!p.dead && !p.buddy && spawnEgg(p)) n++;

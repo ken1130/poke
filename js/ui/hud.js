@@ -152,7 +152,7 @@ G.HUD = (() => {
     G.Floors.drawHud(ctx, w, h, pl, F, roundRect);
 
     // ---------- minimapa (arriba a la derecha) ----------
-    if (!G.Modes.rule('dark')) drawMinimap(ctx, w, pl, touch);
+    if (!G.Modes.rule('dark')) drawMinimap(ctx, w, pl, touch, h);
 
     // ---------- barra del jefe ----------
     const boss = G.EnemyMgr.all().find(e => e.boss && !e.dead);
@@ -672,53 +672,26 @@ G.HUD = (() => {
       ctx.imageSmoothingEnabled = prev;
     },
     potion(ctx, x, y) { G.Pickups.sprite(ctx, 'potion', 5, x, y, 0.75); },
-    item(ctx, x, y) {
-      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 4, y); ctx.lineTo(x, y + 5); ctx.lineTo(x - 4, y); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = '#5a3a00'; ctx.lineWidth = 1; ctx.stroke();
-    },
-    bigchest(ctx, x, y) {
-      ctx.fillStyle = '#7a4a1a'; ctx.fillRect(x - 5, y - 4, 10, 8);
-      ctx.fillStyle = '#c0c8d8'; ctx.fillRect(x - 1.5, y - 2, 3, 4);
-      ctx.strokeStyle = '#1a0e04'; ctx.lineWidth = 1; ctx.strokeRect(x - 5, y - 4, 10, 8);
-    },
-    chest(ctx, x, y) { ctx.fillStyle = '#b07030'; ctx.fillRect(x - 2.5, y - 2, 5, 4); },
-    altar(ctx, x, y) {
-      ctx.fillStyle = '#ff8ad8'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 4.5, y + 4); ctx.lineTo(x - 4.5, y + 4); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = '#3a0a2a'; ctx.lineWidth = 1; ctx.stroke();
-    },
-    spring(ctx, x, y) {
-      ctx.fillStyle = '#4fb4ff'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.quadraticCurveTo(x + 5, y + 1, x, y + 4); ctx.quadraticCurveTo(x - 5, y + 1, x, y - 5); ctx.fill();
-      ctx.strokeStyle = '#0a2a4a'; ctx.lineWidth = 1; ctx.stroke();
-    },
+    // (2026-10-16) Todo en pixel art: los objetos del mapa, sus propios sprites (tiles.js) en
+    // pequeño; lo demás, iconitos de PAINT.mmicon.
+    item(ctx, x, y) { G.Pickups.sprite(ctx, 'mmicon', 0, x, y, 1); },
+    bigchest(ctx, x, y) { G.Pickups.sprite(ctx, 'bigchest', 0, x, y, 0.5); },
+    chest(ctx, x, y) { G.Pickups.sprite(ctx, 'chest', 0, x, y, 0.4); },
+    altar(ctx, x, y) { G.Pickups.sprite(ctx, 'altar', 0, x, y, 0.42); },
+    spring(ctx, x, y) { G.Pickups.sprite(ctx, 'spring', 0, x, y, 0.36); },
     rift(ctx, x, y, on) {
-      ctx.strokeStyle = on ? '#e2d0ff' : '#a06bff'; ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.arc(x, y, 5.5, 0, 6.2832); ctx.stroke();
-      ctx.fillStyle = '#2a0a4a'; ctx.beginPath(); ctx.arc(x, y, 3, 0, 6.2832); ctx.fill();
+      if (on) { ctx.fillStyle = 'rgba(180,140,255,.45)'; ctx.fillRect(Math.round(x) - 7, Math.round(y) - 7, 14, 14); }
+      G.Pickups.sprite(ctx, 'rift', Math.floor(performance.now() / 150) % 4, x, y, 0.4);
     },
-    boss(ctx, x, y) {
-      ctx.fillStyle = '#ff4d5e'; ctx.beginPath(); ctx.arc(x, y, 6, 0, 6.2832); ctx.fill();
-      ctx.strokeStyle = '#3a0008'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = '#fff'; ctx.fillRect(x - 3, y - 2, 2, 2); ctx.fillRect(x + 1, y - 2, 2, 2); ctx.fillRect(x - 2, y + 2, 4, 1);
-    },
+    boss(ctx, x, y) { G.Pickups.sprite(ctx, 'mmicon', 1, x, y, 1); },
     mhouse(ctx, x, y, on) {
-      ctx.fillStyle = on ? '#c47bff' : '#7a3fb0'; ctx.beginPath(); ctx.arc(x, y, 6.5, 0, 6.2832); ctx.fill();
-      ctx.strokeStyle = '#1a0a2a'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = '#fff'; ctx.font = F(800, 10); ctx.textAlign = 'center'; ctx.fillText('?', x, y + 3.5);
+      if (on) { ctx.fillStyle = 'rgba(196,123,255,.5)'; ctx.fillRect(Math.round(x) - 8, Math.round(y) - 6, 16, 12); }
+      G.Pickups.sprite(ctx, 'mhouse', 0, x, y, 0.45);
     },
-    shop(ctx, x, y) {
-      ctx.fillStyle = '#2f8a5a'; ctx.fillRect(x - 6, y - 4, 12, 9);
-      ctx.strokeStyle = '#f2c443'; ctx.lineWidth = 1.5; ctx.strokeRect(x - 6, y - 4, 12, 9);
-      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, y + 0.5, 2.5, 0, 6.2832); ctx.fill();
-    },
+    shop(ctx, x, y) { G.Pickups.sprite(ctx, 'mmicon', 2, x, y, 1); },
     statue(ctx, x, y) { G.Pickups.sprite(ctx, 'statue', Math.floor(performance.now() / 600) % 6, x, y, 0.45); },
-    elite(ctx, x, y, on) {
-      ctx.fillStyle = on ? '#ffd23f' : '#ff9a3d'; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 5, y); ctx.lineTo(x, y + 5); ctx.lineTo(x - 5, y); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = '#3a1a00'; ctx.lineWidth = 1; ctx.stroke();
-    },
-    mate(ctx, x, y, dead) {
-      ctx.fillStyle = dead ? '#ff5f6d' : '#5fe08a'; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 6.2832); ctx.fill();
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
-    }
+    elite(ctx, x, y, on) { G.Pickups.sprite(ctx, 'mmicon', 3, x, y + (on ? -1 : 0), 1); },
+    mate(ctx, x, y, dead) { G.Pickups.sprite(ctx, 'mmicon', dead ? 5 : 4, x, y, 1); }
   };
 
   /*
@@ -727,8 +700,10 @@ G.HUD = (() => {
    * borde aunque estén más lejos (para saber hacia dónde ir). El recuadro es lo que ves
    * en pantalla. Debajo, la lista con distancias y direcciones (drawMinimapList).
    */
-  function drawMinimap(ctx, w, pl, touch) {
-    const S = touch ? 124 : 172, x0 = w - S - 14, y0 = touch ? 62 : 48;
+  function drawMinimap(ctx, w, pl, touch, h) {
+    // Móvil en horizontal (poca altura): algo más pequeño y la lista más corta.
+    const short = touch && h < 450;
+    const S = touch ? (short ? 104 : 124) : 172, x0 = w - S - 14, y0 = touch ? 62 : 48;
     const cx = x0 + S / 2, cy = y0 + S / 2, k = (S / 2) / MM_R;
     const now = performance.now() / 1000;
     if (now - mmT > 0.5 || !mmAt) {
@@ -788,7 +763,7 @@ G.HUD = (() => {
     ctx.lineTo(cx + Math.cos(a - 2.5) * 5.5, cy + Math.sin(a - 2.5) * 5.5);
     ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.restore();
-    drawMinimapList(ctx, w, pl, x0 + S, y0 + S + 8);
+    drawMinimapList(ctx, w, pl, x0 + S, y0 + S + 8, short ? 3 : 6);
   }
 
   /**
@@ -797,7 +772,7 @@ G.HUD = (() => {
    * candado, altares, manantiales, la grieta y los jefes).
    */
   const ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
-  function drawMinimapList(ctx, w, pl, right, top) {
+  function drawMinimapList(ctx, w, pl, right, top, max = 6) {
     const rows = [];
     const near = (list, fn) => {
       let best = null, bd = Infinity;
@@ -829,7 +804,7 @@ G.HUD = (() => {
     // Lo más importante primero (caben 6).
     const PRI = ['sbox', 'egg', 'stairs', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'elite', 'item', 'bigchest', 'altar', 'spring'];
     rows.sort((a, b) => PRI.indexOf(a.ic) - PRI.indexOf(b.ic));
-    rows.slice(0, 6).forEach((r, k) => {
+    rows.slice(0, max).forEach((r, k) => {
       const a = Math.atan2(r.o.y - pl.y, r.o.x - pl.x);
       const arrow = ARROWS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
       const txt = G.T(r.name) + ' ' + Math.round(r.d / 32) + 'm ' + arrow;
