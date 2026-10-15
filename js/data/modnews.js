@@ -5,7 +5,7 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '五個新招式、技能光碟與藥水', en: 'Five new moves, move discs and potions' },
     new: [
-      { zh: '技能光碟：第 4 和第 11 分鐘在每個人附近出現，打開隨機得到 1～4 個技能強化（一場可重抽 15 次，每人最多開 2 箱）。組隊時每人有自己的光碟，只有自己看得到、撿得到', en: 'Move discs: one appears near each player at minutes 4 and 11 and gives 1–4 random move upgrades (15 rerolls per run, up to 2 chests each). In groups each player has their own discs: only you can see and pick up yours' },
+      { zh: '技能光碟：第 4、9、15 分鐘在每個人附近出現（一場 3 片），打開隨機得到 1～4 個技能強化（一場可重抽 3 次）。組隊時每人有自己的光碟，只有自己看得到、撿得到', en: 'Move discs: one appears near each player at minutes 4, 9 and 15 (3 per run) and gives 1–4 random move upgrades (3 rerolls per run). In groups each player has their own discs: only you can see and pick up yours' },
       { zh: '藥水：地圖上會隨機出現，效果隨機——變大、變小、狂暴、無敵星星、磁鐵、幸運，也可能是壞藥水（組隊時也是各自的）', en: 'Potions: they appear around the map with a random effect — giant, tiny, fury, star, magnet, lucky… or a bad one (each player gets their own)' },
       { zh: '開技能光碟有特效：光碟旋轉後一張一張翻出來，3 個發金光、4 個是彩虹大獎；地上的光碟有青藍色光柱，畫面外會有箭頭指路', en: 'Opening a move disc is now an event: it spins and the upgrades come out one by one — 3 glow gold, 4 is a rainbow jackpot; discs on the map have a cyan light beam and an arrow points to them when off-screen' },
       { zh: '右上角小地圖：有地形、看得懂的圖示（技能光碟、藥水、上鎖寶箱、祭壇、泉水、裂縫、頭目、隊友），下方列出距離與方向', en: 'Minimap (top right) with terrain and clear icons (move discs, potions, locked chests, altars, springs, rifts, bosses, teammates), plus distance and direction below it' },

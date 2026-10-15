@@ -1,10 +1,10 @@
 /* ============ loot.js — cofres de movimientos y pociones ============
  * (2026-10-15) Dos cosas nuevas que aparecen en el mapa (se ven en el minimapa):
  *
- *   Disco de movimientos  a los 4 y a los 11 minutos aparece uno cerca de cada
+ *   Disco de movimientos  a los 4, 9 y 15 minutos aparece uno cerca de cada
  *       jugador. Da de 1 a 4 mejoras al azar (de las de las cartas de nivel, sobre
- *       todo movimientos). Se puede volver a tirar 15 veces por run y cada uno abre
- *       como mucho 2 por run.
+ *       todo movimientos). Se puede volver a tirar 3 veces por run y cada uno abre
+ *       como mucho 3 por run.
  *   Poción  cada minuto y pico aparece una cerca de alguien. Efecto al azar durante
  *       unos segundos: gigante, diminuto, furia, estrella, imán, suerte... o una mala.
  *
@@ -16,9 +16,9 @@
  */
 G.Loot = (() => {
   const $ = id => document.getElementById(id);
-  const BOX_AT = [240, 660];        // s de run en que aparece cada cofre (uno por jugador)
-  const BOX_MAX = 2;                // cofres que puede abrir cada uno por run
-  const BOX_REROLLS = 15;           // veces que se puede volver a tirar (por run, entre todos los cofres)
+  const BOX_AT = [240, 540, 900];        // s de run en que aparece cada cofre (uno por jugador)
+  const BOX_MAX = 3;                // cofres que puede abrir cada uno por run
+  const BOX_REROLLS = 3;           // veces que se puede volver a tirar (por run, entre todos los cofres)
   const POTION_EVERY = 80;          // s (±20 %) entre pociones
   const POTION_MAX = 2;             // en el suelo a la vez, por jugador
 
