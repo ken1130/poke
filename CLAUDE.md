@@ -13,6 +13,9 @@ Normas fijas del dueño del proyecto. Se aplican SIEMPRE.
 4. 不要自己覆蓋或還原對方的檔案；跟主人的決定衝突時，先問主人。
 5. 合併後測試沒有錯誤才推送。
 
+## 踩坑紀錄（必讀）
+- 改程式前先看 `docs/dev/KNOWN-FAILURES.md`；每踩到新坑（花時間才找到的 bug 原因、環境問題）就照格式補一條：症狀 → 原因 → 修法 → 以後怎麼避免。
+
 ## Publicar una versión
 1. Se edita `dev.html` (nunca `index.html`, que se genera).
 2. `node tools/build.js --sin-seo && node tools/export_data.js`

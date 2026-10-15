@@ -6,12 +6,27 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-15', title: ['Cambio de objetos más claro', 'Clearer item swaps'], chg: [
+  { d: '2026-10-15', title: ['Cambio de objetos más claro', 'Clearer item swaps'], new: [
+    ['«Mi equipo» en la colección: añade tus Pokémon de siempre y encuéntralos al momento con el filtro «★ Mi equipo».',
+     '"My team" in the collection: add your usual Pokémon and find them instantly with the "★ My team" filter.']
+  ], chg: [
     ['Al encontrar un objeto llevando ya dos, cada opción muestra el efecto del objeto que dejas y el del nuevo (antes sólo se veía el del nuevo).',
      'When you find an item while already carrying two, each option now shows the effect of the item you give up and of the new one (before, only the new one was shown).']
   ], fix: [
     ['La frase de arriba de esa ventana ("Llevas dos: elige cuál cambias") salía siempre en español.',
-     'The line at the top of that window ("You carry two: choose which to swap") always showed in Spanish.']
+     'The line at the top of that window ("You carry two: choose which to swap") always showed in Spanish.'],
+    ['Lluvia Corrosiva y Nanolluvia no hacían daño ni frenaban (y el sangrado de Puño Lee tampoco funcionaba).',
+     'Corrosive Rain and Nano Rain dealt no damage and did not slow (and Lee Fist bleeding did not work either).'],
+    ['El campo de Shaq no frenaba a los enemigos: ahora rebotan y se quedan fuera del anillo, que se ve siempre.',
+     'Shaq\'s field did not stop enemies: they now bounce off and stay outside the ring, which is always visible.'],
+    ['Las púas del árbol caído ahora se ven salir del suelo.',
+     'The fallen tree\'s spikes can now be seen sprouting from the ground.'],
+    ['Con Descanso dentro de un vínculo te quedabas dormido para siempre.',
+     'With Rest inside a bond you stayed asleep forever.'],
+    ['En PK, tocar al rival hacía fallar el juego en cada fotograma.',
+     'In PvP, touching your rival made the game error every frame.'],
+    ['El aviso de huevo eclosionado salía a medio traducir.',
+     'The egg-hatched message was half translated.']
   ] },
   { d: '2026-10-13', title: ['Todas las partidas cuentan', 'Every run counts'], chg: [
     ['Ya no hay comprobaciones contra trampas: todas las partidas cuentan para el ranking y los récords, y no se pierde nada de lo ganado.',

@@ -1205,4 +1205,10 @@ G.I18n.add({
   'Alcance de recogida': 'Pickup range',
   'Bonus de experiencia': 'XP bonus',
   'Bonus de monedas': 'Coin bonus',
+  'Mi equipo': 'My team',
+  '☆ Añadir a Mi equipo': '☆ Add to My team',
+  '★ Quitar de Mi equipo': '★ Remove from My team',
+  '{x} está en Mi equipo': '{x} is now in My team',
+  '{x} ya no está en Mi equipo': '{x} is no longer in My team',
+  'Aún no hay nadie en Mi equipo: elige un Pokémon y pulsa «Añadir a Mi equipo».': 'My team is empty: pick a Pokémon and press “Add to My team”.',
 }, 'en');

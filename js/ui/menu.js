@@ -145,7 +145,7 @@ G.MenuUI = (() => {
       tabs.appendChild(b);
     });
 
-    const F = [['all', 'Todos'], ['own', 'Tengo'], ['miss', 'Me faltan'], ['shiny', 'Shiny'],
+    const F = [['all', 'Todos'], ['team', 'Mi equipo'], ['own', 'Tengo'], ['miss', 'Me faltan'], ['shiny', 'Shiny'],
                ['5', 5], ['4', 4], ['3', 3], ['2', 2], ['1', 1]];
     const fb = $('dex-filters');
     fb.innerHTML = '';
@@ -153,6 +153,7 @@ G.MenuUI = (() => {
       const c = document.createElement('button');
       c.className = 'chip' + (k === dexFilter ? ' on' : '');
       c.innerHTML = k === 'shiny' ? G.Icons.html('shiny', 12) + ' Shiny'
+                  : k === 'team' ? '★ ' + G.T(label) + ` (${Object.keys(s.team || {}).filter(d => s.owned[d]).length})`
                   : typeof label === 'number' ? G.Icons.rarity(label, 12) + ' ' + G.Gacha.RARITY_NAME[label] : label;
       c.onclick = () => { dexFilter = k; openDex(); };
       fb.appendChild(c);
@@ -174,7 +175,7 @@ G.MenuUI = (() => {
     const search = $('dex-search');
     search.value = dexQuery;
     search.oninput = () => { dexQuery = search.value; tabs.classList.toggle('dim', !!dexQuery.trim()); renderGrid(); };
-    tabs.classList.toggle('dim', !!dexQuery.trim() || !!dexType);
+    tabs.classList.toggle('dim', !!dexQuery.trim() || !!dexType || dexFilter === 'team');
     renderGrid();
     showDetail(dexSel);
   }
@@ -194,9 +195,12 @@ G.MenuUI = (() => {
     grid.innerHTML = '';
     const q = dexQuery.trim().toLowerCase();
     for (const p of G.DEX) {
-      if (q ? !matches(p, q) : !dexType && p.gen !== dexGen) continue;
+      // «Mi equipo» (2026-10-15): los marcados, de todas las regiones.
+      if (q ? !matches(p, q) : !dexType && dexFilter !== 'team' && p.gen !== dexGen) continue;
       if (dexType && !p.types.includes(dexType)) continue;
       const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
+      const inTeam = own && !!(s.team && s.team[p.dex]);
+      if (dexFilter === 'team' && !inTeam) continue;
       if (dexFilter === 'own' && !own) continue;
       if (dexFilter === 'miss' && own) continue;
       if (dexFilter === 'shiny' && !sh) continue;
@@ -205,6 +209,7 @@ G.MenuUI = (() => {
       const cell = document.createElement('div');
       cell.className = 'cell' + (own ? '' : ' locked') + (p.dex === dexSel ? ' on' : '');
       cell.insertAdjacentHTML('beforeend', `<span class="no">${String(p.dex).padStart(3, '0')}</span>`);
+      if (inTeam) cell.insertAdjacentHTML('beforeend', '<span class="badge-team" title="Mi equipo">★</span>');
       if (p.dex === s.partner) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Compañero">${G.Icons.html('crown', 14)}</span>`);
       else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
       const useShiny = sh && p.dex === s.partner && s.partnerShiny;
@@ -218,7 +223,9 @@ G.MenuUI = (() => {
       };
       grid.appendChild(cell);
     }
-    if (!grid.children.length) grid.innerHTML = '<p class="sub" style="grid-column:1/-1">Ninguno con este filtro.</p>';
+    if (!grid.children.length) grid.innerHTML = dexFilter === 'team' && !q && !dexType
+      ? '<p class="sub" style="grid-column:1/-1">Aún no hay nadie en Mi equipo: elige un Pokémon y pulsa «Añadir a Mi equipo».</p>'
+      : '<p class="sub" style="grid-column:1/-1">Ninguno con este filtro.</p>';
   }
 
   // Variante que se está viendo en la ficha (normal o shiny).
@@ -261,6 +268,7 @@ G.MenuUI = (() => {
         ${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
+        <button id="dex-team" class="btn ghost" style="width:100%;margin-top:6px">${s.team && s.team[dex] ? '★ Quitar de Mi equipo' : '☆ Añadir a Mi equipo'}</button>
         ${G.DexQuests.html(dex)}
       ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
@@ -272,6 +280,14 @@ G.MenuUI = (() => {
       b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
     });
     G.DexQuests.wire(box, dex, () => { renderGrid(); showDetail(dex); });
+    const team = $('dex-team');
+    if (team) team.onclick = () => {
+      s.team = s.team || {};
+      if (s.team[dex]) delete s.team[dex]; else s.team[dex] = Date.now();
+      G.DB.commit();
+      G.UI.toast(G.I18n.f(s.team[dex] ? '{x} está en Mi equipo' : '{x} ya no está en Mi equipo', p.name));
+      openDex();
+    };
     const pick = $('dex-pick');
     if (pick) pick.onclick = () => {
       s.partner = dex;

@@ -21,6 +21,7 @@ G.Combat = (() => {
    * rayos, flechas, cadena, árboles, meteoros, mordisco...) nunca encontraban a otro jugador.
    */
   const isFoe = e => e instanceof G.Player;
+  const FIELD_R = 28;      // Shaq: el campo llega a pl.r + 28 (player.js lo dibuja igual)
   function enemiesIn(x, y, r) {
     const l = G.EnemyMgr.queryCircle(x, y, r);
     if (!G.PvP.on) return l;
@@ -46,7 +47,8 @@ G.Combat = (() => {
     // Vínculos: todos los movimientos del hueco activo, cada uno con su recarga.
     const group = pl.activeGroup();
     // Durmiendo (Descanso) no se ataca; los de apoyo y pasivos siguen.
-    if (!(pl.sleepT > 0)) for (const m of group) tickMove(dt, pl, m, now);
+    // (2026-10-15: con Descanso dentro del vínculo activo no se despertaba nunca: sus apoyos y pasivos sí siguen.)
+    for (const m of group) if (!(pl.sleepT > 0) || G.Moves.isPassive(m)) tickMove(dt, pl, m, now);
     // Pasivos (Escudo de Llamas, Colmillo Vampiro evolucionado): siempre, aunque no estén activos.
     for (const m of pl.moves) if (!group.includes(m) && G.Moves.isPassive(m)) tickMove(dt, pl, m, now);
   }
@@ -259,22 +261,22 @@ G.Combat = (() => {
     for (const [e, d] of dots) {
       if (e.dead || !d.owner || !alive(e)) { dots.delete(e); continue; }
       const pl = d.owner;
-      let alive = false;
+      let keep = false;
       if (d.pUntil > now) {
-        alive = true;
+        keep = true;
         hit(pl, e, d.pDps * 0.5 * pl.atk, '#c46cf0', 0, 0, 0, d.pm, NOCRIT);
         if (!e.dead && d.slow) e.applySlow(d.slow, 0.7);
       }
       if (d.bleed && !e.dead) {
-        alive = true;
+        keep = true;
         hit(pl, e, d.bleed * 0.5 * pl.atk, '#e0303a', 0, 0, 0, d.bm, NOCRIT);
         if (Math.random() < 0.5 && G.Camera.sees(e.x, e.y, 20)) G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#e0303a', 2, 40);
       }
       if (d.drip > now && !e.dead) {
-        alive = true;
+        keep = true;
         if (!d.lx || G.U.dist2(d.lx, d.ly, e.x, e.y) > 26 * 26) { d.lx = e.x; d.ly = e.y; addPuddle(pl, d.pm, d.prow, e.x, e.y, 3, false); }
       }
-      if (!alive) dots.delete(e);
+      if (!keep) dots.delete(e);
     }
   }
 
@@ -348,10 +350,6 @@ G.Combat = (() => {
     pl.bulkField = !!row.field;
     const add = row.hp - (pl.bulkHp || 0);
     if (add > 0) { pl.maxHp += add; pl.hp = Math.min(pl.maxHp, pl.hp + add); pl.bulkHp = row.hp; }
-    if (row.field) {
-      pl.fieldFx = (pl.fieldFx || 0) + 1;
-      if (pl.fieldFx % 3 === 0) G.FX.ring(pl.x, pl.y, pl.r + 10, pl.r + 22, '#ffe9a0', 0.5, 2);
-    }
   }
 
   /**
@@ -931,14 +929,16 @@ G.Combat = (() => {
           fields.splice(i, 1);
         }
       } else if (f.kind === 'spikes') {
-        if (f.t >= f.fall) {
+        // (2026-10-15: pegaban pero apenas se veían: ahora las púas salen del suelo y se quedan un momento.)
+        if (!f.done && f.t >= f.fall) {
+          f.done = true;
           for (let k = 0; k < 6; k++) {
             const a = Math.random() * 6.2832, d = Math.random() * f.r * 0.8;
             G.FX.spark(f.x + Math.cos(a) * d, f.y + Math.sin(a) * d * 0.6, '#c89a5a', 0, -1, 2);
           }
           blast(f, f.r);
-          fields.splice(i, 1);
         }
+        if (f.t >= f.fall + 0.6) fields.splice(i, 1);
       } else if (f.kind === 'grove') {
         // Zona del árbol caído: frena (evolucionado: enredaderas que inmovilizan una vez a cada uno).
         f.tick -= dt;
@@ -1006,6 +1006,15 @@ G.Combat = (() => {
           ctx.globalAlpha = 0.6;
           ctx.strokeStyle = '#97e36c'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
           ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r, f.r * 0.6, 0, 0, 6.2832); ctx.stroke();
+        } else {
+          // Púas de madera saliendo del suelo.
+          const h = 24 * k * (f.t > f.fall + 0.4 ? Math.max(0, 1 - (f.t - f.fall - 0.4) / 0.2) : 1);
+          ctx.globalAlpha = 1; ctx.fillStyle = '#c89a5a'; ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = 1.5;
+          for (let s = 0; s < 9; s++) {
+            const a = s * 2.399, d = f.r * (0.2 + 0.7 * ((s * 0.618) % 1));
+            const x = f.x + Math.cos(a) * d, y = f.y + Math.sin(a) * d * 0.6;
+            ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x, y - h); ctx.lineTo(x + 5, y); ctx.closePath(); ctx.fill(); ctx.stroke();
+          }
         }
       } else if (f.kind === 'mine') {
         const armed = f.t >= f.arm, blink = armed && Math.sin(now * 8 + f.x) > 0.3;
@@ -1353,13 +1362,16 @@ G.Combat = (() => {
     // --- contacto enemigo <-> jugador ---
     if (pl.dead) return;
     for (const e of enemiesIn(pl.x, pl.y, pl.r + 40)) {
-      // Shaq (Peso Pesado evolucionado): los enemigos normales no pueden tocarte (se quedan
-      // en el borde del campo). Los jefes y los disparos sí.
+      if (isFoe(e)) continue;      // PK: el rival no tiene daño por contacto (antes: e.strike no existe y fallaba cada fotograma)
+      // Shaq (Peso Pesado evolucionado): los enemigos normales no pueden tocarte: se quedan
+      // fuera del campo (el anillo que se dibuja en player.js) y rebotan. Los jefes y los disparos sí.
+      // (2026-10-15: antes sólo los apartaba hasta tocarte el cuerpo y parecía que no hacía nada.)
       if (pl.bulkField && !e.boss) {
-        const d = Math.max(1, G.U.dist(e.x, e.y, pl.x, pl.y)), min = pl.r + e.r + 4;
+        const dx = e.x - pl.x, dy = e.y - pl.y, d = Math.max(1, Math.hypot(dx, dy)), min = pl.r + FIELD_R + e.r;
         if (d < min && !e.remote) {
-          const x = pl.x + (e.x - pl.x) / d * min, y = pl.y + (e.y - pl.y) / d * min;
+          const x = pl.x + dx / d * min, y = pl.y + dy / d * min;
           if (!G.World.isWall(x, y)) { e.x = x; e.y = y; }
+          e.kx += dx / d * 120; e.ky += dy / d * 120;
         }
         continue;
       }

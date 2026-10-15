@@ -5,6 +5,7 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '寶可夢圖鑑新增「我的戰隊」：在寶可夢的介紹頁按「加入我的戰隊」，再用篩選列的「★ 我的戰隊」就能快速找到常用的幾隻（跨所有地區，雲端同步）', en: 'New "My team" in the Pokédex: press "Add to My team" on a Pokémon, then use the "★ My team" filter to find your favourites fast (all regions, synced to the cloud)' },
       { zh: '暫停畫面新增「我的能力值」：等級、生命、攻擊力、移動速度、冷卻縮短、暴擊率／暴擊傷害、減傷、每秒回血、拾取範圍、經驗與金幣加成', en: 'The pause screen now shows your stats: level, HP, attack, speed, cooldown, crit chance/damage, damage reduction, regeneration, pickup range and XP/coin bonuses' },
       { zh: '頭目模式開場直接升 5 級並選 5 次卡片，不會再一開始打頭目很癢', en: 'Boss mode now starts you at level 6 with 5 card picks, so the first boss isn’t a slog' },
       { zh: 'PK 對手頭上有血條；被打時角色旁邊會有小紅箭頭指向攻擊來源（不閃畫面）', en: 'PvP: opponents show a health bar above their head; when hit, a small red arrow beside you points to the attacker (no screen flashing)' },
@@ -112,6 +113,12 @@ G.MODNEWS = [
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
+      { zh: '修正腐蝕酸雨／奈米屌雨沒有傷害、沒有緩速（李拳的流血也一起修好）', en: 'Fixed Corrosive Rain / Nano Rain dealing no damage and not slowing (Lee Fist bleeding fixed too)' },
+      { zh: '修正俠客歐尼爾（歐美肥佬進化）的力場擋不住怪：現在敵人會被彈開、停在力場圈外，腳下也會一直顯示力場', en: 'Fixed Shaq (evolved Heavyweight) force field not stopping enemies: they now bounce off and stay outside the ring, which is always shown' },
+      { zh: '樹倒下的木刺看得見了：會從地上冒出木刺再收回去（之前有傷害但幾乎看不到）', en: 'The tree\'s wooden spikes are now visible, sprouting from the ground (they hit before, but could barely be seen)' },
+      { zh: '修正睡覺被綁進羈絆後會一直睡不醒', en: 'Fixed sleeping forever when Rest was fused into a bond' },
+      { zh: '修正 PK 時兩個玩家身體相碰會讓遊戲每幀出錯', en: 'Fixed PvP erroring every frame while two players touched' },
+      { zh: '修正蛋孵化的訊息只翻了一半（一些較長的句子被較短的翻譯搶先套用）', en: 'Fixed the egg-hatch message being half-translated (some longer lines were matched by a shorter translation)' },
       { zh: '修正：學到新的攻擊招式時會排在被動招式後面。現在攻擊招式一律在左邊，輔助和被動招式一律在最右邊（招式進化成被動時也會自動移過去）', en: 'Fixed: new attack moves were placed after passive ones. Attacks now always sit on the left and support/passive moves on the far right (also when a move evolves into a passive)' },
       { zh: '修正 PK：守住、無敵星星等防禦被破；攻擊者看到的傷害數字現在一定等於實際扣的血，被擋或閃掉會顯示「格擋／閃避」', en: 'PvP fixes: Protect, Star and other defenses now work; the damage numbers you see always match the real HP lost, and blocked or dodged hits say so' },
       { zh: '修正 PK：群體治療（祈願、生命水滴）會治到對手；噴射火焰等多發型招式大部分命中被吃掉；被安全區淘汰顯示「? 擊倒了」', en: 'PvP fixes: group heals (Wish, Life Dew) healed opponents; most pellets of multi-shot moves like Flamethrower were dropped; zone eliminations showed “? knocked out”' },

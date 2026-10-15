@@ -612,6 +612,11 @@ G.Player = class Player {
     // verde), concentración (orbes rosas) y dormido (Zzz).
     if (!this.dead) {
       const t = performance.now() / 1000;
+      // Shaq (Peso Pesado evolucionado): el campo que no deja pasar (radio = combat.js FIELD_R).
+      if (this.bulkField) {
+        ctx.save(); ctx.globalAlpha = 0.35 + Math.sin(t * 4) * 0.1; ctx.strokeStyle = '#ffe9a0'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r + 28, (this.r + 28) * 0.62, 0, 0, 6.2832); ctx.stroke(); ctx.restore();
+      }
       if (this.screenT > 0) {
         ctx.save(); ctx.globalAlpha = 0.6;
         for (let i = 0; i < 16; i++) {

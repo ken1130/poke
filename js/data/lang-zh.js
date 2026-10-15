@@ -2205,4 +2205,10 @@ G.I18n.add({
   'Alcance de recogida': '拾取範圍',
   'Bonus de experiencia': '經驗加成',
   'Bonus de monedas': '金幣加成',
+  'Mi equipo': '我的戰隊',
+  '☆ Añadir a Mi equipo': '☆ 加入我的戰隊',
+  '★ Quitar de Mi equipo': '★ 移出我的戰隊',
+  '{x} está en Mi equipo': '{x} 已加入我的戰隊',
+  '{x} ya no está en Mi equipo': '{x} 已移出我的戰隊',
+  'Aún no hay nadie en Mi equipo: elige un Pokémon y pulsa «Añadir a Mi equipo».': '我的戰隊還是空的：選一隻寶可夢，按「加入我的戰隊」。',
 }, 'zh');
