@@ -28,7 +28,7 @@ G.Loot = (() => {
 
   function reset() { boxesSpawned = 0; potionT = 45; boxAt = null; }
 
-  const allowed = () => !G.PvP.on && !G.Rift.inArena;
+  const allowed = () => !G.PvP.on && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom);
 
   /** Anfitrión o solitario, cada fotograma de juego. */
   function tick(dt, time, players) {

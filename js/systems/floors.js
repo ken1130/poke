@@ -24,7 +24,7 @@ G.Floors = (() => {
   let combo = 0, comboFlash = 0;
 
   function reset() { floor = 0; stairs = null; nextAt = FIRST; standT = 0; fadeT = 0; combo = 0; comboFlash = 0; }
-  const allowed = () => G.Modes.run === 'normal' && !G.PvP.on && !G.Rift.inArena;
+  const allowed = () => G.Modes.run === 'normal' && !G.PvP.on && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom);
 
   // ---------------- escaleras ----------------
 

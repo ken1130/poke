@@ -59,7 +59,9 @@ G.World = (() => {
   const fbm = (x, y, s) => vnoise(x, y, s) * 0.65 + vnoise(x * 2.13 + 17, y * 2.13 - 9, s + 1) * 0.35;
 
   /** Terreno "puro" de un tile (sin caché). */
-  function arenaDist(tx, ty) { return arena ? Math.hypot(tx - arena.tx, ty - arena.ty) : Infinity; }
+  function arenaDist(tx, ty) { return arena && !arena.room ? Math.hypot(tx - arena.tx, ty - arena.ty) : Infinity; }
+  /** Interior (tienda de Kecleon, sala misteriosa; dungeon.js): sala rectangular cerrada. */
+  const inRoomOuter = (tx, ty) => arena && arena.room && Math.abs(tx - arena.tx) < arena.rw + 7 && Math.abs(ty - arena.ty) < arena.rh + 7;
 
   /** Pasillo libre de la arena: donde aparecéis (sur) y el legendario (norte). */
   function arenaSafe(tx, ty) {
@@ -68,6 +70,7 @@ G.World = (() => {
   }
 
   function terrainRaw(tx, ty) {
+    if (inRoomOuter(tx, ty)) return Math.abs(tx - arena.tx) < arena.rw && Math.abs(ty - arena.ty) < arena.rh ? FLOOR : WALL;
     const ad = arenaDist(tx, ty);
     if (ad < arena_outer()) {
       if (ad >= arena.r) return WALL;
@@ -127,6 +130,7 @@ G.World = (() => {
       for (let b = -1; b <= 1 && open; b++) for (let a = -1; a <= 1; a++)
         if (terrainRaw(tx + a, ty + b) !== FLOOR) { open = false; break; }
 
+      if (inRoomOuter(tx, ty)) continue;            // los interiores se decoran en dungeon.js
       // Dentro de la arena: la decoración de su tipo (y nada en el pasillo).
       const ad = arenaDist(tx, ty);
       if (ad < arena_outer() + 2) {
@@ -592,7 +596,7 @@ G.World = (() => {
       if (!a) return;
       a.th = G.Tiles.ARENA_THEMES[a.type] || G.Tiles.ARENA_THEMES.normal;
       // Olvida los chunks de esa zona (si se hubieran generado antes).
-      const R = a.r + 9;
+      const R = a.room ? Math.max(a.rw, a.rh) + 9 : a.r + 9;
       for (const k of [...data.keys(), ...images.keys()]) {
         const [cx, cy] = k.split(',').map(Number);
         if (Math.abs(cx * N + N / 2 - a.tx) < R + N && Math.abs(cy * N + N / 2 - a.ty) < R + N) { data.delete(k); images.delete(k); }

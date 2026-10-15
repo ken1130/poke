@@ -12,9 +12,22 @@
  *   statue  Estatua misteriosa: al tocarla, una bendición (o una maldición con
  *           premio) para todo el grupo durante 3 minutos.
  *
+ * Interiores (2026-10-15): la tienda y la sala "?" son una PUERTA en el mapa. Al
+ * tocarla, todo el grupo entra a un interior (como la arena de la grieta: una sala
+ * cerrada lejos del mapa, los enemigos de fuera se guardan con EnemyMgr.stash y no
+ * aparecen nuevos). Tienda: sin enemigos, se abre el menú; robar despierta a Kecleon
+ * DENTRO y la puerta se cierra hasta vencerlo. Sala: casa de monstruos (la puerta se
+ * cierra 30 s), tesoro, curación o trampa. Se sale por la puerta del sur cuando
+ * todos están en ella (o han pulsado «Salir»); fuera, onda que aparta a los enemigos
+ * y 3 s de invulnerabilidad.
+ *
  * Cooperativo: lo decide todo el anfitrión (dónde sale, cuándo empieza, quién
- * compra, la bendición) y se lo cuenta a los demás con eventos ['dg', ...]; los
- * invitados piden comprar con ['dg', 'buy', ...]. En solitario, igual pero local.
+ * compra, la bendición, cuándo se entra y se sale de un interior) y se lo cuenta a
+ * los demás con eventos ['dg', ...]: 'enter' cfg · 'exit' · 'rlock' (puerta). Los
+ * invitados piden comprar con ['dg', 'buy', ...] y salir con ['dg', 'out'].
+ * Se entra TODOS juntos (un interior por grupo): con el mundo y los enemigos
+ * compartidos y decididos por el anfitrión, interiores separados por jugador
+ * romperían la sincronización. En solitario, igual pero local.
  */
 G.Dungeon = (() => {
   const T = () => G.Game.st.time;
@@ -25,13 +38,14 @@ G.Dungeon = (() => {
   let houseT = 0, shopT = 0, statueT = 0, timed = false;
   let blessing = null;               // { id, until } (todo el grupo)
   let buyT = 0, buyKey = '';         // tú, encima de un artículo de la tienda
+  let room = null, lastExit = -99;   // interior en el que está el grupo (ver beginRoom)
 
   function reset() {
-    sites = []; nextId = 1; blessing = null; buyT = 0; buyKey = '';
+    sites = []; nextId = 1; blessing = null; buyT = 0; buyKey = ''; room = null; lastExit = -99; shopSkip = null;
     houseT = 150; shopT = 270; statueT = 200;
     G.Funny.reset(); timed = false;
   }
-  const allowed = () => !G.PvP.on && !G.Rift.inArena && G.Modes.run !== 'legend';
+  const allowed = () => !G.PvP.on && !G.Rift.inArena && !room && G.Modes.run !== 'legend';
   const byId = id => sites.find(s => s.id === id);
 
   // ---------------- red ----------------
@@ -45,7 +59,6 @@ G.Dungeon = (() => {
       let s = byId(ev[2]);
       if (!s) { s = { id: ev[2] }; sites.push(s); }
       Object.assign(s, { type: ev[3], x: ev[4], y: ev[5], state: ev[6], wares: ev[7], until: ev[8], spins: ev[9] == null ? 3 : ev[9] });
-      if (s.state === 'active' && s.type === 'mhouse' && !s.shown) { s.shown = true; houseStartFx(s); }
     } else if (k === 'gone') sites = sites.filter(s => s.id !== ev[2]);
     else if (k === 'got') applyWare(G.Game.player, ev[2]);
     else if (k === 'bless') startBlessing(ev[2], ev[3]);
@@ -54,11 +67,15 @@ G.Dungeon = (() => {
     else if (k === 'fn') G.Funny.onNet(ev);
     else if (k === 'spun') G.Roulette.onSpun(ev[2], ev[3], ev[4]);
     else if (k === 'room') roomFx(ev[2], ev[3], ev[4]);
+    else if (k === 'enter') beginRoom(ev[2]);
+    else if (k === 'exit') endRoom();
+    else if (k === 'rlock') { if (room) room.locked = !!ev[2]; }
     else if (k === 'poor') G.Spawner.say(G.I18n.f('¡No tienes bastantes monedas! (cuesta {x})', ev[2]), 2, true);
   }
   /** Anfitrión: un invitado pide comprar (o se lleva sin pagar) el artículo `idx`. */
   function onClient(from, ev) {
     if (ev[1] === 'buy') tryBuy(byId(ev[2]), ev[3], from, !!ev[4]);
+    else if (ev[1] === 'out') { if (room) room.out.add(from); }
     else if (ev[1] === 'spin') {
       const s = byId(ev[2]), r = G.Roulette.hostSpin(s, ev[3], from);
       G.Coop.sendTo(from, ['dg', 'spun', r ? r.idx : -1, r ? r.delta : 0, r ? r.left : 0]);
@@ -112,6 +129,18 @@ G.Dungeon = (() => {
       if (len) { houseT = Math.round(len * 0.3); statueT = Math.round(len * 0.45); shopT = Math.round(len * 0.6); }
     }
     if (blessing && t >= blessing.until) endBlessing();
+    if (room) {
+      roomTick(dt, live);
+      for (const s of sites.slice()) if (s.type === 'shop') shopTick(s, live);
+      return;
+    }
+    // Puertas de los interiores: si alguien la toca, entra todo el grupo.
+    if (!G.PvP.on && !G.Rift.inArena && t - lastExit > 2.5) {
+      for (const s of sites) {
+        const open = (s.type === 'shop' && (s.state === 'open' || s.state === 'free')) || (s.type === 'mhouse' && s.state === 'idle');
+        if (open && live.some(p => G.U.dist2(p.x, p.y, s.x, s.y + 6) < 40 * 40)) { enterRoom(s, live); return; }
+      }
+    }
     if (allowed()) {
       if (t >= houseT && !sites.some(s => s.type === 'mhouse' && s.state === 'idle')) {
         houseT = t + G.U.rand(170, 240);
@@ -126,10 +155,8 @@ G.Dungeon = (() => {
         if (add('statue', G.U.pick(live), 420, 700)) say('Ha aparecido una estatua misteriosa…', 3);
       }
     }
-    guardSafe();
     for (const s of sites.slice()) {
-      if (s.type === 'mhouse') houseTick(s, dt, live);
-      else if (s.type === 'shop') shopTick(s, live);
+      if (s.type === 'shop') shopTick(s, live);
       else if (s.type === 'statue') statueTick(s, live);
     }
   }
@@ -137,24 +164,19 @@ G.Dungeon = (() => {
   /** Cada ordenador, para su jugador: comprar en la tienda (quedarse encima). */
   function update(dt, pl) {
     G.Funny.update(dt, pl);
-    if (!pl || pl.dead) { pl && (pl.safe = false); closeShop(); return; }
-    // Tienda de Kecleon = refugio (2026-10-15): dentro no entran enemigos ni te hacen daño,
-    // y se abre el menú para comprar con las monedas de la run. Con Kecleon furioso, no.
-    const shop = sites.find(s => s.type === 'shop' && (s.state === 'open' || s.state === 'free') && inSafe(s, pl));
-    // Al salir del refugio, Kecleon te despide con una onda que aparta a todo lo de alrededor
-    // y tienes 3 s de invulnerabilidad para escapar (si no, al salir te rodeaban).
-    if (pl.safe && !shop) farewell(pl);
-    pl.safe = !!shop;
-    if (shop) {
-      if (!openShop || openShop.id !== shop.id) { if (!shopSkip || shopSkip !== shop.id) showShop(shop); }
-      else refreshShop();
-    } else { shopSkip = null; closeShop(); }
+    if (!pl || pl.dead || !room || room.kind !== 'shop') { closeShop(); return; }
+    // Dentro de la tienda: el menú se abre solo (y otra vez si vuelves al mostrador).
+    const shop = byId(room.siteId);
+    if (!shop || (shop.state !== 'open' && shop.state !== 'free')) { closeShop(); return; }
+    if (shop.state !== room.seen) { room.seen = shop.state; shopSkip = null; }   // Kecleon vencido: otra vez el menú
+    const atCounter = G.U.dist2(pl.x, pl.y, room.cx, counterY()) < 110 * 110;
+    if (!atCounter) room.wasAway = true;
+    if (shopSkip === shop.id && atCounter && !openShop && room.wasAway) shopSkip = null;
+    if (!openShop) { if (shopSkip !== shop.id) { room.wasAway = false; showShop(shop); } }
+    else refreshShop();
   }
 
-  // ---------------- refugio y menú de la tienda ----------------
-  const SAFE_R = 170;
-  const safeC = s => [s.x, s.y + 30];
-  const inSafe = (s, p) => G.U.dist2(p.x, p.y, safeC(s)[0], safeC(s)[1]) < SAFE_R * SAFE_R;
+  // ---------------- menú de la tienda ----------------
   let openShop = null, shopKey = '', shopSkip = null;
   const WARE_DESC = { potion: 'Una poción al azar.', upgrade: 'Una mejora de las cartas de nivel (sobre todo movimientos).', heal: 'Recuperas el 60 % de la vida.',
                       rerolls: '+3 cambios de cartas de nivel.', disc: 'Un disco de movimientos: de 1 a 4 mejoras.', tm: 'Aprendes un movimiento nuevo (o una mejora si no caben más).',
@@ -167,7 +189,7 @@ G.Dungeon = (() => {
   function showShop(s) {
     openShop = s; shopKey = '';
     const el = document.getElementById('shop-leave');
-    el.onclick = () => { shopSkip = s.id; closeShop(); };
+    el.onclick = () => { shopSkip = s.id; closeShop(); requestExit(); };
     document.getElementById('shop-roul').onclick = () => { if ((s.spins == null ? 3 : s.spins) > 0) { G.UI.hide('scr-shop'); G.Roulette.open(s, () => { if (openShop === s) { shopKey = ''; G.UI.show('scr-shop'); refreshShop(); } }); } };
     refreshShop();
     G.UI.show('scr-shop');
@@ -211,29 +233,13 @@ G.Dungeon = (() => {
     rb.textContent = G.T('Ruleta de Kecleon') + ' (' + left + ')';
     rb.disabled = left <= 0;
   }
-  /** Anfitrión: nadie entra en el refugio (salvo jefes); combat.js / player.js miran pl.safe. */
-  const SCARE_R = 420;               // con alguien dentro, los de alrededor se asustan y se van
-  function guardSafe() {
-    for (const s of sites) {
-      if (s.type !== 'shop' || (s.state !== 'open' && s.state !== 'free')) continue;
-      const [cx, cy] = safeC(s);
-      const someoneIn = G.Game.everyone().some(p => !p.dead && inSafe(s, p));
-      for (const e of G.EnemyMgr.queryCircle(cx, cy, someoneIn ? SCARE_R : SAFE_R)) {
-        if (e.dead || e.boss || e.remote) continue;
-        const d = Math.max(1, G.U.dist(e.x, e.y, cx, cy)), nx = (e.x - cx) / d, ny = (e.y - cy) / d;
-        if (d < SAFE_R) { e.x = cx + nx * SAFE_R; e.y = cy + ny * SAFE_R; }
-        // No se quedan en corro esperando en el borde: se alejan.
-        if (someoneIn) { e.kx += nx * 340; e.ky += ny * 340; }
-      }
-    }
-  }
-  /** Al salir del refugio: onda que aparta a los enemigos cercanos y 3 s sin recibir daño. */
-  function farewell(pl) {
+  /** Al salir de un interior: onda que aparta a los enemigos cercanos y 3 s sin recibir daño. */
+  function farewell(pl, msg) {
     pl.invuln = Math.max(pl.invuln || 0, 3);
     G.FX.ring(pl.x, pl.y, 10, 320, '#7dffb0', 0.7, 6);
     G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#9fe0b0', 30, 260);
     G.Audio.sfx('surge');
-    G.Spawner.say(G.T('¡Kecleon te despide! Tienes 3 s para escapar'), 2.4, true);
+    G.Spawner.say(G.T(msg || '¡Kecleon te despide! Tienes 3 s para escapar'), 2.4, true);
     for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, 320)) {
       if (e.dead || e.boss) continue;
       e.hurt(1, '#9fe0b0', e.x - pl.x, e.y - pl.y, 650);
@@ -246,81 +252,172 @@ G.Dungeon = (() => {
 
   // ---------------- casa de monstruos ----------------
 
-  const HOUSE_R = 270, HOUSE_TIME = 30;
-  function houseTick(s, dt, live) {
-    if (s.state === 'idle') {
-      if (live.some(p => G.U.dist2(p.x, p.y, s.x, s.y) < 80 * 80)) {
-        // Sala misteriosa (2026-10-15): no siempre es una casa de monstruos.
-        const r = Math.random();
-        const kind = r < 0.5 ? 'house' : r < 0.7 ? 'treasure' : r < 0.85 ? 'heal' : 'trap';
-        if (kind !== 'house') { roomEvent(s, kind, live); return; }
-        s.t = 0; s.wave = 0; s.mobs = [];
-        setState(s, 'active');
-        s.shown = true;
-        houseStartFx(s);
-        wave(s, 12 + 4 * live.length);
-      }
-      return;
-    }
-    if (s.state !== 'active') return;
-    s.t += dt;
-    if (s.t >= 6 * (s.wave + 1) && s.t < HOUSE_TIME - 5) wave(s, 5 + 2 * live.length);
-    const alive = s.mobs.filter(id => { const e = G.EnemyMgr.get(id); return e && !e.dead; }).length;
-    if (s.t >= HOUSE_TIME || (alive === 0 && s.t > 4)) houseEnd(s, alive === 0);
-  }
-  /** Las otras salas: tesoro, curación o trampa (con premio de consolación). */
-  function roomEvent(s, kind, live) {
-    remove(s);
-    if (kind === 'treasure') {
-      say('¡Sala del tesoro!', 3);
-      for (let i = 0; i < 14; i++) G.Pickups.drop('coin', s.x + G.U.rand(-70, 70), s.y + G.U.rand(-45, 45), 5);
-      G.Pickups.drop('item', s.x, s.y - 20, G.Items.roll());
-      for (const p of live) G.Pickups.drop('potion', s.x + G.U.rand(-40, 40), s.y + G.U.rand(-30, 30), G.Loot.ownerKey(p));
-      if (Math.random() < 0.3) G.Pickups.drop('ticket', s.x + 20, s.y, 1);
-      G.Audio.sfx('legend');
-    } else {
-      say(kind === 'heal' ? '¡Sala de curación! Recuperas toda la vida' : '¡Era una trampa! Gas venenoso… pero ha dejado monedas', 3.2);
-      if (kind === 'heal' && !blessing) { const until = T() + BLESS_TIME; startBlessing('vital', until); send(['dg', 'bless', 'vital', until]); }
-      if (kind === 'trap') for (let i = 0; i < 20; i++) G.Pickups.drop('coin', s.x + G.U.rand(-80, 80), s.y + G.U.rand(-50, 50), 5);
-    }
-    roomFx(kind, s.x, s.y);
-    send(['dg', 'room', kind, Math.round(s.x), Math.round(s.y)]);
-  }
+  const HOUSE_TIME = 30;
   /** Cada ordenador: lo que la sala le hace a SU Pokémon (si está cerca). */
   function roomFx(kind, x, y) {
     G.FX.ring(x, y, 10, 300, kind === 'heal' ? '#5fe08a' : kind === 'trap' ? '#a043d0' : '#ffd23f', 0.8, 6);
     G.FX.burst(x, y - 10, kind === 'heal' ? '#7dffb0' : kind === 'trap' ? '#c46cf0' : '#ffe14d', 40, 260);
     const pl = G.Game.player;
-    if (!pl || pl.dead || G.U.dist2(pl.x, pl.y, x, y) > 340 * 340) return;
+    if (!pl || pl.dead || G.U.dist2(pl.x, pl.y, x, y) > (room ? 700 : 340) ** 2) return;
     if (kind === 'heal') pl.heal(pl.maxHp);
     else if (kind === 'trap') { pl.invuln = 0; pl.hurt(pl.maxHp * 0.15); pl.slowT = 3; G.Audio.sfx('hurt'); }
   }
 
-  function wave(s, n) {
-    s.wave++;
-    const t = T();
+  /** Casa de monstruos (dentro de la sala): `n` enemigos por la sala, lejos de vosotros. */
+  function wave(n) {
+    room.wave++;
+    const t = T(), ts = room.ts;
     for (let i = 0; i < n; i++) {
-      const a = (i / n) * 6.2832 + Math.random() * 0.3, r = HOUSE_R * G.U.rand(0.75, 1);
-      const x = s.x + Math.cos(a) * r, y = s.y + Math.sin(a) * r * 0.8;
-      if (!G.World.isFree(x, y, 12)) continue;
+      let x = 0, y = 0, ok = false;
+      for (let k = 0; k < 12 && !ok; k++) {
+        x = room.cx + G.U.rand(-1, 1) * (room.rw - 1.5) * ts; y = room.cy + G.U.rand(-1, 1) * (room.rh - 1.5) * ts;
+        ok = G.World.isFree(x, y, 12) && G.Game.everyone().every(p => G.U.dist2(p.x, p.y, x, y) > 130 * 130);
+      }
+      if (!ok) continue;
       const e = G.Spawner.spawnAt(x, y, t + 40);         // un poco más duros que los de ese momento
-      if (e) { s.mobs.push(e.id); G.FX.burst(x, y - 10, '#c47bff', 6, 90); }
+      if (e) { room.mobs.push(e.id); G.FX.burst(x, y - 10, '#c47bff', 6, 90); }
     }
   }
-  function houseStartFx(s) {
+  function houseStartFx() {
     G.Spawner.say(G.T('¡Es una casa de monstruos! Aguanta 30 s'), 3, true);
     G.Audio.sfx('boss');
-    if (G.U.dist2(s.x, s.y, G.Camera.x, G.Camera.y) < 700 * 700) G.Camera.kick(0.8);
-    s.startAt = performance.now();
+    G.Camera.kick(0.8);
   }
-  function houseEnd(s, cleared) {
-    remove(s);
-    say(cleared ? '¡Casa de monstruos superada! Recoge el botín' : '¡Has aguantado! Recoge el botín', 3);
-    award('mhouse');
-    const t = T();
-    G.Pickups.dropXp(s.x, s.y, Math.round(140 + t * 0.9), true);
-    for (let i = 0; i < 8; i++) G.Pickups.drop('coin', s.x + G.U.rand(-50, 50), s.y + G.U.rand(-35, 35), 5);
-    if (Math.random() < 0.6) G.Pickups.drop('item', s.x + 30, s.y - 10, G.Items.roll());
+
+  // ---------------- interiores ----------------
+
+  const ROOMS = { shop: { rw: 7, rh: 5, theme: 'fighting' }, myst: { rw: 9, rh: 7, theme: 'ghost' } };
+  const TSZ = () => G.Tiles.T * G.Sprites.PX;
+  const counterY = () => room.cy - (room.rh - 2.6) * room.ts;
+  const doorP = () => [room.cx, room.cy + (room.rh - 1) * room.ts];
+  const myKey = p => (p === G.Game.player ? (p.uid || 'me') : p.uid);
+
+  /** Anfitrión: alguien toca la puerta del sitio `s` → entra todo el grupo. */
+  function enterRoom(s, live) {
+    const kind = s.type === 'shop' ? 'shop' : 'myst';
+    const r = Math.random();
+    const ev = kind === 'shop' ? null : r < 0.5 ? 'house' : r < 0.7 ? 'treasure' : r < 0.85 ? 'heal' : 'trap';
+    const R = ROOMS[kind];
+    const cfg = { kind, ev, siteId: s.id, tx: 9000 + Math.floor(Math.random() * 3000), ty: 9000 + Math.floor(Math.random() * 3000),
+                  rw: R.rw, rh: R.rh, bx: Math.round(s.x), by: Math.round(s.y + 70) };
+    if (kind === 'myst') remove(s);
+    send(['dg', 'enter', cfg]);
+    beginRoom(cfg);
+    if (kind === 'myst') roomStart(live);
+  }
+
+  /** En cada ordenador: viaje al interior. */
+  function beginRoom(cfg) {
+    const pl = G.Game.player, ts = TSZ();
+    room = Object.assign({}, cfg, { ts, cx: cfg.tx * ts + ts / 2, cy: cfg.ty * ts + ts / 2, biome: G.World.biome,
+                                    t: 0, wave: 0, mobs: [], out: new Set(), locked: false, seen: null, wasAway: false });
+    if (authority()) G.EnemyMgr.stash(); else G.EnemyMgr.clearRemote();
+    G.Projectiles.clear(); G.Combat.clearFields(); G.Hazards.clear(); G.Weather.clear();
+    G.World.setArena({ tx: cfg.tx, ty: cfg.ty, room: true, rw: cfg.rw, rh: cfg.rh, r: Math.max(cfg.rw, cfg.rh), type: ROOMS[cfg.kind].theme });
+    G.World.setBiome(G.Tiles.arenaBiome(ROOMS[cfg.kind].theme), true);
+    const ps = G.Game.everyone();
+    ps.forEach((p, i) => { p.x = room.cx + (i - (ps.length - 1) / 2) * 36; p.y = room.cy + (room.rh - 2.6) * ts; p.safe = false; });
+    G.Camera.x = pl.x; G.Camera.y = pl.y;
+    shopSkip = null;
+    G.Game.flash(cfg.kind === 'shop' ? '#9fe0b0' : '#c9a6ff', 0.6);
+    G.Audio.sfx('select');
+    G.Spawner.say(G.T(cfg.kind === 'shop' ? '¡Bienvenido! ¡Tienda de Kecleon!' : 'Has entrado en la sala misteriosa…'), 2.6, true);
+  }
+
+  /** Anfitrión: lo que pasa en la sala misteriosa al entrar. */
+  function roomStart(live) {
+    const ev = room.ev, cx = room.cx, cy = room.cy;
+    if (ev === 'house') {
+      lockDoor(true);
+      houseStartFx();
+      send(['dg', 'say', '¡Es una casa de monstruos! Aguanta 30 s', 3]);
+      wave(12 + 4 * live.length);
+    } else if (ev === 'treasure') {
+      say('¡Sala del tesoro!', 3);
+      for (let i = 0; i < 14; i++) G.Pickups.drop('coin', cx + G.U.rand(-90, 90), cy + G.U.rand(-50, 50), 5);
+      G.Pickups.drop('item', cx, cy - 20, G.Items.roll());
+      for (const p of live) G.Pickups.drop('potion', cx + G.U.rand(-60, 60), cy + G.U.rand(-30, 30), G.Loot.ownerKey(p));
+      if (Math.random() < 0.3) G.Pickups.drop('ticket', cx + 30, cy, 1);
+      G.Audio.sfx('legend');
+    } else if (ev === 'heal') {
+      say('¡Sala de curación! Recuperas toda la vida', 3.2);
+      if (!blessing) { const until = T() + BLESS_TIME; startBlessing('vital', until); send(['dg', 'bless', 'vital', until]); }
+      roomFx('heal', cx, cy); send(['dg', 'room', 'heal', Math.round(cx), Math.round(cy)]);
+    } else if (ev === 'trap') {
+      say('¡Cuidado! Algo cruje bajo tus pies…', 2);
+      room.trapAt = 1.4;
+    }
+  }
+  function lockDoor(on) { if (!room || room.locked === on) return; room.locked = on; send(['dg', 'rlock', on ? 1 : 0]); }
+
+  /** Anfitrión: cada fotograma dentro del interior. */
+  function roomTick(dt, live) {
+    room.t += dt;
+    if (room.kind === 'shop') {
+      const s = byId(room.siteId);
+      lockDoor(!!s && s.state === 'angry');
+      if (s && s.state === 'angry') {
+        // Kecleon furioso no sale de su tienda.
+        const k = G.EnemyMgr.get(s.bossId);
+        if (k && !k.dead) {
+          const m = (room.rw - 1.2) * room.ts, n = (room.rh - 1.2) * room.ts;
+          k.x = G.U.clamp(k.x, room.cx - m, room.cx + m); k.y = G.U.clamp(k.y, room.cy - n, room.cy + n);
+        }
+      }
+    } else if (room.ev === 'house' && room.locked) {
+      if (room.t >= 6 * room.wave && room.t < HOUSE_TIME - 5) wave(5 + 2 * live.length);
+      const alive = room.mobs.filter(id => { const e = G.EnemyMgr.get(id); return e && !e.dead; }).length;
+      if (room.t >= HOUSE_TIME || (alive === 0 && room.t > 4)) {
+        lockDoor(false);
+        say(alive === 0 ? '¡Casa de monstruos superada! Recoge el botín' : '¡Has aguantado! Recoge el botín', 3);
+        award('mhouse');
+        const t = T();
+        G.Pickups.dropXp(room.cx, room.cy, Math.round(140 + t * 0.9), true);
+        for (let i = 0; i < 8; i++) G.Pickups.drop('coin', room.cx + G.U.rand(-60, 60), room.cy + G.U.rand(-35, 35), 5);
+        if (Math.random() < 0.6) G.Pickups.drop('item', room.cx + 30, room.cy - 10, G.Items.roll());
+        for (const id of room.mobs) { const e = G.EnemyMgr.get(id); if (e && !e.dead) e.hurt(e.hp + 1, '#ffffff'); }
+      }
+    } else if (room.ev === 'trap' && room.trapAt != null && room.t >= room.trapAt) {
+      room.trapAt = null;
+      say('¡Era una trampa! Gas venenoso… pero ha dejado monedas', 3.2);
+      for (let i = 0; i < 20; i++) G.Pickups.drop('coin', room.cx + G.U.rand(-110, 110), room.cy + G.U.rand(-60, 60), 5);
+      roomFx('trap', room.cx, room.cy); send(['dg', 'room', 'trap', Math.round(room.cx), Math.round(room.cy)]);
+    }
+    // Salida: con la puerta abierta, cuando todos están en ella (o han pulsado «Salir»).
+    if (!room.locked) {
+      const [dx, dy] = doorP();
+      const atDoor = p => G.U.dist2(p.x, p.y, dx, dy) < 44 * 44 || room.out.has(myKey(p));
+      if (live.every(atDoor)) { send(['dg', 'exit']); endRoom(); return; }
+      if (G.Coop.active && live.some(atDoor) && Math.floor(room.t / 4) !== Math.floor((room.t - dt) / 4)) say('Esperando a que todos lleguen a la puerta…', 2);
+    }
+  }
+  /** Botón «Salir» del menú: cuentas como listo para salir (y vas hacia la puerta). */
+  function requestExit() {
+    if (!room) return;
+    const pl = G.Game.player;
+    if (authority()) room.out.add(myKey(pl)); else G.Coop.request(['dg', 'out']);
+    const [dx, dy] = doorP();
+    pl.x = dx; pl.y = dy - 8;
+  }
+
+  /** En cada ordenador: vuelta al mapa, delante de la puerta del sitio. */
+  function endRoom() {
+    if (!room) return;
+    const pl = G.Game.player, r = room;
+    if (authority()) G.Pickups.pullAll();                // lo que quedara en la sala, para alguien
+    room = null;
+    lastExit = T();
+    closeShop(); shopSkip = null;
+    if (authority()) G.EnemyMgr.restore(); else G.EnemyMgr.clearRemote();
+    G.Projectiles.clear(); G.Combat.clearFields(); G.Hazards.clear();
+    G.World.setArena(null);
+    G.World.setBiome(r.biome, true);
+    const ps = G.Game.everyone();
+    ps.forEach((p, i) => { p.x = r.bx + (i - (ps.length - 1) / 2) * 36; p.y = r.by; });
+    G.Camera.x = pl.x; G.Camera.y = pl.y;
+    G.Game.flash('#ffffff', 0.5);
+    if (pl.dead) pl.revive(0.3);
+    farewell(pl, r.kind === 'shop' ? '¡Kecleon te despide! Tienes 3 s para escapar' : 'Sales de la sala: 3 s para escapar');
   }
 
   // ---------------- tienda de Kecleon ----------------
@@ -344,15 +441,12 @@ G.Dungeon = (() => {
     const kinds = Object.keys(WARES).filter(w => w !== 'egg' || needEgg);
     return G.U.pickN(kinds, 4).map(kind => ({ kind, price: Math.round(WARES[kind] * k), item: kind === 'item' ? G.Items.roll() : null }));
   }
-  /** La ruleta, a la derecha de la alfombra. */
-  const roulPos = s => [s.x + 150, s.y + 46];
-  let roulT = 0;
-  const warePos = (s, i) => [s.x + (i - 1.5) * 54, s.y + 58 + (i === 1 || i === 2 ? 8 : 0)];
 
   function shopTick(s, live) {
     const t = T();
     if (s.state === 'open' || s.state === 'idle') {
       if (s.state === 'idle') { s.state = 'open'; send(pack(s)); }
+      if (room && room.siteId === s.id) s.until = Math.max(s.until, t + 20);     // no cierra con vosotros dentro
       if (t >= s.until) { say('Kecleon ha cerrado la tienda y se ha ido', 2.6); remove(s); }
     } else if (s.state === 'angry') {
       const e = G.EnemyMgr.get(s.bossId);
@@ -384,7 +478,7 @@ G.Dungeon = (() => {
     else applyWare(host, w);
     G.Audio.sfx(steal ? 'hurt' : 'coin');
     if (steal && !free) kecleonRage(s);
-    else if (!free && s.wares.every(o => o.sold)) { say('¡Gracias por tu compra! Kecleon se va contento', 2.6); remove(s); }
+    else if (!free && s.wares.every(o => o.sold) && !(room && room.siteId === s.id)) { say('¡Gracias por tu compra! Kecleon se va contento', 2.6); remove(s); }
   }
 
   /** Kecleon se enfada: sale como jefe donde está la tienda. */
@@ -398,7 +492,8 @@ G.Dungeon = (() => {
     const def = G.Enemies.bossFor(352, slot, 1.3 * (1 + lvl * 0.02));
     def.behavior = 'charger';
     const e = G.Spawner.spawnBossNow(pl, t, def);
-    if (e) { e.x = s.x; e.y = s.y; e.name = 'Kecleon'; s.bossId = e.id; }
+    // Dentro de la tienda: sale de detrás del mostrador (y la puerta se cierra hasta vencerlo).
+    if (e) { e.x = room ? room.cx : s.x; e.y = room ? counterY() + room.ts : s.y; e.name = 'Kecleon'; s.bossId = e.id; }
     setState(s, 'angry');
     say('¡LADRÓN! ¡Kecleon se ha enfadado!', 3.5);
   }
@@ -489,49 +584,45 @@ G.Dungeon = (() => {
   // ---------------- dibujo ----------------
 
   let kecleonAnim = null;
+  const sprite = (ctx, type, v, x, y, k = 2) => G.Pickups.sprite(ctx, type, v, x, y, k);
+  const label = (ctx, txt, x, y, col, size = 12) => {
+    ctx.font = `800 ${size}px Pixelify,"Segoe UI",system-ui,sans-serif`; ctx.textAlign = 'center';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(txt, x, y);
+    ctx.fillStyle = col; ctx.fillText(txt, x, y);
+  };
+
   function drawGround(ctx) {
     const now = performance.now() / 1000;
+    if (room) { drawRoomGround(ctx, now); return; }
     for (const s of sites) {
       if (!G.Camera.sees(s.x, s.y, 320)) continue;
       ctx.save();
-      if (s.type === 'mhouse') {
-        if (s.state === 'active') {
-          // Borde de la casa: un anillo de piedras de aviso (pixel art) cuyas runas rojas
-          // se encienden una tras otra, girando.
-          const N = 36, lit = Math.floor(now * 12) % N;
-          for (let i = 0; i < N; i++) {
-            const a = (i / N) * 6.2832;
-            const on = (i - lit + N) % N < 6 || (i - lit + N) % N > N - 2;
-            G.Pickups.sprite(ctx, 'hmark', on ? 1 : 0, s.x + Math.cos(a) * HOUSE_R, s.y + Math.sin(a) * HOUSE_R * 0.8, 2);
-          }
-        } else {
-          // Trampilla de piedra con un "?" tallado (pixel art, tiles.js) y un halo morado.
-          ctx.globalAlpha = 0.25 + Math.sin(now * 3) * 0.12; ctx.fillStyle = '#c47bff';
-          ctx.beginPath(); ctx.ellipse(s.x, s.y, 52, 32, 0, 0, 6.2832); ctx.fill();
-          ctx.globalAlpha = 1;
-          G.Pickups.sprite(ctx, 'mhouse', 0, s.x, s.y, 2);
-        }
-      } else if (s.type === 'shop' && s.wares) {
-        // Refugio: suelo más claro y un borde de bloques verdes (pixel) donde no entran enemigos.
-        if (s.state === 'open' || s.state === 'free') {
-          const [cx, cy] = safeC(s);
-          ctx.globalAlpha = 0.12; ctx.fillStyle = '#7dffb0';
-          ctx.beginPath(); ctx.ellipse(cx, cy, SAFE_R, SAFE_R * 0.8, 0, 0, 6.2832); ctx.fill();
-          ctx.globalAlpha = 0.85;
-          const N = 44;
-          for (let i = 0; i < N; i++) {
-            if (i % 2) continue;
-            const a = (i / N) * 6.2832 + now * 0.15;
-            ctx.fillStyle = i % 4 ? '#5fe08a' : '#ffd23f';
-            ctx.fillRect(Math.round((cx + Math.cos(a) * SAFE_R) / 2) * 2 - 4, Math.round((cy + Math.sin(a) * SAFE_R * 0.8) / 2) * 2 - 4, 8, 8);
-          }
-          ctx.globalAlpha = 1;
-        }
-        // Alfombra de la tienda (pixel art, como en Mundo Misterioso).
-        G.Pickups.sprite(ctx, 'shopmat', 0, s.x, s.y + 56, 2);
+      if (s.type === 'mhouse' && s.state === 'idle') {
+        // Trampilla de piedra con un "?" tallado (pixel art, tiles.js) y un halo morado: se baja por ella.
+        ctx.globalAlpha = 0.25 + Math.sin(now * 3) * 0.12; ctx.fillStyle = '#c47bff';
+        ctx.beginPath(); ctx.ellipse(s.x, s.y, 52, 32, 0, 0, 6.2832); ctx.fill();
+        ctx.globalAlpha = 1;
+        sprite(ctx, 'mhouse', 0, s.x, s.y);
       }
       ctx.restore();
     }
+  }
+
+  /** Suelo del interior: alfombra, puerta de salida (y las trampas/el manantial de la sala). */
+  function drawRoomGround(ctx, now) {
+    const r = room, ts = r.ts, [dx, dy] = doorP();
+    ctx.save();
+    if (r.kind === 'shop') sprite(ctx, 'shopmat', 0, r.cx, r.cy + ts * 0.6);
+    else if (r.ev === 'heal') sprite(ctx, 'spring', 0, r.cx, r.cy - 8);
+    else if (r.ev === 'trap' && r.trapAt != null) for (let i = -2; i <= 2; i++) for (let j = -1; j <= 1; j++) sprite(ctx, 'trap', (i + j + 3) % 3, r.cx + i * ts * 1.6, r.cy + j * ts * 1.4);
+    else if (r.ev === 'house') {
+      // Runas de aviso en las esquinas mientras la puerta está cerrada.
+      const lit = Math.floor(now * 6) % 4;
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([a, b], i) => sprite(ctx, 'hmark', r.locked && i === lit ? 1 : 0, r.cx + a * (r.rw - 1.5) * ts, r.cy + b * (r.rh - 1.5) * ts));
+    }
+    // Puerta de salida en la pared sur.
+    sprite(ctx, 'door', r.locked ? 1 : 0, dx, dy + ts * 0.55);
+    ctx.restore();
   }
   // Iconos: los de G.Icons; el disco, la poción y el huevo, con su pixel art del mapa (tiles.js).
   const WARE_ICON = { upgrade: 'up', heal: 'berry', rerolls: 'cards', tm: 'book', protein: 'fist', hpup: 'heart', revive: 'sprout', ticket: 'ticket' };
@@ -541,56 +632,64 @@ G.Dungeon = (() => {
   function drawAir(ctx) {
     G.Funny.drawAir(ctx);
     const now = performance.now() / 1000;
-    const pl = G.Game.player;
+    if (room) { drawRoomAir(ctx, now); return; }
     for (const s of sites) {
       if (!G.Camera.sees(s.x, s.y, 320)) continue;
       ctx.save();
-      ctx.textAlign = 'center';
-      ctx.font = '800 12px Pixelify,"Segoe UI",system-ui,sans-serif';
-      const label = (txt, x, y, col) => {
-        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(txt, x, y);
-        ctx.fillStyle = col; ctx.fillText(txt, x, y);
-      };
       if (s.type === 'mhouse' && s.state === 'idle') {
-        ctx.font = '800 34px Pixelify,"Segoe UI",system-ui,sans-serif';
-        label('?', s.x, s.y - 14 - Math.abs(Math.sin(now * 2.5)) * 8, '#e2c6ff');
-      } else if (s.type === 'mhouse' && s.state === 'active' && s.t != null) {
-        label(G.T('CASA DE MONSTRUOS') + ' · ' + Math.max(0, Math.ceil(HOUSE_TIME - s.t)) + 's', s.x, s.y - 30, '#ff8a95');
+        label(ctx, '?', s.x, s.y - 14 - Math.abs(Math.sin(now * 2.5)) * 8, '#e2c6ff', 34);
+        label(ctx, G.T('SALA MISTERIOSA · entra'), s.x, s.y + 40, '#d9a6ff', 11);
       } else if (s.type === 'statue') {
         // Estatua de Unown en pixel art (tiles.js); el ojo va cambiando de color.
         ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(s.x, s.y, 24, 8, 0, 0, 6.2832); ctx.fill();
-        G.Pickups.sprite(ctx, 'statue', Math.floor(now * 1.5) % 6, s.x, s.y - 34, 2);
+        sprite(ctx, 'statue', Math.floor(now * 1.5) % 6, s.x, s.y - 34);
         if (Math.random() < 0.08) G.FX.twinkle(s.x + G.U.rand(-12, 12), s.y - 58 + G.U.rand(-10, 10));
-        ctx.font = '800 11px Pixelify,"Segoe UI",system-ui,sans-serif';
-        label(G.T('ESTATUA MISTERIOSA'), s.x, s.y - 80, '#e8eef8');
+        label(ctx, G.T('ESTATUA MISTERIOSA'), s.x, s.y - 80, '#e8eef8', 11);
       } else if (s.type === 'shop' && s.wares) {
-        // Kecleon detrás del mostrador (si no está furioso: entonces es el jefe).
-        if (s.state === 'angry') {
-          const k = G.EnemyMgr.get(s.bossId);
-          if (k && !k.dead && G.Camera.sees(k.x, k.y, 40)) G.Funny.bubble(ctx, k.x, k.y - k.bodyH - 16, G.T('¡LADRÓN! ¡VUELVE AQUÍ!'), '#c8282a');
-        }
-        if (s.state !== 'angry') {
-          if (!kecleonAnim) kecleonAnim = new G.Sprites.Animator(352, 1, false);
-          kecleonAnim.loop('Idle'); kecleonAnim.update(1 / 60);
-          G.Sprites.drawShadow(ctx, 352, s.x, s.y);
-          kecleonAnim.draw(ctx, s.x, s.y, {});
-          // Habla cuando te acercas.
-          if (pl && s.state === 'open' && G.U.dist2(pl.x, pl.y, s.x, s.y) < 230 * 230) G.Funny.bubble(ctx, s.x, s.y - 70, G.T('¡Bienvenido! ¡Tienda de Kecleon!'));
-        }
-        // La ruleta (pixel art, tiles.js) con su cartel.
-        if (s.state === 'open' || s.state === 'free') {
-          const [rx, ry] = roulPos(s), left = s.spins == null ? 3 : s.spins;
-          G.Pickups.sprite(ctx, 'roulette', Math.floor(now * (left > 0 ? 6 : 0)) % 4, rx, ry - 18, 2);
-          ctx.font = '800 11px Pixelify,"Segoe UI",system-ui,sans-serif';
-          label(G.T('Ruleta') + ' (' + left + ')', rx, ry - 52, left > 0 ? '#ffd23f' : '#8f98ab');
-        }
+        // La tienda en el mapa: un puesto con toldo; se entra por la puerta.
+        ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(s.x, s.y + 4, 46, 12, 0, 0, 6.2832); ctx.fill();
+        sprite(ctx, 'shopdoor', 0, s.x, s.y - 36);
         const title = s.state === 'free' ? G.T('¡TODO GRATIS!') : s.state === 'angry' ? G.T('¡KECLEON FURIOSO!') : G.T('TIENDA DE KECLEON');
-        label(title + (s.state === 'open' ? ' · ' + Math.max(0, Math.ceil(s.until - T())) + 's' : ''), s.x, s.y - 52, s.state === 'angry' ? '#ff5f6d' : '#9fe0b0');
-        if (s.state === 'open' || s.state === 'free') label(G.T('Refugio: aquí no entran enemigos'), s.x, s.y + 110, '#7dffb0');
-        ctx.font = '800 10px Pixelify,"Segoe UI",system-ui,sans-serif';
+        label(ctx, title + (s.state === 'open' ? ' · ' + Math.max(0, Math.ceil(s.until - T())) + 's' : ''), s.x, s.y - 86, s.state === 'angry' ? '#ff5f6d' : '#9fe0b0');
+        if (s.state === 'open' || s.state === 'free') label(ctx, G.T('Entra por la puerta: dentro no hay enemigos'), s.x, s.y + 24, '#7dffb0', 11);
       }
       ctx.restore();
     }
+  }
+
+  /** Lo alto del interior: estanterías, Kecleon tras el mostrador, carteles. */
+  function drawRoomAir(ctx, now) {
+    const r = room, ts = r.ts, pl = G.Game.player, [dx, dy] = doorP();
+    ctx.save();
+    if (r.kind === 'shop') {
+      const s = byId(r.siteId);
+      // Estanterías contra la pared norte.
+      for (let i = -2; i <= 2; i++) if (i) sprite(ctx, 'shelf', (i + 3) % 3, r.cx + i * ts * 2.2, r.cy - (r.rh - 1.4) * ts);
+      // La ruleta, a un lado (se juega desde el menú).
+      sprite(ctx, 'roulette', Math.floor(now * 6) % 4, r.cx + (r.rw - 1.6) * ts, r.cy - ts * 0.6);
+      label(ctx, G.T('Ruleta'), r.cx + (r.rw - 1.6) * ts, r.cy - ts * 1.9, '#ffd23f', 11);
+      if (s && s.state !== 'angry') {
+        if (!kecleonAnim) kecleonAnim = new G.Sprites.Animator(352, 1, false);
+        kecleonAnim.loop('Idle'); kecleonAnim.update(1 / 60);
+        G.Sprites.drawShadow(ctx, 352, r.cx, counterY() - 6);
+        kecleonAnim.draw(ctx, r.cx, counterY() - 6, {});
+        if (!openShop) G.Funny.bubble(ctx, r.cx, counterY() - 70, G.T(s.state === 'free' ? '…Llévatelo todo. Snif.' : 'Acércate al mostrador para comprar'));
+      } else if (s) {
+        const k = G.EnemyMgr.get(s.bossId);
+        if (k && !k.dead) G.Funny.bubble(ctx, k.x, k.y - k.bodyH - 16, G.T('¡LADRÓN! ¡VUELVE AQUÍ!'), '#c8282a');
+      }
+      sprite(ctx, 'counter', 0, r.cx, counterY() + 14);
+      label(ctx, G.T('TIENDA DE KECLEON'), r.cx, r.cy - (r.rh - 0.2) * ts, '#9fe0b0');
+    } else {
+      const names = { house: 'CASA DE MONSTRUOS', treasure: 'SALA DEL TESORO', heal: 'SALA DE CURACIÓN', trap: 'SALA TRAMPA' };
+      let t = G.T(names[r.ev] || 'SALA MISTERIOSA');
+      if (r.ev === 'house' && r.locked) t += ' · ' + Math.max(0, Math.ceil(HOUSE_TIME - r.t)) + 's';
+      label(ctx, t, r.cx, r.cy - (r.rh - 0.2) * ts, r.ev === 'house' ? '#ff8a95' : '#d9a6ff');
+      if (r.ev === 'treasure') for (let i = -1; i <= 1; i++) sprite(ctx, 'bigchest', 0, r.cx + i * ts * 3, r.cy - (r.rh - 2) * ts);
+    }
+    label(ctx, G.T(r.locked ? 'Puerta cerrada' : 'Salida'), dx, dy - ts * 0.9, r.locked ? '#ff8a95' : '#7dffb0', 11);
+    if (!r.locked && pl && G.U.dist2(pl.x, pl.y, dx, dy) < 44 * 44 && G.Coop.active) label(ctx, G.T('Esperando a los demás…'), dx, dy - ts * 1.5, '#ffffff', 11);
+    ctx.restore();
   }
 
   /** HUD: la bendición o maldición activa (nombre y segundos). */
@@ -603,6 +702,11 @@ G.Dungeon = (() => {
   /** Al bajar de piso (floors.js): lo del mapa anterior desaparece (la bendición sigue). */
   function clearSites() { sites = []; buyT = 0; buyKey = ''; }
 
+  const ROOM_NAME = { shop: 'Tienda de Kecleon', house: 'Casa de monstruos', treasure: 'Sala del tesoro', heal: 'Sala de curación', trap: 'Sala trampa' };
   return { reset, clearSites, tick, update, onNet, onClient, drawGround, drawAir, blessingInfo, mod,
-           get sites() { return sites; }, BLESS };
+           get sites() { return room ? [] : sites; }, BLESS,
+           /** ¿Está el grupo dentro de un interior? (spawner, loot, etc. no sacan nada) */
+           get inRoom() { return !!room; },
+           get roomName() { return room ? ROOM_NAME[room.kind === 'shop' ? 'shop' : room.ev] || 'Sala misteriosa' : null; },
+           get roomDoor() { if (!room) return null; const [x, y] = doorP(); return { x, y }; } };
 })();

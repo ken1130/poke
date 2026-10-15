@@ -23,7 +23,7 @@ G.Funny = (() => {
 
   function reset() { karpT = 420 + Math.random() * 120; snorT = 240 + Math.random() * 120; quipT = 20; snorlax = null; quips = []; karps = new Set(); }
   const authority = () => !G.Coop.active || G.Coop.isHost;
-  const allowed = () => !G.PvP.on && !G.Rift.inArena && G.Modes.run !== 'legend';
+  const allowed = () => !G.PvP.on && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom) && G.Modes.run !== 'legend';
   const LINES = {
     es: ['Sólo pasaba por aquí…', 'Hoy no quería trabajar', '¡Se lo diré a mi hermano mayor!', 'Mi madre me llama para cenar', '¿Me dejas pasar?', '¡Es mi primer día!', 'Espera, ¡aún no estaba listo!', 'No en la cara, por favor', 'Qué Pokémon tan guapo…', '¿Has visto mis llaves?', 'Yo sólo quería un abrazo', '¡Esto no es lo que parece!'],
     en: ['Just passing by…', 'I didn’t want to work today', 'I’m telling my big brother!', 'Mom’s calling me for dinner', 'Can I get through?', 'It’s my first day!', 'Wait, I wasn’t ready!', 'Not the face, please', 'Such a handsome Pokémon…', 'Have you seen my keys?', 'I just wanted a hug', 'This isn’t what it looks like!'],
