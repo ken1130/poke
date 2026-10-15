@@ -999,7 +999,7 @@ G.Combat = (() => {
   function hit(pl, e, dmg, col, dx, dy, knock, m, opt) {
     const k = typeK(m.type, e);
     const crit = !ghost && (opt && opt.crit != null ? opt.crit : isCrit(pl));
-    dmg *= k * (crit ? (opt && opt.cmul) || CRIT_MUL : 1) * itemK(pl, m.type, e);
+    dmg *= k * (crit ? (opt && opt.cmul) || pl.critMul || CRIT_MUL : 1) * itemK(pl, m.type, e);
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
     pl.dmgDealt += dmg;
@@ -1013,12 +1013,15 @@ G.Combat = (() => {
    * Roca del Rey (10 %: el enemigo normal retrocede, inmovilizado 0,6 s).
    */
   function itemK(pl, type, e) {
-    if (ghost || !pl.item) return 1;
+    if (ghost) return 1;
+    // Reliquia Frasco de Ponzoña (torre): +15 % a los quemados o envenenados.
+    const venom = pl.relicVenom && (e.burn > 0 || e.poison > 0) ? 1.15 : 1;
+    if (!pl.item) return venom;
     if (pl.item === 'kingsrock' && !e.boss && Math.random() < 0.1) {
       e.applyRoot(0.6);
       if (G.Camera.sees(e.x, e.y, 20)) G.FX.ring(e.x, e.y, 4, 22, '#9aa6b5', 0.3, 2);
     }
-    return pl.item === 'expertbelt' && type && G.Types.mult(type, e.types) > 1 ? 1.3 : 1;
+    return venom * (pl.item === 'expertbelt' && type && G.Types.mult(type, e.types) > 1 ? 1.3 : 1);
   }
 
   // ---------------- colisiones ----------------
@@ -1126,7 +1129,7 @@ G.Combat = (() => {
         }
 
         const crit = isCrit(pl);
-        const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? CRIT_MUL : 1) * itemK(pl, p.mtype, e);
+        const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? pl.critMul || CRIT_MUL : 1) * itemK(pl, p.mtype, e);
         e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
                crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });

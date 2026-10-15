@@ -98,6 +98,11 @@ G.AchDefs = (() => {
     { id: 'elite10', cat: 'mazmorra', tier: 1, name: 'Cazador de élites', desc: 'Derrota a 10 enemigos de élite.', value: st('eliteKills'), goal: 10, reward: { t1: 3 } },
     { id: 'elite100', cat: 'mazmorra', tier: 2, name: 'Azote de élites', desc: 'Derrota a 100 enemigos de élite.', value: st('eliteKills'), goal: 100, reward: { t10: 1 }, title: 'Azote de élites' },
     { id: 'combo1', cat: 'mazmorra', tier: 1, name: 'Trabajo en equipo', desc: 'Usa un ataque combinado en grupo.', value: st('combos'), goal: 1, reward: { t1: 2 } },
+    // ---------- racha del reto diario (2026-10-15) ----------
+    { id: 'streak3', cat: 'modos', tier: 1, name: 'Tres días seguidos', desc: 'Juega el reto diario 3 días seguidos.', value: st('bestDailyStreak'), goal: 3, reward: { t1: 3 } },
+    { id: 'streak7', cat: 'modos', tier: 2, name: 'Una semana entera', desc: 'Juega el reto diario 7 días seguidos.', value: st('bestDailyStreak'), goal: 7, reward: { t10: 1 }, title: 'Constante' },
+    { id: 'streak14', cat: 'modos', tier: 2, name: 'Dos semanas', desc: 'Juega el reto diario 14 días seguidos.', value: st('bestDailyStreak'), goal: 14, reward: { t10: 2 } },
+    { id: 'streak30', cat: 'modos', tier: 3, name: 'Un mes sin fallar', desc: 'Juega el reto diario 30 días seguidos.', value: st('bestDailyStreak'), goal: 30, reward: { t10: 5 }, title: 'Leyenda diaria' },
     { id: 'group1', cat: 'otros', tier: 1, name: 'En compañía', desc: 'Juega una partida en grupo.', value: st('groupRuns'), goal: 1, reward: { t1: 2 } },
     { id: 'group10', cat: 'otros', tier: 2, name: 'Compañero fiel', desc: 'Juega 10 partidas en grupo.', value: st('groupRuns'), goal: 10, reward: { t10: 1 }, title: 'Compañero fiel' }
   ];

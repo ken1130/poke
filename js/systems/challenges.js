@@ -36,9 +36,16 @@ G.Challenges = (() => {
     { id: 'giant', name: 'Gigantes', desc: 'La mitad de enemigos, pero con ×2,5 de vida. Premio ×1,5.', rules: { hp: 2.5, count: 0.5, reward: 1.5 } },
     { id: 'dark', name: 'Noche cerrada', desc: 'Sólo ves lo que tienes cerca.', rules: { dark: 1 } },
     { id: 'noheal', name: 'Sin curas', desc: 'Nada te cura: ni bayas ni regeneración.', rules: { heal: 0 } },
-    { id: 'dragon', name: 'Dragones y acero', desc: 'Sólo salen Pokémon de tipo Dragón y Acero.', rules: { types: ['dragon', 'steel'] } }
+    { id: 'dragon', name: 'Dragones y acero', desc: 'Sólo salen Pokémon de tipo Dragón y Acero.', rules: { types: ['dragon', 'steel'] } },
+    // (2026-10-15) nuevas: entran en la rueda desde la semana que viene (ver weekly()).
+    { id: 'onemove', name: 'Un solo ataque', desc: 'Sólo puedes llevar un movimiento de ataque. Premio ×1,5.', rules: { oneMove: 1, reward: 1.5 } },
+    { id: 'elites', name: 'Semana de élites', desc: 'Los enemigos de élite salen ×5 más a menudo. Premio ×1,3.', rules: { eliteK: 5, reward: 1.3 } },
+    { id: 'speedy', name: 'Demonios veloces', desc: 'Los enemigos van un 30% más rápido, pero ganas ×1,5 de experiencia y monedas.', rules: { spd: 1.3, reward: 1.5 } },
+    { id: 'allin', name: 'Todo o nada', desc: 'Recibes el doble de daño, pero haces ×1,8.', rules: { taken: 2, meAtk: 1.8 } }
   ];
-  const weekly = () => WEEKLY[weekSeed() % WEEKLY.length];
+  // La semana en curso no cambia de regla a mitad (clasificación): las 4 nuevas cuentan desde la siguiente.
+  const NEW_FROM = 202643, OLD_N = 8;
+  const weekly = () => { const s = weekSeed(); return WEEKLY[s < NEW_FROM ? s % OLD_N : s % WEEKLY.length]; };
 
   // ---------------- torre sin fin ----------------
 
@@ -67,9 +74,14 @@ G.Challenges = (() => {
   function prepare() {
     const run = G.Modes.run;
     tower = null;
+    G.Relics.reset();
     if (run === 'weekly') G.Modes.setRules(weekly().rules);
     else if (run === 'tower') { G.Modes.setRules({}); tower = { floor: 1, curses: [] }; }
-    else if (run === 'legend' || run === 'daily') G.Modes.setRules({});
+    else if (run === 'legend') {
+      // Desafío legendario: dificultad elegida (en grupo, normal).
+      const T = G.Modes.LEGEND_TIERS[G.Coop.active ? 0 : G.Modes.legendTier()];
+      G.Modes.setRules({ lhp: T.hp, ldmg: T.dmg, reward: T.rw });
+    } else if (run === 'daily') G.Modes.setRules({});
   }
   /** Semilla del mapa: igual para todos (reto diario / semanal) o null. */
   function seed() {
@@ -82,6 +94,8 @@ G.Challenges = (() => {
     if (G.Modes.rule('glass')) { pl.maxHp = pl.hp = Math.max(1, Math.round(pl.maxHp * 0.3)); pl.atkMul *= 2; pl.glassK = 0.3; }
     const ms = G.Modes.rule('meSpd');
     if (ms) pl.spdMul *= ms;
+    const ma = G.Modes.rule('meAtk');
+    if (ma) pl.atkMul *= ma;
   }
 
   /** Cada fotograma (solitario o anfitrión): sube de piso en la torre. */
@@ -104,6 +118,7 @@ G.Challenges = (() => {
     G.Spawner.say(G.I18n.f('Piso {x}', f) + ' · ' + G.T(c.name), 3, true);
     G.Audio.sfx('boss');
     G.FX.ring(pl.x, pl.y, 10, G.Camera.outerRadius(), '#c47bff', 0.7, 6);
+    if (f % 5 === 0) G.Relics.offer();            // reliquia cada 5 pisos (relics.js)
   }
   function rulesNow() {
     const r = {};
@@ -119,6 +134,7 @@ G.Challenges = (() => {
     G.Modes.setRules(ev[2] || {});
     const c = CURSES.find(x => x.id === ev[4]);
     if (c) G.Spawner.say(G.I18n.f('Piso {x}', ev[1]) + ' · ' + G.T(c.name), 3, true);
+    if (ev[1] % 5 === 0) G.Relics.offer();
   }
   /** Clave de la clasificación de un reto (en grupo, la suya aparte). */
   function boardKey(run, group) {
@@ -170,6 +186,7 @@ G.Challenges = (() => {
   /** En grupo: la marca del grupo (la sube el anfitrión) y nada de récords en solitario. */
   function teamAfterRun(r, box, run) {
     const floor = tower ? tower.floor : 1;
+    if (run === 'daily') markDaily();
     if (run === 'weekly' && G.DB.save) { G.DB.save.stats.weeklyRuns = (G.DB.save.stats.weeklyRuns || 0) + 1; G.DB.commit(); }
     const v = run === 'tower' ? floor : Math.floor(r.time);
     const names = (r.names || []).join('、').slice(0, 48);
@@ -252,16 +269,21 @@ G.Challenges = (() => {
         <div class="row between"><h3 style="margin:0">${G.T('Desafíos')}</h3><button class="btn small ghost" data-close>${G.T('Volver')}</button></div>
         <p class="sub" style="margin:6px 0 0">${G.T('Cada desafío tiene sus propias reglas: las «Reglas a medida» no cuentan aquí.')}
           ${G.T('Con amigos: crea una sala en «Jugar con amigos» y elige el desafío en «Qué jugar» (tiene su clasificación de grupos).')}</p>
-        ${card('daily', 'Reto diario', G.Modes.today(), G.T('Mismo mapa y mismos enemigos para todos hoy. Comparte tu tiempo con tus amigos.'),
+        ${card('daily', 'Reto diario', G.Modes.today(), G.T('Mismo mapa y mismos enemigos para todos hoy. Comparte tu tiempo con tus amigos.')
+          + `<div style="margin-top:4px;color:#ff9a3d"><b>🔥 ${G.I18n.f('Racha: {x} días seguidos', streakNow())}</b> <small style="color:var(--muted)">${G.T('Premios a los 3, 7, 14 y 30 días')}</small></div>`,
           db ? G.I18n.f('Tu mejor marca de hoy: {x}', G.U.mmss(db.time)) : '', true)}
         ${card('weekly', 'Reto semanal', isoWeek().key, `<b style="color:#ffd23f">${G.T(wk.name)}</b> — ${G.T(wk.desc)}`,
           wb ? G.I18n.f('Tu mejor marca de la semana: {x}', G.U.mmss(wb.time)) : '', true)}
         ${card('tower', 'Torre sin fin', '', G.T('Cada minuto subes un piso y cae una maldición nueva. ¿Hasta dónde llegas?'),
           tb ? G.I18n.f('Récord: piso {x}', tb) : '', true)}
-        ${card('legend', 'Desafío legendario', '', G.T('Legendarios uno tras otro en la arena de la grieta. ¿Cuántos vences antes de caer?'),
+        ${card('legend', 'Desafío legendario', '', G.T('Legendarios uno tras otro en la arena de la grieta. ¿Cuántos vences antes de caer?')
+          + `<div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap">${G.Modes.LEGEND_TIERS.map((t, i) =>
+              `<button class="btn small ${G.Modes.legendTier() === i ? 'gold' : ''}" data-tier="${i}">${G.T(t.name)}</button>`).join('')}</div>
+             <small style="color:var(--muted)">${G.T(G.Modes.LEGEND_TIERS[G.Modes.legendTier()].desc)}</small>`,
           lb ? G.I18n.f('Récord: {x}', lb) : '', false)}
       </div>`;
     overlay.querySelector('[data-close]').onclick = close;
+    overlay.querySelectorAll('[data-tier]').forEach(b => { b.onclick = () => { G.Modes.setLegendTier(+b.dataset.tier); G.Audio.sfx('click'); open(); }; });
     overlay.querySelectorAll('[data-go]').forEach(b => { b.dataset.sfx = 'confirm'; b.onclick = () => go(b.dataset.go); });
     overlay.querySelectorAll('[data-board]').forEach(b => {
       b.onclick = () => {
@@ -282,9 +304,34 @@ G.Challenges = (() => {
     if (G.I18n.walk) G.I18n.walk(overlay);
   }
 
+  // ---------------- racha del reto diario ----------------
+  // save.stats.dailyStreak (días seguidos), dailyLast (último día jugado), bestDailyStreak.
+  // Los premios (3, 7, 14 y 30 días) son logros (achievements.js): sale su aviso solo.
+  const dayKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); };
+  /** Has jugado el reto de hoy: sube la racha. Devuelve la racha. */
+  function markDaily() {
+    const s = G.DB.save;
+    if (!s) return 0;
+    const st = s.stats = s.stats || {}, t = G.Modes.today();
+    if (st.dailyLast === t) return st.dailyStreak || 1;
+    st.dailyStreak = st.dailyLast === yesterday() ? (st.dailyStreak || 0) + 1 : 1;
+    st.dailyLast = t;
+    st.bestDailyStreak = Math.max(st.bestDailyStreak || 0, st.dailyStreak);
+    G.Progress.event('dailyStreak');
+    G.DB.commit();
+    return st.dailyStreak;
+  }
+  /** Racha vigente (si ayer o hoy jugaste; si no, 0). */
+  function streakNow() {
+    const st = G.DB.save && G.DB.save.stats;
+    if (!st || !st.dailyLast) return 0;
+    return st.dailyLast === G.Modes.today() || st.dailyLast === yesterday() ? st.dailyStreak || 0 : 0;
+  }
+
   /** Texto bajo "Desafíos" en el menú. */
   function menuLine() { return G.T('Reto semanal') + ': ' + G.T(weekly().name); }
 
-  return { open, close, prepare, seed, applyPlayer, update, onNet, hudLine, afterRun, menuLine, isoWeek, weekly, WEEKLY,
+  return { open, close, prepare, seed, applyPlayer, update, onNet, hudLine, afterRun, menuLine, isoWeek, weekly, WEEKLY, markDaily, streakNow,
            get floor() { return tower ? tower.floor : 0; } };
 })();

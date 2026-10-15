@@ -98,7 +98,18 @@ G.Modes = (() => {
   function writeJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* nada */ } }
 
   function dailyBest() { return readJSON(KEY_DAILY + today()); }
-  function legendBest() { return readJSON(KEY_LEGEND) || 0; }
+
+  // Desafío legendario: dificultad (2026-10-15). hp/dmg de los legendarios, rw = premio (XP y monedas).
+  const LEGEND_TIERS = [
+    { name: 'Dificultad normal', hp: 1, dmg: 1, rw: 1, desc: 'Como siempre.' },
+    { name: 'Difícil', hp: 1.6, dmg: 1.6, rw: 1.5, desc: 'Legendarios ×1,6 de vida y daño. Premio ×1,5 y un ticket extra por cada uno.' },
+    { name: 'Muy difícil', hp: 2.5, dmg: 2.5, rw: 2.5, desc: 'Legendarios ×2,5 de vida y daño. Premio ×2,5 y tickets extra (a veces ×10).' }
+  ];
+  const KEY_TIER = 'ps.legend.tier';
+  function legendTier() { const v = readJSON(KEY_TIER); return Number.isInteger(v) && LEGEND_TIERS[v] ? v : 0; }
+  function setLegendTier(i) { if (LEGEND_TIERS[i]) writeJSON(KEY_TIER, i); }
+  /** Récord de legendarios vencidos en esa dificultad (la normal, la de siempre). */
+  function legendBest(tier = legendTier()) { return readJSON(KEY_LEGEND + (tier ? '.' + tier : '')) || 0; }
 
   // ---------------- empezar y acabar ----------------
 
@@ -134,7 +145,9 @@ G.Modes = (() => {
       const better = !best || r.time > best.time;
       if (better) writeJSON(KEY_DAILY + today(), { time: Math.floor(r.time), level: r.level, kills: r.kills, dex: r.dex });
       postDaily(r);
+      const streak = G.Challenges.markDaily();
       html = `<div style="grid-column:1/-1" class="panel"><span>${G.T('Reto diario')} ${today()}</span>
+        <div style="color:#ff9a3d"><b>🔥 ${G.I18n.f('Racha: {x} días seguidos', streak)}</b></div>
         <p class="daily-line" style="margin:6px 0;font-size:14px;user-select:all">${line}</p>
         ${better ? `<div class="gold">${G.T('¡Tu mejor marca de hoy!')}</div>` : `<div style="color:var(--muted)">${G.I18n.f('Tu mejor marca de hoy: {x}', G.U.mmss(best.time))}</div>`}
         <button class="btn small gold" type="button" id="over-share">${G.T('Copiar resultado')}</button></div>`;
@@ -142,9 +155,10 @@ G.Modes = (() => {
       $('over-share').onclick = () => copy(line);
     } else if (run === 'legend') {
       const wins = G.Rift.rushWins;
-      const best = legendBest();
-      if (wins > best) writeJSON(KEY_LEGEND, wins);
-      html = `<div style="grid-column:1/-1;text-align:center" class="panel"><span>${G.T('Desafío legendario')}</span>
+      const tier = r.group ? 0 : legendTier();
+      const best = legendBest(tier);
+      if (wins > best) writeJSON(KEY_LEGEND + (tier ? '.' + tier : ''), wins);
+      html = `<div style="grid-column:1/-1;text-align:center" class="panel"><span>${G.T('Desafío legendario')} · ${G.T(LEGEND_TIERS[tier].name)}</span>
         <b class="gold">${G.I18n.f('Legendarios vencidos: {x}', wins)}</b>
         <div style="color:var(--muted)">${wins > best ? G.T('¡Nuevo récord!') : G.I18n.f('Récord: {x}', best)}</div></div>`;
       box.insertAdjacentHTML('beforeend', html);
@@ -281,7 +295,7 @@ G.Modes = (() => {
 
   return {
     openBoard, on, scene, scale, countMul, rewardMul, healMul, setRules, rule, dailySeed, seeded, rng, start, reset, setRoom, afterRun, openPanel, summary, copy,
-    today, dailyBest, legendBest, closePanel,
+    today, dailyBest, legendBest, closePanel, LEGEND_TIERS, legendTier, setLegendTier,
     get run() { return run; }
   };
 })();

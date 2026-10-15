@@ -102,6 +102,8 @@ G.Player = class Player {
   // ---------------- movimientos ----------------
   addMove(id) {
     if (this.slots.length >= this.maxMoves || this.hasMove(id)) return false;
+    // Reto semanal "Un solo ataque": sólo un movimiento que no sea potenciador.
+    if (G.Modes.rule('oneMove') && G.Moves.BY_ID[id] && G.Moves.BY_ID[id].kind !== 'buff' && this.moves.some(m => m.kind !== 'buff')) return false;
     const m = G.Moves.instance(id, 1);
     this.moves.push(m);
     const group = [m];
@@ -260,7 +262,8 @@ G.Player = class Player {
     // estar encima de los enemigos para pegar (iban muy por detrás).
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
     // curseTaken: maldición de cristal (dungeon.js)
-    const d = Math.max(1, amount * (1 - this.reduction) * close * (1 + (this.curseTaken || 0)));
+    // taken: reto semanal "Todo o nada" (×2)
+    const d = Math.max(1, amount * (1 - this.reduction) * close * (1 + (this.curseTaken || 0)) * (G.Modes.rule('taken') || 1));
     this.hp -= d;
     // Globo Helio: al recibir un golpe explota (vuelve a los 30 s, ver update).
     if (this.hasItem('airballoon') && this.balloon) {
@@ -368,6 +371,8 @@ G.Player = class Player {
   /** Cascabel Concha: un poco de vida por el daño que haces (tope 4/s). */
   onDealt(dmg) {
     if (this.item === 'shellbell') this.bellHeal = Math.min(4, this.bellHeal + dmg * 0.04);
+    // Reliquia Colmillo Sediento (torre): un poco de vida por golpe (como mucho el 1 % por golpe).
+    if (this.relicLeech && !this.dead) this.hp = Math.min(this.maxHp, this.hp + Math.min(dmg * this.relicLeech, this.maxHp * 0.01));
   }
 
   /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo. */
