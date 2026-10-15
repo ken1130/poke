@@ -242,6 +242,14 @@ G.Player = class Player {
     // (won: fase de la Aventura ya superada, en los 2 s antes del resumen)
     // star: poción de estrella (loot.js)
     if (this.invuln > 0 || this.dead || this.god || this.picking || this.star || G.Stages.won) return;
+    // Polvo Brillo: a veces el golpe no te da.
+    if (this.hasItem('brightpowder') && Math.random() < 0.2) {
+      this.invuln = 0.3;
+      G.FX.dmgText(this.x, this.y - this.bodyH - 4, G.T('¡Esquivado!'), '#bff3ff');
+      return;
+    }
+    // Mineral Evolutivo: menos daño si aún puede evolucionar.
+    if (this.hasItem('eviolite') && G.Evo.levelFor(this.dex) != null) amount *= 0.65;
     let eff = null;
     if (type) {
       const k = G.Types.mult(type, this.mon.types);
@@ -253,6 +261,12 @@ G.Player = class Player {
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
     const d = Math.max(1, amount * (1 - this.reduction) * close);
     this.hp -= d;
+    // Globo Helio: al recibir un golpe explota (vuelve a los 30 s, ver update).
+    if (this.hasItem('airballoon') && this.balloon) {
+      this.balloon = false; this.balloonT = 30; this.spdMul /= 1.25;
+      G.FX.burst(this.x, this.y - this.bodyH, '#ff5f6d', 14, 160);
+      G.FX.dmgText(this.x, this.y - this.bodyH - 16, G.T('¡El globo ha explotado!'), '#ff8a95');
+    }
     this.invuln = 0.45;
     this.flash = 0.14;
     G.Audio.sfx('hurt');
@@ -375,6 +389,10 @@ G.Player = class Player {
     if (this.invuln > 0) this.invuln -= dt;
     if (this.flash > 0) this.flash -= dt;
     if (this.attackFace > 0) this.attackFace -= dt;
+    if (this.hasItem('airballoon') && !this.balloon && this.balloonT > 0 && (this.balloonT -= dt) <= 0) {
+      this.balloon = true; this.spdMul *= 1.25;
+      G.FX.ring(this.x, this.y, 6, 50, '#ff5f6d', 0.4, 3);
+    }
     // Si el hueco activo se ha quedado sólo con pasivos (p. ej. Colmillo Vampiro al
     // evolucionar), se pasa a un ataque de verdad: los pasivos funcionan igual.
     if (this.passiveSlot(this.active)) {

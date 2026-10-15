@@ -32,7 +32,21 @@ G.Items = (() => {
     { id: 'rockyhelmet', name: 'Casco Dentado', desc: 'Los que te golpean cuerpo a cuerpo reciben daño.',
       on: () => {}, off: () => {} },
     { id: 'assaultvest', name: 'Chaleco Asalto', desc: '+20% de reducción de daño recibido.',
-      on: p => { p.dmgReduce += 0.2; }, off: p => { p.dmgReduce -= 0.2; } }
+      on: p => { p.dmgReduce += 0.2; }, off: p => { p.dmgReduce -= 0.2; } },
+    // ---- 2026-10-15 ----
+    { id: 'expertbelt', name: 'Cinta Experto', desc: '+30% de daño con los golpes muy eficaces.',
+      on: () => {}, off: () => {} },
+    { id: 'scopelens', name: 'Periscopio', desc: '+15% de probabilidad de golpe crítico.',
+      on: p => { p.critChance += 0.15; }, off: p => { p.critChance -= 0.15; } },
+    { id: 'brightpowder', name: 'Polvo Brillo', desc: '20% de probabilidad de esquivar un golpe por completo.',
+      on: () => {}, off: () => {} },
+    { id: 'kingsrock', name: 'Roca del Rey', desc: 'Tus ataques tienen un 10% de probabilidad de hacer retroceder (inmovilizar un momento) a los enemigos normales.',
+      on: () => {}, off: () => {} },
+    { id: 'eviolite', name: 'Mineral Evolutivo', desc: 'Si tu Pokémon aún puede evolucionar, recibe un 35% menos de daño.',
+      on: () => {}, off: () => {} },
+    { id: 'airballoon', name: 'Globo Helio', desc: '+25% de velocidad. Si te golpean, explota y vuelve a los 30 s.',
+      on: p => { p.balloon = true; p.balloonT = 0; p.spdMul *= 1.25; },
+      off: p => { if (p.balloon) p.spdMul /= 1.25; p.balloon = false; p.balloonT = 0; } }
   ];
   const BY = {};
   for (const it of LIST) BY[it.id] = it;
