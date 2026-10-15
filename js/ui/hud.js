@@ -554,6 +554,7 @@ G.HUD = (() => {
     for (const p of mmProps) dot(p.x, p.y, PROP_COL[p.type] || '#fff', p.type === 'chest' ? 1.8 : 2.6, false, true);
     const blink = Math.sin(now * 6) > 0;
     for (const p of G.Pickups.all()) {
+      if ((p.kind === 'sbox' || p.kind === 'potion') && !G.Loot.visible(p)) continue;
       if (p.kind === 'sbox') dot(p.x, p.y, blink ? '#ffe14d' : '#ff9a3d', 4.2, true, true);
       else if (p.kind === 'potion') dot(p.x, p.y, '#ff7ad9', 3.2, true);
       else if (p.kind === 'item' || p.kind === 'token' || p.kind === 'ticket10') dot(p.x, p.y, '#ffd23f', 2.6, false);

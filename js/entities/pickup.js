@@ -123,6 +123,12 @@ G.Pickups = (() => {
       const p = list[i];
       p.t += dt * 4;
 
+      if (STAY[p.kind]) {
+        // Cofre / poción: es de un jugador; se coge cuando ÉL lo pisa (el cofre, si aún puede abrir más).
+        const own = players.find(o => !o.dead && G.Loot.canTake(p, o));
+        if (own && G.U.dist2(own.x, own.y, p.x, p.y) < (24 + own.r * 0.5) ** 2) { list.splice(i, 1); onCollect(p, own); }
+        continue;
+      }
       // El jugador vivo más cercano (en solitario, siempre tú).
       let pl = null, d2 = Infinity;
       for (const o of players) {
@@ -131,11 +137,6 @@ G.Pickups = (() => {
         if (dd < d2) { d2 = dd; pl = o; }
       }
       if (!pl) continue;
-      if (STAY[p.kind]) {
-        // Cofre / poción: se coge al pisarlo (el cofre, si aún puedes abrir más).
-        if (d2 < (24 + pl.r * 0.5) ** 2 && G.Loot.canTake(p.kind, pl)) { list.splice(i, 1); onCollect(p, pl); }
-        continue;
-      }
       const dx = pl.x - p.x, dy = pl.y - p.y;
       const mag2 = pl.magnet * pl.magnet;
 
@@ -163,6 +164,7 @@ G.Pickups = (() => {
   function draw(ctx) {
     for (const p of list) {
       if (!G.Camera.sees(p.x, p.y, 30)) continue;
+      if (STAY[p.kind] && !G.Loot.visible(p)) continue;        // cofres y pociones de otro jugador
       const k = KIND[p.kind];
       const bounce = Math.abs(Math.sin(p.t * 0.8)) * 3;
       const r = k.r;

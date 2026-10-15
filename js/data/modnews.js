@@ -5,8 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '五個新招式、技能寶箱與藥水', en: 'Five new moves, move chests and potions' },
     new: [
-      { zh: '技能寶箱：第 4 和第 11 分鐘在每個人附近出現，打開隨機得到 1～4 個技能強化（一場可重抽 15 次，每人最多開 2 箱）', en: 'Move chests: one appears near each player at minutes 4 and 11 and gives 1–4 random move upgrades (15 rerolls per run, up to 2 chests each)' },
-      { zh: '藥水：地圖上會隨機出現，效果隨機——變大、變小、狂暴、無敵星星、磁鐵、幸運，也可能是壞藥水', en: 'Potions: they appear around the map with a random effect — giant, tiny, fury, star, magnet, lucky… or a bad one' },
+      { zh: '技能寶箱：第 4 和第 11 分鐘在每個人附近出現，打開隨機得到 1～4 個技能強化（一場可重抽 15 次，每人最多開 2 箱）。組隊時每人有自己的寶箱，只有自己看得到、撿得到', en: 'Move chests: one appears near each player at minutes 4 and 11 and gives 1–4 random move upgrades (15 rerolls per run, up to 2 chests each). In groups each player has their own chests: only you can see and pick up yours' },
+      { zh: '藥水：地圖上會隨機出現，效果隨機——變大、變小、狂暴、無敵星星、磁鐵、幸運，也可能是壞藥水（組隊時也是各自的）', en: 'Potions: they appear around the map with a random effect — giant, tiny, fury, star, magnet, lucky… or a bad one (each player gets their own)' },
       { zh: '右上角小地圖：顯示技能寶箱、藥水、寶箱、祭壇、泉水、頭目、裂縫與隊友', en: 'Minimap (top right): move chests, potions, chests, altars, springs, bosses, rifts and teammates' },
       { zh: '毒系新招「腐蝕酸雨」：以自己為中心下毒雨，中毒＋緩速，升級後留下會擴散的毒水窪；進化「奈米屌雨」', en: 'New Poison move “Corrosive Rain”: poison rain around you that poisons and slows, later leaving spreading puddles; evolves into “Nano Rain”' },
       { zh: '格鬥系新招「李家拳」：快速單體連拳，每幾拳必定暴擊，滿級暴擊會流鼻血；進化「家暴神拳」打 12 隻', en: 'New Fighting move “Lee Fist”: fast single-target punches with a guaranteed crit every few hits, crits make enemies bleed at max level; evolves into “Fury Fist” (hits 12)' },

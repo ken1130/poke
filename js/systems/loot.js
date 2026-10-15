@@ -8,8 +8,10 @@
  *   Poción  cada minuto y pico aparece una cerca de alguien. Efecto al azar durante
  *       unos segundos: gigante, diminuto, furia, estrella, imán, suerte... o una mala.
  *
- * En grupo los crea el anfitrión (como todos los objetos del suelo) y el efecto se
- * decide al cogerlo; al que lo coge le llega ('sbox' / 'potion', coop.js).
+ * Cada cofre y cada poción es de UN jugador (value = su uid, o 'me' en solitario):
+ * sólo él lo ve (también en el minimapa) y sólo él puede cogerlo; en grupo no se
+ * quitan unos a otros. Los crea el anfitrión (como todos los objetos del suelo), el
+ * efecto se decide al cogerlo y al dueño le llega ('sbox' / 'potion', coop.js).
  * No salen en PK ni dentro de la arena de la grieta.
  */
 G.Loot = (() => {
@@ -32,7 +34,7 @@ G.Loot = (() => {
     if (boxesSpawned < BOX_AT.length && time >= BOX_AT[boxesSpawned]) {
       boxesSpawned++;
       let n = 0;
-      for (const p of players) if (!p.dead && spawnNear(p, 'sbox', 360, 600)) n++;
+      for (const p of players) if ((p.sboxes || 0) < BOX_MAX && spawnNear(p, 'sbox', 360, 600)) n++;
       if (n) {
         const msg = '¡Ha aparecido un cofre de movimientos! Búscalo en el minimapa';
         G.Spawner.say(msg, 3.5, true);
@@ -43,23 +45,30 @@ G.Loot = (() => {
     if (potionT <= 0) {
       potionT = POTION_EVERY * G.U.rand(0.8, 1.2);
       const live = players.filter(p => !p.dead);
-      const n = G.Pickups.all().filter(p => p.kind === 'potion').length;
-      if (live.length && n < POTION_MAX * live.length) spawnNear(G.U.pick(live), 'potion', 280, 520);
+      const who = live.length ? G.U.pick(live) : null;
+      if (who && G.Pickups.all().filter(p => p.kind === 'potion' && p.value === ownerKey(who)).length < POTION_MAX) spawnNear(who, 'potion', 280, 520);
     }
   }
 
-  /** Lo deja en un sitio libre a una distancia entre r0 y r1 del jugador. */
+  /** De quién es: uid en grupo, 'me' en solitario. */
+  const ownerKey = p => (p && p.uid) || 'me';
+
+  /** Lo deja (para el jugador p) en un sitio libre a una distancia entre r0 y r1 de él. */
   function spawnNear(p, kind, r0, r1) {
     for (let k = 0; k < 40; k++) {
       const a = Math.random() * 6.2832, d = G.U.rand(r0, r1);
       const x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
-      if (G.World.isFree(x, y, 16)) { G.Pickups.drop(kind, x, y, 0); return true; }
+      if (G.World.isFree(x, y, 16)) { G.Pickups.drop(kind, x, y, ownerKey(p)); return true; }
     }
     return false;
   }
 
-  /** ¿Puede cogerlo este jugador? (los cofres, como mucho 2 por run) */
-  function canTake(kind, pl) { return kind !== 'sbox' || (pl.sboxes || 0) < BOX_MAX; }
+  /** ¿Es de este jugador? (sólo él lo ve y lo coge) */
+  const isMine = (p, pl) => p.value === ownerKey(pl);
+  /** ¿Puede cogerlo este jugador? (el suyo y, los cofres, como mucho 2 por run) */
+  function canTake(p, pl) { return isMine(p, pl) && (p.kind !== 'sbox' || (pl.sboxes || 0) < BOX_MAX); }
+  /** ¿Se dibuja aquí? Sólo los tuyos (y un cofre que ya no puedes abrir, tampoco). */
+  function visible(p) { const pl = G.Game.player; return !!pl && canTake(p, pl); }
 
   // ---------------- cofre de movimientos ----------------
 
@@ -182,5 +191,5 @@ G.Loot = (() => {
     G.Audio.sfx(id === 'toxic' || id === 'heavy' ? 'hurt' : 'shiny');
   }
 
-  return { reset, tick, canTake, showBox, rollPotion, drink, POTIONS, BOX_MAX };
+  return { reset, tick, canTake, visible, ownerKey, showBox, rollPotion, drink, POTIONS, BOX_MAX };
 })();
