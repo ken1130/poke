@@ -859,6 +859,7 @@ G.Game = (() => {
     else G.Spawner.tickBanner(dt);
     G.EnemyMgr.update(dt, all);
     if (coop && G.Coop.isHost) shieldPickers(all);               // los que eligen cartas apartan a los enemigos
+    if (coop && G.Coop.isHost) fieldPush(all);                   // y el campo de Shaq de los invitados
     G.EnemyMgr.rebuildGrid();
     G.Combat.tick(dt, pl, time);
     G.Projectiles.update(dt, pl, G.EnemyMgr.all());
@@ -948,6 +949,24 @@ G.Game = (() => {
         if (e.dead) continue;
         const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy) || 1;
         e.x = p.x + dx / d * PICK_R; e.y = p.y + dy / d * PICK_R;
+      }
+    }
+  }
+
+  /**
+   * Anfitrión (grupo): el campo de Shaq de los invitados (el tuyo ya lo hace combat.js).
+   * Sin esto, en su pantalla los enemigos se le quedaban encima: sus copias no se pueden mover.
+   */
+  function fieldPush(all) {
+    for (const p of all) {
+      if (p === pl || p.dead || !p.bulkField) continue;
+      for (const e of G.EnemyMgr.queryCircle(p.x, p.y, p.r + 40)) {
+        if (e.dead || e.boss) continue;
+        const dx = e.x - p.x, dy = e.y - p.y, d = Math.max(1, Math.hypot(dx, dy)), min = p.r + 28 + e.r;   // 28 = combat.js FIELD_R
+        if (d >= min) continue;
+        const x = p.x + dx / d * min, y = p.y + dy / d * min;
+        if (!G.World.isWall(x, y)) { e.x = x; e.y = y; }
+        e.kx += dx / d * 120; e.ky += dy / d * 120;
       }
     }
   }

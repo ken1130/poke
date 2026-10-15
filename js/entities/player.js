@@ -568,6 +568,7 @@ G.Player = class Player {
     this.hp = n.hp; this.maxHp = n.maxHp;
     this.magnet = n.mag || this.magnet;
     this.reviveT = n.rev || 0;
+    this.bulkField = !!n.bf;      // campo de Shaq (se dibuja; el anfitrión aparta a los enemigos)
     if (n.dex && n.dex !== this.dex && G.DEX_BY[n.dex]) { this.evolveTo(n.dex, true); G.Sprites.preload([n.dex], 8000, this.shiny); }
     if (n.dead && !this.dead) { this.dead = true; this.anim.play('Faint', { hold: true }); G.Projectiles.clearOrbs(this); }
     else if (!n.dead && this.dead) this.revive(n.hp / (n.maxHp || 1));

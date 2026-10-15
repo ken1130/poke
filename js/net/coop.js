@@ -146,12 +146,13 @@ G.Coop = (() => {
     return [r1(local.x), r1(local.y), r2(local.moveAngle), local.walking ? 1 : 0, r1(local.hp), r1(local.maxHp),
             local.dead ? 1 : 0, m ? m.id : '', m ? m.lvl : 1, r1(local.magnet), r2(local.aim), r2(local.xpMul),
             r2(local.reviveT || 0), r1(local.dmgDealt || 0), local.dex, api.choosing && api.choosing() ? 1 : api.paused && api.paused() ? 2 : 0,
-            clock(), local.sizeK && local.sizeK !== 1 ? local.sizeK : 0, ...G.Companion.state(local)];
+            clock(), local.sizeK && local.sizeK !== 1 ? local.sizeK : 0, ...G.Companion.state(local),
+            local.bulkField ? 1 : 0];     // [20] campo de Shaq: el anfitrión aparta a los enemigos (game.js fieldPush)
   }
 
   function readState(a) {
     return { x: a[0], y: a[1], ang: a[2], walk: a[3], hp: a[4], maxHp: a[5], dead: a[6], mv: a[7], ml: a[8],
-             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0, dex: a[14] || 0, ch: a[15] || 0, t: a[16] || 0, sz: a[17] || 0, bd: a[18] || 0, bs: a[19] || 0 };
+             mag: a[9], aim: a[10], xpMul: a[11], rev: a[12], dmg: a[13] || 0, dex: a[14] || 0, ch: a[15] || 0, t: a[16] || 0, sz: a[17] || 0, bd: a[18] || 0, bs: a[19] || 0, bf: a[20] || 0 };
   }
 
   // ---------------- envío ----------------

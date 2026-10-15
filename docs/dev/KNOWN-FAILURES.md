@@ -40,3 +40,10 @@
 - **症狀**：測試腳本 `G.Game.startRun()` 後 `G.Game.state` 一直是 `'choice'`，遊戲不動。
 - **原因**：開局會先跳「祝福卡」（`#boon-cards`），升級也會跳選卡，不點的話遊戲是暫停的。
 - **以後怎麼避免**：測試腳本用 `setInterval` 自動點掉可見的 `#boon-cards .card`／`#lvl-cards .card`／`#item-cards .card`，等 `state === 'playing'` 再開始測。
+
+## 6. WSL 的 git 推不上去、提交沒有作者（2026-10-15）
+
+- **症狀**：`git push` 出現 `could not read Username for 'https://github.com'`；`git commit` 出現 `Author identity unknown`。
+- **原因**：GitHub 登入資訊和 git 作者設定都在 Windows 那邊，WSL 裡的 git 沒有。
+- **處理**：推送改用 Windows 的 `git.exe push origin main`（在 WSL 裡也能直接執行）；提交用 `git -c user.name=ken1130 -c user.email=<主人的信箱> commit ...`。
+- **換行**：這份專案已設定 `git config core.autocrlf input`，Windows 換行（CRLF）不會再被當成改動。

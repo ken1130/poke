@@ -114,7 +114,7 @@ G.MODNEWS = [
     ],
     fix: [
       { zh: '修正腐蝕酸雨／奈米屌雨沒有傷害、沒有緩速（李拳的流血也一起修好）', en: 'Fixed Corrosive Rain / Nano Rain dealing no damage and not slowing (Lee Fist bleeding fixed too)' },
-      { zh: '修正俠客歐尼爾（歐美肥佬進化）的力場擋不住怪：現在敵人會被彈開、停在力場圈外，腳下也會一直顯示力場', en: 'Fixed Shaq (evolved Heavyweight) force field not stopping enemies: they now bounce off and stay outside the ring, which is always shown' },
+      { zh: '修正俠客歐尼爾（歐美肥佬進化）的力場擋不住怪：現在敵人會被彈開、停在力場圈外，腳下也會一直顯示力場；組隊當客人時也有效', en: 'Fixed Shaq (evolved Heavyweight) force field not stopping enemies: they now bounce off and stay outside the ring, which is always shown; also works for guests in co-op' },
       { zh: '樹倒下的木刺看得見了：會從地上冒出木刺再收回去（之前有傷害但幾乎看不到）', en: 'The tree\'s wooden spikes are now visible, sprouting from the ground (they hit before, but could barely be seen)' },
       { zh: '修正睡覺被綁進羈絆後會一直睡不醒', en: 'Fixed sleeping forever when Rest was fused into a bond' },
       { zh: '修正 PK 時兩個玩家身體相碰會讓遊戲每幀出錯', en: 'Fixed PvP erroring every frame while two players touched' },
