@@ -121,6 +121,9 @@ G.HUD = (() => {
       ctx.fillText(txt, x0 + 32, y0 + 17);
     }
 
+    // ---------- piso y ataque combinado (floors.js) ----------
+    G.Floors.drawHud(ctx, w, h, pl, F, roundRect);
+
     // ---------- minimapa (arriba a la derecha) ----------
     if (!G.Modes.rule('dark')) drawMinimap(ctx, w, pl, touch);
 
@@ -624,6 +627,11 @@ G.HUD = (() => {
 
   /** Iconitos del minimapa (dibujados a mano, unos 10-14 px). */
   const MM_ICON = {
+    stairs(ctx, x, y) {
+      const img = G.Tiles.propSprite(G.World.biome, 'stairs', 0);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, Math.round(x - 9), Math.round(y - 7.5), 18, 15);
+    },
     sbox(ctx, x, y, on) {
       ctx.fillStyle = on ? 'rgba(127,224,255,.55)' : 'rgba(127,224,255,.25)';
       ctx.beginPath(); ctx.arc(x, y, 10, 0, 6.2832); ctx.fill();
@@ -720,6 +728,7 @@ G.HUD = (() => {
     }
     const rift = G.Rift.rift;
     if (rift) icon('rift', rift.x, rift.y, true, blink);
+    if (G.Floors.stairs) icon('stairs', G.Floors.stairs.x, G.Floors.stairs.y, true);
     for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) icon('boss', e.x, e.y, true);
     if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl) icon('mate', o.x, o.y, true, o.dead);
     // Tú: flecha blanca hacia donde miras.
@@ -756,6 +765,7 @@ G.HUD = (() => {
     add(near(mmProps, p => p.type === 'altar' && !p.used), 'Altar', '#ff8ad8', 'altar');
     add(near(mmProps, p => p.type === 'spring' && !p.used), 'Manantial', '#4fb4ff', 'spring');
     if (G.Rift.rift) add(G.Rift.rift, 'Grieta', '#c9a6ff', 'rift');
+    if (G.Floors.stairs) add(G.Floors.stairs, 'Escaleras', '#9fc8ff', 'stairs');
     add(near(G.EnemyMgr.all(), e => e.boss && !e.dead), 'Jefe', '#ff5f6d', 'boss');
     if (!rows.length) return;
     ctx.save();

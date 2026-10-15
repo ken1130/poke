@@ -574,6 +574,43 @@ G.Tiles = (() => {
       return P.canvas();
     },
 
+    /**
+     * Escaleras al siguiente piso (floors.js), como las de Mundo Misterioso: marco de
+     * piedra y peldaños que bajan hacia la oscuridad. Planas.
+     */
+    stairs(B) {
+      const P = Pix(36, 30);
+      const R = B.rock.map(h => pack(h));
+      const moss = pack(B.grass ? B.grass[1] : '#4c9a3f');
+      // Marco de piedra (bloques irregulares).
+      for (let y = 0; y < 30; y++) for (let x = 0; x < 36; x++) {
+        const edge = x < 4 || x > 31 || y < 4 || y > 25;
+        if (!edge) continue;
+        const blk = ((x >> 2) + (y >> 2)) % 2;
+        let c = R[blk ? 1 : 2];
+        if ((x & 3) === 3 || (y & 3) === 3) c = R[0];
+        if (y > 26 || x > 33) c = R[0];
+        P.set(x, y, c);
+      }
+      // Peldaños: cada uno más hondo y más oscuro, con el borde de arriba iluminado.
+      const STEP = ['#9aa2ae', '#7a828e', '#5c636e', '#40464f', '#272b32', '#14161b'];
+      for (let k = 0; k < 6; k++) {
+        const y0 = 4 + k * 3.6, inset = k;
+        for (let y = Math.round(y0); y < Math.round(y0 + 3.6) && y < 26; y++)
+          for (let x = 4 + inset; x < 32 - inset; x++) {
+            const top = y === Math.round(y0);
+            P.set(x, y, pack(top && k < 5 ? '#c8cfd8' : STEP[k]));
+          }
+        // Sombra de los lados (paredes del hueco).
+        for (let y = Math.round(y0); y < Math.round(y0 + 3.6) && y < 26; y++)
+          for (let x = 4; x < 4 + inset; x++) { P.set(x, y, pack('#1b1e24')); P.set(35 - x, y, pack('#1b1e24')); }
+      }
+      // Musgo en el marco.
+      [[1, 26], [2, 27], [5, 28], [30, 27], [33, 26], [34, 2], [1, 3], [17, 1], [18, 1]].forEach(([x, y]) => P.set(x, y, moss));
+      outline(P, pack('#0c0d10'));
+      return P.canvas();
+    },
+
     /** Trampa de Mundo Misterioso. variante: 0 veneno · 1 pegajosa · 2 explosiva. */
     trap(B, variant) {
       const P = Pix(14, 14);

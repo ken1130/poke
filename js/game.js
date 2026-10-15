@@ -126,6 +126,7 @@ G.Game = (() => {
     G.EnemyMgr.clear();
     G.Pickups.clear();
     G.Loot.reset();
+    G.Floors.reset();
     if (coop) { G.Modes.reset(); G.Modes.setRoom(coop.mods || {}); }
     // Desafíos / aventura: sus reglas (las "Reglas a medida" sólo valen en la run normal).
     G.Challenges.prepare();
@@ -574,7 +575,7 @@ G.Game = (() => {
       return;
     }
     if (p.kind === 'coin') {
-      pl.coins += p.value;
+      pl.coins += Math.round(p.value * G.Floors.coinMul);      // más por cada piso
       G.FX.dmgText(who.x, who.y - who.bodyH - 6, '+' + p.value, '#ffd23f');
       return;
     }
@@ -743,7 +744,7 @@ G.Game = (() => {
     }
     time += dt;
 
-    const b = Math.floor(time / 240);
+    const b = Math.floor(time / 240) + G.Floors.floor;      // cada piso, el bioma siguiente (floors.js)
     if (b !== biome && !G.Rift.inArena && fixedScene == null) {
       biome = b;
       G.World.setBiome(b);
@@ -783,6 +784,7 @@ G.Game = (() => {
     G.Combat.updateFields(dt);
     G.Pickups.update(dt, all, onCollect);
     if (!coop || G.Coop.isHost) G.Loot.tick(dt, time, all);      // cofres de movimientos y pociones
+    G.Floors.update(dt, all);                                    // escaleras y ataque combinado
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
@@ -907,6 +909,8 @@ G.Game = (() => {
     for (const e of extra) items.push({ y: e.y, ent: e });
     const rift = G.Rift.drawable();
     if (rift) items.push({ y: rift.y, ent: rift });
+    const stairs = G.Floors.drawable();
+    if (stairs) items.push({ y: stairs.y, ent: stairs });
     const zone = G.Stages.drawable();
     if (zone) items.push({ y: zone.y, ent: zone });
     if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });
@@ -943,6 +947,7 @@ G.Game = (() => {
       ctx.fillRect(0, 0, w, h);
     }
     G.HUD.draw(ctx, w, h, pl, st);
+    G.Floors.drawFade(ctx, w, h, (wt, s) => `${wt} ${s}px Pixelify,"Segoe UI",system-ui,sans-serif`);   // bajada de piso
     G.Touch.draw(ctx);
     if (G.Settings.get('fps')) {
       ctx.save();
@@ -1079,7 +1084,7 @@ G.Game = (() => {
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
     debugLevelUp() { pl.level++; pendingLevels++; },
     toUI() { state = 'ui'; Backdrop.restore(); },
-    get state() { return state; }, get player() { return pl; }, st
+    get state() { return state; }, get player() { return pl; }, get fixedScene() { return fixedScene != null; }, st
   };
 })();
 

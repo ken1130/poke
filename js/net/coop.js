@@ -298,6 +298,7 @@ G.Coop = (() => {
         case 're': G.Rift.enterRequest(); break;
         case 'bye': mateGone(from); break;
         case 'qc': G.Chat.show(from, ev[1]); emit(['qc', from, ev[1]], from); break;   // mensaje rápido
+        case 'cb': G.Floors.comboFx(ev[1], ev[2], ev[3], ev[4]); emit(ev, from); break;   // ataque combinado (floors.js)
         case 'rv': creditRevive(ev[1]); break;                                         // `from` fue levantado por ev[1]
       }
     }
@@ -369,6 +370,7 @@ G.Coop = (() => {
         break;
       case 'c': { const m = mates.get(ev[1]); if (m) G.Combat.ghostCast(m.pl, ev[2], ev[3], ev[4], ev[5]); break; }
       case 'item': api.item(ev[1]); break;
+      case 'st': case 'fl': case 'cb': G.Floors.onNet(ev); break;   // escaleras, piso nuevo, ataque combinado
       case 'sbox': api.sbox && api.sbox(); break;
       case 'potion': api.potion && api.potion(ev[1]); break;
       case 'pk': G.Pickups.addRemote(ev[1], ev[2], ev[3], ev[4], ev[5]); break;
