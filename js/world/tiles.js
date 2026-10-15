@@ -589,7 +589,8 @@ G.Tiles = (() => {
     },
 
     /** Cofre grande con candado. */
-    bigchest() {
+    /** Cofre grande de la sala del tesoro. variante 1 = abierto (tapa levantada, vacío por dentro). */
+    bigchest(B, variant) {
       const P = Pix(24, 20);
       const wood = pack('#6b3a1e'), woodL = pack('#8e5329'), woodD = pack('#432210');
       const iron = pack('#9aa6b5'), ironD = pack('#5d6773'), gold = pack('#f2c443'), goldD = pack('#b5832a');
@@ -606,6 +607,12 @@ G.Tiles = (() => {
       P.set(9, 6, iron); P.set(14, 6, iron); P.set(9, 7, iron); P.set(14, 7, iron);
       for (let y = 8; y <= 13; y++) for (let x = 8; x <= 15; x++) P.set(x, y, (x + y) % 4 ? gold : goldD);
       P.set(11, 10, woodD); P.set(12, 10, woodD); P.set(11, 11, woodD); P.set(11, 12, woodD);
+      if (variant) {
+        // Abierto: la tapa se ve por dentro (oscura) y queda un brillo dorado al fondo.
+        for (let y = 0; y < 8; y++) for (let x = 1; x < 23; x++) P.set(x, y, y < 2 ? woodD : (x === 1 || x === 22) ? woodD : y < 5 ? pack('#1e0f06') : pack('#3a2410'));
+        for (let x = 6; x <= 17; x++) P.set(x, 6, (x % 3) ? goldD : gold);
+        for (let x = 2; x < 22; x++) P.set(x, 8, ironD);
+      }
       outline(P, pack('#1e0f06'));
       return P.canvas();
     },

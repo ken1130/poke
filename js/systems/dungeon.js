@@ -66,7 +66,8 @@ G.Dungeon = (() => {
     else if (k === 'ach') G.Progress.event(ev[2]);
     else if (k === 'fn') G.Funny.onNet(ev);
     else if (k === 'spun') G.Roulette.onSpun(ev[2], ev[3], ev[4]);
-    else if (k === 'room') roomFx(ev[2], ev[3], ev[4]);
+    else if (k === 'room') { if (ev[2] === 'heal' && room) room.springFull = false; roomFx(ev[2], ev[3], ev[4]); }
+    else if (k === 'chest') openChest(ev[2]);
     else if (k === 'enter') beginRoom(ev[2]);
     else if (k === 'exit') endRoom();
     else if (k === 'rlock') { if (room) room.locked = !!ev[2]; }
@@ -170,6 +171,14 @@ G.Dungeon = (() => {
     // Dentro de la tienda: el menú se abre solo (y otra vez si vuelves al mostrador).
     const shop = byId(room.siteId);
     if (!shop || (shop.state !== 'open' && shop.state !== 'free')) { closeShop(); return; }
+    // Ruleta (2026-10-15): al acercarte a ella se abre sola (también desde el menú).
+    const [rx, ry] = roulP(), nearR = G.U.dist2(pl.x, pl.y, rx, ry + 12) < 70 * 70;
+    if (nearR && !room.atRoul && !G.Roulette.busy) {
+      if ((shop.spins == null ? 3 : shop.spins) > 0) openRoulette(shop);
+      else G.Spawner.say(G.T('Ya no quedan tiradas en esta ruleta'), 2, true);
+    }
+    room.atRoul = nearR;
+    if (G.Roulette.busy) return;
     if (shop.state !== room.seen) { room.seen = shop.state; shopSkip = null; }   // Kecleon vencido: otra vez el menú
     const atCounter = G.U.dist2(pl.x, pl.y, room.cx, counterY()) < 110 * 110;
     if (!atCounter) room.wasAway = true;
@@ -192,10 +201,14 @@ G.Dungeon = (() => {
     openShop = s; shopKey = '';
     const el = document.getElementById('shop-leave');
     el.onclick = () => { shopSkip = s.id; closeShop(); requestExit(); };
-    document.getElementById('shop-roul').onclick = () => { if ((s.spins == null ? 3 : s.spins) > 0) { G.UI.hide('scr-shop'); G.Roulette.open(s, () => { if (openShop === s) { shopKey = ''; G.UI.show('scr-shop'); refreshShop(); } }); } };
+    document.getElementById('shop-roul').onclick = () => { if ((s.spins == null ? 3 : s.spins) > 0) openRoulette(s); };
     refreshShop();
     G.UI.show('scr-shop');
     G.Audio.sfx('select');
+  }
+  function openRoulette(s) {
+    G.UI.hide('scr-shop');
+    G.Roulette.open(s, () => { if (openShop === s) { shopKey = ''; G.UI.show('scr-shop'); refreshShop(); } });
   }
   function closeShop() {
     if (!openShop) return;
@@ -302,7 +315,7 @@ G.Dungeon = (() => {
     if (!room || room.kind !== 'shop') return [];
     const ts = room.ts, cy = counterY() + 14, out = [[room.cx - 70, cy - 16, room.cx + 70, cy + 16]];
     for (let i = -2; i <= 2; i++) if (i) { const x = room.cx + i * ts * 2.2, y = room.cy - (room.rh - 1.4) * ts; out.push([x - 30, y - 30, x + 30, y + 30]); }
-    const rx = room.cx + (room.rw - 1.6) * ts, ry = room.cy - ts * 0.6;
+    const [rx, ry] = roulP();
     out.push([rx - 20, ry - 6, rx + 20, ry + 30]);
     return out;
   }
@@ -317,6 +330,18 @@ G.Dungeon = (() => {
     }
   }
   const doorP = () => [room.cx, room.cy + (room.rh - 1) * room.ts];
+  const chestP = i => [room.cx + (i - 1) * room.ts * 3, room.cy - (room.rh - 2) * room.ts];
+  const springP = () => [room.cx, room.cy - 8];
+  const roulP = () => [room.cx + (room.rw - 1.6) * room.ts, room.cy - room.ts * 0.6];
+  /** Todos: se abre el cofre i de la sala del tesoro. */
+  function openChest(i) {
+    if (!room || room.chests[i]) return;
+    room.chests[i] = 1;
+    const [x, y] = chestP(i);
+    G.FX.burst(x, y - 10, '#ffe14d', 30, 220);
+    G.FX.ring(x, y, 6, 90, '#ffd23f', 0.5, 4);
+    G.Audio.sfx('shiny');
+  }
   const myKey = p => (p === G.Game.player ? (p.uid || 'me') : p.uid);
 
   /** Anfitrión: alguien toca la puerta del sitio `s` → entra todo el grupo. */
@@ -337,7 +362,8 @@ G.Dungeon = (() => {
   function beginRoom(cfg) {
     const pl = G.Game.player, ts = TSZ();
     room = Object.assign({}, cfg, { ts, cx: cfg.tx * ts + ts / 2, cy: cfg.ty * ts + ts / 2, biome: G.World.biome,
-                                    t: 0, wave: 0, mobs: [], out: new Set(), locked: false, seen: null, wasAway: false });
+                                    t: 0, wave: 0, mobs: [], out: new Set(), locked: false, seen: null, wasAway: false,
+                                    chests: [0, 0, 0], springFull: cfg.ev === 'heal', atRoul: false });
     if (authority()) G.EnemyMgr.stash(); else G.EnemyMgr.clearRemote();
     G.Projectiles.clear(); G.Combat.clearFields(); G.Hazards.clear(); G.Weather.clear();
     G.World.setArena({ tx: cfg.tx, ty: cfg.ty, room: true, rw: cfg.rw, rh: cfg.rh, r: Math.max(cfg.rw, cfg.rh), type: ROOMS[cfg.kind].theme });
@@ -360,16 +386,10 @@ G.Dungeon = (() => {
       send(['dg', 'say', '¡Es una casa de monstruos! Aguanta 30 s', 3]);
       wave(14 + 4 * live.length);
     } else if (ev === 'treasure') {
-      say('¡Sala del tesoro!', 3);
-      for (let i = 0; i < 14; i++) G.Pickups.drop('coin', cx + G.U.rand(-90, 90), cy + G.U.rand(-50, 50), 5);
-      G.Pickups.drop('item', cx, cy - 20, G.Items.roll());
-      for (const p of live) G.Pickups.drop('potion', cx + G.U.rand(-60, 60), cy + G.U.rand(-30, 30), G.Loot.ownerKey(p));
-      if (Math.random() < 0.3) G.Pickups.drop('ticket', cx + 30, cy, 1);
+      say('¡Sala del tesoro! Acércate a los cofres para abrirlos', 3.2);
       G.Audio.sfx('legend');
     } else if (ev === 'heal') {
-      say('¡Sala de curación! Recuperas toda la vida', 3.2);
-      if (!blessing) { const until = T() + BLESS_TIME; startBlessing('vital', until); send(['dg', 'bless', 'vital', until]); }
-      roomFx('heal', cx, cy); send(['dg', 'room', 'heal', Math.round(cx), Math.round(cy)]);
+      say('¡Sala de curación! Pisa el manantial para recuperar toda la vida', 3.2);
     } else if (ev === 'trap') {
       say('¡Cuidado! Algo cruje bajo tus pies…', 2);
       room.trapAt = 1.4;
@@ -404,6 +424,27 @@ G.Dungeon = (() => {
         for (let i = 0; i < 8; i++) G.Pickups.drop('coin', room.cx + G.U.rand(-60, 60), room.cy + G.U.rand(-35, 35), 5);
         if (Math.random() < 0.6) G.Pickups.drop('item', room.cx + 30, room.cy - 10, G.Items.roll());
         for (const id of room.mobs) { const e = G.EnemyMgr.get(id); if (e && !e.dead) e.hurt(e.hp + 1, '#ffffff'); }
+      }
+    } else if (room.ev === 'treasure') {
+      // Cofres (2026-10-15: antes eran decorado y el botín salía solo): se abren al acercarse.
+      room.chests.forEach((o, i) => {
+        if (o) return;
+        const [x, y] = chestP(i);
+        if (!live.some(p => G.U.dist2(p.x, p.y, x, y + 20) < 60 * 60)) return;
+        send(['dg', 'chest', i]); openChest(i);
+        const dx = () => x + G.U.rand(-40, 40), dy = () => y + G.U.rand(40, 80);
+        if (i === 0) { for (let k = 0; k < 7; k++) G.Pickups.drop('coin', dx(), dy(), 5); for (const p of live) G.Pickups.drop('potion', dx(), dy(), G.Loot.ownerKey(p)); }
+        else if (i === 1) { G.Pickups.drop('item', x, y + 60, G.Items.roll()); if (Math.random() < 0.3) G.Pickups.drop('ticket', x + 30, y + 60, 1); for (let k = 0; k < 3; k++) G.Pickups.drop('coin', dx(), dy(), 5); }
+        else for (let k = 0; k < 9; k++) G.Pickups.drop('coin', dx(), dy(), 5);
+      });
+    } else if (room.ev === 'heal' && room.springFull) {
+      // Manantial: cura a todo el grupo cuando alguien lo pisa (una vez, como los del mapa).
+      const [x, y] = springP();
+      if (live.some(p => G.U.dist2(p.x, p.y, x, y) < 50 * 50)) {
+        room.springFull = false;
+        if (!blessing) { const until = T() + BLESS_TIME; startBlessing('vital', until); send(['dg', 'bless', 'vital', until]); }
+        roomFx('heal', room.cx, room.cy); send(['dg', 'room', 'heal', Math.round(room.cx), Math.round(room.cy)]);
+        say('¡El manantial te devuelve toda la vida!', 3);
       }
     } else if (room.ev === 'trap' && room.trapAt != null && room.t >= room.trapAt) {
       room.trapAt = null;
@@ -647,7 +688,10 @@ G.Dungeon = (() => {
     const r = room, ts = r.ts, [dx, dy] = doorP();
     ctx.save();
     if (r.kind === 'shop') sprite(ctx, 'shopmat', 0, r.cx, r.cy + ts * 0.6);
-    else if (r.ev === 'heal') sprite(ctx, 'spring', 0, r.cx, r.cy - 8);
+    else if (r.ev === 'heal') {
+      sprite(ctx, 'spring', r.springFull ? 0 : 1, r.cx, r.cy - 8);
+      if (r.springFull) label(ctx, G.T('Pisa el manantial'), r.cx, r.cy - 34, '#7dffb0', 11);
+    }
     else if (r.ev === 'trap' && r.trapAt != null) for (let i = -2; i <= 2; i++) for (let j = -1; j <= 1; j++) sprite(ctx, 'trap', (i + j + 3) % 3, r.cx + i * ts * 1.6, r.cy + j * ts * 1.4);
     else if (r.ev === 'house') {
       // Runas de aviso en las esquinas mientras la puerta está cerrada.
@@ -719,7 +763,11 @@ G.Dungeon = (() => {
       let t = G.T(names[r.ev] || 'SALA MISTERIOSA');
       if (r.ev === 'house' && r.locked) t += ' · ' + Math.max(0, Math.ceil(HOUSE_TIME - r.t)) + 's';
       label(ctx, t, r.cx, r.cy - (r.rh - 0.2) * ts, r.ev === 'house' ? '#ff8a95' : '#d9a6ff');
-      if (r.ev === 'treasure') for (let i = -1; i <= 1; i++) sprite(ctx, 'bigchest', 0, r.cx + i * ts * 3, r.cy - (r.rh - 2) * ts);
+      if (r.ev === 'treasure') for (let i = 0; i < 3; i++) {
+        const [x, y] = chestP(i);
+        sprite(ctx, 'bigchest', r.chests[i] ? 1 : 0, x, y);
+        if (!r.chests[i]) label(ctx, G.T('¡Ábreme!'), x, y - 30, '#ffd23f', 11);
+      }
     }
     label(ctx, G.T(r.locked ? 'Puerta cerrada' : 'Salida'), dx, dy - ts * 0.9, r.locked ? '#ff8a95' : '#7dffb0', 11);
     if (!r.locked && pl && G.U.dist2(pl.x, pl.y, dx, dy) < 44 * 44 && G.Coop.active) label(ctx, G.T('Esperando a los demás…'), dx, dy - ts * 1.5, '#ffffff', 11);
@@ -741,6 +789,7 @@ G.Dungeon = (() => {
            get sites() { return room ? [] : sites; }, BLESS,
            /** ¿Está el grupo dentro de un interior? (spawner, loot, etc. no sacan nada) */
            get inRoom() { return !!room; },
+           get room() { return room; },    // pruebas
            get roomName() { return room ? ROOM_NAME[room.kind === 'shop' ? 'shop' : room.ev] || 'Sala misteriosa' : null; },
            get roomDoor() { if (!room) return null; const [x, y] = doorP(); return { x, y }; } };
 })();

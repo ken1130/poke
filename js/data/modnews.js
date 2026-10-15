@@ -57,6 +57,9 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '寶藏房的 3 個大寶箱可以打開了：走到寶箱旁邊就會打開噴出寶物（以前只是擺設，寶物一進門就撒在地上）', en: 'The 3 big chests in treasure rooms now open: walk up to one and it bursts with loot (they used to be decoration)' },
+      { zh: '治癒房要踩上泉水才會回復全部生命（跟地圖上的泉水一樣），泉水用完會乾掉', en: 'In healing rooms you now step on the spring to restore all HP (like springs on the map); it dries up after use' },
+      { zh: '商店裡的輪盤走過去就會打開（選單裡的按鈕也還在）', en: 'Walking up to the shop roulette now opens it (the menu button still works)' },
       { zh: '下樓後有緩衝時間：前 6 秒不出怪，之後 30 秒內怪物數量慢慢增加，這段期間也不會有怪物潮、頭目或事件', en: 'Breathing room after the stairs: no enemies for 6 s, then they ramp up over 30 s, with no surges, bosses or events meanwhile' },
       { zh: '怪物變強的速度放慢：血量成長變慢、每層加成從 +15% 降為 +8%，前期的耐打度要到 12 分鐘才到頂（原本 6 分鐘）', en: 'Enemies get stronger more slowly: slower HP growth, the per-floor bonus drops from +15% to +8%, and early toughness peaks at 12 min (was 6)' },
       { zh: '怪物屋加強：怪物更耐打、更痛，有精英怪，每 5 秒一波；要撐到最後一波才能提早結束', en: 'Monster Houses are tougher: sturdier, harder-hitting monsters with elites and a wave every 5 s; you can only finish early after the last wave' },

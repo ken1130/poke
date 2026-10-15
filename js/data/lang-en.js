@@ -1154,4 +1154,10 @@ G.I18n.add({
   'Términos de uso y política de privacidad completos': 'Full Terms of Use & Privacy Policy',
   'Sin garantías': 'No warranty',
   'El juego se ofrece gratis y tal cual, sin garantías de ningún tipo. El autor no se hace responsable de la pérdida de partidas, cuentas o datos. Las monedas y objetos del juego no tienen valor real.': 'The game is free and provided as is, without warranties of any kind. The author is not responsible for lost saves, accounts or data. In-game coins and items have no real value.',
+  '¡Sala del tesoro! Acércate a los cofres para abrirlos': 'Treasure room! Walk up to the chests to open them',
+  '¡Sala de curación! Pisa el manantial para recuperar toda la vida': 'Healing room! Step on the spring to restore all your HP',
+  '¡El manantial te devuelve toda la vida!': 'The spring restores all your HP!',
+  '¡Ábreme!': 'Open me!',
+  'Pisa el manantial': 'Step on the spring',
+  'Ya no quedan tiradas en esta ruleta': 'No spins left on this roulette',
 }, 'en');

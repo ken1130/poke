@@ -2155,4 +2155,10 @@ G.I18n.add({
   'Términos de uso y política de privacidad completos': '完整的使用條款與隱私權政策',
   'Sin garantías': '免責聲明',
   'El juego se ofrece gratis y tal cual, sin garantías de ningún tipo. El autor no se hace responsable de la pérdida de partidas, cuentas o datos. Las monedas y objetos del juego no tienen valor real.': '本遊戲免費並依現狀提供，不附帶任何保證。作者不對存檔、帳號或資料的遺失負責。遊戲內的金幣與道具沒有任何現實價值。',
+  '¡Sala del tesoro! Acércate a los cofres para abrirlos': '寶藏房！走到寶箱旁邊就能打開',
+  '¡Sala de curación! Pisa el manantial para recuperar toda la vida': '治癒房！踩上泉水就能回復全部生命',
+  '¡El manantial te devuelve toda la vida!': '泉水讓你回復了全部生命！',
+  '¡Ábreme!': '打開我！',
+  'Pisa el manantial': '踩上泉水',
+  'Ya no quedan tiradas en esta ruleta': '這台輪盤已經沒有次數了',
 }, 'zh');
