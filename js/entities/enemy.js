@@ -305,16 +305,24 @@
       }
       const n = this.net;
       if (!n) return;
-      // Se adelanta hasta 0,3 s (por TURN llegan 4 posiciones por segundo).
-      const lead = Math.min(0.3, n.age);
-      n.age += dt;
-      const tx = n.x + n.vx * lead, ty = n.y + n.vy * lead;
       const ox = this.x, oy = this.y;
-      if (G.U.dist2(this.x, this.y, tx, ty) > 160 * 160) { this.x = tx; this.y = ty; }
-      else { this.x = G.U.damp(this.x, tx, 12, dt); this.y = G.U.damp(this.y, ty, 12, dt); }
+      n.age += dt;
+      // Con posiciones guardadas (2026-10-16): interpolación ~0,1 s en el pasado (coop.js).
+      const p = n.buf && n.buf.length ? G.Coop.interp(n.buf, G.Coop.renderClock()) : null;
+      if (p) {
+        if (G.U.dist2(this.x, this.y, p[0], p[1]) > 160 * 160) { this.x = p[0]; this.y = p[1]; }
+        else { this.x = G.U.damp(this.x, p[0], 12, dt); this.y = G.U.damp(this.y, p[1], 12, dt); }
+      } else {
+        // Formato antiguo: se adelanta hasta 0,3 s con la velocidad estimada.
+        const lead = Math.min(0.3, n.age);
+        const tx = n.x + n.vx * lead, ty = n.y + n.vy * lead;
+        if (G.U.dist2(this.x, this.y, tx, ty) > 160 * 160) { this.x = tx; this.y = ty; }
+        else { this.x = G.U.damp(this.x, tx, 12, dt); this.y = G.U.damp(this.y, ty, 12, dt); }
+      }
       const vx = (this.x - ox) / (dt || 1), vy = (this.y - oy) / (dt || 1);
       const moving = Math.abs(vx) + Math.abs(vy) > 8;
-      this.anim.dir = n.dir;
+      // Andando, mira hacia donde va (el anfitrión ya no manda cada cambio de dirección).
+      this.anim.dir = moving && n.buf ? G.Sprites.dirFromAngle(Math.atan2(vy, vx)) : n.dir;
       // Animaciones de una vez (embestida, disparo...) que ha empezado el anfitrión.
       if (n.anim !== this.lastNetAnim) {
         this.lastNetAnim = n.anim;

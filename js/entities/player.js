@@ -511,6 +511,12 @@ G.Player = class Player {
     // Predicción: entre paquete y paquete sigue andando a la velocidad que llevaba
     // (si no, se ve a los demás siempre un poco por detrás y a saltos).
     this.netAge = (this.netAge || 0) + dt;
+    if (n !== this.netPrev && n.t) {
+      // Interpolación (2026-10-16): posiciones con el reloj de quien las manda y su desfase
+      // con el nuestro (el más pequeño visto, bajando despacio si la red se vuelve lenta).
+      G.Coop.clockTrack(this.netClk || (this.netClk = {}), n.t);
+      G.Coop.pushSnap(this.netBuf || (this.netBuf = []), n.t, n.x, n.y);
+    }
     if (n !== this.netPrev) {
       // Con el reloj de quien lo manda (n.t) el hueco es el de verdad, no el de llegada.
       const p = this.netPrev, gap = p && n.t && p.t && n.t > p.t ? n.t - p.t : this.netAge;
@@ -520,10 +526,12 @@ G.Player = class Player {
       if (this.netVx * this.netVx + this.netVy * this.netVy > vmax * vmax) { this.netVx = 0; this.netVy = 0; }
       this.netPrev = n; this.netAge = 0;
     }
+    const ip = n.t && this.netBuf && this.netBuf.length > 1
+      ? G.Coop.interp(this.netBuf, G.Coop.clockRender(this.netClk)) : null;
     const lead = n.walk ? Math.min(this.netAge, 0.25) : 0;
-    const tx = n.x + (this.netVx || 0) * lead, ty = n.y + (this.netVy || 0) * lead;
+    const tx = ip ? ip[0] : n.x + (this.netVx || 0) * lead, ty = ip ? ip[1] : n.y + (this.netVy || 0) * lead;
     if (G.U.dist2(this.x, this.y, tx, ty) > 300 * 300) { this.x = tx; this.y = ty; }
-    else { this.x = G.U.damp(this.x, tx, 18, dt); this.y = G.U.damp(this.y, ty, 18, dt); }
+    else { const k = ip ? 30 : 18; this.x = G.U.damp(this.x, tx, k, dt); this.y = G.U.damp(this.y, ty, k, dt); }
     if (n.hp < this.hp - 0.5 && !n.dead) this.flash = 0.14;
     this.hp = n.hp; this.maxHp = n.maxHp;
     this.magnet = n.mag || this.magnet;

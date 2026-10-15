@@ -38,6 +38,8 @@ G.Coop = (() => {
   // todo se para para todos. Antes los enemigos se quedaban quietos y los demás
   // seguían jugando con una ventaja enorme.
   let hostAway = false, stalled = false, lastHostAt = 0;
+  let rtInfo = {};                      // invitado: uid -> [ms, directo] (lo mide el anfitrión)
+  let pingT = 0;                        // anfitrión: cada 2 s mide la latencia de cada uno
   const lastTs = new Map();             // uid -> reloj (ts) del último mensaje suyo con posiciones
   const STALL_MS = 2500;
   let members = [];
@@ -68,6 +70,7 @@ G.Coop = (() => {
     lastTs.clear();
     kills.clear(); revives.clear();
     hostAway = false; stalled = false; lastHostAt = performance.now();
+    rtInfo = {}; pingT = 0; for (const k in hostClk) delete hostClk[k];
     G.PvP.begin(cfg);
     cfg.members.forEach((m, i) => {
       // PK: repartidos en un círculo, lejos unos de otros. Equipo: juntos.
@@ -180,6 +183,125 @@ G.Coop = (() => {
     return out;
   }
 
+  // ---------------- enemigos: sólo lo que cambia (2026-10-16) ----------------
+  /*
+   * Antes cada mensaje llevaba TODOS los enemigos cercanos ([id, x, y, vida, anim, dir,
+   * estados]); con muchos pasaba de un paquete y, por el canal rápido, se perdía entero
+   * en cuanto se perdía un trozo. Ahora, para cada invitado, se recuerda lo último que se
+   * le mandó de cada enemigo y sólo va lo que ha cambiado:
+   *   ef  [dId, qx, qy, vida, anim, dir, est]...  nuevo, otra animación o estado, o cada ~1 s
+   *   em  [dId, qx, qy]...                         sólo se ha movido (≥ 3 px); los lejanos, 1 de cada 4 veces
+   *   eh  [dId, vida]...                           sólo ha cambiado la vida
+   * Listas planas; dId = id − el id anterior de la lista (van ordenados); qx, qy =
+   * (posición − eo) / 2, con eo = la posición del invitado redondeada. Un enemigo que
+   * no sale es que no ha cambiado (NO se borra: eso va con los eventos 'ed' / 'eg').
+   */
+  const Q = 2, REFRESH = 1.0, NEAR_FAST = 520;     // (520: toda la pantalla, cada vez)
+  function enemyDelta(m) {
+    const now = clock(), sent = m.sent || (m.sent = new Map());
+    m.frameN = (m.frameN || 0) + 1;
+    const ox = Math.round(m.pl.x / 8) * 8, oy = Math.round(m.pl.y / 8) * 8;
+    const r2n = NEAR * NEAR, rf2 = NEAR_FAST * NEAR_FAST;
+    const full = [], move = [], hps = [], seen = new Set();
+    let refreshes = 6;                // como mucho tantas "repeticiones de seguridad" por mensaje (no todas a la vez)
+    for (const e of G.EnemyMgr.all()) {
+      if (e.dead) continue;
+      const d2 = G.U.dist2(e.x, e.y, m.pl.x, m.pl.y);
+      if (d2 > r2n) continue;
+      seen.add(e.id);
+      const a = Math.max(0, ANIMS.indexOf(e.anim.cur)), dir = e.anim.dir;
+      const st = (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0);
+      const h = Math.ceil(e.hp), qx = Math.round((e.x - ox) / Q), qy = Math.round((e.y - oy) / Q);
+      const s = sent.get(e.id);
+      // Repetición cada ~1 s, repartida entre enemigos (cada uno con su desfase) y con tope.
+      const stale = s && now - s.t > REFRESH + (e.id % 10) * 0.05 && refreshes > 0;
+      // (La dirección no obliga a mandarlo entero: el invitado la saca de cómo se mueve.)
+      if (!s || s.a !== a || s.st !== st || stale) {
+        if (s && stale && s.a === a && s.st === st) refreshes--;
+        full.push([e.id, qx, qy, h, a, dir, st]);
+        sent.set(e.id, { x: e.x, y: e.y, h, a, d: dir, st, t: now });
+        continue;
+      }
+      if (h !== s.h) { hps.push([e.id, h]); s.h = h; }
+      const moved = Math.abs(e.x - s.x) >= 3 || Math.abs(e.y - s.y) >= 3;
+      if (moved && (d2 <= rf2 || (m.frameN + e.id) % 4 === 0)) { move.push([e.id, qx, qy]); s.x = e.x; s.y = e.y; }
+    }
+    // Los que ya no están (o se han ido lejos) se olvidan: si vuelven, irán completos.
+    if (m.frameN % 20 === 0) for (const id of sent.keys()) if (!seen.has(id)) sent.delete(id);
+    const out = { eo: [ox, oy] };
+    if (full.length) out.ef = flat(full);
+    if (move.length) out.em = flat(move);
+    if (hps.length) out.eh = flat(hps);
+    return out;
+  }
+  /** [[id, ...], ...] -> [dId, ..., dId, ...] (ordenados por id). */
+  function flat(rows) {
+    rows.sort((a, b) => a[0] - b[0]);
+    const out = [];
+    let prev = 0;
+    for (const r of rows) { out.push(r[0] - prev); prev = r[0]; for (let i = 1; i < r.length; i++) out.push(r[i]); }
+    return out;
+  }
+
+  // ---------------- interpolación (invitado) ----------------
+  /*
+   * Lo de los demás (enemigos, compañeros) se dibuja un poco "en el pasado", entre las
+   * dos posiciones recibidas que lo rodean, con el reloj de quien las manda: así se
+   * mueve suave aunque los mensajes lleguen a saltos. Cuánto en el pasado se adapta a
+   * la red: lo que tardan en llegar los mensajes más lentos (jit) más lo que hay entre
+   * uno y otro (gap), entre 0,06 y 0,3 s. Si se acaban las posiciones, se sigue la
+   * última velocidad como mucho 0,2 s y luego se queda quieto.
+   */
+  const DELAY = 0.1;
+  /**
+   * Reloj de quien manda (o = { off, jit, gap, last }): desfase con el nuestro (el más
+   * pequeño visto = el mensaje que menos tardó, bajando despacio si la red empeora),
+   * retraso de los que llegan tarde y separación entre mensajes.
+   */
+  function clockTrack(o, tsec) {
+    const off = tsec - performance.now() / 1000;
+    o.off = o.off == null || off > o.off ? off : o.off + (off - o.off) * 0.02;
+    o.jit = Math.max(o.off - off, (o.jit || 0) * 0.97);
+    if (o.last != null && tsec > o.last) o.gap = (o.gap == null ? 0.05 : o.gap) * 0.9 + Math.min(0.5, tsec - o.last) * 0.1;
+    if (o.last == null || tsec > o.last) o.last = tsec;
+  }
+  /** Instante (en el reloj de quien manda) que toca dibujar. */
+  function clockRender(o) {
+    const delay = G.U.clamp((o.gap == null ? 0.05 : o.gap) + (o.jit || 0) + 0.02, 0.06, 0.3);
+    return performance.now() / 1000 + (o.off || 0) - delay;
+  }
+  const hostClk = {};
+  /** Guarda una posición (t = reloj de quien la manda, en s). */
+  function pushSnap(buf, t, x, y) {
+    const last = buf[buf.length - 1];
+    if (last && t <= last.t) { if (t === last.t) { last.x = x; last.y = y; } return; }
+    buf.push({ t, x, y });
+    if (buf.length > 8) buf.shift();
+  }
+  /** Posición en el instante rt (o null si no hay nada guardado). */
+  function interp(buf, rt) {
+    const n = buf.length;
+    if (!n) return null;
+    if (rt <= buf[0].t) return [buf[0].x, buf[0].y];
+    for (let i = n - 1; i > 0; i--) {
+      const a = buf[i - 1], b = buf[i];
+      if (rt >= a.t && rt <= b.t) { const k = (rt - a.t) / ((b.t - a.t) || 1); return [a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k]; }
+    }
+    const b = buf[n - 1], a = buf[n - 2];
+    if (!a || b.t - a.t <= 0 || b.t - a.t > 1) return [b.x, b.y];
+    const k = Math.min(0.2, rt - b.t) / (b.t - a.t);
+    return [b.x + (b.x - a.x) * k, b.y + (b.y - a.y) * k];
+  }
+  /** Invitado: instante (reloj del anfitrión) en que se dibujan los enemigos. */
+  function renderClock() { return clockRender(hostClk); }
+
+  /** Latencia con alguien: { ms, direct } (o null si aún no se sabe). */
+  function netInfo(u) {
+    if (host) { const m = mates.get(u); return m && m.rtt != null ? { ms: m.rtt, direct: G.Net.mode(u) === 'direct' } : null; }
+    const r = rtInfo[u];
+    return r ? { ms: r[0], direct: !!r[1] } : null;
+  }
+
   /** Quién para la partida ahora: [[uid, nombre, 1 eligiendo | 2 en pausa], ...]. */
   function holdList() { return [...holds].map(([u, k]) => [u, nameOf(u), k]); }
 
@@ -190,8 +312,15 @@ G.Coop = (() => {
       if (o.connected && o.uid !== m.uid && o.state) p[o.uid] = o.state;
     }
     const ev = m.q; m.q = [];
-    return { k: 'f', ts: clock(), t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10],
-             p, e: enemyList(m.pl), ev, h: holdList() };
+    const f = Object.assign({ k: 'f', ts: clock(), t: r2(st.time), lv: st.level, xp: r2(st.xp), xn: st.xpNext, ki: st.kills, bo: st.bosses, co: st.coins, tk: [st.t1, st.t10],
+                              p, ev, h: holdList() }, enemyDelta(m));
+    // Latencias (cada ~1 s): la suya conmigo va con mi uid; las de los demás, con el suyo.
+    if (m.frameN % 20 === 1) {
+      const rt = { [me]: [m.rtt || 0, G.Net.mode(m.uid) === 'direct' ? 1 : 0] };
+      for (const o of mates.values()) if (o.connected && o !== m && o.rtt != null) rt[o.uid] = [o.rtt, G.Net.mode(o.uid) === 'direct' ? 1 : 0];
+      f.rt = rt;
+    }
+    return f;
   }
 
   function flushAll() { for (const m of mates.values()) if (m.connected) G.Net.send(m.uid, hostFrame(m)); }
@@ -210,6 +339,7 @@ G.Coop = (() => {
     if (!active) return;
     if (host) {
       syncHolds();
+      if ((pingT -= dt) <= 0) { pingT = 2; for (const m of mates.values()) if (m.connected) m.q.push(['pi', clock()]); }
       for (const m of mates.values()) {
         if (!m.connected) continue;
         m.flushT -= dt;
@@ -298,6 +428,7 @@ G.Coop = (() => {
         case 're': G.Rift.enterRequest(); break;
         case 'bye': mateGone(from); break;
         case 'qc': G.Chat.show(from, ev[1]); emit(['qc', from, ev[1]], from); break;   // mensaje rápido
+        case 'po': m.rtt = Math.max(1, Math.round((clock() - ev[1]) * 1000)); break;       // latencia
         case 'rv': creditRevive(ev[1]); break;                                         // `from` fue levantado por ev[1]
         case 'dg': G.Dungeon.onClient(from, ev); break;                               // tienda de Kecleon
         case 'cb': G.Floors.comboFx(ev[1], ev[2], ev[3], ev[4]); emit(ev, from); break;   // ataque combinado (floors.js)
@@ -340,6 +471,27 @@ G.Coop = (() => {
       const m = mates.get(u);
       if (m) m.pl.net = readState(msg.p[u]);
     }
+    if (msg.rt) rtInfo = msg.rt;
+    // Reloj del anfitrión: el desfase más pequeño visto (= el mensaje que menos tardó),
+    // bajando poco a poco si la red se vuelve más lenta.
+    const tsec = msg.ts || performance.now() / 1000;
+    if (msg.ts) clockTrack(hostClk, tsec);
+    if (msg.eo) {
+      const ox = msg.eo[0], oy = msg.eo[1];
+      const each = (arr, n, fn) => {
+        if (!arr) return;
+        let id = 0;
+        for (let i = 0; i + n <= arr.length; i += n) { id += arr[i]; const e = G.EnemyMgr.get(id); if (e && e.remote && !e.dead) fn(e, arr, i); }
+      };
+      const at = (e, x, y) => { const nn = e.net; nn.buf = nn.buf || []; pushSnap(nn.buf, tsec, x, y); nn.x = x; nn.y = y; nn.age = 0; };
+      each(msg.ef, 7, (e, a, i) => {
+        at(e, ox + a[i + 1] * Q, oy + a[i + 2] * Q);
+        e.hp = Math.min(e.maxHp, a[i + 3]); e.net.anim = a[i + 4]; e.net.dir = a[i + 5]; e.net.st = a[i + 6];
+      });
+      each(msg.em, 3, (e, a, i) => at(e, ox + a[i + 1] * Q, oy + a[i + 2] * Q));
+      each(msg.eh, 2, (e, a, i) => { e.hp = Math.min(e.maxHp, a[i + 1]); });
+    }
+    // (Formato antiguo: todos los enemigos cada vez.)
     // Velocidad con el reloj del anfitrión (ts) si lo manda: la hora de llegada baila con la red.
     const now = msg.ts ? msg.ts * 1000 : performance.now();
     for (const a of msg.e || []) {
@@ -405,6 +557,7 @@ G.Coop = (() => {
       case 'rdt': case 'rdw': G.Raid.onEvent(ev); break;
       case 'stg': G.Stages.onNet(ev); break;
       case 'twr': G.Challenges.onNet(ev); break;
+      case 'pi': outEv.push(['po', ev[1]]); flushClient(true); break;            // latencia: se devuelve al momento
       case 'dg': G.Dungeon.onNet(ev); break;
     }
   }
@@ -561,6 +714,9 @@ G.Coop = (() => {
     sendTo(u, ev) { const m = mates.get(u); if (host && m && m.connected) m.q.push(ev); },
     mate(u) { return mates.get(u); },
     get mates() { return [...mates.values()]; },
+    pushSnap, interp, renderClock, netInfo, DELAY, clockTrack, clockRender,
+    /** Pruebas: tamaño de lo que se manda de enemigos a un invitado, formato antiguo y nuevo. */
+    _frameSizes(u) { const m = mates.get(u); if (!m) return null; return { old: JSON.stringify(enemyList(m.pl)).length, delta: JSON.stringify(enemyDelta(m)).length }; },
     get members() { return members; },
     get active() { return active; },
     get isHost() { return active && host; },
