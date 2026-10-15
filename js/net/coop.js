@@ -374,6 +374,7 @@ G.Coop = (() => {
       case 'st': case 'fl': case 'cb': G.Floors.onNet(ev); break;   // escaleras, piso nuevo, ataque combinado
       case 'sbox': api.sbox && api.sbox(); break;
       case 'fbox': api.fbox && api.fbox(); break;
+      case 'ms': api.milestone && api.milestone(ev[1]); break;            // hito de tiempo (boons.js)
       case 'egg': G.Companion.gotEgg(local); break;
       case 'potion': api.potion && api.potion(ev[1]); break;
       case 'pk': G.Pickups.addRemote(ev[1], ev[2], ev[3], ev[4], ev[5]); break;
