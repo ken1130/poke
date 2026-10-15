@@ -1254,6 +1254,12 @@ G.Flow = {
   play() { G.Game.startRun(); },
   /** Empieza la partida en grupo (el anfitrión la manda a todos). */
   startCoop(cfg) {
+    // Aún mirando el resumen de la partida anterior: se cierra solo y entras con los demás
+    // (2026-10-15: antes se ignoraba el aviso y te quedabas fuera; el resumen ya está guardado).
+    if (G.Game.state === 'over' && G.Social.room) {
+      const back = document.getElementById('btn-again');
+      if (back && back.onclick) back.onclick(); else { G.UI.hideAll(); G.Game.toUI(); }
+    }
     if (G.Game.state !== 'ui' || !G.Social.room) return;
     G.LobbyUI.close();
     G.Game.startRun(cfg);

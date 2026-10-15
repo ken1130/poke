@@ -104,6 +104,7 @@ G.MODNEWS = [
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
+      { zh: '修正：上一場結束後還停在結算畫面的玩家，房主開下一場時沒有一起進來（現在會自動關掉結算畫面跟著進場）', en: 'Fixed: players still on the results screen were left out when the host started the next match (they now join automatically)' },
       { zh: 'PK 命中改成「攻擊者畫面打中就算中」：不會再明明打到卻沒扣血；李家拳、落雷、精神箭、吸取、連鎖、倒樹、隕石、毒等原本打不到玩家的招式現在都有效', en: 'PvP hits are now decided on the attacker’s screen: no more hits that do nothing; Lee Fist, lightning, Psychic Arrow, drain, chain, falling trees, meteors, poison and more now damage players' },
       { zh: 'PK 打擊感加強：打中有 X 命中標記、大傷害數字（暴擊紅字）、衝擊特效和命中音效；被打的人角色閃一下並被小小擊退。畫面不閃、不震動、不停頓，不會被硬控；連續攻擊也不會再被受傷無敵吃掉', en: 'Stronger PvP hit feel: X hit marker, big damage numbers (red crits), impact effects and hit sounds; the victim’s Pokémon flashes and is knocked back a little. No screen flashing, shaking or hit-stop, so you never lose control; rapid hits are no longer swallowed by i-frames' },
       { zh: 'PK 競技場選招：5 個選項至少 3 個遠程、近戰最多 2 個，不會再全是近戰被風箏', en: 'Arena move picks: at least 3 ranged and at most 2 melee among the 5 options, so you’re never stuck with only melee' },
