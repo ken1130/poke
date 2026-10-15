@@ -5,6 +5,7 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '商店、神秘房間和樓梯不在畫面內時，畫面邊緣會出現箭頭，標示方向和距離（跟技能光碟一樣）', en: 'When a shop, mystery room or stairs is off-screen, an arrow on the screen edge shows its direction and distance (like move discs)' },
       { zh: 'PK 指向技：PK 時招式朝你瞄準的方向發射（電腦用滑鼠，手機用右手拇指在右半邊拖曳），畫面上有準心和瞄準線', en: 'PvP aiming: in PvP your moves fire where you aim (mouse on PC, right thumb on the right half on phones), with a crosshair and aim line' },
       { zh: 'PK 打擊感：打中有命中標記、傷害數字、音效、短暫停頓和擊退；擊倒對手有慢動作、「擊倒！」和擊倒訊息', en: 'PvP hit feedback: hit marker, damage numbers, sound, a brief hit-stop and knockback; knockouts get slow motion, “K.O.!” and a kill feed' },
       { zh: 'PK 競技場地圖（房間可選）：沒有野怪、頭目和事件；開場從 5 個攻擊招式選 3 個（Lv.3，可換一批 1 次），大家都沒有商店強化；中間定期出現回血果實，1:30 後安全區開始縮小', en: 'PvP Arena map (room option): no wild Pokémon, bosses or events; pick 3 of 5 attack moves at the start (Lv.3, one reroll), no shop upgrades for anyone; healing berries spawn in the middle and the safe zone shrinks from 1:30' },
@@ -61,6 +62,8 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '小地圖下方的距離列表字放大、比較好讀', en: 'The distance list under the minimap uses bigger, easier-to-read text' },
+      { zh: '無敵星星更醒目：全身彩虹光暈、閃爍和星光粒子', en: 'The Star potion is much more visible: a rainbow glow, flashing and sparkles' },
       { zh: '招式欄從 4 格增加為 5 格（按鍵 1～5），輔助和被動招式不會再把攻擊招式擠掉', en: 'Move bar grows from 4 to 5 slots (keys 1-5), so support and passive moves don’t crowd out your attacks' },
       { zh: '組合技（連結）最多可以組 5 個招式（原本 4 個）', en: 'Bonds can now link up to 5 moves (was 4)' },
       { zh: '救起倒地隊友更快：1.5 秒（原本 3 秒）、範圍更大，救人時受到的傷害減半，暫時離開進度也掉得比較慢', en: 'Reviving downed teammates is faster: 1.5 s (was 3), a bigger range, half damage taken while reviving, and progress drains slower if you step away' },
@@ -95,6 +98,7 @@ G.MODNEWS = [
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }
     ],
     fix: [
+      { zh: '在商店或沒有怪物的房間裡不會再一直自動放招式（卡克隆暴怒或怪物屋有怪時照常攻擊）', en: 'Moves no longer fire on their own inside the shop or empty rooms (they still do against an angry Kecleon or Monster House)' },
       { zh: '打倒卡克隆後牠不會再留在櫃台後面', en: 'Kecleon no longer stays behind the counter after you beat him' },
       { zh: '修正升級選卡畫面在說明很長時卡片擠到左邊', en: 'Fixed level-up cards sticking to the left when a description was long' },
       { zh: '被動技（火焰盾、歐美肥佬、進化後的吸血鬼之牙）一直有效，招式欄上標示「被動」，不能也不需要點選', en: 'Passive moves (Flame Shield, Heavyweight, evolved Vampire Fang) are always on: they show “Passive” in the move bar and can no longer be selected' },

@@ -341,34 +341,17 @@ G.HUD = (() => {
       }
       ctx.restore();
     }
-    // Tu disco de movimientos: si no se ve, flecha celeste en el borde con los metros.
+    // Si no se ven: flecha en el borde con los metros (tu disco, la tienda, la sala "?" y las escaleras).
+    arrowSpots = [];
     const box = !G.Dungeon.inRoom && G.Pickups.all().find(p => (p.kind === 'sbox' || p.kind === 'fbox') && G.Loot.visible(p));      // (dentro de una sala, no)
-    if (box) {
-      const bsx = (box.x - cam.left()) * cam.scale, bsy = (box.y - 20 - cam.top()) * cam.scale;
-      if (bsx < 0 || bsx > w || bsy < 0 || bsy > h) {
-        const M = 46, ex = G.U.clamp(bsx, M, w - M), ey = G.U.clamp(bsy, M + 70, h - M - 90);
-        const a = Math.atan2(bsy - ey, bsx - ex), ca = Math.cos(a), sa = Math.sin(a);
-        const beat = 0.5 + Math.sin(performance.now() / 140) * 0.5;
-        ctx.save();
-        ctx.translate(ex, ey);
-        ctx.globalAlpha = 0.2 + beat * 0.2; ctx.fillStyle = '#7fe0ff';
-        ctx.beginPath(); ctx.arc(0, 0, 24 + beat * 6, 0, 6.2832); ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.beginPath();
-        ctx.moveTo(ca * 32, sa * 32);
-        ctx.lineTo(Math.cos(a + 2.45) * 16, Math.sin(a + 2.45) * 16);
-        ctx.lineTo(Math.cos(a - 2.45) * 16, Math.sin(a - 2.45) * 16);
-        ctx.closePath();
-        ctx.fillStyle = beat > 0.5 ? '#e6fbff' : '#7fe0ff'; ctx.fill();
-        ctx.lineWidth = 3; ctx.strokeStyle = '#0a2a3a'; ctx.stroke();
-        const label = G.T('DISCO DE MOVIMIENTOS') + ' · ' + Math.round(G.U.dist(pl.x, pl.y, box.x, box.y) / 32) + ' m';
-        ctx.font = F(800, 11);
-        ctx.textAlign = ca > 0.3 ? 'right' : ca < -0.3 ? 'left' : 'center';
-        const lx = -ca * 28, ly = -sa * 26 + 4;
-        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(label, lx, ly);
-        ctx.fillStyle = '#bff3ff'; ctx.fillText(label, lx, ly);
-        ctx.restore();
+    if (box) edgeArrow(ctx, w, h, pl, box.x, box.y - 20, '#7fe0ff', '#e6fbff', '#0a2a3a', '#bff3ff', 'DISCO DE MOVIMIENTOS');
+    if (!G.Dungeon.inRoom && !G.PvP.arena) {
+      for (const s of G.Dungeon.sites) {
+        if (s.type === 'shop' && (s.state === 'open' || s.state === 'free')) edgeArrow(ctx, w, h, pl, s.x, s.y - 20, '#5fcf8a', '#d8ffe6', '#0a2a18', '#b8f5cc', 'Tienda de Kecleon');
+        else if (s.type === 'mhouse' && s.state === 'idle') edgeArrow(ctx, w, h, pl, s.x, s.y - 20, '#b98aff', '#efe2ff', '#22103a', '#e2d0ff', 'Sala misteriosa');
       }
+      const st = G.Floors.stairs;
+      if (st) edgeArrow(ctx, w, h, pl, st.x, st.y, '#7fb0ff', '#e2ecff', '#0a1a3a', '#cfe0ff', 'Escaleras');
     }
     if (G.Rift.inArena) {
       ctx.textAlign = 'center';
@@ -866,7 +849,8 @@ G.HUD = (() => {
     ctx.lineTo(cx + Math.cos(a - 2.5) * 5.5, cy + Math.sin(a - 2.5) * 5.5);
     ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.restore();
-    drawMinimapList(ctx, w, pl, x0 + S, y0 + S + 8, short ? 3 : 6);
+    const rowsH = drawMinimapList(ctx, w, pl, x0 + S, y0 + S + 8, short ? 3 : 6, short) || 0;
+    mmZone = { x: Math.min(x0, w - 230), bottom: y0 + S + 8 + rowsH };
   }
 
   /**
@@ -875,7 +859,45 @@ G.HUD = (() => {
    * candado, altares, manantiales, la grieta y los jefes).
    */
   const ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
-  function drawMinimapList(ctx, w, pl, right, top, max = 6) {
+  let arrowSpots = [], mmZone = null;     // flechas ya puestas este fotograma · hueco del minimapa y su lista
+  /** Flecha que late en el borde de la pantalla hacia algo que no se ve, con su nombre y los metros. */
+  function edgeArrow(ctx, w, h, pl, wx, wy, col, flash, dark, txtCol, name) {
+    const cam = G.Camera;
+    const bsx = (wx - cam.left()) * cam.scale, bsy = (wy - cam.top()) * cam.scale;
+    if (bsx >= 0 && bsx <= w && bsy >= 0 && bsy <= h) return;
+    const M = 46;
+    let ex = G.U.clamp(bsx, M, w - M), ey = G.U.clamp(bsy, M + 70, h - M - 90);
+    // No encima del minimapa ni de su lista (columna de la derecha): se aparta a su izquierda.
+    if (mmZone && ex > mmZone.x - 30 && ey < mmZone.bottom + 20) ex = mmZone.x - 50;
+    // Varias flechas en el mismo sitio: se reparten a lo largo del borde.
+    for (let k = 0; k < 6 && arrowSpots.some(([x, y]) => Math.abs(x - ex) < 60 && Math.abs(y - ey) < 44); k++) {
+      if (ex <= M + 1 || ex >= w - M - 1 || mmZone && ex === mmZone.x - 50) ey = Math.min(h - M - 90, ey + 46); else ex += ex < w / 2 ? 130 : -130;
+    }
+    arrowSpots.push([ex, ey]);
+    const a = Math.atan2(bsy - ey, bsx - ex), ca = Math.cos(a), sa = Math.sin(a);
+    const beat = 0.5 + Math.sin(performance.now() / 140) * 0.5;
+    ctx.save();
+    ctx.translate(ex, ey);
+    ctx.globalAlpha = 0.2 + beat * 0.2; ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(0, 0, 24 + beat * 6, 0, 6.2832); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(ca * 32, sa * 32);
+    ctx.lineTo(Math.cos(a + 2.45) * 16, Math.sin(a + 2.45) * 16);
+    ctx.lineTo(Math.cos(a - 2.45) * 16, Math.sin(a - 2.45) * 16);
+    ctx.closePath();
+    ctx.fillStyle = beat > 0.5 ? flash : col; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = dark; ctx.stroke();
+    const label = G.T(name) + ' · ' + Math.round(G.U.dist(pl.x, pl.y, wx, wy) / 32) + ' m';
+    ctx.font = F(800, 12);
+    ctx.textAlign = ca > 0.3 ? 'right' : ca < -0.3 ? 'left' : 'center';
+    const lx = -ca * 28, ly = -sa * 26 + 4;
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(label, lx, ly);
+    ctx.fillStyle = txtCol; ctx.fillText(label, lx, ly);
+    ctx.restore();
+  }
+
+  function drawMinimapList(ctx, w, pl, right, top, max = 6, short = false) {
     const rows = [];
     const near = (list, fn) => {
       let best = null, bd = Infinity;
@@ -902,9 +924,11 @@ G.HUD = (() => {
     if (G.Floors.stairs) add(G.Floors.stairs, 'Escaleras', '#9fc8ff', 'stairs');
     add(near(G.EnemyMgr.all(), e => e.boss && !e.dead), 'Jefe', '#ff5f6d', 'boss');
     add(near(G.EnemyMgr.all(), e => e.elite && !e.boss && !e.dead), 'Élite', '#ffb84d', 'elite');
-    if (!rows.length) return;
+    if (!rows.length) return 0;
+    // (2026-10-15: letra 10 → 13; el dueño no la leía bien.)
+    const FS = short ? 12 : 13, RH = short ? 19 : 22, STEP = RH + 3;
     ctx.save();
-    ctx.font = F(800, 10);
+    ctx.font = F(800, FS);
     ctx.textAlign = 'right';
     // Lo más importante primero (caben 6).
     const PRI = ['sbox', 'egg', 'stairs', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'elite', 'item', 'bigchest', 'altar', 'spring'];
@@ -914,15 +938,16 @@ G.HUD = (() => {
       const a = Math.atan2(r.o.y - pl.y, r.o.x - pl.x);
       const arrow = ARROWS[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];
       const txt = G.T(r.name) + ' ' + Math.round(r.d / 32) + 'm ' + arrow;
-      const tw = ctx.measureText(txt).width + 26, y = top + k * 19;
-      roundRect(ctx, right - tw, y, tw, 17, 6);
-      ctx.fillStyle = 'rgba(8,12,24,.8)'; ctx.fill();
-      ctx.save(); MM_ICON[r.ic](ctx, right - tw + 9, y + 8.5, false); ctx.restore();
-      ctx.font = F(800, 10);
+      const tw = ctx.measureText(txt).width + 30, y = top + k * STEP;
+      roundRect(ctx, right - tw, y, tw, RH, 7);
+      ctx.fillStyle = 'rgba(8,12,24,.85)'; ctx.fill();
+      ctx.save(); ctx.translate(right - tw + 11, y + RH / 2); ctx.scale(1.25, 1.25); MM_ICON[r.ic](ctx, 0, 0, false); ctx.restore();
+      ctx.font = F(800, FS);
       ctx.fillStyle = r.col;
-      ctx.fillText(txt, right - 5, y + 12);
+      ctx.fillText(txt, right - 6, y + RH / 2 + FS * 0.36);
     });
     ctx.restore();
+    return Math.min(rows.length, max) * STEP;
   }
 
   // ---------------- cooperativo ----------------

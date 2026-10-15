@@ -20,6 +20,13 @@ G.Combat = (() => {
 
   function tick(dt, pl, now) {
     if (pl.dead) return;
+    // Dentro de la tienda o de una sala sin enemigos: no se ataca (sólo los de apoyo).
+    // (2026-10-15: en la tienda de Kecleon los ataques salían solos sin nadie a quien pegar.)
+    if (G.Dungeon.inRoom && !G.EnemyMgr.all().some(e => !e.dead)) {
+      for (const m of pl.moves) if (m.kind === 'support') tickMove(dt, pl, m, now);
+      G.Projectiles.clearOrbs(pl);
+      return;
+    }
     // Vínculos: todos los movimientos del hueco activo, cada uno con su recarga.
     const group = pl.activeGroup();
     // Durmiendo (Descanso) no se ataca; los de apoyo y pasivos siguen.

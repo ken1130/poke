@@ -634,16 +634,34 @@ G.Player = class Player {
         ctx.restore();
       }
     }
-    // Poción de estrella: aro de colores que gira.
-    if (this.star && !this.dead) {
+    // Poción de estrella (2026-10-15: más vistosa): halo arcoíris que late, aro que gira,
+    // el Pokémon parpadea de colores y suelta chispas.
+    const starOn = this.star && !this.dead, now = performance.now();
+    const hue = (now / 4) % 360;
+    if (starOn) {
+      const cy = this.y - this.bodyH * 0.45, R = Math.max(46, this.bodyH * 1.5) * (1 + Math.sin(now / 110) * 0.1);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const g = ctx.createRadialGradient(this.x, cy, R * 0.15, this.x, cy, R);
+      g.addColorStop(0, `hsla(${hue},100%,80%,0.95)`);
+      g.addColorStop(0.55, `hsla(${(hue + 60) % 360},100%,65%,0.5)`);
+      g.addColorStop(1, `hsla(${(hue + 120) % 360},100%,60%,0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(this.x, cy, R, 0, 6.2832); ctx.fill();
+      ctx.restore();
       ctx.save();
       ctx.lineWidth = 3;
-      ctx.strokeStyle = `hsl(${(performance.now() / 4) % 360},90%,65%)`;
+      ctx.strokeStyle = `hsl(${hue},90%,65%)`;
       ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.9, this.r * 0.8, 0, 0, 6.2832); ctx.stroke();
       ctx.restore();
+      if (!this._sparkT || now - this._sparkT > 90) {
+        this._sparkT = now;
+        G.FX.burst(this.x + G.U.rand(-this.r, this.r), cy + G.U.rand(-this.bodyH * 0.4, this.bodyH * 0.3), `hsl(${(hue + G.U.rand(0, 180)) % 360},100%,72%)`, 2, 70);
+      }
     }
-    const alpha = this.invuln > 0 && !this.dead ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
-    this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });
+    const alpha = this.invuln > 0 && !this.dead && !starOn ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
+    const starFlash = starOn && Math.floor(now / 120) % 3 !== 2;
+    this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0 || starFlash, softFlash: true, alpha, color: starFlash ? `hsl(${hue},100%,70%)` : '#ffcb3d' });
 
     // Arcos de buff alrededor de los pies.
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
