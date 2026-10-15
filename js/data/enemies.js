@@ -205,8 +205,20 @@ G.Enemies = (() => {
 
   function scale(t) {
     const k = late(t);
-    return { hp: (1 + t / 95) * k, dmg: (1 + t / 420) * Math.pow(k, 0.7), spd: 1 + Math.min(0.35, t / 1400) };
+    // Vida: +1 cada 95 s; desde el minuto 20, un 15 % más despacio (2026-10-15: a media
+    // partida los normales eran tan duros que pegarles era rascar).
+    const hpT = t <= 1200 ? 1 + t / 95 : 1 + 1200 / 95 + (t - 1200) * 0.85 / 95;
+    return { hp: hpT * k, dmg: (1 + t / 420) * Math.pow(k, 0.7), spd: 1 + Math.min(0.35, t / 1400) };
   }
+
+  /*
+   * Vida de un enemigo normal típico en el segundo t (lo que hace el spawner sin élite).
+   * Los jefes y los legendarios de la grieta no bajan de bossFloor(t): 2,5× un normal a los
+   * 5 min, 3× a los 10, 4× a los 20 y 5× desde los 30 (2026-10-15: antes, a partir del
+   * minuto 10 un normal tenía más vida que el legendario de la grieta).
+   */
+  function mobRef(t) { return TIERS[tierAt(t)].hp * scale(t).hp * (3.3 + Math.min(1.7, t / 210)); }
+  function bossFloor(t) { return mobRef(t) * Math.max(2.5, Math.min(5, 2.5 + (t - 300) / 600)); }
 
   /**
    * Tiempo extra (desde 2026-10-12). Hasta el minuto 60 todo sigue igual; desde
@@ -265,7 +277,7 @@ G.Enemies = (() => {
     return out;
   }
 
-  return {
+  return { mobRef, bossFloor,
     TIERS, BOSS_SLOTS, LATE_FROM, rollRun, bossAt, bossFor, scale, bossScale, late, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }

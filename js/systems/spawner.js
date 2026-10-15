@@ -119,6 +119,11 @@ G.Spawner = (() => {
   function spawnBoss(pl, t, b) {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
     const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1)), true);
+    // Un jefe nunca es más flojo que varios normales de ese momento (salvo en la Aventura, que tiene los suyos).
+    if (G.Modes.run !== 'stage') {
+      const floor = Math.round(G.Enemies.bossFloor(t) * G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1));
+      if (e.maxHp < floor) e.maxHp = e.hp = floor;
+    }
     if (rollShiny(b.dex)) e.makeShiny(!G.Modes.on('shiny'));
     G.Floors.scaleEnemy(e);
     G.EnemyMgr.add(e);

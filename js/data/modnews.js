@@ -55,6 +55,7 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '頭目平衡：頭目和裂縫傳說寶可夢的血量至少是當時小怪的 2.5～5 倍（以前 10 分鐘後小怪比傳說還硬）；裂縫時間 120 秒→150 秒；20 分鐘後小怪血量成長放慢 15%', en: 'Boss balance: bosses and rift legendaries now have at least 2.5–5× the HP of the regular enemies at that time (before, after 10 min regular enemies were tougher than the legendary); rift time 120 s → 150 s; regular enemy HP grows 15% slower after 20 min' },
       { zh: '泉水改成一次性：踩上去立刻補滿血，然後永久乾涸（不再慢慢恢復），不能再守在泉水旁邊', en: 'Springs are now single-use: step on one to heal to full instantly, then it dries up for good (no more camping next to it)' },
       { zh: '三個舊招式的進化名稱改為力量寶石、死亡羽翼、龍之波動（避免與新招同名）', en: 'Three old evolutions renamed to Power Gem, Oblivion Wing and Dragon Pulse so they don’t share names with new moves' },
       { zh: '安全屋更安全：有人在裡面時附近的怪物會被嚇跑、不會圍在外面；離開時卡克隆放出衝擊波彈開周圍的怪，並給 3 秒無敵', en: 'Safer safe house: while someone is inside, nearby enemies get scared off instead of waiting around it; when you leave, Kecleon’s shockwave knocks back nearby enemies and you get 3 s of invincibility' },

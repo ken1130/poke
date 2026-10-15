@@ -22,7 +22,7 @@ G.Rift = (() => {
   // Menos azar (12-10-2026): cada vez que no sale, la siguiente es más
   // probable (20 %, 40 %, 60 %, 80 %, 100 %): como mucho 2,5 min sin grieta.
   const CHECK = 30, CHANCE = 0.2, TTL = 45;
-  const ARENA_R = 11, ARENA_TIME = 120, FROM = 75;
+  const ARENA_R = 11, ARENA_TIME = 150, FROM = 75;      // (150 s desde 2026-10-15: el legendario es más duro)
   let rift = null;          // { x, y, ttl, t }
   let arena = null;         // { tx, ty, r, dex, shiny, x, y, back, biome, t, phase, endT, bossId }
   let checkT = CHECK, asked = false, downT = 0, misses = 0;
@@ -154,7 +154,8 @@ G.Rift = (() => {
     const def = {
       dex: mon.dex, name: mon.name,
       // Desafío legendario: el primero más flojo (empiezas a nivel 1) y cada vez más duros.
-      hp: Math.round((3200 + t * 9) * lk * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1) * (rush() ? Math.min(1.3, 0.3 + rushWins * 0.15) * (G.Modes.rule('lhp') || 1) : 1)),
+      // Fuera del Desafío legendario, nunca menos que 1,2× el mínimo de un jefe de ese momento.
+      hp: Math.round(Math.max(rush() ? 0 : G.Enemies.bossFloor(t) * 1.2, (3200 + t * 9) * lk) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1) * (rush() ? Math.min(1.3, 0.3 + rushWins * 0.15) * (G.Modes.rule('lhp') || 1) : 1)),
       spd: Math.round(G.U.clamp(48 + (mon.spd - 78) * 0.6, 48, 105)),
       dmg: Math.round((36 + t / 20) * Math.pow(lk, 0.7) * (rush() ? G.Modes.rule('ldmg') || 1 : 1)), xp: Math.round(500 + t * 1.2),
       behavior: mon.types.some(x => ['psychic', 'electric', 'ghost', 'fairy', 'fire', 'water', 'ice', 'dragon'].includes(x)) ? 'ranged' : 'charger',
