@@ -999,13 +999,26 @@ G.Combat = (() => {
   function hit(pl, e, dmg, col, dx, dy, knock, m, opt) {
     const k = typeK(m.type, e);
     const crit = !ghost && (opt && opt.crit != null ? opt.crit : isCrit(pl));
-    dmg *= k * (crit ? (opt && opt.cmul) || CRIT_MUL : 1);
+    dmg *= k * (crit ? (opt && opt.cmul) || CRIT_MUL : 1) * itemK(pl, m.type, e);
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
     pl.dmgDealt += dmg;
     if (m.burn) e.applyBurn(m.burn);
     if (m.poison) e.applyPoison(m.poison);
     if (m.slow) e.applySlow(m.slow);
+  }
+
+  /**
+   * Objetos que tocan cada golpe (2026-10-15): Cinta Experto (+30 % si es muy eficaz) y
+   * Roca del Rey (10 %: el enemigo normal retrocede, inmovilizado 0,6 s).
+   */
+  function itemK(pl, type, e) {
+    if (ghost || !pl.item) return 1;
+    if (pl.item === 'kingsrock' && !e.boss && Math.random() < 0.1) {
+      e.applyRoot(0.6);
+      if (G.Camera.sees(e.x, e.y, 20)) G.FX.ring(e.x, e.y, 4, 22, '#9aa6b5', 0.3, 2);
+    }
+    return pl.item === 'expertbelt' && type && G.Types.mult(type, e.types) > 1 ? 1.3 : 1;
   }
 
   // ---------------- colisiones ----------------
@@ -1113,7 +1126,7 @@ G.Combat = (() => {
         }
 
         const crit = isCrit(pl);
-        const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? CRIT_MUL : 1);
+        const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? CRIT_MUL : 1) * itemK(pl, p.mtype, e);
         e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
                crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
@@ -1156,7 +1169,8 @@ G.Combat = (() => {
       pl.hurt(e.dmg * (1 - (pl.bulkArmor || 0)), e.atkType);
       // Poción de gigante: aplastas a los que te tocan (y salen despedidos).
       if (pl.giant && !e.boss) e.hurt((20 + pl.level * 4) * pl.atk / Math.max(1, pl.baseAtk), '#ff7b3d', e.x - pl.x, e.y - pl.y, 320);
-      if (pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
+      // Casco Dentado: crece con tu ataque (antes se quedaba corto al final de la run).
+      if (pl.hasItem('rockyhelmet')) e.hurt((15 + pl.level * 4) * pl.atk / Math.max(1, pl.baseAtk), '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
       const [nx, ny] = G.U.norm(e.x - pl.x, e.y - pl.y);
       e.kx += nx * 150; e.ky += ny * 150;
     }
