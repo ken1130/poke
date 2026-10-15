@@ -69,6 +69,7 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '招式欄一直顯示 5 格，還沒學的格子會顯示空格和號碼；5 招組合技的圖示改成 3×2 排列，全部看得到', en: 'The move bar always shows all 5 slots, with empty numbered slots for ones you haven’t filled; 5-move bonds now show all icons in a 3×2 grid' },
       { zh: '飛行系寶可夢踩到水或沼澤也不會被緩速（原本只有水系）；雙屬性只要其中一個是水系或飛行系就不會變慢', en: 'Flying-type Pokémon are no longer slowed by water or swamps (before, only Water types); dual types are unaffected if either type is Water or Flying' },
       { zh: 'PK 野外模式也會縮安全區（4 分鐘開始，7 分鐘縮到最小），不會一直躲', en: 'Open-field PvP now has a shrinking zone too (from 4:00 to 7:00), so nobody can hide forever' },
       { zh: 'PK 近戰招式傷害 ×1.3；開場出生點拉遠，不會一開打就貼在一起', en: 'PvP melee moves deal ×1.3 damage; spawn points are farther apart so you don’t start face to face' },

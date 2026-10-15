@@ -415,7 +415,9 @@ G.HUD = (() => {
 
     // ---------- ranura de movimientos ----------
     const S = 54, GAP = 9;
-    const n = Math.max(1, pl.slots.length);
+    // Todos los huecos, también los vacíos (2026-10-15: sólo se veían los aprendidos y parecía que
+    // había 4; hay pl.maxMoves = 5).
+    const n = Math.max(1, pl.slots.length, pl.maxMoves || 0);
     const totalW = n * S + (n - 1) * GAP;
     let sx = (w - totalW) / 2;
     // Por encima de la barra de inicio del iPhone (allí los toques a veces no llegan).
@@ -451,13 +453,20 @@ G.HUD = (() => {
       ctx.strokeStyle = fused ? BOND : m && m.evolved ? '#ffd23f' : on ? col : 'rgba(140,170,210,.22)';
       ctx.stroke();
 
-      if (!m) continue;
+      if (!m) {
+        // Hueco libre: su número, apagado.
+        ctx.font = F(800, 15); ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(160,180,215,.35)';
+        ctx.fillText(String(i + 1), x + S / 2, y + S / 2 + 5);
+        continue;
+      }
 
       if (fused) {
-        // Vínculo: los movimientos en una cuadrícula de 2×2, cada uno con su recarga.
-        const C = 22, P = (S - C * 2) / 3;
+        // Vínculo: los movimientos en una cuadrícula de 2×2 (3×2 si son 5), cada uno con su recarga.
+        const cols = g.length > 4 ? 3 : 2, C = cols === 3 ? 15 : 22, P = (S - C * cols) / (cols + 1);
+        const P2 = (S - C * 2) / 3;
         g.forEach((gm, k) => {
-          const cx = x + P + (k % 2) * (C + P), cy = y + P + Math.floor(k / 2) * (C + P);
+          const cx = x + P + (k % cols) * (C + P), cy = y + P2 + Math.floor(k / cols) * (C + P2);
           G.Icons.draw(ctx, 'move:' + gm.id, cx, cy, C);
           const f = cdOf(gm);
           if (f > 0) { ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(cx, cy, C, C * f); }
