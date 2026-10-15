@@ -16,7 +16,9 @@
  */
 G.Loot = (() => {
   const $ = id => document.getElementById(id);
-  const BOX_AT = [240, 540, 900];        // s de run en que aparece cada cofre (uno por jugador)
+  const BOX_AT = [240, 540, 900];        // s de run en que aparece cada disco (uno por jugador)
+  // En una fase de la Aventura (más corta) se reparten a lo largo de lo que dura: 20 %, 50 %, 80 %.
+  let boxAt = BOX_AT;
   const BOX_MAX = 3;                // cofres que puede abrir cada uno por run
   const BOX_REROLLS = 3;           // veces que se puede volver a tirar (por run, entre todos los cofres)
   const POTION_EVERY = 80;          // s (±20 %) entre pociones
@@ -24,14 +26,18 @@ G.Loot = (() => {
 
   let boxesSpawned = 0, potionT = 0;
 
-  function reset() { boxesSpawned = 0; potionT = 45; }
+  function reset() { boxesSpawned = 0; potionT = 45; boxAt = null; }
 
   const allowed = () => !G.PvP.on && !G.Rift.inArena;
 
   /** Anfitrión o solitario, cada fotograma de juego. */
   function tick(dt, time, players) {
     if (!allowed()) return;
-    if (boxesSpawned < BOX_AT.length && time >= BOX_AT[boxesSpawned]) {
+    if (!boxAt) {
+      const len = G.Stages.runLength && G.Stages.runLength();
+      boxAt = len ? [0.2, 0.5, 0.8].map(k => Math.max(30, Math.round(len * k))) : BOX_AT;
+    }
+    if (boxesSpawned < boxAt.length && time >= boxAt[boxesSpawned]) {
       boxesSpawned++;
       let n = 0;
       for (const p of players) if ((p.sboxes || 0) < BOX_MAX && spawnNear(p, 'sbox', 360, 600)) n++;

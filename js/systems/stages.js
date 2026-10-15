@@ -441,7 +441,20 @@ G.Stages = (() => {
   /** La fase elegida con "Con amigos" (una vez: la sala la pone al crearse). */
   function takePartyStage() { const s = partyStage; partyStage = null; return s; }
 
-  return { LIST, REGIONS, select, prepare, scene, headStart, tOffset, update, token, onNet, hudLine, drawable, drawHud, setResult, afterRun,
+  /**
+   * Cuánto suele durar la fase en curso (s), para repartir lo que sale durante la run
+   * (discos, huevo, sorpresas del mapa: loot.js, companion.js, dungeon.js). null si no
+   * es una fase. Aguantar / derrotar: su tiempo; zona, bayas y jefes: el tiempo de la
+   * tercera estrella (lo que tarda alguien que lo hace bien).
+   */
+  function runLength() {
+    if (!on()) return null;
+    const s = sel, o = s.obj;
+    if ((o.k === 'survive' || o.k === 'kills') && o.t) return o.t;
+    return (s.star3 && s.star3.time) || 180;
+  }
+
+  return { LIST, REGIONS, select, prepare, scene, headStart, tOffset, runLength, update, token, onNet, hudLine, drawable, drawHud, setResult, afterRun,
            merge, openMap, closeMap, menuLine, choices, takePartyStage, goalText, star3Text, unlocked, starsOf, totalStars, title,
            get active() { return !!st; },
            /** Tipo de objetivo de la fase en curso ('collect', 'zone'...) o null. */
