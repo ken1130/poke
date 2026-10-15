@@ -5,6 +5,9 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '卡克隆商店變成室內場景：從門走進店裡，裡面沒有怪物，可以安心購物；偷東西的話卡克隆會在店裡暴怒、門會鎖住直到打倒牠', en: 'Kecleon’s shop is now an indoor scene: walk through the door to shop safely with no enemies inside; steal and Kecleon goes berserk inside with the door locked until you beat him' },
+      { zh: '神秘房間也變成室內：走進「？」進入房間，可能是怪物屋（門鎖 30 秒）、寶藏房、治癒房或陷阱房，從南邊的門離開；組隊時全隊一起進出', en: 'Mystery rooms are indoor too: step on the “?” to enter a room — Monster House (door locked 30 s), treasure, healing or trap — and leave by the south door; in groups the whole team goes in and out together' },
+      { zh: '離開商店或房間時有衝擊波與 3 秒無敵，外面的怪物會原樣放回', en: 'Leaving a shop or room gives a shockwave and 3 s of invincibility; the monsters outside are restored as they were' },
       { zh: '新增 8 個輔助技能：自我再生、光牆、守住、祈願、冥想、生命水滴、睡覺、神秘守護。學會後自動發動，不能被選成攻擊，招式欄標示「輔助」（升級時最多出現 2 個）', en: '8 new support moves: Recover, Light Screen, Protect, Wish, Calm Mind, Life Dew, Rest and Safeguard. They trigger automatically, can never be selected as your attack, and are marked “Support” in the move bar (up to 2 offered)' },
       { zh: '祈願、生命水滴在組隊時也會治療附近的隊友', en: 'Wish and Life Dew also heal nearby teammates in co-op' },
       { zh: '卡克隆商店改成安全屋：走進去怪物進不來、不會受傷，自動跳出購物選單，按「購買」用這場的金幣買；每樣商品也能按「偷走」，卡克隆會暴怒追殺你', en: 'Kecleon’s shop is now a safe house: enemies can’t get in and you take no damage; a shop menu opens — press “Buy” to pay with this run’s coins, or “Steal” and Kecleon goes berserk' },

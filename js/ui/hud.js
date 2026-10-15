@@ -295,7 +295,7 @@ G.HUD = (() => {
 
     // Grieta: flecha grande que late en el borde si no se ve, y si se ve, una
     // flecha que bota encima; en la arena, cuenta atrás.
-    const rift = G.Rift.rift;
+    const rift = !G.Dungeon.inRoom && G.Rift.rift;      // (dentro de una sala, la flecha no tiene sentido)
     if (rift) {
       const sx = (rift.x - cam.left()) * cam.scale, sy = (rift.y - 40 - cam.top()) * cam.scale;
       const now = performance.now() / 1000, beat = 0.5 + Math.sin(now * 7) * 0.5;
@@ -342,7 +342,7 @@ G.HUD = (() => {
       ctx.restore();
     }
     // Tu disco de movimientos: si no se ve, flecha celeste en el borde con los metros.
-    const box = G.Pickups.all().find(p => (p.kind === 'sbox' || p.kind === 'fbox') && G.Loot.visible(p));
+    const box = !G.Dungeon.inRoom && G.Pickups.all().find(p => (p.kind === 'sbox' || p.kind === 'fbox') && G.Loot.visible(p));      // (dentro de una sala, no)
     if (box) {
       const bsx = (box.x - cam.left()) * cam.scale, bsy = (box.y - 20 - cam.top()) * cam.scale;
       if (bsx < 0 || bsx > w || bsy < 0 || bsy > h) {
