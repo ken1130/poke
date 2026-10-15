@@ -5,6 +5,7 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '設定 →「關於」新增「法律與隱私權」：可開啟法律聲明（含刪除帳號）與完整的使用條款／隱私權政策', en: 'Settings → About now has a Legal & privacy section: open the legal notice (with account deletion) and the full Terms & Privacy Policy' },
       { zh: '卡比獸不再只是站著：站在牠旁邊 3 秒就能叫醒牠，醒來會泰山壓頂掃開周圍敵人、全員回復一半生命，還會掉金幣（有機會掉道具）', en: 'Snorlax now does something: stand next to it for 3 s to wake it — its Body Slam clears nearby enemies, heals everyone by half and drops coins (sometimes an item)' },
       { zh: '新增完整的使用條款與隱私權政策頁面（法律聲明視窗裡有連結）', en: 'Added a full Terms of Use & Privacy Policy page (linked from the Legal window)' },
       { zh: '新增 19 個招式，補齊招式少的屬性：隱形岩、原始之力、岩石封鎖、龍息、逆鱗、流星群、魅惑之聲、吸取之吻、嬉鬧、空氣斬、勇鳥猛攻、冰礫、冷凍乾燥、發勁、真空波、子彈拳、鋼翼、暗襲要害、大聲咆哮（含進化型）', en: '19 new moves for the thinner types: Stealth Rock, Ancient Power, Rock Tomb, Dragon Breath, Outrage, Draco Meteor, Disarming Voice, Draining Kiss, Play Rough, Air Slash, Brave Bird, Ice Shard, Freeze-Dry, Force Palm, Vacuum Wave, Bullet Punch, Steel Wing, Night Slash, Snarl (with evolutions)' },

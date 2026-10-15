@@ -112,7 +112,12 @@ G.SettingsUI = (() => {
              <li><b>Música y sonidos:</b> originales, generados por el propio juego.</li>
              <li><b>Fuente:</b> Pixelify Sans (OFL).</li>
            </ul>`
-        + '';
+        + section('Legal y privacidad')
+        + `<p class="sub">Qué datos guardamos, cómo borrar tu cuenta y las condiciones de uso.</p>
+           <div class="row" style="gap:8px;flex-wrap:wrap">
+             <button class="btn small" data-legal>Aviso legal y privacidad</button>
+             <a class="btn small gold" href="legal/" target="_blank" rel="noopener">Términos de uso y política de privacidad completos</a>
+           </div>`;
     }
     wire(box);
   }

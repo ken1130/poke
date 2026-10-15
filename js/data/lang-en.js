@@ -1160,4 +1160,6 @@ G.I18n.add({
   '¡Ábreme!': 'Open me!',
   'Pisa el manantial': 'Step on the spring',
   'Ya no quedan tiradas en esta ruleta': 'No spins left on this roulette',
+  'Legal y privacidad': 'Legal & privacy',
+  'Qué datos guardamos, cómo borrar tu cuenta y las condiciones de uso.': 'What data we keep, how to delete your account and the terms of use.',
 }, 'en');

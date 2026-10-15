@@ -2161,4 +2161,6 @@ G.I18n.add({
   '¡Ábreme!': '打開我！',
   'Pisa el manantial': '踩上泉水',
   'Ya no quedan tiradas en esta ruleta': '這台輪盤已經沒有次數了',
+  'Legal y privacidad': '法律與隱私權',
+  'Qué datos guardamos, cómo borrar tu cuenta y las condiciones de uso.': '我們保存哪些資料、如何刪除帳號，以及使用條款。',
 }, 'zh');
