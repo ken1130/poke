@@ -48,6 +48,7 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '安全屋更安全：有人在裡面時附近的怪物會被嚇跑、不會圍在外面；離開時卡克隆放出衝擊波彈開周圍的怪，並給 3 秒無敵', en: 'Safer safe house: while someone is inside, nearby enemies get scared off instead of waiting around it; when you leave, Kecleon’s shockwave knocks back nearby enemies and you get 3 s of invincibility' },
       { zh: '連線再優化：敵人資料只傳有變動的部分（訊息約小 70%，怪多時比較不會卡），隊友和敵人的移動改用平滑插值，網路不穩時抖動更少', en: 'Smoother online play: enemy updates now only send what changed (messages about 70% smaller, fewer hitches with big hordes), and teammates and enemies are smoothly interpolated, jittering less on unstable connections' },
       { zh: '招式欄上方的招式名稱改成深色底＋亮色字，更清楚', en: 'The move name above your move bar now has a dark backing and brighter text so it’s easier to read' },
       { zh: '冒險模式的關卡比較短：技能光碟、寶可夢蛋、怪物屋、商店、雕像會依關卡長度平均出現，短關卡也拿得到', en: 'Adventure stages are shorter, so move discs, eggs, Monster Houses, shops and statues are now spread across each stage’s length' },

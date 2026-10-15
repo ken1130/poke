@@ -1139,4 +1139,5 @@ G.I18n.add({
   'Un huevo Pokémon (si aún no tienes compañero).': 'A Pokémon egg (if you don’t have a partner yet).',
   'Salir de la tienda': 'Leave the shop',
   'Kecleon se enfadará': 'Kecleon will get angry',
+  '¡Kecleon te despide! Tienes 3 s para escapar': 'Kecleon sees you off! 3 s to get away',
 }, 'en');

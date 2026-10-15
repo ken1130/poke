@@ -141,6 +141,9 @@ G.Dungeon = (() => {
     // Tienda de Kecleon = refugio (2026-10-15): dentro no entran enemigos ni te hacen daño,
     // y se abre el menú para comprar con las monedas de la run. Con Kecleon furioso, no.
     const shop = sites.find(s => s.type === 'shop' && (s.state === 'open' || s.state === 'free') && inSafe(s, pl));
+    // Al salir del refugio, Kecleon te despide con una onda que aparta a todo lo de alrededor
+    // y tienes 3 s de invulnerabilidad para escapar (si no, al salir te rodeaban).
+    if (pl.safe && !shop) farewell(pl);
     pl.safe = !!shop;
     if (shop) {
       if (!openShop || openShop.id !== shop.id) { if (!shopSkip || shopSkip !== shop.id) showShop(shop); }
@@ -209,15 +212,31 @@ G.Dungeon = (() => {
     rb.disabled = left <= 0;
   }
   /** Anfitrión: nadie entra en el refugio (salvo jefes); combat.js / player.js miran pl.safe. */
+  const SCARE_R = 420;               // con alguien dentro, los de alrededor se asustan y se van
   function guardSafe() {
     for (const s of sites) {
       if (s.type !== 'shop' || (s.state !== 'open' && s.state !== 'free')) continue;
       const [cx, cy] = safeC(s);
-      for (const e of G.EnemyMgr.queryCircle(cx, cy, SAFE_R)) {
+      const someoneIn = G.Game.everyone().some(p => !p.dead && inSafe(s, p));
+      for (const e of G.EnemyMgr.queryCircle(cx, cy, someoneIn ? SCARE_R : SAFE_R)) {
         if (e.dead || e.boss || e.remote) continue;
-        const d = Math.max(1, G.U.dist(e.x, e.y, cx, cy));
-        e.x = cx + (e.x - cx) / d * SAFE_R; e.y = cy + (e.y - cy) / d * SAFE_R;
+        const d = Math.max(1, G.U.dist(e.x, e.y, cx, cy)), nx = (e.x - cx) / d, ny = (e.y - cy) / d;
+        if (d < SAFE_R) { e.x = cx + nx * SAFE_R; e.y = cy + ny * SAFE_R; }
+        // No se quedan en corro esperando en el borde: se alejan.
+        if (someoneIn) { e.kx += nx * 340; e.ky += ny * 340; }
       }
+    }
+  }
+  /** Al salir del refugio: onda que aparta a los enemigos cercanos y 3 s sin recibir daño. */
+  function farewell(pl) {
+    pl.invuln = Math.max(pl.invuln || 0, 3);
+    G.FX.ring(pl.x, pl.y, 10, 320, '#7dffb0', 0.7, 6);
+    G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#9fe0b0', 30, 260);
+    G.Audio.sfx('surge');
+    G.Spawner.say(G.T('¡Kecleon te despide! Tienes 3 s para escapar'), 2.4, true);
+    for (const e of G.EnemyMgr.queryCircle(pl.x, pl.y, 320)) {
+      if (e.dead || e.boss) continue;
+      e.hurt(1, '#9fe0b0', e.x - pl.x, e.y - pl.y, 650);
     }
   }
   function request(s, i, steal) {

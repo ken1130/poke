@@ -2140,4 +2140,5 @@ G.I18n.add({
   'Un huevo Pokémon (si aún no tienes compañero).': '一顆寶可夢蛋（還沒有夥伴時）。',
   'Salir de la tienda': '離開商店',
   'Kecleon se enfadará': '卡克隆會暴怒',
+  '¡Kecleon te despide! Tienes 3 s para escapar': '卡克隆送你出門！3 秒內無敵，快離開',
 }, 'zh');
