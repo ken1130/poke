@@ -1,7 +1,7 @@
 /* ============ loot.js — cofres de movimientos y pociones ============
  * (2026-10-15) Dos cosas nuevas que aparecen en el mapa (se ven en el minimapa):
  *
- *   Cofre de movimientos  a los 4 y a los 11 minutos aparece uno cerca de cada
+ *   Disco de movimientos  a los 4 y a los 11 minutos aparece uno cerca de cada
  *       jugador. Da de 1 a 4 mejoras al azar (de las de las cartas de nivel, sobre
  *       todo movimientos). Se puede volver a tirar 15 veces por run y cada uno abre
  *       como mucho 2 por run.
@@ -36,7 +36,7 @@ G.Loot = (() => {
       let n = 0;
       for (const p of players) if ((p.sboxes || 0) < BOX_MAX && spawnNear(p, 'sbox', 360, 600)) n++;
       if (n) {
-        const msg = '¡Ha aparecido un cofre de movimientos! Búscalo en el minimapa';
+        const msg = '¡Ha aparecido un disco de movimientos! Búscalo en el minimapa';
         G.Spawner.say(msg, 3.5, true);
         if (G.Coop.active) G.Coop.say(msg, 3.5);
       }
@@ -70,7 +70,7 @@ G.Loot = (() => {
   /** ¿Se dibuja aquí? Sólo los tuyos (y un cofre que ya no puedes abrir, tampoco). */
   function visible(p) { const pl = G.Game.player; return !!pl && canTake(p, pl); }
 
-  // ---------------- cofre de movimientos ----------------
+  // ---------------- disco de movimientos ----------------
 
   /** Cuántas mejoras da: 1 (50 %), 2 (30 %), 3 (15 %) o 4 (5 %). */
   function boxCount() {
@@ -100,17 +100,12 @@ G.Loot = (() => {
     return out;
   }
 
-  /** El cofre en pixel art (para la ventana). */
-  const CHEST_SVG = `<svg width="72" height="60" viewBox="0 0 36 30" shape-rendering="crispEdges">
-    <rect x="3" y="12" width="30" height="16" fill="#9a5a22" stroke="#2a1a08"/>
-    <rect x="2" y="5" width="32" height="9" fill="#c47a2c" stroke="#2a1a08"/>
-    <rect x="2" y="12" width="32" height="2" fill="#ffd23f"/>
-    <rect x="15" y="9" width="6" height="8" fill="#ffd23f" stroke="#2a1a08"/>
-    <rect x="5" y="7" width="4" height="2" fill="#ffe9a0"/></svg>`;
+  /** El disco (para la ventana; el arcoíris y el giro van en el CSS). */
+  const CHEST_SVG = '<div class="sb-disc"></div>';
 
   /**
-   * Abre la ventana del cofre; `done` cuando se acepta. Primero el cofre tiembla y se
-   * abre, y las mejoras salen de una en una (no se sabe cuántas hasta el final): con 3,
+   * Abre la ventana del cofre; `done` cuando se acepta. Primero el disco gira y se
+   * ilumina, y las mejoras salen de una en una (no se sabe cuántas hasta el final): con 3,
    * brillo dorado; con 4, ¡premio gordo! (borde arcoíris y fiesta). Volver a tirar
    * repite la animación, más corta.
    */

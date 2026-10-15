@@ -274,7 +274,7 @@ G.Game = (() => {
     },
     /** ¿Estás eligiendo algo? (lo manda coop.js en tu estado; si alguien elige, todo parado) */
     choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox'].some(G.UI.isOpen) || coopCards.length > 0; },
-    /** Invitado: has cogido un cofre de movimientos / una poción (lo decide el anfitrión). */
+    /** Invitado: has cogido un disco de movimientos / una poción (lo decide el anfitrión). */
     sbox() { if (pl) { pl.sboxes = (pl.sboxes || 0) + 1; offerBox(); } },
     potion(id) { if (pl && !pl.dead) G.Loot.drink(pl, id); },
     /** ¿Has pausado tú? (en grupo, también para a todos) */
@@ -507,7 +507,7 @@ G.Game = (() => {
   const PICK_SFX = { xp: 'xp', xpBig: 'xp', coin: 'coin', heal: 'heal', bomb: 'break', magnet: 'confirm', ticket: 'shiny', ticket10: 'legend', item: 'legend', token: 'shiny',
                      sbox: 'legend', potion: 'confirm' };
 
-  /** Cofre de movimientos (loot.js): 1-4 mejoras al azar; se para el juego mientras lo miras. */
+  /** Disco de movimientos (loot.js): 1-4 mejoras al azar; se para el juego mientras lo miras. */
   function offerBox() {
     if (!pl || pl.dead) return;
     let mine = false;

@@ -266,7 +266,7 @@ G.HUD = (() => {
       }
       ctx.restore();
     }
-    // Tu cofre de movimientos: si no se ve, flecha dorada en el borde con los metros.
+    // Tu disco de movimientos: si no se ve, flecha celeste en el borde con los metros.
     const box = G.Pickups.all().find(p => p.kind === 'sbox' && G.Loot.visible(p));
     if (box) {
       const bsx = (box.x - cam.left()) * cam.scale, bsy = (box.y - 20 - cam.top()) * cam.scale;
@@ -276,7 +276,7 @@ G.HUD = (() => {
         const beat = 0.5 + Math.sin(performance.now() / 140) * 0.5;
         ctx.save();
         ctx.translate(ex, ey);
-        ctx.globalAlpha = 0.2 + beat * 0.2; ctx.fillStyle = '#ffd23f';
+        ctx.globalAlpha = 0.2 + beat * 0.2; ctx.fillStyle = '#7fe0ff';
         ctx.beginPath(); ctx.arc(0, 0, 24 + beat * 6, 0, 6.2832); ctx.fill();
         ctx.globalAlpha = 1;
         ctx.beginPath();
@@ -284,14 +284,14 @@ G.HUD = (() => {
         ctx.lineTo(Math.cos(a + 2.45) * 16, Math.sin(a + 2.45) * 16);
         ctx.lineTo(Math.cos(a - 2.45) * 16, Math.sin(a - 2.45) * 16);
         ctx.closePath();
-        ctx.fillStyle = beat > 0.5 ? '#fff3b0' : '#ffd23f'; ctx.fill();
-        ctx.lineWidth = 3; ctx.strokeStyle = '#2a1a08'; ctx.stroke();
-        const label = G.T('COFRE DE MOVIMIENTOS') + ' · ' + Math.round(G.U.dist(pl.x, pl.y, box.x, box.y) / 32) + ' m';
+        ctx.fillStyle = beat > 0.5 ? '#e6fbff' : '#7fe0ff'; ctx.fill();
+        ctx.lineWidth = 3; ctx.strokeStyle = '#0a2a3a'; ctx.stroke();
+        const label = G.T('DISCO DE MOVIMIENTOS') + ' · ' + Math.round(G.U.dist(pl.x, pl.y, box.x, box.y) / 32) + ' m';
         ctx.font = F(800, 11);
         ctx.textAlign = ca > 0.3 ? 'right' : ca < -0.3 ? 'left' : 'center';
         const lx = -ca * 28, ly = -sa * 26 + 4;
         ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(label, lx, ly);
-        ctx.fillStyle = '#ffe14d'; ctx.fillText(label, lx, ly);
+        ctx.fillStyle = '#bff3ff'; ctx.fillText(label, lx, ly);
         ctx.restore();
       }
     }
@@ -625,12 +625,9 @@ G.HUD = (() => {
   /** Iconitos del minimapa (dibujados a mano, unos 10-14 px). */
   const MM_ICON = {
     sbox(ctx, x, y, on) {
-      ctx.fillStyle = on ? 'rgba(255,225,77,.55)' : 'rgba(255,225,77,.25)';
+      ctx.fillStyle = on ? 'rgba(127,224,255,.55)' : 'rgba(127,224,255,.25)';
       ctx.beginPath(); ctx.arc(x, y, 10, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = '#9a5a22'; ctx.fillRect(x - 6, y - 2, 12, 7);
-      ctx.fillStyle = '#c47a2c'; ctx.fillRect(x - 7, y - 6, 14, 5);
-      ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - 1.5, y - 4, 3, 5); ctx.fillRect(x - 7, y - 2, 14, 1);
-      ctx.strokeStyle = '#2a1a08'; ctx.lineWidth = 1; ctx.strokeRect(x - 7, y - 6, 14, 11);
+      G.Pickups.drawDisc(ctx, x, y, 6.5, performance.now() / 300);
     },
     potion(ctx, x, y) {
       ctx.fillStyle = '#ff7ad9'; ctx.beginPath(); ctx.arc(x, y + 1.5, 4.5, 0, 6.2832); ctx.fill();
@@ -739,7 +736,7 @@ G.HUD = (() => {
 
   /**
    * Debajo del minimapa: lo más cercano de cada cosa importante, con su distancia y una
-   * flecha hacia dónde está (tu cofre de movimientos, tus pociones, objetos, cofres con
+   * flecha hacia dónde está (tu disco de movimientos, tus pociones, objetos, cofres con
    * candado, altares, manantiales, la grieta y los jefes).
    */
   const ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
@@ -752,7 +749,7 @@ G.HUD = (() => {
     };
     const add = (o, name, col, ic) => { if (o) rows.push({ o, name, col, ic, d: G.U.dist(o.x, o.y, pl.x, pl.y) }); };
     const pk = G.Pickups.all();
-    add(near(pk, p => p.kind === 'sbox' && G.Loot.visible(p)), 'COFRE DE MOVIMIENTOS', '#ffe14d', 'sbox');
+    add(near(pk, p => p.kind === 'sbox' && G.Loot.visible(p)), 'DISCO DE MOVIMIENTOS', '#7fe0ff', 'sbox');
     add(near(pk, p => p.kind === 'potion' && G.Loot.visible(p)), 'Poción', '#ff7ad9', 'potion');
     add(near(pk, p => p.kind === 'item'), 'Objeto', '#ffd23f', 'item');
     add(near(mmProps, p => p.type === 'bigchest' && !p.used), 'Cofre con candado', '#ffb000', 'bigchest');

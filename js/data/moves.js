@@ -581,6 +581,13 @@
     if (m.arc) m.arc = Math.min(3, +(m.arc * 1.25).toFixed(2));
   }
 
+  // Equilibrio (15-10-2026), según una prueba fija (30 muñecos quietos y un jefe, mismo
+  // Pokémon): estos se quedaban muy por debajo de la media tanto en grupo como contra
+  // un jefe. Los rayos, ×1,5; algunos disparos y torretas, ×1,3.
+  const DMG_BUFF = { 'hydro-pump': 1.5, 'ice-beam': 1.5, 'flash-cannon': 1.5, 'psybeam': 1.5,
+                     'poison-sting': 1.3, 'sludge': 1.3, 'bonemerang': 1.3, 'substitute': 1.3, 'will-o-wisp': 1.3 };
+  for (const m of RAW) if (DMG_BUFF[m.id]) m.dmg = Math.round(m.dmg * DMG_BUFF[m.id]);
+
   // Pool de movimientos por tipo. El pool `normal` lo tienen todos.
   const POOL = {};
   for (const m of RAW) (POOL[m.type] = POOL[m.type] || []).push(m.id);
@@ -721,6 +728,10 @@
     treefall:    { t: 'Un árbol por cada enemigo cercano (hasta 12), pinchos de +40 e inmoviliza 2 s', m: {} }
   };
 
+  // Al evolucionar casi no ganaban nada (la prueba fija daba lo mismo o menos que al Nv.5):
+  // daño extra para que la evolución se note (como las demás, ~×2).
+  const EVO_BONUS = { 'thunder-shock': 2.0, 'flamethrower': 2.2, 'heat-wave': 1.7, 'bulldoze': 1.8, 'meteor-mash': 1.8 };
+
   /** ¿Puede evolucionar ya? → { name, needs, needName, text, ready } o null */
   function evoInfo(m, statsTaken) {
     const e = EVO[m.id];
@@ -735,6 +746,7 @@
     const e = EVO[m.id];
     if (!e || m.evolved) return false;
     applyMods(m, EVO_MODS[m.kind].m);
+    if (EVO_BONUS[m.id] && m.dmg) m.dmg *= EVO_BONUS[m.id];
     m.baseName = m.name;
     m.name = e[0];
     m.evolved = true;

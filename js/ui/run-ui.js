@@ -19,10 +19,12 @@ G.RunUI = (() => {
    * Cambiar las cartas: 1 vez gratis por partida y 1 más por cada jefe
    * derrotado (en grupo cuentan los jefes del equipo; cada uno tiene los suyos).
    */
+  const FREE_REROLLS = 15;
   function rerollsLeft() {
     const p = G.Game.player;
     // 1 gratis + los comprados en Mejoras (antes, 1 más por cada jefe).
-    return p ? Math.max(0, 1 + (p.rerollBonus || 0) - (p.rerolls || 0)) : 0;
+    // (15-10-2026: 15 gratis por partida, antes 1.)
+    return p ? Math.max(0, FREE_REROLLS + (p.rerollBonus || 0) - (p.rerolls || 0)) : 0;
   }
 
   function reroll() {

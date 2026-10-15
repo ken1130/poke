@@ -3,12 +3,12 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
-  { d: '2026-10-15', title: { zh: '五個新招式、技能寶箱與藥水', en: 'Five new moves, move chests and potions' },
+  { d: '2026-10-15', title: { zh: '五個新招式、技能光碟與藥水', en: 'Five new moves, move discs and potions' },
     new: [
-      { zh: '技能寶箱：第 4 和第 11 分鐘在每個人附近出現，打開隨機得到 1～4 個技能強化（一場可重抽 15 次，每人最多開 2 箱）。組隊時每人有自己的寶箱，只有自己看得到、撿得到', en: 'Move chests: one appears near each player at minutes 4 and 11 and gives 1–4 random move upgrades (15 rerolls per run, up to 2 chests each). In groups each player has their own chests: only you can see and pick up yours' },
+      { zh: '技能光碟：第 4 和第 11 分鐘在每個人附近出現，打開隨機得到 1～4 個技能強化（一場可重抽 15 次，每人最多開 2 箱）。組隊時每人有自己的光碟，只有自己看得到、撿得到', en: 'Move discs: one appears near each player at minutes 4 and 11 and gives 1–4 random move upgrades (15 rerolls per run, up to 2 chests each). In groups each player has their own discs: only you can see and pick up yours' },
       { zh: '藥水：地圖上會隨機出現，效果隨機——變大、變小、狂暴、無敵星星、磁鐵、幸運，也可能是壞藥水（組隊時也是各自的）', en: 'Potions: they appear around the map with a random effect — giant, tiny, fury, star, magnet, lucky… or a bad one (each player gets their own)' },
-      { zh: '開技能寶箱有特效：寶箱搖晃後一張一張翻出來，3 個發金光、4 個是彩虹大獎；地上的寶箱有金色光柱，畫面外會有箭頭指路', en: 'Opening a move chest is now an event: it shakes and the upgrades come out one by one — 3 glow gold, 4 is a rainbow jackpot; chests on the map have a golden light beam and an arrow points to them when off-screen' },
-      { zh: '右上角小地圖：有地形、看得懂的圖示（技能寶箱、藥水、上鎖寶箱、祭壇、泉水、裂縫、頭目、隊友），下方列出距離與方向', en: 'Minimap (top right) with terrain and clear icons (move chests, potions, locked chests, altars, springs, rifts, bosses, teammates), plus distance and direction below it' },
+      { zh: '開技能光碟有特效：光碟旋轉後一張一張翻出來，3 個發金光、4 個是彩虹大獎；地上的光碟有青藍色光柱，畫面外會有箭頭指路', en: 'Opening a move disc is now an event: it spins and the upgrades come out one by one — 3 glow gold, 4 is a rainbow jackpot; discs on the map have a cyan light beam and an arrow points to them when off-screen' },
+      { zh: '右上角小地圖：有地形、看得懂的圖示（技能光碟、藥水、上鎖寶箱、祭壇、泉水、裂縫、頭目、隊友），下方列出距離與方向', en: 'Minimap (top right) with terrain and clear icons (move discs, potions, locked chests, altars, springs, rifts, bosses, teammates), plus distance and direction below it' },
       { zh: '點目前的招式或被動技，可以看它的效果、等級和下一級強化', en: 'Tap your current move or a passive to see what it does, its level and its next upgrade' },
       { zh: '毒系新招「腐蝕酸雨」：以自己為中心下毒雨，中毒＋緩速，升級後留下會擴散的毒水窪；進化「奈米屌雨」', en: 'New Poison move “Corrosive Rain”: poison rain around you that poisons and slows, later leaving spreading puddles; evolves into “Nano Rain”' },
       { zh: '格鬥系新招「李家拳」：快速單體連拳，每幾拳必定暴擊，滿級暴擊會流鼻血；進化「家暴神拳」打 12 隻', en: 'New Fighting move “Lee Fist”: fast single-target punches with a guaranteed crit every few hits, crits make enemies bleed at max level; evolves into “Fury Fist” (hits 12)' },
@@ -17,6 +17,9 @@ G.MODNEWS = [
       { zh: '草系新招「大自然的洗禮」：大樹從天而降砸向敵人；進化「樹~倒~囉~」一次砸 12 棵、木刺與藤蔓禁錮', en: 'New Grass move “Nature’s Baptism”: trees fall from the sky onto enemies; evolves into “Timber!” with up to 12 trees, spikes and rooting vines' }
     ],
     chg: [
+      { zh: '升級選卡的重抽改成每場免費 15 次（強化商店買的另外加上去）', en: 'Level-up card rerolls: 15 free per run (plus the ones bought in Upgrades)' },
+      { zh: '招式平衡：水砲、冰凍光束、加農光炮、幻象光線傷害 ×1.5；毒針、污泥攻擊、骨頭回力鏢、替身、鬼火傷害 ×1.3', en: 'Move balance: Hydro Pump, Ice Beam, Flash Cannon and Psybeam deal ×1.5 damage; Poison Sting, Sludge, Bonemerang, Substitute and Will-O-Wisp ×1.3' },
+      { zh: '電擊、噴射火焰、熱風、重踏、彗星拳進化後明顯變強（原本進化幾乎沒加傷害）', en: 'Thunder Shock, Flamethrower, Heat Wave, Bulldoze and Meteor Mash now get much stronger when they evolve (they barely improved before)' },
       { zh: '冒險模式結算畫面新增「下一關」與「再挑戰」按鈕', en: 'Adventure results: new “Next stage” and “Retry” buttons' },
       { zh: '組隊時每個人用自己的經驗值與經驗加成各自升級', en: 'In groups, everyone levels up with their own XP and XP bonus' },
       { zh: '連線更順：位置改走不會互相卡住的快速通道，掉一個封包不再讓後面的全部卡住；隊友和敵人的移動預測改用對方的時間計算，比較不會抖動', en: 'Smoother online play: positions now use a fast channel where one lost packet no longer holds up the rest, and teammate/enemy movement prediction uses the sender’s clock so it jitters less' }

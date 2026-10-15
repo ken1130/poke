@@ -23,7 +23,7 @@ G.Pickups = (() => {
     ticket10: { color: '#c47bff', glow: '#8a3fd0', r: 8 },
     item:     { color: '#ffd23f', glow: '#c08a10', r: 9 },      // value = id del objeto
     token:    { color: '#ffd23f', glow: '#ffb000', r: 10 },     // baya dorada (aventura)
-    sbox:     { color: '#ffd23f', glow: '#ffb000', r: 12 },     // cofre de movimientos (loot.js)
+    sbox:     { color: '#ffd23f', glow: '#ffb000', r: 12 },     // disco de movimientos (loot.js)
     potion:   { color: '#ff7ad9', glow: '#b03d9a', r: 9 }       // poción de efecto al azar (loot.js)
   };
   // Se quedan quietos donde salen (ni el imán los mueve): hay que ir a por ellos.
@@ -212,19 +212,41 @@ G.Pickups = (() => {
     ctx.globalAlpha = 1;
   }
 
-  /** Cofre de movimientos (dorado, con brillo) y poción (frasco rosa). */
+  /**
+   * Disco de movimientos (como una MT): disco plateado con reflejos de arcoíris que giran
+   * (ang) y el agujero en medio. También lo usan el minimapa y la ventana (G.Pickups.drawDisc).
+   */
+  function drawDisc(ctx, x, y, r, ang) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832);
+    ctx.fillStyle = '#d8e2f0'; ctx.fill();
+    ctx.clip();
+    for (let k = 0; k < 6; k++) {
+      ctx.fillStyle = `hsla(${(k * 60 + ang * 57) % 360},90%,65%,.75)`;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r, ang + k * 1.0472, ang + k * 1.0472 + 0.45); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    ctx.save();
+    ctx.lineWidth = Math.max(1, r / 7); ctx.strokeStyle = '#1a2a44';
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.stroke();
+    ctx.fillStyle = '#5a6a88'; ctx.beginPath(); ctx.arc(x, y, r * 0.38, 0, 6.2832); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0a1020'; ctx.beginPath(); ctx.arc(x, y, r * 0.16, 0, 6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  /** Disco de movimientos (con columna de luz) y poción (frasco rosa). */
   function drawLoot(ctx, p, y) {
     const beat = Math.sin(p.t * 1.5);
     ctx.save();
     ctx.globalAlpha = 0.35 + beat * 0.15;
-    ctx.fillStyle = p.kind === 'sbox' ? '#ffe14d' : '#ff9ee6';
+    ctx.fillStyle = p.kind === 'sbox' ? '#7fe0ff' : '#ff9ee6';
     ctx.beginPath(); ctx.arc(p.x, y, p.kind === 'sbox' ? 24 : 18, 0, 6.2832); ctx.fill();
     ctx.globalAlpha = 1;
     ctx.lineWidth = 2; ctx.strokeStyle = '#2a1a08';
     if (p.kind === 'sbox') {
-      // Columna de luz dorada hasta el cielo (se ve desde lejos) y destellos.
+      // Columna de luz celeste hasta el cielo (se ve desde lejos) y destellos.
       const g = ctx.createLinearGradient(0, y - 170, 0, y);
-      g.addColorStop(0, 'rgba(255,225,77,0)'); g.addColorStop(1, 'rgba(255,225,77,' + (0.45 + beat * 0.15).toFixed(2) + ')');
+      g.addColorStop(0, 'rgba(127,224,255,0)'); g.addColorStop(1, 'rgba(127,224,255,' + (0.45 + beat * 0.15).toFixed(2) + ')');
       ctx.fillStyle = g;
       ctx.fillRect(p.x - 11 - beat * 2, y - 170, 22 + beat * 4, 170);
       if (Math.random() < 0.25) G.FX.twinkle(p.x + G.U.rand(-22, 22), y - G.U.rand(0, 60));
@@ -232,16 +254,10 @@ G.Pickups = (() => {
       ctx.font = '800 11px Pixelify,"Segoe UI",system-ui,sans-serif';
       ctx.textAlign = 'center';
       ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
-      const lbl = G.T('COFRE DE MOVIMIENTOS');
+      const lbl = G.T('DISCO DE MOVIMIENTOS');
       ctx.strokeText(lbl, p.x, y - 30 - Math.abs(beat) * 3);
-      ctx.fillStyle = '#ffe14d'; ctx.fillText(lbl, p.x, y - 30 - Math.abs(beat) * 3);
-      ctx.lineWidth = 2; ctx.strokeStyle = '#2a1a08';
-      // Cofre: caja marrón con tapa y cierre dorados (más grande que los demás objetos).
-      ctx.translate(p.x, y); ctx.scale(1.35, 1.35); ctx.translate(-p.x, -y);
-      ctx.fillStyle = '#9a5a22'; ctx.fillRect(p.x - 13, y - 6, 26, 15); ctx.strokeRect(p.x - 13, y - 6, 26, 15);
-      ctx.fillStyle = '#c47a2c'; ctx.fillRect(p.x - 14, y - 13, 28, 8); ctx.strokeRect(p.x - 14, y - 13, 28, 8);
-      ctx.fillStyle = '#ffd23f'; ctx.fillRect(p.x - 3, y - 8, 6, 8); ctx.strokeRect(p.x - 3, y - 8, 6, 8);
-      ctx.fillRect(p.x - 14, y - 6, 28, 2);
+      ctx.fillStyle = '#bff3ff'; ctx.fillText(lbl, p.x, y - 30 - Math.abs(beat) * 3);
+      drawDisc(ctx, p.x, y, 13, p.t * 2.2);
     } else {
       // Poción: frasco redondo con tapón y líquido que cambia de color.
       const hue = (p.t * 40) % 360;
@@ -254,5 +270,5 @@ G.Pickups = (() => {
     ctx.restore();
   }
 
-  return { clear, all, dropXp, drop, update, draw, addRemote, removeId, pullAll, KIND, get count() { return list.length; } };
+  return { drawDisc, clear, all, dropXp, drop, update, draw, addRemote, removeId, pullAll, KIND, get count() { return list.length; } };
 })();
