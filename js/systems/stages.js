@@ -59,6 +59,13 @@ G.Stages = (() => {
   const saved = () => { const s = G.DB.save; s.stages = s.stages || {}; return s.stages; };
   const starsOf = id => (G.DB.save && G.DB.save.stages && G.DB.save.stages[id]) || 0;
   const totalStars = () => LIST.reduce((a, s) => a + starsOf(s.id), 0);
+  // ---- Difícil (2026-10-15): con las 3 ★ se desbloquea; superarla da una 4ª estrella (rosa). ----
+  // save.stagesHard[id] = true. Enemigos con ×1,8 de vida y ×1,4 de daño.
+  const HARD_HP = 1.8, HARD_DMG = 1.4;
+  const hardSaved = () => { const s = G.DB.save; s.stagesHard = s.stagesHard || {}; return s.stagesHard; };
+  const hardDone = id => !!(G.DB.save && G.DB.save.stagesHard && G.DB.save.stagesHard[id]);
+  const hardOpen = id => starsOf(id) >= 3;
+  const HARD_COL = '#ff6fb8';
   /** ¿Se puede jugar? (la anterior superada y las estrellas de la región) */
   function unlocked(id) {
     const s = LIST[id];
@@ -88,7 +95,9 @@ G.Stages = (() => {
   let net = null;            // invitado: lo último que ha mandado el anfitrión
   let sendT = 0;
 
-  function select(id) { sel = LIST[id] || null; }
+  let hardSel = false;       // la próxima partida es la versión difícil
+  /** @param hard  versión difícil (en una sala la elige el anfitrión: no se mira tu progreso) */
+  function select(id, hard = false) { sel = LIST[id] || null; hardSel = !!(sel && hard); }
   const on = () => G.Modes.run === 'stage' && sel;
   const authority = () => !G.Coop.active || G.Coop.isHost;
 
@@ -100,8 +109,9 @@ G.Stages = (() => {
     // Equilibrio (2026-10-14): fases cortas = más enemigos a la vez pero más blandos al principio,
     // para que se pueda jugar sin mejoras; cada región sube vida y daño. (Ver goals: ~45% de los
     // que salen para el objetivo y ~60% para la estrella.)
-    G.Modes.setRules({ hp: 0.75 + s.r * 0.05, dmg: 0.7 + s.r * 0.015, count: COUNT[s.r], reward: 1.3, types: s.types || null });
-    st = { s, t: 0, got: 0, inZone: 0, zone: null, zoneT: 0, bossI: -1, boss: null, nextBossT: s.obj.k === 'boss' ? 35 : 0, kills0: 0, done: false, endT: 0 };
+    const hk = hardSel ? HARD_HP : 1, dk = hardSel ? HARD_DMG : 1;
+    G.Modes.setRules({ hp: (0.75 + s.r * 0.05) * hk, dmg: (0.7 + s.r * 0.015) * dk, count: COUNT[s.r], reward: 1.3, types: s.types || null });
+    st = { hard: hardSel, s, t: 0, got: 0, inZone: 0, zone: null, zoneT: 0, bossI: -1, boss: null, nextBossT: s.obj.k === 'boss' ? 35 : 0, kills0: 0, done: false, endT: 0 };
   }
   const scene = () => (on() ? sel.scene : null);
   /** Niveles con los que empiezas la fase (cartas nada más empezar). */
@@ -132,8 +142,9 @@ G.Stages = (() => {
       win = st.inZone >= o.t;
     } else if (o.k === 'boss') {
       if (st.boss && st.boss.dead) {
+        const bx = st.boss.x, by = st.boss.y;
         st.boss = null; st.nextBossT = time + 2.5;
-        if (st.bossI >= o.seq.length - 1) win = true;
+        if (st.bossI >= o.seq.length - 1) { win = true; if (s.i === 2) regionReward(bx, by); }
       }
       if (!win && !st.boss && time >= st.nextBossT) nextBoss(pl, time);
     }
@@ -146,6 +157,17 @@ G.Stages = (() => {
       G.Game.flash('#fff6c0', 0.5);
     }
     if (G.Coop.isHost && (sendT -= dt) <= 0) { sendT = 0.5; G.Coop.broadcast(['stg', snap()]); }
+  }
+
+  /**
+   * El último Pokémon del líder de cada región (la 3ª fase) siempre suelta algo bueno:
+   * un objeto equipable y, la primera vez que se supera (o la primera en difícil), un ticket ×10.
+   */
+  function regionReward(x, y) {
+    G.Pickups.drop('item', x - 20, y - 8, G.Items.roll());
+    const first = !starsOf(st.s.id) || (st.hard && !hardDone(st.s.id));
+    if (first) G.Pickups.drop('ticket10', x + 20, y - 8, 1);
+    G.Spawner.say(G.T('¡Premio del líder!') + (first ? ' ' + G.T('(ticket ×10 la primera vez)') : ''), 3);
   }
 
   function spawnTokens(pl, n) {
@@ -218,7 +240,7 @@ G.Stages = (() => {
     else if (o.k === 'collect') { sub = v.got + ' / ' + o.n; bar = v.got / o.n; }
     else if (o.k === 'zone') { sub = Math.floor(v.in) + ' / ' + o.t + ' s'; bar = v.in / o.t; }
     else { sub = o.seq.map((d, i) => (i < v.b || (i === v.b && v.done) ? '✔ ' : i === v.b ? '▶ ' : '') + G.T(G.DEX_BY[d].name)).join(' · '); bar = Math.max(0, v.b) / o.seq.length; }
-    return { title: s.code + ' · ' + goalText(s).split(' (')[0], sub, bar: v.done ? 1 : bar, color: '#ffd23f' };
+    return { title: s.code + (st.hard ? ' · ' + G.T('Difícil') : '') + ' · ' + goalText(s).split(' (')[0], sub, bar: v.done ? 1 : bar, color: '#ffd23f' };
   }
 
   /** Dibujo en el mundo: la zona (debajo de todo). */
@@ -306,6 +328,10 @@ G.Stages = (() => {
         if (s.gym) { sv.tickets.t10 += 1; rw += ' + 1 ' + G.T('ticket ×10'); }
       }
       if (gained) { sv.tickets.t1 += gained; rw += (rw ? ' + ' : '') + gained + ' ' + G.T('tickets'); }
+      if (st.hard && !hardDone(s.id)) {
+        hardSaved()[s.id] = true;
+        sv.tickets.t10 += 1; rw += (rw ? ' + ' : '') + '1 ' + G.T('ticket ×10') + ' (' + G.T('Difícil') + ')';
+      }
       saved()[s.id] = Math.max(before, stars);
       sv.stats.stageClears = (sv.stats.stageClears || 0) + 1;
       sv.stats.stageStars = totalStars();
@@ -313,10 +339,11 @@ G.Stages = (() => {
     }
     if (ttl) ttl.textContent = G.T(win ? '¡Fase superada!' : 'Fase fallida');
     if (box) {
-      const starRow = [0, 1, 2].map(i => `<span style="font-size:28px;color:${i < stars ? '#ffd23f' : '#4a5470'}">★</span>`).join('');
+      const starRow = [0, 1, 2].map(i => `<span style="font-size:28px;color:${i < stars ? '#ffd23f' : '#4a5470'}">★</span>`).join('')
+        + (st.hard ? `<span style="font-size:28px;color:${win ? HARD_COL : '#4a5470'}" title="${G.T('Difícil')}">★</span>` : '');
       const lines = [G.T('Superarla'), G.T('Acabar con la mitad de la vida o más'), star3Text(s)];
       box.insertAdjacentHTML('afterbegin', `<div style="grid-column:1/-1;text-align:center" class="panel">
-        <span>${G.T('Aventura')} · ${title(s)}</span><div>${starRow}</div>
+        <span>${G.T('Aventura')} · ${title(s)}${st.hard ? ' · <b style="color:' + HARD_COL + '">' + G.T('Difícil') + '</b>' : ''}</span><div>${starRow}</div>
         <div style="font-size:12px;color:var(--muted)">${lines.map((t, i) => (i < stars ? '★ ' : '☆ ') + t).join(' · ')}</div>
         ${rw ? `<div class="gold" style="margin-top:4px">${G.T('Premio')}: ${rw}</div>` : ''}
         ${win && LIST[s.id + 1] && unlocked(s.id + 1) && !before ? `<div style="color:#5fe08a">${G.I18n.f('¡Desbloqueada la fase {x}!', LIST[s.id + 1].code)}</div>` : ''}
@@ -355,6 +382,7 @@ G.Stages = (() => {
     if (!older.stages) return;
     r.stages = r.stages || {};
     for (const k in older.stages) r.stages[k] = Math.max(r.stages[k] || 0, older.stages[k] || 0);
+    if (older.stagesHard) { r.stagesHard = r.stagesHard || {}; for (const k in older.stagesHard) r.stagesHard[k] = r.stagesHard[k] || older.stagesHard[k]; }
   }
 
   // ---------------- mapa ----------------
@@ -383,7 +411,7 @@ G.Stages = (() => {
       return `<button class="btn small ${s.id === pick ? 'gold' : ''}" data-st="${s.id}" ${ok ? '' : 'disabled'}
         style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 4px;${s.gym ? 'border-color:#ffd23f' : ''}">
         <span>${ok ? '' : '🔒 '}${s.code}${s.gym ? ' 🏅' : ''}</span>
-        <span style="font-size:13px;letter-spacing:1px;color:${n ? '#ffd23f' : '#6a7390'}">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</span></button>`;
+        <span style="font-size:13px;letter-spacing:1px;color:${n ? '#ffd23f' : '#6a7390'}">${'★'.repeat(n)}${'☆'.repeat(3 - n)}${hardDone(s.id) ? `<b style="color:${HARD_COL}">★</b>` : ''}</span></button>`;
     };
     const s = LIST[pick] || LIST[0], ok = unlocked(s.id), n = starsOf(s.id);
     const reg = REGIONS[s.r];
@@ -408,10 +436,14 @@ G.Stages = (() => {
               <div style="font-size:12px;color:var(--muted)">★ ${G.T('Superarla')} · ★ ${G.T('Acabar con la mitad de la vida o más')} · ★ ${star3Text(s)}</div>
               ${s.types ? `<div style="font-size:12px;margin-top:2px">${G.UI.typeChips(s.types)}</div>` : ''}
               ${why ? `<div style="color:#ff8a96;font-size:13px;margin-top:4px">🔒 ${why}</div>` : ''}
+              ${ok ? `<div style="font-size:12px;margin-top:4px;color:${HARD_COL}">☠ ${hardOpen(s.id)
+                ? G.T(hardDone(s.id) ? 'Difícil superada: 4ª estrella conseguida.' : 'Difícil desbloqueada: enemigos con ×1,8 de vida y ×1,4 de daño. Premio: 4ª estrella y un ticket ×10.')
+                : G.T('Consigue las 3 ★ para desbloquear la versión difícil.')}</div>` : ''}
               <div style="font-size:12px;color:var(--muted);margin-top:4px">${G.T('En grupo: crea una sala en «Jugar con amigos» y elige la fase allí.')}</div>
             </div>
-            <div style="text-align:center"><div style="color:#ffd23f;font-size:18px">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</div>
+            <div style="text-align:center"><div style="color:#ffd23f;font-size:18px">${'★'.repeat(n)}${'☆'.repeat(3 - n)}${hardOpen(s.id) ? `<span style="color:${hardDone(s.id) ? HARD_COL : '#4a5470'}">★</span>` : ''}</div>
               <button class="btn gold" data-play ${ok ? '' : 'disabled'}>${G.T(picker ? 'Elegir esta fase' : 'Jugar')}</button>
+              ${!picker && hardOpen(s.id) ? `<button class="btn small" data-hard style="display:block;margin:6px auto 0;border-color:${HARD_COL};color:${HARD_COL}">☠ ${G.T('Difícil')}</button>` : ''}
               ${picker ? '' : `<button class="btn small" data-party ${ok ? '' : 'disabled'} style="display:block;margin:6px auto 0">👥 ${G.T('Con amigos')}</button>`}</div>
           </div>
         </div>
@@ -425,6 +457,8 @@ G.Stages = (() => {
       if (picker) { const p = picker; closeMap(); p.pick(pick); return; }
       closeMap(); select(pick); G.Modes.start('stage');
     };
+    const hb = overlay.querySelector('[data-hard]');
+    if (hb) hb.onclick = () => { if (!unlocked(pick) || !hardOpen(pick)) return; closeMap(); select(pick, true); G.Modes.start('stage'); };
     // Con amigos: abre "Jugar con amigos" y, al crear la sala, ya viene elegida esta fase.
     if (!picker) overlay.querySelector('[data-party]').onclick = () => { if (!unlocked(pick)) return; partyStage = pick; closeMap(); G.PartyUI.open(); };
     if (G.I18n.walk) G.I18n.walk(overlay);
@@ -443,6 +477,8 @@ G.Stages = (() => {
 
   return { LIST, REGIONS, select, prepare, scene, headStart, tOffset, update, token, onNet, hudLine, drawable, drawHud, setResult, afterRun,
            merge, openMap, closeMap, menuLine, choices, takePartyStage, goalText, star3Text, unlocked, starsOf, totalStars, title,
+           hardDone, hardOpen,
+           get hard() { return !!(st && st.hard); },
            get active() { return !!st; },
            /** Tipo de objetivo de la fase en curso ('collect', 'zone'...) o null. */
            get goal() { return st ? st.s.obj.k : null; },

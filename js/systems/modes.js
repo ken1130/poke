@@ -113,7 +113,7 @@ G.Modes = (() => {
     roomMods = Object.assign({ boss: false, shiny: false, rush: false, stage: null, ch: null }, mods);
     if (Number.isInteger(roomMods.stage) && G.Stages.LIST[roomMods.stage]) {
       // Aventura en grupo: la fase que eligió el anfitrión (sin modo jefes / shiny).
-      run = 'stage'; G.Stages.select(roomMods.stage);
+      run = 'stage'; G.Stages.select(roomMods.stage, !!roomMods.hard);
       roomMods.boss = roomMods.shiny = roomMods.rush = false;
     } else if (['daily', 'weekly', 'tower'].includes(roomMods.ch)) {
       // Desafío en grupo (con su clasificación de grupo, challenges.js).

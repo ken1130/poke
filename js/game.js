@@ -126,6 +126,7 @@ G.Game = (() => {
     G.EnemyMgr.clear();
     G.Pickups.clear();
     G.Loot.reset();
+    G.Boons.reset();
     G.Dungeon.reset();
     G.Floors.reset();
     G.Companion.reset();
@@ -273,13 +274,15 @@ G.Game = (() => {
       // Las cartas se ponen en cola; mientras alguien elige, la partida se para para todos
       // (2026-10-14: antes seguía y te rodeaban mientras elegías).
       coopCards.push(level);
-      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox'].some(G.UI.isOpen)) nextCoopCard();
+      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-boon'].some(G.UI.isOpen)) nextCoopCard();
     },
     /** ¿Estás eligiendo algo? (lo manda coop.js en tu estado; si alguien elige, todo parado) */
-    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox'].some(G.UI.isOpen) || coopCards.length > 0; },
+    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox', 'scr-boon'].some(G.UI.isOpen) || coopCards.length > 0; },
     /** Invitado: has cogido un disco de movimientos / una poción (lo decide el anfitrión). */
     sbox() { if (pl) { pl.sboxes = (pl.sboxes || 0) + 1; offerBox(); } },
     fbox() { if (pl) offerBox(); },
+    /** Hito de 10/20/30 min (lo decide el anfitrión; boons.js). */
+    milestone(n) { G.Boons.milestone(n); },
     potion(id) { if (pl && !pl.dead) G.Loot.drink(pl, id); },
     /** ¿Has pausado tú? (en grupo, también para a todos) */
     paused() { return coopPause; },
@@ -512,6 +515,22 @@ G.Game = (() => {
                      sbox: 'legend', potion: 'confirm', egg: 'shiny' };
 
   /** Disco de movimientos (loot.js): 1-4 mejoras al azar; se para el juego mientras lo miras. */
+  /** Bendición inicial del modo normal (boons.js): se para el juego mientras eliges. */
+  function offerBoon() {
+    if (!pl || pl.dead) return;
+    let mine = false;
+    if (state === 'playing' || state === 'held') {
+      mine = true;
+      state = 'choice';
+      if (G.Coop.active) G.Coop.holdStart();
+    }
+    G.Boons.show(pl, () => {
+      if (!mine) return;
+      if (G.Coop.active) doneChoosing();
+      else if (state === 'choice') state = 'playing';
+    });
+  }
+
   function offerBox() {
     if (!pl || pl.dead) return;
     let mine = false;
@@ -628,6 +647,10 @@ G.Game = (() => {
       if (G.Input.tap('keyr')) G.RunUI.reroll();
       return;
     }
+    if (G.UI.isOpen('scr-boon')) {
+      for (let i = 0; i < 3; i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.Boons.pick(i);
+      return;
+    }
     if (G.UI.isOpen('scr-sbox')) {
       if (G.Input.tap('keyr')) document.getElementById('sbox-reroll').click();
       else if (G.Input.tap('enter') || G.Input.tap('space') || G.Input.tap('digit1')) document.getElementById('sbox-ok').click();
@@ -722,6 +745,7 @@ G.Game = (() => {
         else if (G.UI.isOpen('scr-bond')) G.RunUI.pickBond(0);
         else if (G.UI.isOpen('scr-item')) { const c = document.querySelector('#item-cards .card'); if (c) c.click(); }
         else if (G.UI.isOpen('scr-sbox')) document.getElementById('sbox-ok').click();
+        else if (G.UI.isOpen('scr-boon')) G.Boons.pick(0);
       }
     } else choiceT = 0;
     // La red se atiende siempre (también con las cartas de nivel abiertas).
@@ -792,6 +816,8 @@ G.Game = (() => {
     if (!coop || G.Coop.isHost) G.Dungeon.tick(dt, all);          // casa de monstruos, tienda de Kecleon, estatua
     G.Dungeon.update(dt, pl);
     G.Floors.update(dt, all);                                    // escaleras y ataque combinado
+    G.Boons.update(dt, pl);                                      // bendición inicial (modo normal)
+    if (!coop || G.Coop.isHost) G.Boons.tick(time, all);         // hitos de 10/20/30 min
     if (!coop || G.Coop.isHost) G.Companion.tick(dt, time, all); // huevo Pokémon
     G.Companion.update(dt, pl);
     G.Hazards.update(dt);
@@ -1073,7 +1099,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash, offerBond, offerItem, offerBox,
+    init, startRun, everyone, levelXp, flash, offerBond, offerItem, offerBox, offerBoon,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */

@@ -153,6 +153,7 @@ G.HUD = (() => {
 
     // ---------- minimapa (arriba a la derecha) ----------
     if (!G.Modes.rule('dark')) drawMinimap(ctx, w, pl, touch);
+    G.Boons.drawHud(ctx, w, h, F);                // cartel de los hitos de 10/20/30 min
 
     // ---------- barra del jefe ----------
     const boss = G.EnemyMgr.all().find(e => e.boss && !e.dead);
