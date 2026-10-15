@@ -110,6 +110,8 @@ G.Relics = (() => {
       ctx.fillStyle = 'rgba(30,12,48,.75)'; ctx.fillRect(x - 2, y - 2, S + 4, S + 4);
       ctx.strokeStyle = '#c47bff'; ctx.lineWidth = 1; ctx.strokeRect(x - 1.5, y - 1.5, S + 3, S + 3);
       G.Icons.draw(ctx, LIST[id].icon, x, y, S);
+      const r = LIST[id];
+      G.HUD.tapInfo(x - 2, y - 2, S + 4, S + 4, 'relic:' + id, () => ({ title: G.T(r.name), color: '#c47bff', lines: [G.T(r.desc), G.T('Reliquia: dura toda la torre.')] }));
       x += S + GAP;
     }
   }

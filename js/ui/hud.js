@@ -75,6 +75,23 @@ G.HUD = (() => {
     ctx.textAlign = 'center';
     ctx.fillText(Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp), px + 48 + 84, py + 26);
 
+    // Monedas de esta run (2026-10-15): bien visibles; tocando, para qué sirven.
+    {
+      const cx0 = px + 48 + 168 + 8, cy0 = py + 13;
+      ctx.font = F(800, 12);
+      const txt = String(Math.floor(pl.coins || 0));
+      const tw = ctx.measureText(txt).width + 30;
+      roundRect(ctx, cx0, cy0, tw, 19, 9);
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = '#ffd23f'; ctx.stroke();
+      G.Icons.draw(ctx, 'coin', cx0 + 4, cy0 + 2, 15);
+      ctx.textAlign = 'left'; ctx.fillStyle = '#ffe14d';
+      ctx.fillText(txt, cx0 + 22, cy0 + 14);
+      tapInfo(cx0, cy0, tw, 19, 'coins', () => ({ title: G.I18n.f('Monedas de esta run: {x}', Math.floor(pl.coins || 0)), color: '#ffd23f',
+        lines: [G.T('Se gastan en la tienda de Kecleon (pociones, objetos, mejoras...) y en su ruleta.'),
+                G.T('Lo que no gastes se suma a tus Pokémonedas al acabar la run.')] }));
+    }
+
     // buffs activos
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
     const LBL = { atk: 'ATK', spd: 'VEL', def: 'DEF', regen: 'REG' };
@@ -90,6 +107,8 @@ G.HUD = (() => {
       ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fill();
       ctx.fillStyle = COL[k];
       ctx.fillText(txt, bx + 6, py + 45);
+      tapInfo(bx, py + 34, tw, 15, 'buff:' + k, () => ({ title: G.T(BUFF_NAME[k]) + ' ×' + b.n, color: COL[k],
+        lines: [G.I18n.f('+{x}% mientras dure (quedan {x} s)', Math.round(b.n * b.amount * 100), Math.ceil(b.t))] }));
       bx += tw + 5;
     }
     // poción activa (loot.js): nombre y segundos que le quedan
@@ -102,6 +121,7 @@ G.HUD = (() => {
       ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
       ctx.fillStyle = d.color;
       ctx.fillText(txt, bx + 6, py + 45);
+      tapInfo(bx, py + 34, tw, 15, 'potion', () => ({ title: G.T(d.name), color: d.color, lines: [G.T(d.desc)] }));
       bx += tw + 5;
     }
     // huevo Pokémon (companion.js): cuánto le falta para eclosionar
@@ -116,6 +136,21 @@ G.HUD = (() => {
       ctx.fillStyle = '#fff3c8';
       ctx.fillText(txt, bx + 6, py + 45);
       bar(ctx, bx + tw - 40, py + 39, 34, 5, egg, '#ffd23f', 'rgba(255,255,255,.18)');
+      tapInfo(bx, py + 34, tw, 15, 'egg', () => ({ title: G.T('Huevo Pokémon'), color: '#fff3c8',
+        lines: [G.I18n.f('Eclosiona tras derrotar a {x} más.', G.Companion.KILLS - done), G.T('Nace un compañero que lucha contigo, sube de nivel y evoluciona.')] }));
+      bx += tw + 5;
+    }
+    // compañero: nivel (toca para ver qué hace)
+    if (pl.buddy && G.DEX_BY[pl.buddy.dex]) {
+      ctx.font = F(800, 9);
+      const bd = pl.buddy, txt = G.T(G.DEX_BY[bd.dex].name) + ' Lv.' + (bd.lvl || 1);
+      const tw = ctx.measureText(txt).width + 12;
+      roundRect(ctx, bx, py + 34, tw, 15, 7);
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
+      ctx.fillStyle = '#9fe0b0';
+      ctx.fillText(txt, bx + 6, py + 45);
+      tapInfo(bx, py + 34, tw, 15, 'buddy', () => ({ title: G.T('Compañero') + ': ' + G.T(G.DEX_BY[bd.dex].name) + (bd.shiny ? ' ✨' : ''), color: '#9fe0b0',
+        lines: [G.T('Dispara solo al enemigo más cercano.'), G.T('Sube 1 nivel cada 25 derrotados (+8% de daño) y evoluciona en Nv. 10 y 20.')] }));
       bx += tw + 5;
     }
 
@@ -129,6 +164,7 @@ G.HUD = (() => {
       ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
       ctx.fillStyle = bl.color;
       ctx.fillText(txt, bx + 6, py + 45);
+      tapInfo(bx, py + 34, tw, 15, 'bless', () => ({ title: G.T(bl.name), color: bl.color, lines: [G.T(bl.desc || ''), G.T('Para todo el grupo.')] }));
       bx += tw + 5;
     }
 
@@ -533,6 +569,8 @@ G.HUD = (() => {
         ctx.textAlign = 'center';
         ctx.fillStyle = '#ffd23f';
         ctx.fillText(G.Items.BY[pl.item].name, ix + S / 2, iy - 6);
+        const it = G.Items.BY[pl.item];
+        tapInfo(ix, iy, S, S, 'item', () => ({ title: G.T(it.name), color: '#ffd23f', lines: [G.T(it.desc), G.T('Sólo puedes llevar uno; dura toda la run.')] }), 'up');
       }
     }
 
@@ -583,6 +621,8 @@ G.HUD = (() => {
       }
     }
 
+    drawTip(ctx, w, h);
+
     // pista de controles
     if (st.time < 14) {
       ctx.font = F(600, 10);
@@ -592,6 +632,46 @@ G.HUD = (() => {
                          : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa' + (G.Coop.active ? '  ·  T mensajes' : ''), w / 2, h - 4);
     }
 
+    ctx.restore();
+  }
+
+  // ---------------- tocar para ver qué es (2026-10-15) ----------------
+  /*
+   * Todo lo que en el HUD es sólo un icono o una pastilla (objeto, pociones, bendición,
+   * huevo, compañero, potenciadores, reliquias...) se puede tocar / pulsar para ver qué
+   * hace. Otra vez, se cierra (o a los 5 s).
+   */
+  const BUFF_NAME = { atk: 'Ataque', spd: 'Velocidad', def: 'Defensa', regen: 'Regeneración' };
+  let tip = null;                    // { key, rect, dir, info, until }
+  function tapInfo(x, y, w, h, key, info, dir = 'down') {
+    if (tip && tip.key === key) { tip.rect = [x, y, w, h]; tip.info = info; }
+    G.Touch.addButton(x, y, w, h, () => {
+      if (G.Game.state !== 'playing') return;
+      G.Audio.sfx('click');
+      tip = tip && tip.key === key ? null : { key, rect: [x, y, w, h], dir, info, until: performance.now() + 5000 };
+    }, 4);
+  }
+  function drawTip(ctx, w, h) {
+    if (!tip) return;
+    if (performance.now() > tip.until) { tip = null; return; }
+    const d = tip.info();
+    if (!d) { tip = null; return; }
+    const W = Math.min(280, w - 24), P = 10, LH = 14;
+    const lines = [];
+    ctx.font = F(800, 12);
+    for (const l of wrap(ctx, d.title, W - P * 2)) lines.push([l, d.color, true]);
+    ctx.font = F(600, 11);
+    for (const t of d.lines || []) if (t) for (const l of wrap(ctx, t, W - P * 2)) lines.push([l, '#dfe8ff', false]);
+    const H = P * 2 + lines.length * LH;
+    const [rx, ry, rw, rh] = tip.rect;
+    const x0 = G.U.clamp(rx + rw / 2 - W / 2, 12, w - W - 12);
+    const y0 = tip.dir === 'up' ? Math.max(8, ry - H - 8) : Math.min(h - H - 8, ry + rh + 6);
+    ctx.save();
+    roundRect(ctx, x0, y0, W, H, 10);
+    ctx.fillStyle = 'rgba(8,12,24,.94)'; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = d.color || 'rgba(200,215,255,.55)'; ctx.stroke();
+    ctx.textAlign = 'left';
+    lines.forEach(([l, col, bold], k) => { ctx.font = F(bold ? 800 : 600, bold ? 12 : 11); ctx.fillStyle = col; ctx.fillText(l, x0 + P, y0 + P + 11 + k * LH); });
     ctx.restore();
   }
 
@@ -933,5 +1013,5 @@ G.HUD = (() => {
     }
   }
 
-  return { draw, roundRect, bar };
+  return { draw, roundRect, bar, tapInfo };
 })();

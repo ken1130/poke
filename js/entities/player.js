@@ -243,7 +243,8 @@ G.Player = class Player {
     // god: truco de invencible · picking: eligiendo cartas en grupo (no le llega nada, ni los ataques con aviso)
     // (won: fase de la Aventura ya superada, en los 2 s antes del resumen)
     // star: poción de estrella (loot.js)
-    if (this.invuln > 0 || this.dead || this.god || this.picking || this.star || G.Stages.won) return;
+    // safe: dentro del refugio de la tienda de Kecleon (dungeon.js)
+    if (this.invuln > 0 || this.dead || this.god || this.picking || this.star || this.safe || G.Stages.won) return;
     // Polvo Brillo: a veces el golpe no te da.
     if (this.hasItem('brightpowder') && Math.random() < 0.2) {
       this.invuln = 0.3;

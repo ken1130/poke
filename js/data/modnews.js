@@ -5,6 +5,10 @@
 G.MODNEWS = [
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
+      { zh: '卡克隆商店改成安全屋：走進去怪物進不來、不會受傷，自動跳出購物選單，按「購買」用這場的金幣買；每樣商品也能按「偷走」，卡克隆會暴怒追殺你', en: 'Kecleon’s shop is now a safe house: enemies can’t get in and you take no damage; a shop menu opens — press “Buy” to pay with this run’s coins, or “Steal” and Kecleon goes berserk' },
+      { zh: '卡克隆的幸運輪盤：在商店選單裡，押這場金幣的 25%／50%／全部，結果可能歸零、×0.5、持平、×1.5、×2、×3，或大獎 ×5（每間店 3 次）', en: 'Kecleon’s Lucky Roulette: from the shop menu, bet 25%/50%/all of this run’s coins — you might lose it all, get ×0.5, break even, ×1.5, ×2, ×3 or the ×5 jackpot (3 spins per shop)' },
+      { zh: '神秘房間不一定是怪物屋：也可能是寶藏房、治癒房或陷阱房', en: 'Mystery rooms aren’t always Monster Houses: they can also be treasure, healing or trap rooms' },
+      { zh: '畫面左上顯示這場賺到的金幣；點金幣、攜帶道具、藥水、祝福、蛋、夥伴、遺物、增益都能看說明', en: 'Your run coins are shown top-left; tap coins, your held item, potions, blessings, the egg, your partner, relics or buffs to see what they do' },
       { zh: '一般模式開場祝福：開局從 3 個隨機祝福選 1 個（禮物光碟、開局夥伴、經驗 +30%、從 3 級開始、開局道具、傷害 +20%、速度 +15%、重抽 +3、復活種子、煉金術士、血量 +40）', en: 'Normal mode opening blessing: pick 1 of 3 random boons at the start (gift disc, starting partner, +30% XP, start at Lv 3, starting item, +20% damage, +15% speed, +3 rerolls, Revive Seed, Alchemist, +40 HP)' },
       { zh: '一般模式里程碑：撐過 10／20／30 分鐘各有獎勵（技能光碟／道具＋扭蛋券／十連扭蛋券＋金幣）', en: 'Normal mode milestones: rewards for surviving 10/20/30 minutes (move disc / item + ticket / ×10 ticket + coins)' },
       { zh: '冒險模式困難版：三星通關後解鎖，敵人血量 ×1.8、傷害 ×1.4，通關得第 4 顆星（粉紅色）和十連扭蛋券；每區館主最後一隻必掉道具', en: 'Adventure Hard: unlocked after 3 stars, enemies ×1.8 HP and ×1.4 damage, clearing it gives a pink 4th star and a ×10 ticket; each region’s final leader always drops an item' },

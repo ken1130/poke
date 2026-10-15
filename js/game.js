@@ -533,7 +533,6 @@ G.Game = (() => {
     });
   }
 
-  /** Disco de movimientos (loot.js): 1-4 mejoras al azar; se para el juego mientras lo miras. */
   /** Bendición inicial del modo normal (boons.js): se para el juego mientras eliges. */
   function offerBoon() {
     if (!pl || pl.dead) return;
@@ -550,6 +549,7 @@ G.Game = (() => {
     });
   }
 
+  /** Disco de movimientos (loot.js): 1-4 mejoras al azar; se para el juego mientras lo miras. */
   function offerBox() {
     if (!pl || pl.dead) return;
     let mine = false;
@@ -770,6 +770,7 @@ G.Game = (() => {
         else if (G.UI.isOpen('scr-sbox')) document.getElementById('sbox-ok').click();
         else if (G.UI.isOpen('scr-relic')) G.Relics.pick(0);
         else if (G.UI.isOpen('scr-boon')) G.Boons.pick(0);
+        else if (G.UI.isOpen('scr-roul')) G.Roulette.forceClose();
       }
     } else choiceT = 0;
     // La red se atiende siempre (también con las cartas de nivel abiertas).

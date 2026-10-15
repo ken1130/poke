@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifyPS-400.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifyPS-700.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=20261015d">
+<link rel="stylesheet" href="css/style.css?v=20261015g">
 </head>
 <body>
 
@@ -533,6 +533,32 @@
   </div>
 </section>
 
+<section id="scr-shop" class="scr hidden">
+  <div class="box">
+    <div class="row between"><h2>Tienda de Kecleon</h2><button id="shop-leave" class="btn small ghost">Salir de la tienda</button></div>
+    <p id="shop-sub" class="sub"></p>
+    <div id="shop-list" class="shop-list"></div>
+    <div class="row" style="justify-content:center;margin-top:10px"><button id="shop-roul" class="btn gold">Ruleta de Kecleon</button></div>
+    <p class="note">Estás en el refugio: aquí no entran enemigos. Lo que no gastes se suma a tus Pokémonedas al acabar.</p>
+  </div>
+</section>
+
+<section id="scr-roul" class="scr dim hidden">
+  <div class="box center">
+    <h2>Ruleta de Kecleon</h2>
+    <p id="roul-sub" class="sub"></p>
+    <canvas id="roul-wheel" width="240" height="240"></canvas>
+    <p id="roul-res" class="roul-res"></p>
+    <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap">
+      <button class="btn" data-frac="0.25">Apostar 25% <small></small></button>
+      <button class="btn" data-frac="0.5">Apostar 50% <small></small></button>
+      <button class="btn gold" data-frac="1">¡Todo! <small></small></button>
+    </div>
+    <p class="note">×0 · ×0,5 · ×1 · ×1,5 · ×2 · ×3 · ×5</p>
+    <button id="roul-leave" class="btn ghost" style="margin-top:6px">Volver</button>
+  </div>
+</section>
+
 <section id="scr-pause" class="scr dim hidden">
   <div class="box center" style="width:min(460px,100%)">
     <h2>Pausa</h2>
@@ -558,6 +584,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=5ed02fce82"></script>
+<script defer src="js/app.min.js?v=c0b64f7c93"></script>
 </body>
 </html>

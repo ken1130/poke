@@ -876,3 +876,25 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 /* Pokédex: fila de tipos (2026-10-15). */
 .dex-types { flex-basis: 100%; margin-top: 4px; gap: 4px; }
 .dex-types .chip { padding: 2px 8px; font-size: 12px; border-width: 2px; }
+/* Ruleta de Kecleon (2026-10-15). */
+#scr-roul > .box { width: min(440px, 100%); }
+#roul-wheel { width: 240px; height: 240px; image-rendering: pixelated; display: block; margin: 6px auto; }
+.roul-res { min-height: 22px; font-size: 18px; font-weight: 800; margin: 4px 0; }
+.roul-res.win { color: #ffd23f; text-shadow: 0 0 10px rgba(255,210,63,.8); }
+.roul-res.lose { color: #ff8a95; }
+#scr-roul [data-frac] small { display: block; font-size: 11px; opacity: .85; }
+#scr-roul button[disabled] { opacity: .45; pointer-events: none; }
+/* Tienda de Kecleon = refugio (2026-10-15): menú a la derecha, el juego sigue visible. */
+#scr-shop { background: none; pointer-events: none; justify-content: flex-end; align-items: center; }
+#scr-shop > .box { pointer-events: auto; width: min(420px, calc(100% - 24px)); margin-right: 16px; max-height: calc(100dvh - 40px); overflow-y: auto; }
+.shop-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.shop-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.25); border: 2px solid rgba(160,190,255,.25); }
+.shop-row .ico { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex: none; }
+.shop-row .txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.shop-row .txt b { font-size: 15px; } .shop-row .txt small { color: var(--muted); font-size: 12px; line-height: 1.3; }
+.shop-row .act { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.shop-row .price { color: #ffe14d; font-weight: 800; white-space: nowrap; } .shop-row .price.poor { color: #ff8a95; }
+.shop-row .steal { background: #c8282a; border-color: #ff8a95; color: #fff; }
+.shop-row.sold { opacity: .45; } .shop-row .sold { color: var(--muted); font-weight: 800; }
+@media (max-height: 520px) { #scr-shop > .box { padding: 10px 12px; } .shop-row { padding: 5px 8px; } .shop-row .txt small { display: none; } }
+.shop-row button[disabled] { opacity: .4; pointer-events: none; }

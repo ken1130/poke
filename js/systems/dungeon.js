@@ -37,14 +37,14 @@ G.Dungeon = (() => {
   // ---------------- red ----------------
   function send(ev) { if (G.Coop.active && G.Coop.isHost) G.Coop.broadcast(ev); }
   /** Lo que se cuenta de un sitio (lo justo para dibujarlo). */
-  const pack = s => ['dg', 'site', s.id, s.type, Math.round(s.x), Math.round(s.y), s.state, s.wares || null, s.until || 0];
+  const pack = s => ['dg', 'site', s.id, s.type, Math.round(s.x), Math.round(s.y), s.state, s.wares || null, s.until || 0, s.spins == null ? 3 : s.spins];
 
   function onNet(ev) {
     const k = ev[1];
     if (k === 'site') {
       let s = byId(ev[2]);
       if (!s) { s = { id: ev[2] }; sites.push(s); }
-      Object.assign(s, { type: ev[3], x: ev[4], y: ev[5], state: ev[6], wares: ev[7], until: ev[8] });
+      Object.assign(s, { type: ev[3], x: ev[4], y: ev[5], state: ev[6], wares: ev[7], until: ev[8], spins: ev[9] == null ? 3 : ev[9] });
       if (s.state === 'active' && s.type === 'mhouse' && !s.shown) { s.shown = true; houseStartFx(s); }
     } else if (k === 'gone') sites = sites.filter(s => s.id !== ev[2]);
     else if (k === 'got') applyWare(G.Game.player, ev[2]);
@@ -52,11 +52,18 @@ G.Dungeon = (() => {
     else if (k === 'say') G.Spawner.say(G.T(ev[2]), ev[3] || 3, true);
     else if (k === 'ach') G.Progress.event(ev[2]);
     else if (k === 'fn') G.Funny.onNet(ev);
+    else if (k === 'spun') G.Roulette.onSpun(ev[2], ev[3], ev[4]);
+    else if (k === 'room') roomFx(ev[2], ev[3], ev[4]);
     else if (k === 'poor') G.Spawner.say(G.I18n.f('¡No tienes bastantes monedas! (cuesta {x})', ev[2]), 2, true);
   }
   /** Anfitrión: un invitado pide comprar (o se lleva sin pagar) el artículo `idx`. */
   function onClient(from, ev) {
     if (ev[1] === 'buy') tryBuy(byId(ev[2]), ev[3], from, !!ev[4]);
+    else if (ev[1] === 'spin') {
+      const s = byId(ev[2]), r = G.Roulette.hostSpin(s, ev[3], from);
+      G.Coop.sendTo(from, ['dg', 'spun', r ? r.idx : -1, r ? r.delta : 0, r ? r.left : 0]);
+      if (r && s) send(pack(s));
+    }
   }
 
   /** Logro para todo el grupo (cada uno lo apunta en su partida). */
@@ -119,6 +126,7 @@ G.Dungeon = (() => {
         if (add('statue', G.U.pick(live), 420, 700)) say('Ha aparecido una estatua misteriosa…', 3);
       }
     }
+    guardSafe();
     for (const s of sites.slice()) {
       if (s.type === 'mhouse') houseTick(s, dt, live);
       else if (s.type === 'shop') shopTick(s, live);
@@ -129,28 +137,87 @@ G.Dungeon = (() => {
   /** Cada ordenador, para su jugador: comprar en la tienda (quedarse encima). */
   function update(dt, pl) {
     G.Funny.update(dt, pl);
-    if (!pl || pl.dead) { buyT = 0; return; }
-    let on = null;
+    if (!pl || pl.dead) { pl && (pl.safe = false); closeShop(); return; }
+    // Tienda de Kecleon = refugio (2026-10-15): dentro no entran enemigos ni te hacen daño,
+    // y se abre el menú para comprar con las monedas de la run. Con Kecleon furioso, no.
+    const shop = sites.find(s => s.type === 'shop' && (s.state === 'open' || s.state === 'free') && inSafe(s, pl));
+    pl.safe = !!shop;
+    if (shop) {
+      if (!openShop || openShop.id !== shop.id) { if (!shopSkip || shopSkip !== shop.id) showShop(shop); }
+      else refreshShop();
+    } else { shopSkip = null; closeShop(); }
+  }
+
+  // ---------------- refugio y menú de la tienda ----------------
+  const SAFE_R = 170;
+  const safeC = s => [s.x, s.y + 30];
+  const inSafe = (s, p) => G.U.dist2(p.x, p.y, safeC(s)[0], safeC(s)[1]) < SAFE_R * SAFE_R;
+  let openShop = null, shopKey = '', shopSkip = null;
+  const WARE_DESC = { potion: 'Una poción al azar.', upgrade: 'Una mejora de las cartas de nivel (sobre todo movimientos).', heal: 'Recuperas el 60 % de la vida.',
+                      rerolls: '+3 cambios de cartas de nivel.', disc: 'Un disco de movimientos: de 1 a 4 mejoras.', tm: 'Aprendes un movimiento nuevo (o una mejora si no caben más).',
+                      protein: '+10 % de daño el resto de la run.', hpup: '+30 de vida máxima.', revive: 'Si caes, vuelves con la mitad de la vida (una vez).',
+                      ticket: 'Un ticket del gacha (para el grupo).', egg: 'Un huevo Pokémon (si aún no tienes compañero).' };
+  function wareIcon(w) {
+    if (WARE_SPRITE[w.kind]) return `<img src="${G.Tiles.propSprite(G.World.biome, WARE_SPRITE[w.kind], 0).toDataURL()}" style="width:36px;height:36px;image-rendering:pixelated">`;
+    return G.Icons.html(w.kind === 'item' ? w.item : WARE_ICON[w.kind], 36);
+  }
+  function showShop(s) {
+    openShop = s; shopKey = '';
+    const el = document.getElementById('shop-leave');
+    el.onclick = () => { shopSkip = s.id; closeShop(); };
+    document.getElementById('shop-roul').onclick = () => { if ((s.spins == null ? 3 : s.spins) > 0) { G.UI.hide('scr-shop'); G.Roulette.open(s, () => { if (openShop === s) { shopKey = ''; G.UI.show('scr-shop'); refreshShop(); } }); } };
+    refreshShop();
+    G.UI.show('scr-shop');
+    G.Audio.sfx('select');
+  }
+  function closeShop() {
+    if (!openShop) return;
+    openShop = null;
+    G.UI.hide('scr-shop');
+  }
+  /** Rehace la lista si algo ha cambiado (vendido, monedas, estado). */
+  function refreshShop() {
+    const s = openShop, pl = G.Game.player;
+    if (!s || G.Roulette.busy) return;
+    const coins = Math.floor(pl.coins || 0), free = s.state === 'free', left = s.spins == null ? 3 : s.spins;
+    const key = s.state + ':' + coins + ':' + left + ':' + s.wares.map(w => w.sold ? 1 : 0).join('');
+    if (key === shopKey) return;
+    shopKey = key;
+    document.getElementById('shop-sub').textContent = free ? G.T('¡Has vencido a Kecleon! Todo es GRATIS') : G.I18n.f('Monedas de esta run: {x}', coins);
+    const box = document.getElementById('shop-list');
+    box.innerHTML = '';
+    s.wares.forEach((w, i) => {
+      const row = document.createElement('div');
+      row.className = 'shop-row' + (w.sold ? ' sold' : '');
+      const name = w.kind === 'item' && G.Items.BY[w.item] ? G.Items.BY[w.item].name : WARE_NAME[w.kind];
+      const desc = w.kind === 'item' && G.Items.BY[w.item] ? G.Items.BY[w.item].desc : WARE_DESC[w.kind];
+      const can = free || coins >= w.price;
+      row.innerHTML = `<div class="ico">${wareIcon(w)}</div><div class="txt"><b>${G.T(name)}</b><small>${G.T(desc || '')}</small></div>` +
+        (w.sold ? `<span class="sold">${G.T('Vendido')}</span>` :
+          `<div class="act"><span class="price ${can ? '' : 'poor'}">${free ? G.T('Gratis') : G.Icons.html('coin', 14) + ' ' + w.price}</span>` +
+          `<div class="row" style="gap:4px"><button class="btn small gold" data-buy="${i}" ${can ? '' : 'disabled'}>${G.T('Comprar')}</button>` +
+          (free ? '' : `<button class="btn small steal" data-steal="${i}" title="${G.T('Kecleon se enfadará')}">${G.T('Robar')}</button>`) + '</div></div>');
+      box.appendChild(row);
+    });
+    box.querySelectorAll('[data-buy]').forEach(b => { b.onclick = () => { G.Audio.sfx('coin'); request(s, +b.dataset.buy, false); }; });
+    box.querySelectorAll('[data-steal]').forEach(b => { b.onclick = () => {
+      if (!confirm(G.T('¿Robarlo? Kecleon se enfadará y te perseguirá (si lo vences, todo será gratis).'))) return;
+      request(s, +b.dataset.steal, true); closeShop(); shopSkip = s.id;
+    }; });
+    const rb = document.getElementById('shop-roul');
+    rb.textContent = G.T('Ruleta de Kecleon') + ' (' + left + ')';
+    rb.disabled = left <= 0;
+  }
+  /** Anfitrión: nadie entra en el refugio (salvo jefes); combat.js / player.js miran pl.safe. */
+  function guardSafe() {
     for (const s of sites) {
-      if (s.type !== 'shop' || !s.wares || s.state === 'closed') continue;
-      s.wares.forEach((w, i) => {
-        if (w.sold) return;
-        const [wx, wy] = warePos(s, i);
-        if (G.U.dist2(pl.x, pl.y, wx, wy) < (20 + pl.r * 0.5) ** 2) on = { s, i, w };
-      });
-    }
-    if (!on) { buyT = 0; buyKey = ''; return; }
-    const key = on.s.id + ':' + on.i;
-    if (key !== buyKey) { buyKey = key; buyT = 0; G.Audio.sfx('select'); }
-    buyT += dt;
-    const free = on.s.state === 'free';
-    const price = free ? 0 : on.w.price;
-    const coins = pl.coins || 0;
-    // Con dinero: 1 s encima y es tuyo. Sin dinero: a los 3 s lo robas.
-    if (coins >= price && buyT >= (free ? 0.4 : 1)) { request(on.s, on.i, false); buyT = -99; }
-    else if (coins < price && !free) {
-      if (buyT >= 0.3 && buyT - dt < 0.3) G.Spawner.say(G.I18n.f('¡No tienes bastantes monedas! (cuesta {x}) Si te quedas… lo robas', price), 2.4, true);
-      if (buyT >= 3) { request(on.s, on.i, true); buyT = -99; }
+      if (s.type !== 'shop' || (s.state !== 'open' && s.state !== 'free')) continue;
+      const [cx, cy] = safeC(s);
+      for (const e of G.EnemyMgr.queryCircle(cx, cy, SAFE_R)) {
+        if (e.dead || e.boss || e.remote) continue;
+        const d = Math.max(1, G.U.dist(e.x, e.y, cx, cy));
+        e.x = cx + (e.x - cx) / d * SAFE_R; e.y = cy + (e.y - cy) / d * SAFE_R;
+      }
     }
   }
   function request(s, i, steal) {
@@ -164,6 +231,10 @@ G.Dungeon = (() => {
   function houseTick(s, dt, live) {
     if (s.state === 'idle') {
       if (live.some(p => G.U.dist2(p.x, p.y, s.x, s.y) < 80 * 80)) {
+        // Sala misteriosa (2026-10-15): no siempre es una casa de monstruos.
+        const r = Math.random();
+        const kind = r < 0.5 ? 'house' : r < 0.7 ? 'treasure' : r < 0.85 ? 'heal' : 'trap';
+        if (kind !== 'house') { roomEvent(s, kind, live); return; }
         s.t = 0; s.wave = 0; s.mobs = [];
         setState(s, 'active');
         s.shown = true;
@@ -178,6 +249,34 @@ G.Dungeon = (() => {
     const alive = s.mobs.filter(id => { const e = G.EnemyMgr.get(id); return e && !e.dead; }).length;
     if (s.t >= HOUSE_TIME || (alive === 0 && s.t > 4)) houseEnd(s, alive === 0);
   }
+  /** Las otras salas: tesoro, curación o trampa (con premio de consolación). */
+  function roomEvent(s, kind, live) {
+    remove(s);
+    if (kind === 'treasure') {
+      say('¡Sala del tesoro!', 3);
+      for (let i = 0; i < 14; i++) G.Pickups.drop('coin', s.x + G.U.rand(-70, 70), s.y + G.U.rand(-45, 45), 5);
+      G.Pickups.drop('item', s.x, s.y - 20, G.Items.roll());
+      for (const p of live) G.Pickups.drop('potion', s.x + G.U.rand(-40, 40), s.y + G.U.rand(-30, 30), G.Loot.ownerKey(p));
+      if (Math.random() < 0.3) G.Pickups.drop('ticket', s.x + 20, s.y, 1);
+      G.Audio.sfx('legend');
+    } else {
+      say(kind === 'heal' ? '¡Sala de curación! Recuperas toda la vida' : '¡Era una trampa! Gas venenoso… pero ha dejado monedas', 3.2);
+      if (kind === 'heal' && !blessing) { const until = T() + BLESS_TIME; startBlessing('vital', until); send(['dg', 'bless', 'vital', until]); }
+      if (kind === 'trap') for (let i = 0; i < 20; i++) G.Pickups.drop('coin', s.x + G.U.rand(-80, 80), s.y + G.U.rand(-50, 50), 5);
+    }
+    roomFx(kind, s.x, s.y);
+    send(['dg', 'room', kind, Math.round(s.x), Math.round(s.y)]);
+  }
+  /** Cada ordenador: lo que la sala le hace a SU Pokémon (si está cerca). */
+  function roomFx(kind, x, y) {
+    G.FX.ring(x, y, 10, 300, kind === 'heal' ? '#5fe08a' : kind === 'trap' ? '#a043d0' : '#ffd23f', 0.8, 6);
+    G.FX.burst(x, y - 10, kind === 'heal' ? '#7dffb0' : kind === 'trap' ? '#c46cf0' : '#ffe14d', 40, 260);
+    const pl = G.Game.player;
+    if (!pl || pl.dead || G.U.dist2(pl.x, pl.y, x, y) > 340 * 340) return;
+    if (kind === 'heal') pl.heal(pl.maxHp);
+    else if (kind === 'trap') { pl.invuln = 0; pl.hurt(pl.maxHp * 0.15); pl.slowT = 3; G.Audio.sfx('hurt'); }
+  }
+
   function wave(s, n) {
     s.wave++;
     const t = T();
@@ -226,6 +325,9 @@ G.Dungeon = (() => {
     const kinds = Object.keys(WARES).filter(w => w !== 'egg' || needEgg);
     return G.U.pickN(kinds, 4).map(kind => ({ kind, price: Math.round(WARES[kind] * k), item: kind === 'item' ? G.Items.roll() : null }));
   }
+  /** La ruleta, a la derecha de la alfombra. */
+  const roulPos = s => [s.x + 150, s.y + 46];
+  let roulT = 0;
   const warePos = (s, i) => [s.x + (i - 1.5) * 54, s.y + 58 + (i === 1 || i === 2 ? 8 : 0)];
 
   function shopTick(s, live) {
@@ -391,13 +493,23 @@ G.Dungeon = (() => {
           G.Pickups.sprite(ctx, 'mhouse', 0, s.x, s.y, 2);
         }
       } else if (s.type === 'shop' && s.wares) {
-        // Alfombra de la tienda (pixel art, como en Mundo Misterioso) y los artículos.
+        // Refugio: suelo más claro y un borde de bloques verdes (pixel) donde no entran enemigos.
+        if (s.state === 'open' || s.state === 'free') {
+          const [cx, cy] = safeC(s);
+          ctx.globalAlpha = 0.12; ctx.fillStyle = '#7dffb0';
+          ctx.beginPath(); ctx.ellipse(cx, cy, SAFE_R, SAFE_R * 0.8, 0, 0, 6.2832); ctx.fill();
+          ctx.globalAlpha = 0.85;
+          const N = 44;
+          for (let i = 0; i < N; i++) {
+            if (i % 2) continue;
+            const a = (i / N) * 6.2832 + now * 0.15;
+            ctx.fillStyle = i % 4 ? '#5fe08a' : '#ffd23f';
+            ctx.fillRect(Math.round((cx + Math.cos(a) * SAFE_R) / 2) * 2 - 4, Math.round((cy + Math.sin(a) * SAFE_R * 0.8) / 2) * 2 - 4, 8, 8);
+          }
+          ctx.globalAlpha = 1;
+        }
+        // Alfombra de la tienda (pixel art, como en Mundo Misterioso).
         G.Pickups.sprite(ctx, 'shopmat', 0, s.x, s.y + 56, 2);
-        s.wares.forEach((w, i) => {
-          if (w.sold) return;
-          const [wx, wy] = warePos(s, i);
-          ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(wx, wy, 18, 8, 0, 0, 6.2832); ctx.fill();
-        });
       }
       ctx.restore();
     }
@@ -446,25 +558,17 @@ G.Dungeon = (() => {
           // Habla cuando te acercas.
           if (pl && s.state === 'open' && G.U.dist2(pl.x, pl.y, s.x, s.y) < 230 * 230) G.Funny.bubble(ctx, s.x, s.y - 70, G.T('¡Bienvenido! ¡Tienda de Kecleon!'));
         }
+        // La ruleta (pixel art, tiles.js) con su cartel.
+        if (s.state === 'open' || s.state === 'free') {
+          const [rx, ry] = roulPos(s), left = s.spins == null ? 3 : s.spins;
+          G.Pickups.sprite(ctx, 'roulette', Math.floor(now * (left > 0 ? 6 : 0)) % 4, rx, ry - 18, 2);
+          ctx.font = '800 11px Pixelify,"Segoe UI",system-ui,sans-serif';
+          label(G.T('Ruleta') + ' (' + left + ')', rx, ry - 52, left > 0 ? '#ffd23f' : '#8f98ab');
+        }
         const title = s.state === 'free' ? G.T('¡TODO GRATIS!') : s.state === 'angry' ? G.T('¡KECLEON FURIOSO!') : G.T('TIENDA DE KECLEON');
         label(title + (s.state === 'open' ? ' · ' + Math.max(0, Math.ceil(s.until - T())) + 's' : ''), s.x, s.y - 52, s.state === 'angry' ? '#ff5f6d' : '#9fe0b0');
+        if (s.state === 'open' || s.state === 'free') label(G.T('Refugio: aquí no entran enemigos'), s.x, s.y + 110, '#7dffb0');
         ctx.font = '800 10px Pixelify,"Segoe UI",system-ui,sans-serif';
-        s.wares.forEach((w, i) => {
-          if (w.sold) return;
-          const [wx, wy] = warePos(s, i);
-          const bob = Math.sin(now * 3 + i) * 2;
-          if (WARE_SPRITE[w.kind]) G.Pickups.sprite(ctx, WARE_SPRITE[w.kind], w.kind === 'egg' ? 0 : Math.floor(now * 2) % 6, wx, wy - 14 + bob, w.kind === 'egg' ? 1.2 : 1.6);
-          else G.Icons.draw(ctx, w.kind === 'item' ? w.item : WARE_ICON[w.kind], wx - 12, wy - 26 + bob, 24);
-          const price = s.state === 'free' ? G.T('Gratis') : w.price + ' ' + G.T('monedas');
-          label(G.T(w.kind === 'item' && G.Items.BY[w.item] ? G.Items.BY[w.item].name : WARE_NAME[w.kind]), wx, wy + 16, '#ffffff');
-          label(price, wx, wy + 28, s.state === 'free' ? '#5fe08a' : (pl && (pl.coins || 0) >= w.price ? '#ffd23f' : '#ff8a95'));
-          // Anillo de "comprando" mientras estás encima.
-          if (buyKey === s.id + ':' + i && buyT > 0) {
-            const need = s.state === 'free' ? 0.4 : (pl && (pl.coins || 0) >= w.price ? 1 : 3);
-            ctx.strokeStyle = pl && (pl.coins || 0) >= w.price ? '#5fe08a' : '#ff5f6d'; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.arc(wx, wy - 12, 16, -Math.PI / 2, -Math.PI / 2 + 6.2832 * Math.min(1, buyT / need)); ctx.stroke();
-          }
-        });
       }
       ctx.restore();
     }
@@ -474,7 +578,7 @@ G.Dungeon = (() => {
   function blessingInfo() {
     if (!blessing) return null;
     const d = BLESS[blessing.id];
-    return { name: d.name, color: d.color, left: Math.max(0, blessing.until - T()) };
+    return { name: d.name, desc: d.desc, color: d.color, left: Math.max(0, blessing.until - T()) };
   }
 
   /** Al bajar de piso (floors.js): lo del mapa anterior desaparece (la bendición sigue). */
