@@ -102,6 +102,8 @@ G.Combat = (() => {
     }
     return tg;
   }
+  /** El blanco del jugador si es un objeto (sin enemigos, player.js apunta a la roca o el cofre más cercano). */
+  const propTarget = pl => { const t = pl.target; return t && t.tx !== undefined && t.destructible && t.hp > 0 ? t : null; };
   function propFallback(pl, m) {
     const row = G.Moves.stat(m), tg = propNear(pl, m);
     if (!tg) return;
@@ -1078,7 +1080,7 @@ G.Combat = (() => {
   /** Bumerán: sale hacia el enemigo, se para y vuelve a ti golpeando a la ida y a la vuelta. */
   function boomerang(pl, m) {
     const col = G.U.TYPE_COLOR[m.type], vis = G.VFX.forMove(m);
-    const n = Math.max(1, m.count | 0), spread = m.spread || 0.5;
+    const n = Math.max(1, m.count | 0), spread = (m.spread || 0.5) * (propTarget(pl) ? 0.2 : 1);   // a un cofre: casi juntos (si no, pasan por los lados)
     const out = m.radius / m.speed;                       // segundos de ida
     for (let i = 0; i < n; i++) {
       const a = pl.aim + (n === 1 ? 0 : (i / (n - 1) - 0.5) * spread * Math.min(n, 3));
@@ -1095,7 +1097,15 @@ G.Combat = (() => {
     const col = G.U.TYPE_COLOR[m.type], vis = G.VFX.forMove(m);
     let cur = pl.target && !pl.target.dead && pl.target.hurt ? pl.target : G.Projectiles.nearest(G.EnemyMgr.all(), pl.x, pl.y, reach(m));
     if (!cur && G.PvP.on) cur = ghost ? G.PvP.meFor(pl, pl.x, pl.y, reach(m))[0] : G.PvP.foe(pl, reach(m));
-    if (!cur) return;
+    if (!cur) {
+      // Sin enemigos: el rayo va al cofre o la roca más cercana.
+      const tp = propNear(pl, m);
+      if (tp) {
+        G.FX.beam(pl.x, pl.y - G.LIFT, Math.atan2(tp.y - 10 - pl.y + G.LIFT, tp.x - pl.x), Math.hypot(tp.x - pl.x, tp.y - 10 - pl.y + G.LIFT), 10, col, vis);
+        if (!ghost) G.World.damageProp(tp, m.dmg * pl.atk, col);
+      }
+      return;
+    }
     let fx = pl.x, fy = pl.y - G.LIFT, k = 1;
     const done = new Set();
     const n = Math.max(1, m.count | 0);
@@ -1125,10 +1135,13 @@ G.Combat = (() => {
   function mines(pl, m) {
     const col = G.U.TYPE_COLOR[m.type], vis = G.VFX.forMove(m);
     const n = Math.max(1, m.count | 0);
+    // Sin enemigos y con un cofre o una roca de blanco: la mina cae sobre él y estalla al armarse.
+    const tp = propTarget(pl);
     for (let i = 0; i < n; i++) {
       const a = Math.random() * 6.2832, d = n === 1 ? 0 : G.U.rand(18, 46);
-      fields.push({ kind: 'mine', owner: pl, ghost, m, col, vis, x: pl.x + Math.cos(a) * d, y: pl.y + Math.sin(a) * d * 0.8,
-                    t: 0, arm: 0.35, life: m.dur || 7, r: m.radius, dmg: m.dmg * pl.atk });
+      const ox = tp && i === 0 ? tp.x : pl.x, oy = tp && i === 0 ? tp.y : pl.y, dd = tp && i === 0 ? 0 : d;
+      fields.push({ kind: 'mine', owner: pl, ghost, m, col, vis, x: ox + Math.cos(a) * dd, y: oy + Math.sin(a) * dd * 0.8,
+                    t: 0, arm: 0.35, life: m.dur || 7, r: m.radius, dmg: m.dmg * pl.atk, prop: tp && i === 0 ? tp : null });
     }
     // Como mucho unas pocas por jugador: las más viejas se van.
     const mine = fields.filter(f => f.kind === 'mine' && f.owner === pl);
@@ -1141,8 +1154,9 @@ G.Combat = (() => {
     const n = Math.max(1, m.count | 0);
     const near = enemiesIn(pl.x, pl.y, reach(m)).filter(e => !e.dead);
     G.U.shuffle ? G.U.shuffle(near) : near.sort(() => Math.random() - 0.5);
+    const tp = !near.length && propTarget(pl);          // sin enemigos: el primero, al cofre o la roca
     for (let i = 0; i < n; i++) {
-      const e = near[i];
+      const e = near[i] || (i === 0 && tp) || null;
       const x = e ? e.x + G.U.rand(-8, 8) : pl.x + G.U.rand(-140, 140);
       const y = e ? e.y + G.U.rand(-6, 6) : pl.y + G.U.rand(-110, 110);
       fields.push({ kind: 'meteor', owner: pl, ghost, m, col, vis, x, y, t: -i * 0.09, fall: 0.5, r: m.radius, dmg: m.dmg * pl.atk });
@@ -1463,7 +1477,7 @@ G.Combat = (() => {
       if (f.gone || !f.owner || (f.life && f.t >= f.life && f.kind !== 'mine' && f.kind !== 'hole')) { fields.splice(i, 1); continue; }
       if (f.kind === 'mine') {
         const armed = f.t >= f.arm;
-        const trig = armed && enemiesIn(f.x, f.y, 14).length > 0;
+        const trig = armed && (enemiesIn(f.x, f.y, 14).length > 0 || (f.prop && f.prop.hp > 0));
         if (trig || f.t >= f.life) {
           G.FX.ring(f.x, f.y, 4, f.r, f.col, 0.3, 4);
           G.FX.burst(f.x, f.y - 6, f.col, 10, 150);
@@ -1483,7 +1497,8 @@ G.Combat = (() => {
         f.shotT -= dt;
         if (f.shotT <= 0) {
           const m = f.m;
-          const tg = G.Projectiles.nearest(G.EnemyMgr.all(), f.x, f.y, m.range || 300) || (G.PvP.on && !f.ghost ? G.PvP.foeNear(f.x, f.y, m.range || 300) : null);
+          const tg = G.Projectiles.nearest(G.EnemyMgr.all(), f.x, f.y, m.range || 300) || (G.PvP.on && !f.ghost ? G.PvP.foeNear(f.x, f.y, m.range || 300) : null)
+                  || G.World.nearestBreakable(f.x, f.y, 200);        // sin enemigos: a la roca o el cofre más cercano
           f.shotT = tg ? m.rate || 0.6 : 0.15;
           if (tg) {
             const a = Math.atan2(tg.y - f.y, tg.x - f.x);
