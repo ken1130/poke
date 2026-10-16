@@ -341,8 +341,18 @@ G.Coop = (() => {
 
   function flushAll() { for (const m of mates.values()) if (m.connected) G.Net.send(m.uid, hostFrame(m)); }
 
-  /** Un mensaje con eventos va por el canal fiable; si sólo lleva posiciones, por el rápido. */
-  function sendFrame(to, f) { if (f.ev && f.ev.length) G.Net.send(to, f); else G.Net.sendFast(to, f); }
+  /**
+   * Las posiciones van SIEMPRE por el canal rápido; los eventos, aparte, por el fiable.
+   * (2026-10-16: antes, si un mensaje llevaba algún evento —en combate casi todos—, iba
+   * entero por el canal fiable y ordenado: con perder un solo paquete, todas las posiciones
+   * siguientes esperaban a que se reenviara (0,2-1 s). Por eso un compañero "iba a tirones"
+   * aun con conexión directa y buenos ordenadores.) El de sólo eventos lleva x:1 y no lleva
+   * ts, para no marcar como viejo al de posiciones que sale a la vez.
+   */
+  function sendFrame(to, f) {
+    if (f.ev && f.ev.length) { G.Net.send(to, { k: 'f', x: 1, ev: f.ev }); f.ev = []; }
+    G.Net.sendFast(to, f);
+  }
 
   function flushClient(force) {
     if (!force && !outEv.length && flushT > 0) return;
@@ -481,8 +491,9 @@ G.Coop = (() => {
 
   function onHostFrame(msg) {
     lastHostAt = performance.now();
-    if (msg.h && msg.fresh) applyHolds(msg.h);
     if (stalled) { stalled = false; updateAway(); }
+    if (msg.x) { for (const ev of msg.ev || []) applyHostEvent(ev); return; }   // sólo eventos (sendFrame)
+    if (msg.h && msg.fresh) applyHolds(msg.h);
     for (const ev of msg.ev || []) applyHostEvent(ev);
     if (!msg.fresh) return;
     api.syncTeam({ time: msg.t, level: msg.lv, xp: msg.xp, xpNext: msg.xn, kills: msg.ki, bosses: msg.bo, coins: msg.co,
