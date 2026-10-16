@@ -49,6 +49,7 @@ G.MODNEWS = [
       { zh: '身上已有 2 個道具時撿到新道具，每個「換成」選項會同時顯示失去的道具效果和新道具的效果（原本只看得到新的）', en: 'When you pick up an item while already carrying two, each swap option now shows the effect you lose and the one you gain (before, only the new one)' }
     ],
     fix: [
+      { zh: '修正很多招式不會自動打寶箱和石頭（李家拳、幽冥矛、愛心、龍捲、落雷、吸血牙、心靈箭、倒樹和所有原創角色專屬招式）：附近沒有敵人時會自己打身邊的寶箱、石頭和草叢', en: 'Fixed many moves never breaking chests and rocks on their own (Lee Fist, Ghost Spear, hearts, tornadoes, Thunder Strike, Vampire Fang, Psychic Arrow, Nature Tree and every original-character move): with no enemies nearby they now hit the closest chest, rock or grass' },
       { zh: '修正「自動選取」開了之後關不掉：升級畫面會在按到按鈕前就自己選完。現在暫停選單也有同一顆按鈕；在升級畫面按一下按鈕，這一張就讓你自己選；自動選之前的等待拉長到 1.2 秒', en: 'Fixed Auto-pick being impossible to turn off (the card was taken before you could reach the button). The same button is now in the pause menu; tapping it on the level-up screen lets you pick that card yourself; the wait before auto-picking is now 1.2 s' },
       { zh: '修正進裂縫、商店、神秘房間和換樓層時會卡一下：地形圖改成每種地形各自保留，出來時不用重畫；新區塊分成好幾格慢慢畫，不會一次全部擠在同一格', en: 'Fixed the hitch when entering a rift, the shop, a mystery room or a new floor: each terrain keeps its own tiles (nothing to redraw when you come back) and new ground is painted over several frames instead of all at once' },
       { zh: '修正組隊時客人身上道具比較好、自動賣掉新道具時拿不到金幣', en: 'Fixed co-op guests not getting the coins when an item is sold automatically because theirs are better' },

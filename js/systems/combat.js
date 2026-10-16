@@ -61,6 +61,7 @@ G.Combat = (() => {
     if (m.t > 0) return;
     // Los ataques que necesitan blanco esperan a tenerlo (no gastes animación al aire).
     if (needsTarget(m) && !(pl.target && G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m))
+        && !(ENEMY_ONLY.has(m.kind) && propNear(pl, m))          // (un cofre o una roca a mano también vale)
         && !(G.PvP.on && G.PvP.foe(pl, reach(m) + (G.PvP.aiming ? 160 : 0)))) {   // apuntando: dispara si hay un rival cerca
       m.t = 0.05;
       return;
@@ -80,7 +81,38 @@ G.Combat = (() => {
     run(pl, m);
   }
 
+  /*
+   * (2026-10-16, «los ataques no rompen los cofres») Los movimientos de la tabla buscan sólo
+   * enemigos (enemiesIn): sin ninguno cerca, el blanco del jugador es la roca o el cofre más
+   * cercano (player.js) y no le pasaba nada. Ahora, si no hay enemigos a su alcance, golpean
+   * ese objeto con su daño.
+   */
+  const ENEMY_ONLY = new Set(['flameshield', 'lightning', 'drain', 'psyarrow', 'acidrain', 'fist', 'spear', 'treefall', 'hearts',
+                              'tornado', 'bladestorm', 'dbeam', 'foampunch', 'scare', 'afterimage', 'pounce', 'whip']);
+  /** El objeto rompible más cercano a su alcance si no hay enemigos (cofres y rocas antes que la hierba). */
+  function propNear(pl, m) {
+    const R = reach(m);
+    if (enemiesIn(pl.x, pl.y, R).some(e => !e.dead)) return null;
+    let tg = null, bd = Infinity;
+    for (const q of G.World.propsInCircle(pl.x, pl.y, R)) {
+      if (!q.destructible || q.hp <= 0) continue;
+      const d = G.U.dist2(pl.x, pl.y, q.x, q.y) + (q.type === 'grass' ? 1e6 : 0);
+      if (d < bd) { bd = d; tg = q; }
+    }
+    return tg;
+  }
+  function propFallback(pl, m) {
+    const row = G.Moves.stat(m), tg = propNear(pl, m);
+    if (!tg) return;
+    const per = row ? (row.dmg || row.bdmg || row.sdps || 10) * (row.n || 1) : (m.dmg || 10);
+    const col = G.U.TYPE_COLOR[m.type] || '#ffffff';
+    G.FX.sp('impact', G.VFX.PAL[m.type] ? m.type : 'normal', tg.x, tg.y - 10, { life: 0.16, scale: 1.4, frameRate: 14 });
+    G.FX.burst(tg.x, tg.y - 8, col, 6, 100);
+    if (!ghost) G.World.damageProp(tg, per * pl.atk, col);
+  }
+
   function run(pl, m) {
+    if (ENEMY_ONLY.has(m.kind) && m.kind !== 'flameshield') propFallback(pl, m);
     switch (m.kind) {
       case 'projectile': fireProjectiles(pl, m); break;
       case 'melee':      melee(pl, m); break;
