@@ -957,6 +957,7 @@ G.HUD = (() => {
 
   function drawMinimapList(ctx, w, pl, right, top, max = 6, short = false) {
     const rows = [];
+    if (G.Modes.run === 'training') return 0;     // sala de entrenamiento: no hay nada a lo que ir
     const near = (list, fn) => {
       let best = null, bd = Infinity;
       for (const o of list) { if (!fn(o)) continue; const d = G.U.dist2(o.x, o.y, pl.x, pl.y); if (d < bd) { bd = d; best = o; } }

@@ -1556,3 +1556,30 @@ G.I18n.add({
   '¡Reto cumplido!': 'Challenge complete!',
   'Premio de cada uno: 1 ticket del gacha y {x} monedas de la run.': 'Reward for each: 1 gacha ticket and {x} run coins.',
 }, 'en');
+
+// Sala de entrenamiento (training.js, 2026-10-16)
+G.I18n.add({
+  'Sala de entrenamiento': 'Training Room',
+  'Daño total': 'Total damage',
+  'Últimos 5 s': 'Last 5 s',
+  'Por segundo': 'Per second',
+  'Reiniciar': 'Reset',
+  'Evolucionado': 'Evolved',
+  'Exclusivo': 'Exclusive',
+  'Subir': 'Move up',
+  'Ningún movimiento: elige alguno de la lista de abajo.': 'No moves: pick some from the list below.',
+  'Elige hasta {x} movimientos (de todos) y su nivel; se aplica sin volver a empezar.': 'Pick up to {x} moves (from all of them) and their level; it applies without restarting.',
+  'Muñecos': 'Dummies',
+  'Vida de cada muñeco': 'HP of each dummy',
+  'La vida sólo cambia lo que quita un % de la vida (veneno...). Los muñecos nunca caen.': 'HP only affects effects that deal % of max HP (poison...). Dummies never fall.',
+  'Quitar todos': 'Remove all',
+  'Aplicar': 'Apply',
+  'Todos los movimientos': 'All moves',
+  '(máximo {x})': '(max {x})',
+  'Buscar por nombre o tipo…': 'Search by name or type…',
+  'Salir del entrenamiento': 'Leave training',
+  'Muñecos Pikachu que no se mueven, no atacan y nunca caen. Elige cualquier movimiento y su nivel y mira cuánto daño haces por segundo.': 'Pikachu dummies that never move, never attack and never fall. Pick any move and level and see how much damage you deal per second.',
+  'Sin enemigos, sin premios y sin récords. Sólo en solitario.': 'No enemies, no rewards and no records. Single-player only.',
+  'Sólo en solitario: sal de la sala de grupo para entrenar.': 'Single-player only: leave the group room to train.',
+  'Muñecos Pikachu que nunca caen: prueba cualquier movimiento y mira tu daño por segundo. Sin premios ni récords.': 'Pikachu dummies that never fall: try any move and see your damage per second. No rewards or records.',
+}, 'en');
