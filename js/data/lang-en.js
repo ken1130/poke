@@ -1219,6 +1219,7 @@ G.I18n.add({
   'Un panda curioso que pregunta de todo.': 'A curious panda that asks about everything.',
   'Un pollito de píxeles que vino de un sticker.': 'A pixel sweet potato ball that came from a sticker.',
   // 2026-10-16: rangos de objetos, equipo del compañero, tienda nueva, Tom y Lika
+  'Elegir solo: no': 'Auto-pick: off', 'Elegir solo: sólo mejoras': 'Auto-pick: stats only', 'Elegir solo: todo': 'Auto-pick: everything',
   'Raro': 'Rare',
   'Épico': 'Epic',
   'Legendario': 'Legendary',

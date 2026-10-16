@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifyPS-400.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifyPS-700.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=20261016d">
+<link rel="stylesheet" href="css/style.css?v=20261016e">
 </head>
 <body>
 
@@ -500,7 +500,10 @@
     <h2>¡Nivel <span id="lvl-num">2</span>!</h2>
     <p class="sub">Elige una recompensa · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></p>
     <div id="cards" class="cards"></div>
-    <button id="lvl-reroll" class="btn small ghost hidden" data-sfx="none" style="margin-top:10px">Cambiar opciones (<span id="lvl-rr-n">1</span>) · <kbd>R</kbd></button>
+    <div class="row" style="justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button id="lvl-reroll" class="btn small ghost hidden" data-sfx="none">Cambiar opciones (<span id="lvl-rr-n">1</span>) · <kbd>R</kbd></button>
+      <button id="lvl-auto" class="btn small ghost lvl-auto" data-sfx="none">Elegir solo: no</button>
+    </div>
     <p id="lvl-wait" class="note hidden"></p>
   </div>
 </section>
@@ -615,6 +618,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=d127485808"></script>
+<script defer src="js/app.min.js?v=9d640d6ff2"></script>
 </body>
 </html>

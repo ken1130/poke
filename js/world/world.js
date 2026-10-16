@@ -38,6 +38,12 @@ G.World = (() => {
   let arena = null;                        // { tx, ty, r } en tiles
   const data = new Map();                  // "cx,cy" -> datos del chunk
   let images = new Map();                  // "cx,cy" -> canvas horneado
+  // (2026-10-16, "al entrar en la grieta/tienda se traba") Cada bioma guarda sus chunks: al
+  // volver de la arena o de una sala no se repinta todo. Y pintar chunks tiene un tope por
+  // fotograma (PAINT_MS): lo que no cabe se ve con su color de suelo y se pinta después.
+  const caches = new Map();                // bioma -> Map de chunks (como `images`)
+  const MAX_CACHES = 4, KEEP_OLD = 20, PAINT_MS = 6;   // (memoria: en móvil cada chunk es un canvas)
+  let paintStart = 0, paintedNow = 0;
   // Cambio de bioma: durante FADE segundos se funde la paleta vieja con la nueva.
   const FADE = 2.6;
   let fade = null;                         // { from, images, t }
@@ -418,10 +424,13 @@ G.World = (() => {
 
   // ---------------- dibujo ----------------
 
-  function chunkImage(cx, cy, bi = biome, cache = images) {
+  function chunkImage(cx, cy, bi = biome, cache = images, budget = false) {
     const k = cx + ',' + cy;
     let img = cache.get(k);
     if (img) return img;
+    // Con el tope del fotograma gastado (y al menos uno pintado), éste espera al siguiente.
+    if (budget && paintedNow > 0 && performance.now() - paintStart > PAINT_MS) return null;
+    paintedNow++;
     const at = (tx, ty) => KIND[terrainAt(tx, ty)];
     // Campo continuo de "tierra"; tiles.js lo muestrea en rejilla y lo
     // interpola por píxel para que las manchas tengan bordes orgánicos.
@@ -447,13 +456,21 @@ G.World = (() => {
   function drawGround(ctx, cam) {
     ctx.imageSmoothingEnabled = false;
     const k = fadeK();
-    for (const [cx, cy] of visibleChunks(cam)) {
+    paintStart = performance.now(); paintedNow = 0;
+    // Primero los del centro de la pantalla: son los que se ven antes.
+    const ccx = (cam.left() + cam.w / 2) / CW - 0.5, ccy = (cam.top() + cam.h / 2) / CW - 0.5;
+    const list = visibleChunks(cam).sort((a, b) => Math.hypot(a[0] - ccx, a[1] - ccy) - Math.hypot(b[0] - ccx, b[1] - ccy));
+    const blit = (img, cx, cy, bi) => {
       // +1 de solape: con escalas no enteras evita juntas entre chunks.
-      if (k == null) { ctx.drawImage(chunkImage(cx, cy), cx * CW, cy * CW, CW + 1, CW + 1); continue; }
+      if (img) ctx.drawImage(img, cx * CW, cy * CW, CW + 1, CW + 1);
+      else { ctx.fillStyle = G.Tiles.BIOMES[bi].floor[0]; ctx.fillRect(cx * CW, cy * CW, CW + 1, CW + 1); }
+    };
+    for (const [cx, cy] of list) {
+      if (k == null) { blit(chunkImage(cx, cy, biome, images, true), cx, cy, biome); continue; }
       // Fundido: el bioma viejo debajo y el nuevo apareciendo encima.
-      ctx.drawImage(chunkImage(cx, cy, fade.from, fade.images), cx * CW, cy * CW, CW + 1, CW + 1);
+      blit(chunkImage(cx, cy, fade.from, fade.images, true), cx, cy, fade.from);
       ctx.globalAlpha = k;
-      ctx.drawImage(chunkImage(cx, cy), cx * CW, cy * CW, CW + 1, CW + 1);
+      blit(chunkImage(cx, cy, biome, images, true), cx, cy, biome);
       ctx.globalAlpha = 1;
     }
   }
@@ -555,7 +572,7 @@ G.World = (() => {
 
   function reset(s) {
     seed = (s | 0) || 1;
-    data.clear(); images.clear(); broken.clear();
+    data.clear(); images.clear(); caches.clear(); broken.clear();
     fade = null; arena = null;
   }
 
@@ -572,8 +589,12 @@ G.World = (() => {
     if (b === biome) return;
     // El terreno es el mismo: sólo cambia la paleta, fundiéndose poco a poco.
     fade = instant ? null : { from: biome, images, t: 0 };
+    caches.set(biome, images);
+    while (images.size > KEEP_OLD) images.delete(images.keys().next().value);   // el que se deja: sólo los más recientes
     biome = b;
-    images = new Map();
+    images = caches.get(b) || new Map();
+    caches.delete(b); caches.set(b, images);                 // (el más reciente, al final)
+    while (caches.size > MAX_CACHES) caches.delete(caches.keys().next().value);
   }
 
   function biomeName() { return G.Tiles.BIOMES[biome].name; }
@@ -599,9 +620,10 @@ G.World = (() => {
       a.th = G.Tiles.ARENA_THEMES[a.type] || G.Tiles.ARENA_THEMES.normal;
       // Olvida los chunks de esa zona (si se hubieran generado antes).
       const R = a.room ? Math.max(a.rw, a.rh) + 9 : a.r + 9;
-      for (const k of [...data.keys(), ...images.keys()]) {
+      const all = [images, ...caches.values()];                // (también los de otros biomas guardados)
+      for (const k of new Set([...data.keys(), ...all.flatMap(m => [...m.keys()])])) {
         const [cx, cy] = k.split(',').map(Number);
-        if (Math.abs(cx * N + N / 2 - a.tx) < R + N && Math.abs(cy * N + N / 2 - a.ty) < R + N) { data.delete(k); images.delete(k); }
+        if (Math.abs(cx * N + N / 2 - a.tx) < R + N && Math.abs(cy * N + N / 2 - a.ty) < R + N) { data.delete(k); for (const m of all) m.delete(k); }
       }
     },
     get arena() { return arena; }, drawGround, drawLiquid, visibleProps, drawProp, drawVignette,

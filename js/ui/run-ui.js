@@ -12,7 +12,64 @@ G.RunUI = (() => {
     $('cards').classList.remove('done');
     renderCards(list);
     $('lvl-reroll').onclick = reroll;
+    $('lvl-auto').onclick = cycleAuto;
+    showAuto();
     G.UI.show('scr-levelup');
+    planAuto();
+  }
+
+  /*
+   * Elegir solo (2026-10-16, pedido de los jugadores). Botón de 3 estados, se guarda:
+   *   off    eliges tú
+   *   stats  si las 3 son mejoras de estadística, elige sola (con movimientos, eliges tú)
+   *   all    elige siempre: evolución > mejora que desbloquea una evolución > subir un
+   *          movimiento > movimiento nuevo > estadística
+   * Estadísticas por orden: Potencia > Reflejos > Vigor > Coraza > Aprendizaje > Carrera >
+   * Síntesis > Imán (con menos del 35 % de vida, antes la Baya Zidra).
+   * Se marca la carta y se coge a los 0,7 s: hay tiempo de pulsar otra o de apagarlo.
+   */
+  const AUTO_MODES = ['off', 'stats', 'all'];
+  const AUTO_NAME = { off: 'Elegir solo: no', stats: 'Elegir solo: sólo mejoras', all: 'Elegir solo: todo' };
+  const STAT_ORDER = ['atk', 'cd', 'hp', 'def', 'xp', 'spd', 'rgn', 'mag', 'heal'];
+  let autoT = null;
+  const autoMode = () => (G.DB.save && G.DB.save.autoPick) || 'off';
+  function showAuto() {
+    const b = $('lvl-auto'), m = autoMode();
+    b.textContent = G.T(AUTO_NAME[m]);
+    b.classList.toggle('on', m !== 'off');
+  }
+  function cycleAuto() {
+    const s = G.DB.save;
+    s.autoPick = AUTO_MODES[(AUTO_MODES.indexOf(autoMode()) + 1) % AUTO_MODES.length];
+    G.DB.commit();
+    G.Audio.sfx('select');
+    showAuto();
+    planAuto();
+  }
+  /** Qué carta cogería (índice) o -1 si toca elegir a ti. */
+  function autoChoice(list) {
+    const m = autoMode(), pl = G.Game.player;
+    if (m === 'off' || !list || !list.length || !pl) return -1;
+    if (m === 'stats' && list.some(c => c.type !== 'stat')) return -1;
+    const idx = f => list.findIndex(f);
+    const low = pl.hp < pl.maxHp * 0.35;
+    const statRank = c => { const r = STAT_ORDER.indexOf(c.key.slice(5)); return c.key === 'stat:heal' && low ? -1 : r < 0 ? 99 : r; };
+    const order = [c => c.type === 'evo', c => c.key === 'stat:heal' && low, c => c.type === 'stat' && c.tag !== 'Mejora',
+                   c => c.type === 'up', c => c.type === 'new'];
+    if (m === 'all') for (const f of order) { const i = idx(f); if (i >= 0) return i; }
+    let best = -1;
+    list.forEach((c, i) => { if (c.type === 'stat' && (best < 0 || statRank(c) < statRank(list[best]))) best = i; });
+    return best;
+  }
+  function planAuto() {
+    clearTimeout(autoT); autoT = null;
+    const cards = $('cards').querySelectorAll('.card');
+    cards.forEach(el => el.classList.remove('auto'));
+    const i = autoChoice(offers);
+    if (i < 0) return;
+    cards[i] && cards[i].classList.add('auto');
+    const list = offers;
+    autoT = setTimeout(() => { autoT = null; if (offers === list) pick(i); }, 700);
   }
 
   /**
@@ -33,6 +90,7 @@ G.RunUI = (() => {
     p.rerolls = (p.rerolls || 0) + 1;
     G.Audio.sfx('select');
     renderCards(G.LevelUp.offer(p));
+    planAuto();
   }
 
   function renderCards(list) {
@@ -63,6 +121,7 @@ G.RunUI = (() => {
 
   function pick(i) {
     if (!offers || !offers[i]) return;
+    clearTimeout(autoT); autoT = null;
     const c = offers[i], cb = offerCb;
     offers = null; offerCb = null;
     $('lvl-reroll').classList.add('hidden');
@@ -86,6 +145,7 @@ G.RunUI = (() => {
   }
 
   function closeLevelUp() {
+    clearTimeout(autoT); autoT = null;
     offers = null; offerCb = null;
     $('cards').classList.remove('done');
     G.UI.hide('scr-levelup');

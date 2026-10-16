@@ -2219,6 +2219,7 @@ G.I18n.add({
   'Un panda curioso que pregunta de todo.': '什麼都要問的好奇熊貓。',
   'Un pollito de píxeles que vino de un sticker.': '從貼圖來的像素地瓜球。',
   // 2026-10-16: rangos de objetos, equipo del compañero, tienda nueva, Tom y Lika
+  'Elegir solo: no': '自動選取：關', 'Elegir solo: sólo mejoras': '自動選取：只選能力卡', 'Elegir solo: todo': '自動選取：全部',
   'Raro': '稀有',
   'Épico': '史詩',
   'Legendario': '傳說',
