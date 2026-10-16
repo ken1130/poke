@@ -187,6 +187,37 @@
       { t: '+8 de daño; donde cae deja una zona que frena',           m: {} },
       { t: '+10 de daño y +1 árbol',                                  m: {} }
     ],
+    // ---- 2026-10-16: exclusivos de los personajes originales (data/custom.js) ----
+    foampunch: [
+      { t: '+8 de daño y salpicadura más grande',                           m: {} },
+      { t: '+8 de daño; golpea a 2 enemigos',                               m: {} },
+      { t: '+10 de daño y salpicadura más grande',                          m: {} },
+      { t: '+10 de daño; golpea a 3 enemigos',                              m: {} }
+    ],
+    scare: [
+      { t: '+6 de daño y más empuje',                                       m: {} },
+      { t: '+1 de daño por cada enemigo cerca (hasta 12) y más radio',      m: {} },
+      { t: '+8 de daño y -0,2 s de recarga',                                m: {} },
+      { t: '+1 de daño por enemigo cerca (hasta 14) y más radio',           m: {} }
+    ],
+    afterimage: [
+      { t: '+4 de daño y las sombras duran más',                            m: {} },
+      { t: '+4 de daño y +5% de velocidad',                                 m: {} },
+      { t: '+5 de daño y sombras más grandes',                              m: {} },
+      { t: '+5 de daño y +5% de velocidad',                                 m: {} }
+    ],
+    pounce: [
+      { t: '+4 de daño por zarpazo',                                        m: {} },
+      { t: '+3 de daño; si lo derriba, salta a otro enemigo',               m: {} },
+      { t: '+4 de daño y +1 zarpazo',                                       m: {} },
+      { t: '+4 de daño y salta a 2 enemigos',                               m: {} }
+    ],
+    whip: [
+      { t: '+6 de daño',                                                    m: {} },
+      { t: '+6 de daño, lengua más larga y +1 de veneno',                   m: {} },
+      { t: '+8 de daño',                                                    m: {} },
+      { t: '+8 de daño, lengua más larga y gruesa y +1 de veneno',          m: {} }
+    ],
     // ---- 2026-10-16 ----
     hearts: [
       { t: '+8 de daño y +2 casillas de alcance',                           m: {} },
@@ -544,6 +575,23 @@
     { id: 'destruction-beam', name: 'Rayo Destructor', type: 'normal', kind: 'dbeam',
       desc: 'Un rayo desde ti hasta un enemigo a 10 casillas que daña a todo lo que toca.',
       cd: 1.1, dmg: 24, radius: 320 },
+    // ---------------- 2026-10-16: exclusivos de los personajes originales ----------------
+    // `only`: sólo lo aprende ese personaje (es su movimiento inicial); no sale en las cartas de los demás.
+    { id: 'foam-punch', name: 'Puño Espuma', type: 'water', kind: 'foampunch', only: 10003,
+      desc: 'EXCLUSIVO de Didi: un puñetazo al enemigo más cercano que estalla en espuma y moja a los de alrededor.',
+      cd: 0.7, dmg: 20, radius: 160 },
+    { id: 'scaredy-burst', name: 'Pelos de Punta', type: 'normal', kind: 'scare', only: 10004,
+      desc: 'EXCLUSIVO de Héroe: se asusta tanto que se le eriza todo y aparta a los que tiene cerca. Cuantos más enemigos, más daño.',
+      cd: 2.2, dmg: 14, radius: 96 },
+    { id: 'turbo-dash', name: 'Turbo Fantasma', type: 'ghost', kind: 'afterimage', only: 10005,
+      desc: 'EXCLUSIVO de la Turbo Abuela: va tan rápida que deja sombras de sí misma que dañan a quien las toca. Más velocidad.',
+      cd: 0.3, dmg: 8, radius: 40 },
+    { id: 'cat-pounce', name: 'Caza Ratones', type: 'dark', kind: 'pounce', only: 10006,
+      desc: 'EXCLUSIVO de Tom: zarpazos seguidos al enemigo más cercano.',
+      cd: 0.9, dmg: 10, radius: 160 },
+    { id: 'tongue-lash', name: 'Lengüetazo Látigo', type: 'poison', kind: 'whip', only: 10007,
+      desc: 'EXCLUSIVO de Lika: la lengua sale como un látigo hasta un enemigo y envenena a todos los que toca por el camino.',
+      cd: 1.0, dmg: 16, radius: 192 },
     // ---------------- apoyo (2026-10-15): curar y defender ----------------
     { id: 'recover', name: 'Recuperación', type: 'psychic', kind: 'support', cd: 12, dmg: 0, radius: 0,
       desc: 'APOYO: cada pocos segundos recuperas parte de tu vida máxima.',
@@ -746,6 +794,44 @@
     // dmg por rayo, n rayos, w (ancho), r (casillas), crit (se suma al tuyo), back (rayo hacia atrás
     // al acertar); evolucionado: dps (rayo continuo, cada cd s), slow, hole (prob. de agujero negro
     // al matar), holeR (casillas que atrae), holeDmg (explosión a los 4 s)
+    // ---- 2026-10-16: exclusivos de los personajes originales ----
+    // Didi: dmg del puñetazo, sdmg salpicadura, sr (casillas) de salpicadura, r alcance, n enemigos; evo: knock, slow
+    'foam-punch': [
+      { dmg: 20, sdmg: 8, sr: 2, r: 5, n: 1 },    { dmg: 28, sdmg: 12, sr: 2.5, r: 5, n: 1 },
+      { dmg: 36, sdmg: 14, sr: 2.5, r: 5.5, n: 2 }, { dmg: 46, sdmg: 20, sr: 3, r: 5.5, n: 2 },
+      { dmg: 56, sdmg: 26, sr: 3, r: 6, n: 3 },
+      { dmg: 64, sdmg: 40, sr: 4, r: 7, n: 3, knock: 120, slow: 0.4, cd: 0.55 }
+    ],
+    // Héroe: dmg base, per (daño extra por enemigo cerca), cap (hasta cuántos cuenta), r (casillas), knock;
+    // evo: root (inmoviliza s a los normales) e inv (s invulnerable)
+    'scaredy-burst': [
+      { dmg: 14, per: 2, cap: 10, r: 3, knock: 140 },   { dmg: 20, per: 2, cap: 10, r: 3, knock: 170 },
+      { dmg: 20, per: 3, cap: 12, r: 3.5, knock: 170 }, { dmg: 28, per: 3, cap: 12, r: 3.5, knock: 170, cd: 2.0 },
+      { dmg: 28, per: 4, cap: 14, r: 4, knock: 190, cd: 2.0 },
+      { dmg: 40, per: 5, cap: 16, r: 4.5, knock: 230, root: 0.7, inv: 0.6, cd: 1.6 }
+    ],
+    // Turbo Abuela: dmg por toque de sombra (cada 0,3 s), life (s), ir (casillas), haste (velocidad extra);
+    // evo: boom (al desaparecer, cada sombra estalla con ese daño)
+    'turbo-dash': [
+      { dmg: 8, life: 0.8, ir: 1.1, haste: 0.10 },  { dmg: 12, life: 1.1, ir: 1.1, haste: 0.10 },
+      { dmg: 16, life: 1.1, ir: 1.1, haste: 0.15 }, { dmg: 21, life: 1.1, ir: 1.4, haste: 0.15 },
+      { dmg: 26, life: 1.1, ir: 1.4, haste: 0.20 },
+      { dmg: 30, life: 1.6, ir: 1.7, haste: 0.25, boom: 36 }
+    ],
+    // Tom: dmg por zarpazo, n zarpazos, r alcance, chain (saltos al derribar); evo: bleed (sangrado/s)
+    'cat-pounce': [
+      { dmg: 10, n: 3, r: 5, chain: 0 },  { dmg: 14, n: 3, r: 5, chain: 0 },
+      { dmg: 17, n: 3, r: 5.5, chain: 1 }, { dmg: 21, n: 4, r: 5.5, chain: 1 },
+      { dmg: 25, n: 4, r: 6, chain: 2 },
+      { dmg: 30, n: 5, r: 7, chain: 4, bleed: 8, cd: 0.75 }
+    ],
+    // Lika: dmg, r alcance (casillas), w ancho, poison (acumulaciones); evo: n lenguas, pull (atrae hacia ti)
+    'tongue-lash': [
+      { dmg: 16, r: 6, w: 18, poison: 1, n: 1 },  { dmg: 22, r: 6, w: 18, poison: 1, n: 1 },
+      { dmg: 28, r: 7, w: 20, poison: 2, n: 1 },  { dmg: 36, r: 7, w: 20, poison: 2, n: 1 },
+      { dmg: 44, r: 8, w: 26, poison: 3, n: 1 },
+      { dmg: 50, r: 9, w: 30, poison: 4, n: 2, pull: 150, cd: 0.85 }
+    ],
     'destruction-beam': [
       { dmg: 24, n: 1, w: 30, r: 10 },   { dmg: 30, n: 1, w: 44, r: 10 },   { dmg: 42, n: 2, w: 44, r: 10 },
       { dmg: 50, n: 2, w: 44, r: 11.5, crit: 0.15 },
@@ -816,7 +902,7 @@
 
   // Pool de movimientos por tipo. El pool `normal` lo tienen todos.
   const POOL = {};
-  for (const m of RAW) (POOL[m.type] = POOL[m.type] || []).push(m.id);
+  for (const m of RAW) if (!m.only) (POOL[m.type] = POOL[m.type] || []).push(m.id);   // (los exclusivos, fuera)
 
   const BY_ID = {};
   for (const m of RAW) {
@@ -930,6 +1016,9 @@
     // 2026-10-16
     'formless-art': ['Vuelo Celestial', 'spd'],  'raging-tornado': ['Perro Loco', 'atk'],
     'blade-storm': ['Cruzada', 'def'],           'destruction-beam': ['Poder Púrpura', 'atk'],
+    'foam-punch': ['Gran Ola Esponjosa', 'atk'], 'scaredy-burst': ['Valor de Héroe', 'def'],
+    'turbo-dash': ['Turbo Máximo', 'spd'],       'cat-pounce': ['Gato Implacable', 'atk'],
+    'tongue-lash': ['Lengua Mortal', 'cd'],
     // apoyo (2026-10-15)
     'recover': ['Luz Lunar', 'rgn'],         'light-screen': ['Velo Aurora', 'def'],
     'protect': ['Escudo Real', 'def'],       'wish': ['Deseo Milenario', 'hp'],
@@ -975,6 +1064,11 @@
     hearts:      { t: 'Inmune a los rayos de los enemigos; +2 corazones, +2 casillas, +2 rebotes y el rebote hace ×3', m: {} },
     tornado:     { t: 'Daño continuo mientras están en el aire, +2 s en el aire y al caer una mano azul les da una bofetada de 70', m: {} },
     bladestorm:  { t: 'La tormenta empuja y hace sangrar (+1 casilla); cuchillas en 8 direcciones que se parten en dos a ±90° al atravesar al primero', m: {} },
+    foampunch:   { t: 'Gran ola: +2 casillas de salpicadura que empuja y frena; más daño y menos recarga', m: {} },
+    scare:       { t: 'Inmoviliza 0,7 s a los normales y te vuelves invulnerable 0,6 s; +5 por enemigo (hasta 16)', m: {} },
+    afterimage:  { t: 'Sombras más grandes y duraderas que estallan (36) al desaparecer; +25% de velocidad', m: {} },
+    pounce:      { t: '5 zarpazos que hacen sangrar; si lo derriba, salta hasta a 4 enemigos', m: {} },
+    whip:        { t: 'Dos lenguas a la vez que atraen a los enemigos hacia ti y envenenan ×4', m: {} },
     dbeam:       { t: 'Rayo púrpura continuo mientras haya enemigos: daña y frena; al matar, 15% de dejar un agujero negro que atrae (7 casillas) 4 s y estalla (80)', m: {} },
     support:     { t: 'Más fuerte y más a menudo', m: {} }       // (el texto de verdad: def.evoText)
   };

@@ -109,6 +109,12 @@ G.Combat = (() => {
       case 'tornado':    tornados(pl, m); break;
       case 'bladestorm': bladeStorm(pl, m); break;
       case 'dbeam':      dBeams(pl, m); break;
+      // 2026-10-16: exclusivos de los personajes originales
+      case 'foampunch':  foamPunch(pl, m); break;
+      case 'scare':      scare(pl, m); break;
+      case 'afterimage': afterimage(pl, m); break;
+      case 'pounce':     pounce(pl, m); break;
+      case 'whip':       whips(pl, m); break;
     }
     if (!ghost && (m.boostCh || m.recoil || m.confuseEvery)) afterCast(pl, m);
   }
@@ -850,7 +856,7 @@ G.Combat = (() => {
   }
 
   const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone', 'lightning', 'drain', 'psyarrow',
-                    'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam'];
+                    'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam', 'foampunch', 'pounce', 'whip'];
   function needsTarget(m) { return TARGETED.includes(m.kind); }
   function reach(m) {
     if (m.kind === 'melee') return m.radius + 30;
@@ -859,7 +865,8 @@ G.Combat = (() => {
     if (m.kind === 'chain') return 280;
     if (m.kind === 'meteor') return 340;
     if (m.kind === 'dash') return m.radius + 60;
-    if (['lightning', 'drain', 'psyarrow', 'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam'].includes(m.kind)) return G.Moves.stat(m).r * 32;
+    if (['lightning', 'drain', 'psyarrow', 'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam',
+         'foampunch', 'scare', 'pounce', 'whip'].includes(m.kind)) return G.Moves.stat(m).r * 32;
     if (m.kind === 'cone') return m.speed * m.life + 30;
     return 520;
   }
@@ -1176,6 +1183,140 @@ G.Combat = (() => {
     for (const p of G.World.propsInCircle(f.x, f.y, r)) G.World.damageProp(p, f.dmg * k, f.col);
   }
 
+  // ---------------- 2026-10-16: exclusivos de los personajes originales ----------------
+  // (data/custom.js `start`, data/moves.js `only`). En grupo se repiten como fantasma: sólo se ven.
+
+  /** Didi · Puño Espuma: puñetazo a los `n` más cercanos; estalla en espuma alrededor del golpe. */
+  function foamPunch(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE, SR = row.sr * TILE;
+    const list = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl)).slice(0, row.n);
+    if (!list.length) return;
+    for (const e of list) {
+      const a = Math.atan2(e.y - pl.y, e.x - pl.x), ca = Math.cos(a), sa = Math.sin(a);
+      const ex = e.x, ey = e.y - e.bodyH * 0.5;
+      if (G.Camera.sees(ex, ey, SR)) {
+        G.FX.sp('fist', 'water', ex - ca * 26, ey - sa * 26, { vx: ca * 180, vy: sa * 180, life: 0.13, angle: a, fade: false, scale: 1.5 });
+        G.FX.sp('impact', 'water', ex, ey, { life: 0.18, scale: 1.6, frameRate: 14 });
+        G.FX.ring(e.x, e.y, 6, SR, '#8ccaff', 0.35, 3);
+        for (let k = 0; k < 7; k++) {
+          const b = Math.random() * 6.2832, d = Math.random() * SR * 0.8;
+          G.FX.sp('bubble', 'water', e.x + Math.cos(b) * d, e.y + Math.sin(b) * d * 0.6 - 6,
+                  { vy: -30 - Math.random() * 30, life: 0.45 + Math.random() * 0.3, scale: 1 + Math.random() * 0.6, frameRate: 6 });
+        }
+      }
+      if (ghost) continue;
+      hit(pl, e, row.dmg * pl.atk, G.U.TYPE_COLOR.water, ca, sa, row.knock ? row.knock * 0.5 : 30, m);
+      // Salpicadura: a los de alrededor del golpeado (no a él otra vez).
+      for (const o of enemiesIn(e.x, e.y, SR)) {
+        if (o === e || o.dead) continue;
+        hit(pl, o, row.sdmg * pl.atk, G.U.TYPE_COLOR.water, o.x - e.x, o.y - e.y, row.knock || 0, m);
+        if (row.slow && !o.dead) o.applySlow(row.slow, 1.2);
+      }
+    }
+  }
+
+  /** Héroe · Pelos de Punta: onda alrededor; más daño cuantos más enemigos tenga cerca. */
+  function scare(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE;
+    const near = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead);
+    if (!near.length) return;
+    const dmg = (row.dmg + row.per * Math.min(row.cap, near.length)) * pl.atk;
+    const P = G.VFX.PAL.normal;
+    G.FX.ring(pl.x, pl.y, 8, R, '#fff3c0', 0.35, 5);
+    G.FX.ring(pl.x, pl.y, 4, R * 0.7, P[3], 0.25, 3);
+    // Pelos de punta: púas de píxel que salen disparadas en todas direcciones, y el «¡!» del susto.
+    for (let k = 0; k < 14; k++) {
+      const a = k / 14 * 6.2832;
+      G.FX.sp('needle', 'normal', pl.x + Math.cos(a) * 10, pl.y - pl.bodyH * 0.5 + Math.sin(a) * 10,
+              { vx: Math.cos(a) * R * 2.4, vy: Math.sin(a) * R * 2.4, angle: a, life: 0.28, scale: 1.4 });
+    }
+    G.FX.dmgText(pl.x, pl.y - pl.bodyH - 14, '!!', '#fff36a', true);
+    if (ghost) return;
+    for (const e of near) {
+      hit(pl, e, dmg, G.U.TYPE_COLOR.normal, e.x - pl.x, e.y - pl.y, row.knock, m);
+      if (row.root && !e.dead && !e.boss && !isFoe(e)) e.applyRoot(row.root);
+    }
+    if (row.inv) pl.invuln = Math.max(pl.invuln || 0, row.inv);
+    G.Camera.kick(0.08);
+  }
+
+  /** Turbo Abuela · Turbo Fantasma: deja una sombra suya donde está; más velocidad mientras lo lleva. */
+  function afterimage(pl, m) {
+    const row = G.Moves.stat(m);
+    pl.hasteT = Math.max(pl.hasteT || 0, 0.5); pl.hasteK = Math.max(pl.hasteK || 0, row.haste);
+    // Parada no deja sombras (sólo corriendo), salvo una de vez en cuando.
+    const moved = pl._aiX == null || G.U.dist2(pl._aiX, pl._aiY, pl.x, pl.y) > 14 * 14;
+    if (!moved && Math.random() < 0.7) return;
+    pl._aiX = pl.x; pl._aiY = pl.y;
+    fields.push({ kind: 'shade', owner: pl, ghost, m, row, x: pl.x, y: pl.y, t: 0, life: row.life, tick: 0,
+                  dir: pl.anim ? pl.anim.dir : 0, r: row.ir * TILE });
+  }
+  function shadeStep(f, dt) {
+    if ((f.tick -= dt) > 0) return;
+    f.tick = 0.3;
+    if (f.ghost) return;
+    for (const e of enemiesIn(f.x, f.y, f.r)) if (!e.dead) hit(f.owner, e, f.row.dmg * f.owner.atk, G.U.TYPE_COLOR.ghost, 0, 0, 0, f.m);
+  }
+  function shadeEnd(f) {
+    if (!f.row.boom) return;
+    G.FX.burst(f.x, f.y - 14, '#9e8aea', 8, 120);
+    G.FX.ring(f.x, f.y, 4, f.r * 1.4, '#c8b8ff', 0.25, 3);
+    if (f.ghost) return;
+    for (const e of enemiesIn(f.x, f.y, f.r * 1.4)) if (!e.dead) hit(f.owner, e, f.row.boom * f.owner.atk, G.U.TYPE_COLOR.ghost, e.x - f.x, e.y - f.y, 40, f.m);
+  }
+
+  /** Tom · Caza Ratones: `n` zarpazos al más cercano; si lo derriba, salta al siguiente (`chain`). */
+  function pounce(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE;
+    let e = enemiesIn(pl.x, pl.y, R).filter(o => !o.dead).sort(byDist(pl))[0];
+    if (!e) return;
+    let hops = row.chain, fx = pl.x, fy = pl.y;
+    const done = new Set();
+    while (e) {
+      done.add(e);
+      const a = Math.atan2(e.y - fy, e.x - fx), ex = e.x, ey = e.y - e.bodyH * 0.5;
+      if (G.Camera.sees(ex, ey, 30)) for (let k = 0; k < row.n; k++) {
+        // Zarpazos cruzados, cada uno un poco girado (se ven como una ráfaga).
+        G.FX.sp('claw', 'dark', ex + G.U.rand(-6, 6), ey + G.U.rand(-6, 6), { life: 0.16 + k * 0.05, scale: 1.4, angle: a - Math.PI / 4 + (k - (row.n - 1) / 2) * 0.5 });
+      }
+      if (G.Camera.sees(ex, ey, 30)) G.FX.spark(ex, ey, '#d4c4cc', Math.cos(a), Math.sin(a), 4);
+      if (!ghost) {
+        for (let k = 0; k < row.n && !e.dead; k++) hit(pl, e, row.dmg * pl.atk, G.U.TYPE_COLOR.dark, Math.cos(a), Math.sin(a), k === row.n - 1 ? 40 : 0, m);
+        if (row.bleed && !e.dead && !isFoe(e)) { const d = dotOf(pl, e); d.bleed = row.bleed; d.bm = m; }
+      }
+      // En el fantasma no se sabe si lo derribó: sólo se dibuja el primero.
+      if (ghost || !e.dead || hops-- <= 0) break;
+      fx = e.x; fy = e.y;
+      const nx = enemiesIn(fx, fy, R * 0.8).filter(o => !o.dead && !done.has(o)).sort((p, q) => G.U.dist2(p.x, p.y, fx, fy) - G.U.dist2(q.x, q.y, fx, fy))[0];
+      if (nx) G.FX.sp('streak', 'dark', (fx + nx.x) / 2, (fy + nx.y) / 2 - 10, { life: 0.15, angle: Math.atan2(nx.y - fy, nx.x - fx), scale: 1.6 });
+      e = nx;
+    }
+  }
+
+  /** Lika · Lengüetazo Látigo: una lengua (dos, evolucionado) hasta un enemigo; daña y envenena todo lo del camino. */
+  function whips(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE;
+    const near = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl));
+    if (!near.length) return;
+    for (let i = 0; i < row.n; i++) {
+      const tg = near[Math.min(i * 2, near.length - 1)];
+      const a = Math.atan2(tg.y - pl.y, tg.x - pl.x) + (i ? 0.35 : 0);
+      const len = Math.min(R, Math.hypot(tg.x - pl.x, tg.y - pl.y) + 24);
+      fields.push({ kind: 'tongue', owner: pl, ghost, m, row, x: pl.x, y: pl.y, t: 0, life: 0.3, a, len });
+      if (ghost) continue;
+      const cx = Math.cos(a), cy = Math.sin(a);
+      for (const e of enemiesIn(pl.x + cx * len / 2, pl.y + cy * len / 2, len / 2 + row.w)) {
+        if (e.dead) continue;
+        // Distancia del enemigo a la lengua (segmento desde ti).
+        const px = e.x - pl.x, py = e.y - pl.y, along = px * cx + py * cy;
+        if (along < 0 || along > len || Math.abs(px * cy - py * cx) > row.w + e.r) continue;
+        hit(pl, e, row.dmg * pl.atk, G.U.TYPE_COLOR.poison, row.pull ? -cx : cx, row.pull ? -cy : cy, row.pull || 20, m);
+        if (!e.dead && !isFoe(e)) e.applyPoison(row.poison);
+      }
+    }
+    if (G.Camera.sees(pl.x, pl.y, R)) G.Audio.sfx('hit');
+  }
+
   function updateFields(dt) {
     tickDots(dt);
     if (lifts.size) updateLifts(dt);
@@ -1222,6 +1363,9 @@ G.Combat = (() => {
         if (!arrowStep(f, dt)) fields.splice(i, 1);
       } else if (f.kind === 'heart') {
         if (!heartStep(f, dt)) fields.splice(i, 1);
+      } else if (f.kind === 'shade') {
+        shadeStep(f, dt);
+        if (f.t >= f.life - dt) shadeEnd(f);
       } else if (f.kind === 'tornado') {
         if (!tornadoStep(f, dt)) fields.splice(i, 1);
       } else if (f.kind === 'hole') {
@@ -1432,6 +1576,34 @@ G.Combat = (() => {
         ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-8, -6); ctx.lineTo(-4, 0); ctx.lineTo(-8, 6); ctx.closePath();
         ctx.fill(); ctx.stroke();
         ctx.restore();
+        continue;
+      }
+      if (f.kind === 'shade') {
+        // Sombra de la Turbo Abuela: su propio sprite, transparente y con un halo violeta de píxeles.
+        const fade = Math.max(0, 1 - f.t / f.life);
+        const an = f.owner.anim;
+        if (an) { const d = an.dir; an.dir = f.dir; an.draw(ctx, f.x, f.y, { alpha: 0.45 * fade, flash: true, softFlash: true }); an.dir = d; }
+        ctx.fillStyle = '#9e8aea';
+        for (let k = 0; k < 6; k++) {
+          const b = k / 6 * 6.2832 + now * 3;
+          ctx.globalAlpha = 0.6 * fade;
+          ctx.fillRect(Math.round(f.x + Math.cos(b) * f.r * 0.7), Math.round(f.y - 10 + Math.sin(b) * f.r * 0.35), 2, 2);
+        }
+        ctx.globalAlpha = 1;
+        continue;
+      }
+      if (f.kind === 'tongue') {
+        // Lengua de Lika: sale y vuelve (0,3 s), segmentos de 4 px con borde oscuro.
+        const k = f.t < 0.12 ? f.t / 0.12 : Math.max(0, 1 - (f.t - 0.12) / 0.18);
+        const L = f.len * k, cx = Math.cos(f.a), cy = Math.sin(f.a);
+        const ox = f.owner.x, oy = f.owner.y - (f.owner.bodyH || 20) * 0.55;
+        const step = 4, wave = Math.sin(now * 30) * 3;
+        for (let d = 0; d < L; d += step) {
+          const w = Math.sin(d / 18 + now * 20) * wave * (d / (L + 1));
+          const x = Math.round(ox + cx * d - cy * w), y = Math.round(oy + cy * d + cx * w);
+          ctx.fillStyle = '#3a0a14'; ctx.fillRect(x - 3, y - 3, 6, 6);
+          ctx.fillStyle = d > L - 10 ? '#ff9db0' : '#d0405a'; ctx.fillRect(x - 2, y - 2, 4, 4);
+        }
         continue;
       }
       if (f.kind === 'heart') {
