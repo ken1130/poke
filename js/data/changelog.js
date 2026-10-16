@@ -6,6 +6,13 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-16', title: ['Lugares de la mazmorra siempre cerca', 'Dungeon spots always nearby'], new: [
+    ['Nuevo truco levelup30: +30 niveles desde el que tengas (en partida), eligiendo las cartas.',
+     'New cheat levelup30: +30 levels from your current one (while playing), picking your cards.']
+  ], fix: [
+    ['La sala misteriosa, la tienda, la estatua y las escaleras vuelven a aparecer cerca si todos os alejáis más de 100 m (en el minimapa salían a miles de metros).',
+     'The mystery room, shop, statue and stairs reappear nearby if everyone gets more than 100 m away (the minimap showed them thousands of metres away).']
+  ] },
   { d: '2026-10-15', title: ['Cambio de objetos más claro', 'Clearer item swaps'], new: [
     ['«Mi equipo» en la colección: añade tus Pokémon de siempre y encuéntralos al momento con el filtro «★ Mi equipo».',
      '"My team" in the collection: add your usual Pokémon and find them instantly with the "★ My team" filter.']

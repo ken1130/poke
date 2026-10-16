@@ -3,6 +3,13 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-16', title: { zh: '迷宮設施不再跑到幾千公尺外、+30 等金手指', en: 'Dungeon spots stay nearby, +30 levels cheat' },
+    new: [
+      { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }
+    ],
+    fix: [
+      { zh: '迷宮的神秘房間、商店、雕像和樓梯離所有人超過 100 公尺時，會重新出現在附近（之前走遠後小地圖會顯示幾千公尺）', en: 'Dungeon mystery rooms, shops, statues and stairs now move back near you when everyone is more than 100 m away (before, the minimap could show thousands of metres)' }
+    ] },
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },
     new: [
       { zh: '寶可夢圖鑑新增「我的戰隊」：在寶可夢的介紹頁按「加入我的戰隊」，再用篩選列的「★ 我的戰隊」就能快速找到常用的幾隻（跨所有地區，雲端同步）', en: 'New "My team" in the Pokédex: press "Add to My team" on a Pokémon, then use the "★ My team" filter to find your favourites fast (all regions, synced to the cloud)' },

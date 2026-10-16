@@ -36,6 +36,8 @@ G.Dungeon = (() => {
   let sites = [];                    // { id, type, x, y, state, ... }
   let nextId = 1;
   let houseT = 0, shopT = 0, statueT = 0, timed = false;
+  const FAR = 3200;          // 100 m (32 px = 1 m): un sitio más lejos de todos se vuelve a poner cerca
+  let farT = 1;
   let blessing = null;               // { id, until } (todo el grupo)
   let buyT = 0, buyKey = '';         // tú, encima de un artículo de la tienda
   let room = null, lastExit = -99;   // interior en el que está el grupo (ver beginRoom)
@@ -152,6 +154,17 @@ G.Dungeon = (() => {
       for (const s of sites) {
         const open = (s.type === 'shop' && (s.state === 'open' || s.state === 'free')) || (s.type === 'mhouse' && s.state === 'idle');
         if (open && live.some(p => G.U.dist2(p.x, p.y, s.x, s.y + 6) < 40 * 40)) { enterRoom(s, live); return; }
+      }
+    }
+    // Sitios a más de 100 m de todos (2026-10-16: te alejabas y en el minimapa salían a miles
+    // de metros): se vuelven a poner cerca de alguien, como al aparecer.
+    farT -= dt;
+    if (farT <= 0) {
+      farT = 1;
+      for (const s of sites) {
+        if (!live.every(p => G.U.dist2(p.x, p.y, s.x, s.y) > FAR * FAR)) continue;
+        const at = freeSpot(G.U.pick(live), 420, 820, s.type === 'mhouse' ? 120 : 70);
+        if (at) { s.x = at[0]; s.y = at[1]; send(pack(s)); }
       }
     }
     if (allowed()) {

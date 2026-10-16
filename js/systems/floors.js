@@ -24,6 +24,8 @@ G.Floors = (() => {
   // (hasta 30 s, y con un tope que también va subiendo), sin mareas ni jefes.
   const GRACE = 30, GRACE_EMPTY = 6;
   let floor = 0, stairs = null, nextAt = FIRST, standT = 0, fadeT = 0, graceT = 0;
+  const FAR = 3200;          // 100 m (32 px = 1 m): más lejos, las escaleras se acercan
+  let farT = 1;
   let combo = 0, comboFlash = 0;
 
   function reset() { floor = 0; stairs = null; nextAt = FIRST; standT = 0; fadeT = 0; graceT = 0; combo = 0; comboFlash = 0; }
@@ -33,7 +35,7 @@ G.Floors = (() => {
 
   // ---------------- escaleras ----------------
 
-  function spawnStairs(live) {
+  function spawnStairs(live, quiet = false) {
     const p = G.U.pick(live);
     const reach = reachable(p);
     for (let k = 0; k < 60; k++) {
@@ -47,6 +49,7 @@ G.Floors = (() => {
       if (!ok) continue;
       setStairs(Math.round(x), Math.round(y));
       if (G.Coop.active) G.Coop.broadcast(['st', stairs.x, stairs.y]);
+      if (quiet) return;
       G.Spawner.say(G.T('¡Han aparecido escaleras al siguiente piso! Míralas en el minimapa'), 3.5, true);
       G.Audio.sfx('surge');
       return;
@@ -99,6 +102,13 @@ G.Floors = (() => {
     if (!stairs && T() >= nextAt) { nextAt = T() + EVERY; spawnStairs(live); }
     if (!stairs) return;
     stairs.t += dt;
+    // A más de 100 m de todos (te has ido lejos): se vuelven a poner cerca (2026-10-16:
+    // en el minimapa salían a miles de metros).
+    farT -= dt;
+    if (farT <= 0) {
+      farT = 1;
+      if (live.every(p => G.U.dist2(p.x, p.y, stairs.x, stairs.y) > FAR * FAR)) { const old = stairs; spawnStairs(live, true); if (stairs !== old) standT = 0; }
+    }
     const [on, n] = onStairs(players);
     if (on >= n && n > 0) {
       standT += dt;
