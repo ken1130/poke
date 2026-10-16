@@ -5,6 +5,7 @@
 G.MODNEWS = [
   { d: '2026-10-16', title: { zh: '升等變強、組隊難度依人數調整、迷宮設施不再跑到幾千公尺外', en: 'Level-ups make you stronger, co-op difficulty by player count, dungeon spots stay nearby' },
     new: [
+      { zh: '新增 7 個「神器」：只會從上鎖寶箱開出（每個 10%），佔一格攜帶道具，只能被另一個神器替換（一般道具換不掉）。快銀的腳、鄰兵的軍火庫、剩一半的接骨木魔杖、輪班工程師的肝、倍倍賭博骰子、仕昕的登山裝備、64坦克；HUD 上有彩虹框，點一下看完整效果', en: 'New: 7 Artifacts. They only come from locked chests (10% each), take one held-item slot and can only be replaced by another artifact (normal items can’t push them out): Quicksilver’s Feet, the Neighbour’s Arsenal, the Half Elder Wand, the On-Call Engineer’s Liver, Double-or-Nothing Dice, Shixin’s Climbing Gear and Tank 64. Rainbow frame in the HUD; tap it for the full effect' },
       { zh: '卡克隆輪盤：有人在轉的時候，其他人畫面上方也會出現同一個輪盤一起轉，顯示誰在轉和結果（不會擋住操作）', en: 'Kecleon roulette: when someone spins, everyone else sees the same wheel spinning at the top of the screen, with who spins and the result (it does not block anything)' },
       { zh: '每升 1 級：最大生命 +2%（並補回這些血）、攻擊 +1%，算到 50 級（PK 不算）', en: 'Each level: +2% max HP (healed too) and +1% attack, up to level 50 (not in PvP)' },
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }

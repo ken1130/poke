@@ -199,6 +199,24 @@ G.Pickups = (() => {
         // Baya, imán y bomba: su icono pixel art.
         const ICON = { heal: 'berry', magnet: 'magnet', bomb: 'bomb', ticket: 'ticket', ticket10: 'ticket10', token: 'berry' };
         const sz = p.kind === 'token' ? 28 : p.kind === 'ticket10' || p.kind === 'item' ? 24 : 18;
+        if (p.kind === 'item' && G.Items.isArt(p.value)) {
+          // Artefacto: halo arcoíris que gira y destellos, más grande que el de un objeto.
+          const ph = p.t * 1.2;
+          ctx.globalAlpha = 0.3 + Math.sin(p.t * 2) * 0.1;
+          ctx.fillStyle = '#ffe9ff';
+          ctx.beginPath(); ctx.arc(p.x, y, 22, 0, 6.2832); ctx.fill();
+          ctx.globalAlpha = 0.85;
+          ctx.lineWidth = 3;
+          for (let c = 0; c < 6; c++) {
+            ctx.strokeStyle = `hsl(${c * 60},95%,65%)`;
+            ctx.beginPath(); ctx.arc(p.x, y, 19, ph + c * 1.0472, ph + c * 1.0472 + 0.9); ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+          G.Icons.twinkle(ctx, p.x + 15, y - 14, (p.t * 0.7) % 1, 2);
+          G.Icons.twinkle(ctx, p.x - 16, y + 10, (p.t * 0.7 + 0.5) % 1, 2);
+          G.Icons.draw(ctx, p.value, p.x - 18, y - 19, 36);
+          continue;
+        }
         if (p.kind === 'item' || p.kind === 'token') {
           // Objeto: brillo dorado latiendo, para que se vea desde lejos.
           ctx.globalAlpha = 0.35 + Math.sin(p.t * 1.5) * 0.15;

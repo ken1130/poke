@@ -407,6 +407,8 @@ G.World = (() => {
       for (let i = 0; i < tk; i++) G.Pickups.drop('ticket', p.x + G.U.rand(-16, 16), p.y + G.U.rand(-10, 10), 1);
       if (Math.random() < 0.15) G.Pickups.drop('ticket10', p.x, p.y - 10, 1);
       if (Math.random() < 0.5) G.Pickups.drop('item', p.x + 14, p.y - 14, G.Items.roll());
+      // Artefacto (2026-10-16): sólo de aquí, 10 % por cofre con candado.
+      if (Math.random() < G.Items.ART_CHANCE) G.Pickups.drop('item', p.x - 16, p.y - 16, G.Items.rollArt());
       G.Pickups.dropXp(p.x, p.y, G.Game.levelXp());
       G.Progress.event('chest');
       return;

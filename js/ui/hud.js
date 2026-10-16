@@ -423,7 +423,7 @@ G.HUD = (() => {
     // Por encima de la barra de inicio del iPhone (allí los toques a veces no llegan).
     const sy = h - S - 18 - (touch ? Math.min(28, G.Touch.safeArea().bottom) : 0);
     const BOND = '#ff8ad8';
-    const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdMul), 0, 1);
+    const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdK), 0, 1);
 
     for (let i = 0; i < n; i++) {
       const g = pl.slots[i] || [];
@@ -553,20 +553,39 @@ G.HUD = (() => {
     for (let k = 0; k < G.Player.MAX_ITEMS; k++) {
       const id = pl.items[k];
       const ix = sx - (S + 12) * (G.Player.MAX_ITEMS - k) - 6, iy = sy;
+      const art = id && G.Items.isArt(id);
       roundRect(ctx, ix, iy, S, S, 12);
-      ctx.fillStyle = id ? 'rgba(40,30,10,.9)' : 'rgba(10,16,28,.55)';
+      ctx.fillStyle = art ? 'rgba(46,18,52,.92)' : id ? 'rgba(40,30,10,.9)' : 'rgba(10,16,28,.55)';
       ctx.fill();
-      ctx.lineWidth = id ? 2 : 1;
-      ctx.strokeStyle = id ? '#ffd23f' : 'rgba(140,170,210,.18)';
+      ctx.lineWidth = art ? 3 : id ? 2 : 1;
+      if (art) {
+        // Artefacto: marco arcoíris que gira despacio (se distingue de un objeto normal).
+        const ph = performance.now() / 900, g = ctx.createLinearGradient(ix, iy, ix + S, iy + S);
+        for (let c = 0; c < 6; c++) g.addColorStop(c / 5, `hsl(${(c * 60 + ph * 57) % 360},95%,65%)`);
+        ctx.strokeStyle = g;
+      } else ctx.strokeStyle = id ? '#ffd23f' : 'rgba(140,170,210,.18)';
       ctx.stroke();
       if (id) {
         const it = G.Items.BY[id];
         G.Icons.draw(ctx, id, ix + (S - 36) / 2, iy + (S - 36) / 2, 36);
-        ctx.font = F(700, 9);
+        if (art) G.Icons.twinkle(ctx, ix + S - 9, iy + 9, (performance.now() / 1400 + k * 0.5) % 1, 2);
+        // Nombre encima (el corto si es un artefacto), que no pise el hueco de al lado.
+        const nm = G.T(it.short || it.name);
+        let fs = 9;
+        ctx.font = F(700, fs);
+        while (fs > 7 && ctx.measureText(nm).width > S + 10) ctx.font = F(700, --fs);
         ctx.textAlign = 'center';
-        ctx.fillStyle = '#ffd23f';
-        ctx.fillText(G.T(it.name), ix + S / 2, iy - 6);
-        tapInfo(ix, iy, S, S, 'item' + k, () => ({ title: G.T(it.name), color: '#ffd23f', lines: [G.T(it.desc), G.T('Puedes llevar 2 objetos; duran toda la run.')] }), 'up');
+        ctx.fillStyle = art ? '#ff9ef0' : '#ffd23f';
+        ctx.fillText(nm, ix + S / 2, iy - 6);
+        // Varita de Saúco: lo que lleva acumulado.
+        if (id === 'elderwand' && pl.wandN) {
+          const w = G.Items.ART.elderwand, t = '-' + Math.round(Math.min(w.max, pl.wandN * w.per) * 100) + '%';
+          ctx.font = F(800, 10);
+          ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.strokeText(t, ix + S / 2, iy + S - 4);
+          ctx.fillStyle = '#c8f0ff'; ctx.fillText(t, ix + S / 2, iy + S - 4);
+        }
+        tapInfo(ix, iy, S, S, 'item' + k, () => ({ title: (art ? G.T('Artefacto') + ' · ' : '') + G.T(it.name), color: art ? '#ff9ef0' : '#ffd23f',
+          lines: [G.T(it.desc), art ? G.T('Sólo otro artefacto puede sustituirlo.') : G.T('Puedes llevar 2 objetos; duran toda la run.')] }), 'up');
       }
     }
 
@@ -768,6 +787,13 @@ G.HUD = (() => {
     // (2026-10-16) Todo en pixel art: los objetos del mapa, sus propios sprites (tiles.js) en
     // pequeño; lo demás, iconitos de PAINT.mmicon.
     item(ctx, x, y) { G.Pickups.sprite(ctx, 'mmicon', 0, x, y, 1); },
+    // Artefacto: rombo arcoíris (cambia de color) con contorno.
+    art(ctx, x, y) {
+      const h = (performance.now() / 8) % 360;
+      ctx.fillStyle = '#1b1528'; ctx.beginPath(); ctx.moveTo(x, y - 7); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 7); ctx.lineTo(x - 6, y); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = `hsl(${h},95%,65%)`; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 4, y); ctx.lineTo(x, y + 5); ctx.lineTo(x - 4, y); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x - 1, y - 3, 2, 2);
+    },
     bigchest(ctx, x, y) { G.Pickups.sprite(ctx, 'bigchest', 0, x, y, 0.5); },
     chest(ctx, x, y) { G.Pickups.sprite(ctx, 'chest', 0, x, y, 0.4); },
     altar(ctx, x, y) { G.Pickups.sprite(ctx, 'altar', 0, x, y, 0.42); },
@@ -839,6 +865,7 @@ G.HUD = (() => {
       if (p.kind === 'sbox' || p.kind === 'fbox') icon('sbox', p.x, p.y, true, blink);
       else if (p.kind === 'egg') icon('egg', p.x, p.y, true);
       else if (p.kind === 'potion') icon('potion', p.x, p.y, true);
+      else if (p.kind === 'item' && G.Items.isArt(p.value)) icon('art', p.x, p.y, true);
       else if (p.kind === 'item' || p.kind === 'token' || p.kind === 'ticket10') icon('item', p.x, p.y, false);
     }
     const rift = G.Rift.rift;
@@ -921,7 +948,8 @@ G.HUD = (() => {
     add(near(pk, p => (p.kind === 'sbox' || p.kind === 'fbox') && G.Loot.visible(p)), 'DISCO DE MOVIMIENTOS', '#7fe0ff', 'sbox');
     add(near(pk, p => p.kind === 'potion' && G.Loot.visible(p)), 'Poción', '#ff7ad9', 'potion');
     add(near(pk, p => p.kind === 'egg' && G.Loot.visible(p)), 'Huevo', '#fff3c8', 'egg');
-    add(near(pk, p => p.kind === 'item'), 'Objeto', '#ffd23f', 'item');
+    add(near(pk, p => p.kind === 'item' && G.Items.isArt(p.value)), 'Artefacto', '#ff9ef0', 'art');
+    add(near(pk, p => p.kind === 'item' && !G.Items.isArt(p.value)), 'Objeto', '#ffd23f', 'item');
     add(near(mmProps, p => p.type === 'bigchest' && !p.used), 'Cofre con candado', '#ffb000', 'bigchest');
     add(near(mmProps, p => p.type === 'altar' && !p.used), 'Altar', '#ff8ad8', 'altar');
     add(near(mmProps, p => p.type === 'spring' && !p.used), 'Manantial', '#4fb4ff', 'spring');
@@ -941,7 +969,7 @@ G.HUD = (() => {
     ctx.font = F(800, FS);
     ctx.textAlign = 'right';
     // Lo más importante primero (caben 6).
-    const PRI = ['sbox', 'egg', 'stairs', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'elite', 'item', 'bigchest', 'altar', 'spring'];
+    const PRI = ['art', 'sbox', 'egg', 'stairs', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'elite', 'item', 'bigchest', 'altar', 'spring'];
     if (G.Dungeon.roomDoor) for (let i = rows.length - 1; i >= 0; i--) if (rows[i].d > 700) rows.splice(i, 1);
     rows.sort((a, b) => PRI.indexOf(a.ic) - PRI.indexOf(b.ic));
     rows.slice(0, max).forEach((r, k) => {
