@@ -54,6 +54,7 @@
 | 寶可夢蛋／夥伴 | 一場一顆（第 6 分鐘）；孵化池＝所有初始型態、有圖、稀有度 1～4（權重 8/5/3/1）；夥伴每 25 擊倒 +1 級（+8% 傷害），Lv.10/20 進化（每次 +25%） |
 | 卡克隆商店 | 12 種商品，每間隨機 4 個；蛋只在有人沒夥伴時出現；扭蛋券用掉落物給（全隊共用） |
 | 原創角色專屬招式（2026-10-16） | `moves.js` 的 `only: dex`（不進 POOL，別人抽不到）；kind `foampunch`／`scare`／`afterimage`／`pounce`／`whip` 在 `combat.js`（殘影 `shade`、舌頭 `tongue` 是 fields）；數值在 TABLE；custom.js 的 `start` 指向它 |
+| 專屬招式強度（2026-10-16 第二版） | 主人說太弱 → 全部加強，目標約等於或略強於李家拳；熊貓 `curious-question`（kind question）、地瓜球 `potato-roll`（kind roll，進化 `zap` 在投射物命中時電周圍）；高速婆婆每次施放也打兩個殘影之間的路徑（×0.6）、站著不動放波動、不播攻擊動作。之後每個新原創角色都要有專屬招式 |
 | 進化演出（2026-10-16） | `evo.js`：`pl.evoAnim` 2.6 秒、白色剪影交替（player.draw）、期間無敵，結束才 `evolveTo`；隊友看到的仍是結束時直接換 |
 | 地形快取（2026-10-16） | `world.js`：每種地形各留一份 chunk 快取（`caches`，最多 4 份、舊的留 20 塊），`drawGround` 每格最多畫 6 ms（`PAINT_MS`），沒畫好的先用地板色 |
 | 道具合成（2026-10-16） | `dungeon.js` 的 `fuseCheck/tryFuse/doFuse`：兩個同級一般道具合成高一級（史詩以上、神器不可）；價格 `FUSE_BASE {1:45, 2:90}` × 時間／熟客／偷竊倍率；組隊時客人送 `dg fuse` 給房主扣錢，房主回 `dg fused` 後在客人電腦合成。客人自動賣道具送 `dg sell` |
