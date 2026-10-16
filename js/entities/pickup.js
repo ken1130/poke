@@ -95,10 +95,12 @@ G.Pickups = (() => {
     if (Math.random() < TICKET_RATE * (1 + 0.25 * (G.Floors ? G.Floors.floor : 0))) push(orb('ticket', x + G.U.rand(-6, 6), y, 1));
 
     // Drops ocasionales.
-    const r = Math.random();
-    if (r < 0.012) push(orb('heal', x + G.U.rand(-8, 8), y, 0));
-    else if (r < 0.020) push(orb('magnet', x, y, 0));
-    else if (r < 0.026) push(orb('bomb', x, y, 0));
+    // (Piso de cosecha, floors.js: bayas ×3 y alguna moneda suelta.)
+    const r = Math.random(), hk = G.Floors ? G.Floors.healMul : 1, h0 = 0.012 * hk;
+    if (r < h0) push(orb('heal', x + G.U.rand(-8, 8), y, 0));
+    else if (r < h0 + 0.008) push(orb('magnet', x, y, 0));
+    else if (r < h0 + 0.014) push(orb('bomb', x, y, 0));
+    if (hk > 1 && Math.random() < 0.04) push(orb('coin', x + G.U.rand(-6, 6), y, 3));
   }
 
   /** Suelta un objeto suelto: 'heal' | 'magnet' | 'bomb' | 'coin'. */

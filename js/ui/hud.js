@@ -183,7 +183,7 @@ G.HUD = (() => {
     if (wx) {
       ctx.font = F(800, 11);
       ctx.textAlign = 'left';
-      const txt = wx.name.toUpperCase() + ' · ' + Math.ceil(wx.left) + 's';
+      const txt = wx.name.toUpperCase() + (wx.left > 3600 ? '' : ' · ' + Math.ceil(wx.left) + 's');     // (piso de niebla: todo el piso)
       const tw = ctx.measureText(txt).width + 40;
       const x0 = w - tw - 16 - (touch ? 56 : 0), y0 = 14;
       roundRect(ctx, x0, y0, tw, 26, 9);
@@ -201,13 +201,16 @@ G.HUD = (() => {
     G.Boons.drawHud(ctx, w, h, F);                // cartel de los hitos de 10/20/30 min
 
     // ---------- barra del jefe ----------
-    const boss = G.EnemyMgr.all().find(e => e.boss && !e.dead);
+    // (El jefe del piso tiene prioridad y su etiqueta: «JEFE DEL PISO · ...», floors.js.)
+    const fboss = G.Floors.floorBoss();
+    const boss = fboss || G.EnemyMgr.all().find(e => e.boss && !e.dead);
     if (boss) {
       const bw = Math.min(420, w - 80);
-      bar(ctx, (w - bw) / 2, 70, bw, 12, boss.hp / boss.maxHp, '#ffcb3d');
+      bar(ctx, (w - bw) / 2, 70, bw, 12, boss.hp / boss.maxHp, fboss ? (G.Floors.LAST === G.Floors.floor && !G.Floors.cleared ? '#d98aff' : '#ff9a3d') : '#ffcb3d');
       ctx.font = F(800, 10);
       ctx.fillStyle = '#20160a';
-      ctx.fillText((boss.raid ? G.T('INCURSIÓN') + ' · ' : '') + boss.name.toUpperCase(), w / 2, 80);
+      const tag = fboss ? G.T(fboss.lord || (G.Floors.floor === G.Floors.LAST) ? 'SEÑOR DEL LABERINTO' : 'JEFE DEL PISO') + ' · ' : boss.raid ? G.T('INCURSIÓN') + ' · ' : '';
+      ctx.fillText(tag + G.T(boss.name).toUpperCase(), w / 2, 80);
     }
 
     // ---------- incursión: a quién va el jefe ----------
@@ -293,6 +296,13 @@ G.HUD = (() => {
     }
 
     if (G.Coop.active) drawCoop(ctx, w, h, pl, px, py + (bx > px ? 56 : 40));
+    // Retos de la run (rungoals.js): debajo de la vida y, en grupo, de la lista del grupo.
+    {
+      const mates = G.Coop.active ? G.Coop.mates.filter(m => m.connected).length : 0;
+      const gy = py + (bx > px ? 56 : 40) + (mates ? mates * 15 + 6 : 0);
+      const gh = G.RunGoals.drawHud(ctx, w, h, F, px, gy, roundRect);
+      goalZone = gh ? { right: px + 230, bottom: gy + gh } : null;
+    }
 
     // Grieta: flecha grande que late en el borde si no se ve, y si se ve, una
     // flecha que bota encima; en la arena, cuenta atrás.
@@ -351,8 +361,11 @@ G.HUD = (() => {
         if (s.type === 'shop' && (s.state === 'open' || s.state === 'free')) edgeArrow(ctx, w, h, pl, s.x, s.y - 20, '#5fcf8a', '#d8ffe6', '#0a2a18', '#b8f5cc', 'Tienda de Kecleon');
         else if (s.type === 'mhouse' && s.state === 'idle') edgeArrow(ctx, w, h, pl, s.x, s.y - 20, '#b98aff', '#efe2ff', '#22103a', '#e2d0ff', 'Sala misteriosa');
       }
-      const st = G.Floors.stairs;
-      if (st) edgeArrow(ctx, w, h, pl, st.x, st.y, '#7fb0ff', '#e2ecff', '#0a1a3a', '#cfe0ff', 'Escaleras');
+      // Dos escaleras (2026-10-16): la segura en azul, la peligrosa en rojo.
+      for (const st of G.Floors.stairsAll) {
+        if (st.route === 'danger') edgeArrow(ctx, w, h, pl, st.x, st.y, '#ff7a5a', '#ffe2d8', '#3a0f0a', '#ffc4b0', G.T('Ruta peligrosa') + '・' + G.T(G.Floors.THEMES[st.theme].name));
+        else edgeArrow(ctx, w, h, pl, st.x, st.y, '#7fb0ff', '#e2ecff', '#0a1a3a', '#cfe0ff', G.T('Ruta segura') + '・' + G.T(G.Floors.THEMES[st.theme].name));
+      }
     }
     if (G.Rift.inArena) {
       ctx.textAlign = 'center';
@@ -771,6 +784,12 @@ G.HUD = (() => {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, Math.round(x - 9), Math.round(y - 7.5), 18, 15);
     },
+    // Escalera de la ruta peligrosa (piedra volcánica, floors.js).
+    stairsD(ctx, x, y) {
+      const img = G.Tiles.propSprite(G.World.biome, 'stairs', 1);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, Math.round(x - 9), Math.round(y - 7.5), 18, 15);
+    },
     sbox(ctx, x, y, on) {
       ctx.fillStyle = on ? 'rgba(127,224,255,.55)' : 'rgba(127,224,255,.25)';
       ctx.beginPath(); ctx.arc(x, y, 10, 0, 6.2832); ctx.fill();
@@ -873,7 +892,7 @@ G.HUD = (() => {
     const door = G.Dungeon.roomDoor;
     if (door) icon('shop', door.x, door.y, false);
     for (const s of G.Dungeon.sites) icon(s.type, s.x, s.y, true, blink);
-    if (G.Floors.stairs) icon('stairs', G.Floors.stairs.x, G.Floors.stairs.y, true);
+    for (const st of G.Floors.stairsAll) icon(st.route === 'danger' ? 'stairsD' : 'stairs', st.x, st.y, true);
     for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) icon('boss', e.x, e.y, true);
     for (const e of G.EnemyMgr.all()) if (e.elite && !e.boss && !e.dead) icon('elite', e.x, e.y, false, blink);
     if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl) icon('mate', o.x, o.y, true, o.dead);
@@ -896,7 +915,7 @@ G.HUD = (() => {
    * candado, altares, manantiales, la grieta y los jefes).
    */
   const ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
-  let arrowSpots = [], mmZone = null;     // flechas ya puestas este fotograma · hueco del minimapa y su lista
+  let arrowSpots = [], mmZone = null, goalZone = null;     // (goalZone: cajita de los retos de la run)     // flechas ya puestas este fotograma · hueco del minimapa y su lista
   /** Flecha que late en el borde de la pantalla hacia algo que no se ve, con su nombre y los metros. */
   function edgeArrow(ctx, w, h, pl, wx, wy, col, flash, dark, txtCol, name) {
     const cam = G.Camera;
@@ -906,6 +925,8 @@ G.HUD = (() => {
     let ex = G.U.clamp(bsx, M, w - M), ey = G.U.clamp(bsy, M + 70, h - M - 90);
     // No encima del minimapa ni de su lista (columna de la derecha): se aparta a su izquierda.
     if (mmZone && ex > mmZone.x - 30 && ey < mmZone.bottom + 20) ex = mmZone.x - 50;
+    // Ni encima de la cajita de los retos (arriba a la izquierda): por debajo de ella.
+    if (goalZone && ex < goalZone.right + 30 && ey < goalZone.bottom + 40) ey = goalZone.bottom + 40;
     // Varias flechas en el mismo sitio: se reparten a lo largo del borde.
     for (let k = 0; k < 6 && arrowSpots.some(([x, y]) => Math.abs(x - ex) < 60 && Math.abs(y - ey) < 44); k++) {
       if (ex <= M + 1 || ex >= w - M - 1 || mmZone && ex === mmZone.x - 50) ey = Math.min(h - M - 90, ey + 46); else ex += ex < w / 2 ? 130 : -130;
@@ -959,7 +980,10 @@ G.HUD = (() => {
       else if (s.type === 'shop') add(s, 'Tienda de Kecleon', '#9fe0b0', 'shop');
       else if (s.type === 'statue') add(s, 'Estatua misteriosa', '#e8eef8', 'statue');
     }
-    if (G.Floors.stairs) add(G.Floors.stairs, 'Escaleras', '#9fc8ff', 'stairs');
+    for (const st of G.Floors.stairsAll) {
+      if (st.route === 'danger') add(st, G.T('Ruta peligrosa') + '・' + G.T(G.Floors.THEMES[st.theme].name), '#ffb08a', 'stairsD');
+      else add(st, G.T('Ruta segura') + '・' + G.T(G.Floors.THEMES[st.theme].name), '#9fc8ff', 'stairs');
+    }
     add(near(G.EnemyMgr.all(), e => e.boss && !e.dead), 'Jefe', '#ff5f6d', 'boss');
     add(near(G.EnemyMgr.all(), e => e.elite && !e.boss && !e.dead), 'Élite', '#ffb84d', 'elite');
     if (!rows.length) return 0;
@@ -969,7 +993,7 @@ G.HUD = (() => {
     ctx.font = F(800, FS);
     ctx.textAlign = 'right';
     // Lo más importante primero (caben 6).
-    const PRI = ['art', 'sbox', 'egg', 'stairs', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'elite', 'item', 'bigchest', 'altar', 'spring'];
+    const PRI = ['art', 'stairs', 'stairsD', 'sbox', 'egg', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'elite', 'item', 'bigchest', 'altar', 'spring'];
     if (G.Dungeon.roomDoor) for (let i = rows.length - 1; i >= 0; i--) if (rows[i].d > 700) rows.splice(i, 1);
     rows.sort((a, b) => PRI.indexOf(a.ic) - PRI.indexOf(b.ic));
     rows.slice(0, max).forEach((r, k) => {

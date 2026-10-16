@@ -100,13 +100,19 @@ G.RunUI = (() => {
 
 
   function showOver(r, onBack) {
-    $('over-title').textContent = r.dead ? 'Has caído…' : 'Run terminada';
+    // Mazmorra superada (floors.js): victoria, no "has caído".
+    $('over-title').textContent = r.clear ? '¡Victoria! Mazmorra superada' : r.dead ? 'Has caído…' : 'Run terminada';
+    $('over-title').classList.toggle('gold', !!r.clear);
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     $('over-stats').innerHTML = `
       <div><span>Tiempo</span><b>${G.U.mmss(r.time)}</b></div>
       <div><span>Nivel</span><b>${r.level}</b></div>
       <div><span>Derrotados</span><b>${r.kills}</b></div>
       <div><span>Jefes</span><b>${r.bosses}</b></div>
       ${r.floor ? `<div><span>Piso más hondo</span><b>B${r.floor + 1}F</b></div>` : ''}
+      ${r.clearTime != null ? `<div><span>Mazmorra superada</span><b class="gold">${G.U.mmss(r.clearTime)}</b></div>` : ''}
+      ${r.goals && r.goals.length ? `<div style="grid-column:1/-1"><span>Retos de la run</span><b style="font-size:14px">
+        ${r.goals.map(g => `<span style="color:${g.done ? '#7dffb0' : '#ff8a96'}">${g.done ? '✔' : '✘'} ${esc(G.T(g.name))}</span>`).join(' · ')}</b></div>` : ''}
       <div style="grid-column:1/-1"><span>Pokémonedas ganadas</span>
         <b class="gold"><span class="coin"></span> +${r.coins}</b>
         <div style="font-size:12px;color:var(--muted)">${r.breakdown}</div></div>
@@ -261,6 +267,12 @@ G.RunUI = (() => {
       ['Bonus de experiencia', mul(pl.xpMul)],
       ['Bonus de monedas', mul(pl.coinMul)]
     ];
+    // Piso y retos de la run (modo normal, 2026-10-16).
+    if (G.Modes.run === 'normal' && !G.PvP.on) {
+      const th = G.Floors.THEMES[G.Floors.theme];
+      rows.push(['Piso', 'B' + (G.Floors.floor + 1) + 'F · ' + G.T(th.name)]);
+      for (const g of G.RunGoals.summary()) rows.push([G.T('Reto') + ': ' + G.T(g.name), g.prog]);
+    }
     box.innerHTML = rows.map(([k, v]) => `<div><span>${G.T(k)}</span><b>${v}</b></div>`).join('');
   }
 

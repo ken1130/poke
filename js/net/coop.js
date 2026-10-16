@@ -462,6 +462,7 @@ G.Coop = (() => {
         case 'mfx': G.Combat.netFx(ev); emit(ev, from); break;   // agujero negro de un compañero (combat.js)
         case 'cb': G.Floors.comboFx(ev[1], ev[2], ev[3], ev[4]); emit(ev, from); break;   // ataque combinado (floors.js)
         case 'pv': G.PvP.onNet(ev); emit(ev, from); break;                                 // PK: golpe entre jugadores
+        case 'rgc': if (local) local.coins = (local.coins || 0) + G.U.clamp(ev[1] | 0, 0, 100); break;   // reto de la run de un invitado (rungoals.js): monedas del grupo
       }
     }
   }
@@ -555,6 +556,7 @@ G.Coop = (() => {
       case 'c': { const m = mates.get(ev[1]); if (m) G.Combat.ghostCast(m.pl, ev[2], ev[3], ev[4], ev[5]); break; }
       case 'item': api.item(ev[1]); break;
       case 'st': case 'fl': case 'cb': G.Floors.onNet(ev); break;   // escaleras, piso nuevo, ataque combinado
+      case 'st2': case 'fbs': case 'fclr': case 'fcn': G.Floors.onNet(ev); break;   // dos escaleras, jefe del piso, mazmorra superada, seguir (floors.js)
       case 'sbox': api.sbox && api.sbox(); break;
       case 'fbox': api.fbox && api.fbox(); break;
       case 'ms': api.milestone && api.milestone(ev[1]); break;            // hito de tiempo (boons.js)

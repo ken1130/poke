@@ -391,7 +391,7 @@ label { display: block; font-size: 14px; color: var(--muted); margin: 8px 0 4px;
 .cards { display: flex; flex-direction: column; gap: 10px; width: min(560px, 100%); }
 /* Ventanas de cartas (nivel, cofre de movimientos, objeto): ancho fijo y cartas centradas.
    Sin esto, una descripción larga ensanchaba la ventana y las cartas se quedaban a la izquierda. */
-#scr-levelup > .box, #scr-sbox > .box, #scr-item > .box, #scr-relic > .box, #scr-boon > .box { width: min(616px, 100%); }
+#scr-levelup > .box, #scr-sbox > .box, #scr-item > .box, #scr-relic > .box, #scr-boon > .box, #scr-fclear > .box { width: min(616px, 100%); }
 .box .cards { margin-left: auto; margin-right: auto; }
 
 /* ---------- cofre de movimientos: se abre y salen las cartas de una en una ---------- */

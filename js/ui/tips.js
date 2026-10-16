@@ -55,7 +55,7 @@ G.Tips = (() => {
 
   /** Cada fotograma: mira qué toca y enseña uno. */
   function tick(dt) {
-    const playing = G.Game.state === 'playing' && !['scr-levelup', 'scr-pause', 'scr-item', 'scr-bond', 'scr-sbox', 'scr-boon', 'scr-relic', 'scr-shop', 'scr-roul', 'scr-pkpick'].some(G.UI.isOpen);
+    const playing = G.Game.state === 'playing' && !['scr-levelup', 'scr-pause', 'scr-item', 'scr-bond', 'scr-sbox', 'scr-boon', 'scr-relic', 'scr-shop', 'scr-roul', 'scr-pkpick', 'scr-fclear'].some(G.UI.isOpen);
     if (!playing) { if (cur) { box.style.display = 'none'; } return; }
     const pl = G.Game.player, run = G.Modes.run;
     if (run === 'stage' && G.Stages.goal) { once('stage'); once('stage-' + G.Stages.goal); }

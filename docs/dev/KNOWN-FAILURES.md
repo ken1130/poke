@@ -105,3 +105,13 @@
 - **修法**：事件另外打包（`{k:'f', x:1, ev}`，不帶 ts）走可靠通道；位置一律走快速通道（不重送、不排隊）。接收端看到 `x:1` 只處理事件。模擬不穩網路時延遲 1110 → 113 毫秒，每 4 秒收到的位置更新 54 → 90 次。
 - **以後怎麼避免**：會一直更新的資料（位置、血量）不要放進可靠通道；可靠通道只放「一定要到、晚一點沒關係」的事件。
 
+## 14. 無頭測試：自動點卡片不會關掉技能光碟（2026-10-16）
+
+- **症狀**：跳時間測樓層時卡在 `state === 'choice'`，層主一直不出現（`inGrace` 也不會倒數）。
+- **原因**：技能光碟視窗（`#sbox-cards`）裡的卡片只是展示，要按 `#sbox-ok` 才會關；自動點擊先點到卡片就 `return`，永遠按不到確定。遊戲在選擇中時間不走，換層緩衝也不會結束。另外單人升級卡在 `#cards`，不是 `#lvl-cards`。
+- **以後怎麼避免**：測試的自動點擊先按 `#sbox-ok`，再點 `#boon-cards`／`#cards`／`#lvl-cards`／`#item-cards` 的卡片；跳時間前確認 `G.Game.state === 'playing'`。
+
+## 15. 組隊雙分頁測試不用 Firebase（2026-10-16）
+
+- 用 `page.addInitScript` 先建立 `window.G`，在 `G.Net` 被設定時（`Object.defineProperty` 的 setter）包住 `on()` 記下處理函式，並把 `send`／`sendFast`／`toHost` 換成 `exposeFunction` 的轉送、`uid` 換成固定值；另一頁收到就呼叫記下的處理函式。兩頁 `G.Game.startRun({seed, host:'H', members:[…]})` 就能測事件同步（範例見 2026-10-16 樓層功能的測試）。
+- 注意：遊戲中途改了怪物血量（例如 `spawnBossNow` 之後才改 `maxHp`），隊友收到的 `'ne'` 是舊的血量 → 要在加入前改（`spawnBossNow(pl, t, def, tweak)` 的 `tweak`）。

@@ -153,6 +153,8 @@ G.Progress = (() => {
       case 'kecleon': S.kecleonWins = (S.kecleonWins || 0) + 1; break;
       case 'mhouse': S.mhouses = (S.mhouses || 0) + 1; break;
       case 'floor': S.maxFloor = Math.max(S.maxFloor || 1, d.n || 1); break;
+      // Mazmorra superada (floors.js, 2026-10-16): veces y mejor tiempo.
+      case 'clear': S.clears = (S.clears || 0) + 1; if (d.t) S.bestClear = S.bestClear ? Math.min(S.bestClear, d.t) : d.t; break;
       case 'hatch': S.hatches = (S.hatches || 0) + 1; if (d.shiny) S.shinyHatches = (S.shinyHatches || 0) + 1; break;
       case 'combo': S.combos = (S.combos || 0) + 1; break;
       case 'eliteKill': S.eliteKills = (S.eliteKills || 0) + 1; break;
@@ -160,6 +162,7 @@ G.Progress = (() => {
         if (d.group) S.groupRuns = (S.groupRuns || 0) + 1;
         break;
     }
+    if (G.RunGoals) G.RunGoals.onEvent(kind, d);           // retos de la run (rungoals.js)
     advance(s.missions.daily, kind, d);
     advance(s.missions.weekly, kind, d);
     // Los logros se miran como mucho una vez por segundo (hay cientos de bajas).

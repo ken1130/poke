@@ -111,7 +111,7 @@ G.Game = (() => {
 
   /** @param coop  { seed, host, members } para una partida en grupo */
   function startRun(coop = null) {
-    offerQ.length = 0; orphanT = 0;
+    offerQ.length = 0; orphanT = 0; clearWin = false;
     holdBy = []; holdPaused = []; awayBy = null; coopPause = false;
     const save = G.DB.save;
     // PK con personaje al azar: el Pokémon que le ha tocado a cada uno (cfg.members), sin mejoras.
@@ -132,6 +132,7 @@ G.Game = (() => {
     G.Boons.reset();
     G.Dungeon.reset();
     G.Floors.reset();
+    G.RunGoals.reset();
     G.Companion.reset();
     if (coop) { G.Modes.reset(); G.Modes.setRoom(coop.mods || {}); }
     // Desafíos / aventura: sus reglas (las "Reglas a medida" sólo valen en la run normal).
@@ -280,10 +281,10 @@ G.Game = (() => {
       // Las cartas se ponen en cola; mientras alguien elige, la partida se para para todos
       // (2026-10-14: antes seguía y te rodeaban mientras elegías).
       coopCards.push(level);
-      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon'].some(G.UI.isOpen)) nextCoopCard();
+      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear'].some(G.UI.isOpen)) nextCoopCard();
     },
     /** ¿Estás eligiendo algo? (lo manda coop.js en tu estado; si alguien elige, todo parado) */
-    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox', 'scr-relic', 'scr-boon'].some(G.UI.isOpen) || coopCards.length > 0; },
+    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear'].some(G.UI.isOpen) || coopCards.length > 0; },
     /** Invitado: has cogido un disco de movimientos / una poción (lo decide el anfitrión). */
     sbox() { if (pl) { pl.sboxes = (pl.sboxes || 0) + 1; offerBox(); } },
     fbox() { if (pl) offerBox(); },
@@ -302,8 +303,9 @@ G.Game = (() => {
       if (d) Object.assign(pl, { kills: d.ki, bosses: d.bo, coins: d.co, t1: d.t1 || pl.t1, t10: d.t10 || pl.t10 });
       if (d && d.t) time = d.t;
       if (d && d.why === 'host') G.UI.toast('El anfitrión ha terminado la partida', 3200);
+      if (d && d.clear) clearWin = true;                 // mazmorra superada: victoria para todos
       // Sonido de derrota sólo si de verdad lo es (fase superada o PK ganado: no).
-      endRun(!(d && d.why === 'host') && !(d && d.stage && d.stage.win) && !(d && 'pvpWin' in d && G.PvP.wonByMe()));
+      endRun(!(d && d.why === 'host') && !(d && d.clear) && !(d && d.stage && d.stage.win) && !(d && 'pvpWin' in d && G.PvP.wonByMe()));
     },
     lost(msg) { G.UI.toast(msg, 3600); endRun(false); },
     item(id) { offerItem(id); },
@@ -362,7 +364,7 @@ G.Game = (() => {
   }
   let choiceT = 0;          // grupo: segundos que llevas eligiendo (a los 25, elige solo)
   let orphanT = 0;          // segundos eligiendo sin ninguna ventana de elección abierta (frame)
-  const CHOICE_SCR = ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick'];
+  const CHOICE_SCR = ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick', 'scr-fclear'];
   /**
    * Elecciones en cola (2026-10-15): si ya hay una ventana de elección abierta, la nueva espera
    * a que se cierre (frame). Antes la segunda escondía la primera: en la casa de monstruos (mucha
@@ -398,8 +400,11 @@ G.Game = (() => {
     G.Audio.sfx('shinyGet');
   };
 
+  let clearWin = false;     // la run acaba como victoria (mazmorra superada, floors.js)
   function endRun(dead = true) {
     if (state === 'over' || !pl) return;
+    const el = document.getElementById('scr-fclear');
+    if (el) el.classList.add('hidden');
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
     const wasHost = !!pl.coopHost;
     const team = coop ? G.Coop.members.slice() : [];
@@ -411,7 +416,7 @@ G.Game = (() => {
     G.Tips.reset();
     if (coopCards.length || G.UI.isOpen('scr-levelup')) { coopCards = []; G.RunUI.closeLevelUp(); }
     G.Audio.music(null);
-    G.Audio.sfx(dead ? 'gameover' : 'back');
+    G.Audio.sfx(clearWin ? 'legend' : dead ? 'gameover' : 'back');
     const save = G.DB.save;
     const mul = pl.coinMul;
     const parts = {
@@ -456,7 +461,8 @@ G.Game = (() => {
     else if (wasHost) G.Ranking.submitGroup(Object.assign(mark, { members: team }));
 
     G.RunUI.showOver({
-      dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, floor: G.Floors.floor,
+      dead: dead && !clearWin, clear: clearWin, clearTime: G.Floors.cleared ? G.Floors.clearTime : null, goals: G.RunGoals.summary(),
+      time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, floor: G.Floors.floor,
       moves: pl.moves, caught,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
@@ -644,12 +650,14 @@ G.Game = (() => {
       return;
     }
     if (p.kind === 'xp' || p.kind === 'xpBig') {
-      if (G.Coop.active) G.Coop.xpShare(p.value);       // a cada uno, con su bonus
-      pendingLevels += pl.gainXp(p.value * (G.Coop.active ? G.Coop.xpFactor() : 1));
+      // Quedarse en un piso ya superado (floors.js): menos experiencia.
+      const v = p.value * G.Floors.farmMul;
+      if (G.Coop.active) G.Coop.xpShare(v);             // a cada uno, con su bonus
+      pendingLevels += pl.gainXp(v * (G.Coop.active ? G.Coop.xpFactor() : 1));
       return;
     }
     if (p.kind === 'coin') {
-      pl.coins += Math.round(p.value * G.Dungeon.mod('coins') * G.Floors.coinMul);      // avaricia ×2, y más por cada piso
+      pl.coins += Math.round(p.value * G.Dungeon.mod('coins') * G.Floors.coinMul);      // avaricia ×2, más por cada piso y su tema (floors.js)
       G.FX.dmgText(who.x, who.y - who.bodyH - 6, '+' + p.value, '#ffd23f');
       return;
     }
@@ -709,6 +717,10 @@ G.Game = (() => {
     }
     if (G.UI.isOpen('scr-boon')) {
       for (let i = 0; i < 3; i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.Boons.pick(i);
+      return;
+    }
+    if (G.UI.isOpen('scr-fclear')) {
+      for (let i = 0; i < 2; i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.Floors.pickClear(i);
       return;
     }
     if (G.UI.isOpen('scr-sbox')) {
@@ -826,6 +838,7 @@ G.Game = (() => {
         else if (G.UI.isOpen('scr-sbox')) document.getElementById('sbox-ok').click();
         else if (G.UI.isOpen('scr-relic')) G.Relics.pick(0);
         else if (G.UI.isOpen('scr-boon')) G.Boons.pick(0);
+        else if (G.UI.isOpen('scr-fclear')) G.Floors.pickClear(1);     // mazmorra superada: seguir (no acabar la run de todos)
         else if (G.UI.isOpen('scr-roul')) G.Roulette.forceClose();
       }
     } else choiceT = 0;
@@ -854,7 +867,7 @@ G.Game = (() => {
     }
     time += dt;
 
-    const b = Math.floor(time / 240) + G.Floors.floor;      // cada piso, el bioma siguiente (floors.js)
+    const b = G.Floors.biomeAt(Math.floor(time / 240) + G.Floors.floor);      // cada piso, el bioma siguiente (floors.js; «en llamas»: el volcán)
     if (b !== biome && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom) && fixedScene == null) {
       biome = b;
       G.World.setBiome(b);
@@ -863,7 +876,7 @@ G.Game = (() => {
       G.FX.ring(pl.x, pl.y, 10, G.Camera.outerRadius(), '#ffffff', 0.7, 6);
     }
 
-    const picking = coop && (state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon'].some(G.UI.isOpen));
+    const picking = coop && (state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear'].some(G.UI.isOpen));
     pl.frozen = coop && (G.UI.isOpen('scr-pause') || G.UI.isOpen('scr-item') || picking);
     pl.picking = picking;   // eligiendo cartas: nada te hace daño (Player.hurt)
     pl.update(dt);
@@ -917,6 +930,7 @@ G.Game = (() => {
     G.Interact.update(dt, pl);
     G.Rift.update(dt, pl, time);
     G.Challenges.update(dt, time, pl);
+    G.RunGoals.update(dt, time, pl);                             // retos de la run (modo normal)
     if (coop) G.Raid.update(dt, time);
     G.Evo.check(pl);
     G.Tips.tick(dt);
@@ -1097,6 +1111,7 @@ G.Game = (() => {
     G.Projectiles.draw(ctx);
     G.Combat.drawAirFields(ctx);
     G.Dungeon.drawAir(ctx);
+    G.Floors.drawAir(ctx);               // carteles de las escaleras y corona del jefe del piso
     G.PvP.drawWorld(ctx);                // PK: zona segura y punto de mira
     G.FX.draw(ctx);
     ctx.restore();
@@ -1104,11 +1119,12 @@ G.Game = (() => {
     G.Weather.draw(ctx, w, h, frameDt);
     G.World.drawVignette(ctx, w, h);
     // Niebla: la viñeta se cierra un poco (sin tapar el centro).
-    const fog = G.Weather.vignette;
+    // (Piso de niebla, floors.js: mucho más cerrada.)
+    const fog = G.Weather.vignette, thick = G.Floors.thickFog;
     if (fog > 0) {
-      const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.62);
+      const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * (thick ? 0.2 : 0.32), w / 2, h / 2, Math.max(w, h) * (thick ? 0.46 : 0.62));
       g.addColorStop(0, 'rgba(200,205,220,0)');
-      g.addColorStop(1, `rgba(200,205,220,${0.45 * fog})`);
+      g.addColorStop(1, `rgba(200,205,220,${(thick ? 0.82 : 0.45) * fog})`);
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
     }
@@ -1245,6 +1261,14 @@ G.Game = (() => {
         G.Coop.over(Object.assign(sm, { stage: { win: !!win } }));
       }
       endRun(!win);
+    },
+    /** Mazmorra superada (floors.js): la run acaba como victoria; en grupo, para todos (lo decide el anfitrión). */
+    victory() {
+      if (state === 'ui' || state === 'over' || !pl) return;
+      if (G.Coop.active && !G.Coop.isHost) return;
+      clearWin = true;
+      if (G.Coop.active) { const sm = summary(); lastTeam = sm.team; G.Coop.over(Object.assign(sm, { clear: 1 })); }
+      endRun(false);
     },
     /** Acaba la run como si hubieras caído (Desafío legendario: pierdes en la arena). */
     end() { if (state !== 'ui' && state !== 'over') endRun(true); },
