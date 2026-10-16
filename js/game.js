@@ -1218,6 +1218,7 @@ G.Game = (() => {
     for (const c of G.Companion.drawables()) items.push({ y: c.y, ent: c });
     for (const f of G.Dungeon.drawables()) items.push({ y: f.y, ent: f });      // muebles de la tienda
     for (const f of G.Funny.drawables()) items.push({ y: f.y, ent: f });       // Snorlax
+    for (const f of G.Encounters.drawables()) items.push({ y: f.y, ent: f });  // encuentros (Clefairy, Gyarados, Mew…)
     const rift = G.Rift.drawable();
     if (rift) items.push({ y: rift.y, ent: rift });
     const stairs = G.Floors.drawable();
