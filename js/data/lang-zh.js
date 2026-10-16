@@ -2262,6 +2262,7 @@ G.I18n.add({
   'Sombras más grandes y duraderas que estallan (36) al desaparecer; +25% de velocidad': '殘影更大、留更久，消失時爆炸（36）；速度 +25%',
   '5 zarpazos que hacen sangrar; si lo derriba, salta hasta a 4 enemigos': '抓 5 下並造成流血；抓倒的話最多連跳 4 個敵人',
   'Dos lenguas a la vez que atraen a los enemigos hacia ti y envenenan ×4': '同時甩兩條舌頭，把敵人拉過來，中毒 ×4',
+  'toca para parar': '點這裡停止',
   'Elegir solo: no': '自動選取：關', 'Elegir solo: sólo mejoras': '自動選取：只選能力卡', 'Elegir solo: todo': '自動選取：全部',
   'Raro': '稀有',
   'Épico': '史詩',

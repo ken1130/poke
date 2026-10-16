@@ -1262,6 +1262,7 @@ G.I18n.add({
   'Sombras más grandes y duraderas que estallan (36) al desaparecer; +25% de velocidad': 'Bigger, longer afterimages that explode (36) when they fade; +25% speed',
   '5 zarpazos que hacen sangrar; si lo derriba, salta hasta a 4 enemigos': '5 scratches that cause bleeding; if it knocks one out, it jumps up to 4 enemies',
   'Dos lenguas a la vez que atraen a los enemigos hacia ti y envenenan ×4': 'Two tongues at once that pull enemies toward you and poison ×4',
+  'toca para parar': 'tap to stop',
   'Elegir solo: no': 'Auto-pick: off', 'Elegir solo: sólo mejoras': 'Auto-pick: stats only', 'Elegir solo: todo': 'Auto-pick: everything',
   'Raro': 'Rare',
   'Épico': 'Epic',

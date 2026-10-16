@@ -13,6 +13,7 @@ G.RunUI = (() => {
     renderCards(list);
     $('lvl-reroll').onclick = reroll;
     $('lvl-auto').onclick = cycleAuto;
+    autoHeld = false;
     showAuto();
     G.UI.show('scr-levelup');
     planAuto();
@@ -26,25 +27,34 @@ G.RunUI = (() => {
    *          movimiento > movimiento nuevo > estadística
    * Estadísticas por orden: Potencia > Reflejos > Vigor > Coraza > Aprendizaje > Carrera >
    * Síntesis > Imán (con menos del 35 % de vida, antes la Baya Zidra).
-   * Se marca la carta y se coge a los 0,7 s: hay tiempo de pulsar otra o de apagarlo.
+   * Se marca la carta y se coge a los 1,2 s: hay tiempo de pulsar otra o de apagarlo.
+   * (2026-10-16, «una vez puesto no se puede quitar»: en «todo» la ventana se cerraba antes de
+   * llegar al botón. Ahora tocar el botón en esa ventana anula la elección automática de ésta, y
+   * el mismo botón está también en la pausa.)
    */
   const AUTO_MODES = ['off', 'stats', 'all'];
   const AUTO_NAME = { off: 'Elegir solo: no', stats: 'Elegir solo: sólo mejoras', all: 'Elegir solo: todo' };
   const STAT_ORDER = ['atk', 'cd', 'hp', 'def', 'xp', 'spd', 'rgn', 'mag', 'heal'];
-  let autoT = null;
+  let autoT = null, autoHeld = false;      // autoHeld: has tocado el botón en esta ventana (eliges tú)
+  const AUTO_DELAY = 1200;
   const autoMode = () => (G.DB.save && G.DB.save.autoPick) || 'off';
   function showAuto() {
-    const b = $('lvl-auto'), m = autoMode();
-    b.textContent = G.T(AUTO_NAME[m]);
-    b.classList.toggle('on', m !== 'off');
+    const m = autoMode();
+    for (const id of ['lvl-auto', 'pause-auto']) {
+      const b = $(id);
+      if (!b) continue;
+      b.textContent = G.T(AUTO_NAME[m]) + (id === 'lvl-auto' && autoT ? ' · ' + G.T('toca para parar') : '');
+      b.classList.toggle('on', m !== 'off');
+    }
   }
   function cycleAuto() {
     const s = G.DB.save;
     s.autoPick = AUTO_MODES[(AUTO_MODES.indexOf(autoMode()) + 1) % AUTO_MODES.length];
     G.DB.commit();
     G.Audio.sfx('select');
+    // En la ventana de nivel: esta vez eliges tú (el modo nuevo vale desde la próxima).
+    if (offers) { autoHeld = true; clearTimeout(autoT); autoT = null; $('cards').querySelectorAll('.card').forEach(el => el.classList.remove('auto')); }
     showAuto();
-    planAuto();
   }
   /** Qué carta cogería (índice) o -1 si toca elegir a ti. */
   function autoChoice(list) {
@@ -65,11 +75,13 @@ G.RunUI = (() => {
     clearTimeout(autoT); autoT = null;
     const cards = $('cards').querySelectorAll('.card');
     cards.forEach(el => el.classList.remove('auto'));
-    const i = autoChoice(offers);
-    if (i < 0) return;
-    cards[i] && cards[i].classList.add('auto');
-    const list = offers;
-    autoT = setTimeout(() => { autoT = null; if (offers === list) pick(i); }, 700);
+    const i = autoHeld ? -1 : autoChoice(offers);
+    if (i >= 0) {
+      cards[i] && cards[i].classList.add('auto');
+      const list = offers;
+      autoT = setTimeout(() => { autoT = null; if (offers === list) pick(i); }, AUTO_DELAY);
+    }
+    showAuto();
   }
 
   /**
@@ -344,6 +356,8 @@ G.RunUI = (() => {
 
   function showPause(coop = false) {
     renderPauseStats();
+    $('pause-auto').onclick = cycleAuto;
+    showAuto();
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
     $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';
