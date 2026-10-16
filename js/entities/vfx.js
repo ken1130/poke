@@ -252,8 +252,185 @@ G.VFX = (() => {
       ['.ll...ll.', 'lwll.llll', 'lllllllll', 'lllllllll', '.lllllll.', '..lllll..', '...lll...', '....l....']
         .forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') P.set(x, y, c === 'w' ? 'w' : 'l'); }));
       P.outline();
+    } },
+
+    // ---- 2026-10-16 · píxel para los ataques nuevos (antes eran rayas, círculos y rombos lisos) ----
+    // Letras fijas (no dependen de la paleta): ver COLS más abajo.
+    acidrop: { w: 5, h: 10, gen(P) {                          // gota de Lluvia Corrosiva (cae en vertical)
+      rows(P, ['..m..', '.mlm.', '.mwm.', '.dmd.', '..d..'], 0, 4);
+      P.outline();
+      P.set(2, 0, 'L'); P.set(2, 1, 'L'); P.set(2, 2, 'l');      // estela fina (sin contorno)
+    } },
+    splash: { w: 13, h: 7, frames: 3, gen(P, f) {             // salpicadura al tocar el suelo
+      if (f === 0) { rows(P, ['....l.l.l....', '...lmmmmml...'], 0, 4); P.set(3, 2, 'l'); P.set(9, 2, 'l'); }
+      else if (f === 1) { rows(P, ['..l.......l..', '..m.......m..', '.lm.m...m.ml.', '..mm.....mm..'], 0, 2); P.set(5, 0, 'l'); P.set(7, 0, 'l'); }
+      else { rows(P, ['.d.........d.', '...d.....d...'], 0, 4); P.set(1, 2, 'm'); P.set(11, 2, 'm'); P.set(4, 1, 'l'); P.set(8, 1, 'l'); }
+      P.outline();
+    } },
+    puddleL: puddle(40, 25),                                   // charcos (grande / pequeño)
+    puddleS: puddle(28, 18),
+    cloud: { w: 32, h: 15, frames: 2, gen(P, f) {             // nube tóxica encima de la lluvia
+      const lobes = [[7, 9, 4.4], [13, 6, 5.4], [20, 6.5, 5], [26, 9, 3.8], [17, 10, 4.6], [10, 10.5, 4]];
+      if (f) { lobes[1][1] += 0.7; lobes[3][1] -= 0.6; }
+      P.fill((x, y) => {
+        let best = null, sc = 0;
+        for (const L of lobes) { const v = 1 - Math.hypot(x - L[0], (y - L[1]) * 1.1) / L[2]; if (v > sc) { sc = v; best = L; } }
+        if (!best) return null;
+        if (y >= 12) return 'd';
+        const lit = -((x - best[0]) * 0.5 + (y - best[1]) * 0.9) / best[2];
+        return lit > 0.45 ? 'l' : lit < -0.35 ? ((x + y) & 1 ? 'd' : 'm') : 'm';
+      });
+      P.set(12, 2, 'w'); P.set(13, 2, 'w'); P.set(19, 3, 'w');
+      P.outline();
+    } },
+    spear: spear(25, 9, 15, 3),                                // lanza espectral (y la pequeña al partirse)
+    spearS: spear(17, 7, 10, 2),
+    fist: { w: 14, h: 12, dir: true, gen(P) {                 // guante del Puño Lee
+      rows(P, ['....dmmmmm....', '...dmllllmm...', '..dmlwlwllmm..', '.lldmmdmmdmm..', '.lwdmllllllm..',
+               '.lwdmmmmmmmd..', '.lldmmdddmmd..', '....ddmmmmd...', '.....dddddd...'], 0, 1);
+      P.outline();
+    } },
+    pow: { w: 19, h: 19, frames: 2, gen(P, f) {               // estallido de crítico
+      P.fill((x, y) => {
+        const dx = x - 9, dy = y - 9, a = Math.atan2(dy, dx) + (f ? Math.PI / 10 : 0);
+        const u = ((a / (Math.PI / 5)) % 1 + 1) % 1, R = 4.3 + 4.4 * Math.abs(1 - 2 * u) ** 1.6;
+        const d = Math.hypot(dx, dy);
+        return d > R ? null : d < R * 0.42 ? 'w' : d < R * 0.72 ? 'l' : 'm';
+      });
+      P.outline();
+    } },
+    tree: { w: 26, h: 41, cols: { A: '#3a220c', B: '#6b4220', C: '#9a6630', D: '#c08a4a' }, gen(P) {
+      // Tronco con corteza y raíces.
+      for (let y = 24; y <= 38; y++) {
+        const wide = y >= 35 ? y - 34 : 0;
+        for (let x = 10 - wide; x <= 15 + wide; x++) {
+          const u = x - 10;
+          let c = u <= 0 ? 'A' : u === 1 ? 'B' : u === 2 || u === 3 ? 'C' : u === 4 ? 'B' : 'A';
+          if (u === 2 && y % 4 === 0) c = 'D';
+          if (u === 3 && H(x, y, 7) < 0.25) c = 'B';
+          P.set(x, y, c);
+        }
+      }
+      // Copa: bolas de hojas con luz arriba a la izquierda y borde mordido.
+      const lobes = [[12.5, 13, 10], [6.5, 18, 6.5], [19, 18, 6.5], [12.5, 6.5, 6.8], [9, 9, 5.5], [17, 10, 5.5]];
+      P.fill((x, y) => {
+        let best = 9;
+        for (const [a, b, r] of lobes) best = Math.min(best, Math.hypot(x - a, y - b) / r);
+        if (best > 1) return null;
+        if (best > 0.84 && H(x, y, 3) < 0.35) return null;
+        const lit = -(x - 12.5) / 12 * 0.55 - (y - 12) / 12 * 0.85 + (H(x, y, 5) - 0.5) * 0.35;
+        return lit > 0.42 ? 'l' : lit > -0.25 ? 'm' : 'd';
+      });
+      for (let y = 1; y < 40; y++) for (let x = 0; x < 26; x++) {   // racimos: sombra bajo cada bola
+        const c = P.get(x, y);
+        if ((c === 'm' || c === 'l') && !P.get(x, y + 1) && y > 12) P.set(x, y, 'd');
+      }
+      for (const [x, y] of [[9, 4], [10, 4], [6, 13], [14, 8], [4, 15]]) if (P.get(x, y)) P.set(x, y, 'w');
+      P.outline();
+    } },
+    stake: { w: 9, h: 16, gen(P) {                            // púa de madera (Ground: contorno marrón)
+      for (let y = 1; y <= 14; y++) {
+        const half = y < 3 ? 0 : y < 7 ? 1 : 2;
+        for (let x = 4 - half; x <= 4 + half; x++) P.set(x, y, x < 4 ? 'l' : x === 4 ? 'm' : 'd');
+      }
+      P.set(4, 1, 'w'); P.set(4, 2, 'l'); P.set(3, 4, 'w');
+      P.set(4, 9, 'd'); P.set(3, 11, 'm'); P.set(5, 7, 'm');       // vetas
+      for (let x = 2; x <= 6; x++) P.set(x, 12, 'd');
+      P.outline();
+    } },
+    vine: { w: 13, h: 12, frames: 2, gen(P, f) {              // enredadera que sale del suelo
+      const s = f ? 1 : 0;
+      P.line(6, 11, 6, 6, 'm'); P.line(6, 6, 7 + s, 3, 'm');
+      P.arc(9 + s, 3, 2, Math.PI, Math.PI * 2.6, 'l');
+      rows(P, ['ll.', 'mld', '.d.'], 2, 6);
+      rows(P, ['.ll', 'dlm', '.d.'], 8 - s, 8);
+      P.set(6, 10, 'd'); P.set(5, 11, 'd'); P.set(7, 11, 'd');
+      P.outline();
+    } },
+    thorn: { w: 12, h: 12, cols: { A: '#24461a', B: '#3f7a2a', C: '#6aa83e' }, gen(P) {   // tramo de tallo (se repite)
+      for (let x = 0; x < 12; x++) { P.set(x, 5, 'C'); P.set(x, 6, 'B'); P.set(x, 7, 'A'); }
+      P.set(5, 5, 'B'); P.set(10, 7, 'B');
+      rows(P, ['....w', '...l.', '..ll.', '.mmm.'], 0, 1);    // púa hacia arriba
+      rows(P, ['.mmm.', '..mm.', '...l.', '....w'], 6, 8);    // y hacia abajo
+      P.outline();
+    } },
+    thornTip: { w: 12, h: 12, cols: { A: '#24461a', B: '#3f7a2a', C: '#6aa83e' }, gen(P) {
+      for (let x = 0; x < 6; x++) { P.set(x, 5, 'C'); P.set(x, 6, 'B'); P.set(x, 7, 'A'); }
+      P.set(6, 5, 'C'); P.set(7, 5, 'C'); P.set(6, 6, 'B'); P.set(7, 6, 'B'); P.set(8, 6, 'l'); P.set(9, 6, 'w'); P.set(10, 6, 'w');
+      rows(P, ['..w', '.l.', 'mm.'], 2, 2);
+      P.outline();
+    } },
+    blade: { w: 43, h: 11, cols: { a: '#8c9caf', b: '#cad6e2', c: '#56667a', e: '#232d38' }, gen(P) {  // cuchilla de jefe
+      for (let x = 1; x <= 41; x++) {
+        const d = Math.abs(x - 21) / 20, half = Math.round((1 - d * d) * 3.4);
+        for (let y = 5 - half; y <= 5 + half; y++) {
+          P.set(x, y, y === 5 - half ? 'l' : y === 5 + half ? 'm' : y < 5 ? 'b' : y === 5 ? 'w' : 'a');
+        }
+      }
+      P.fill((x, y) => { const r = Math.hypot(x - 21, y - 5); return r < 1.2 ? 'e' : r < 2.6 ? 'c' : null; });
+      P.set(20, 4, 'b');
+      P.outline();
+    } },
+    puff: { w: 13, h: 11, frames: 3, gen(P, f) {              // humo / polvo de la carga
+      const R = 2.6 + f * 0.9;
+      P.fill((x, y) => {
+        const a = Math.hypot(x - 6, y - 6) < R, b = Math.hypot(x - 6 + R * 0.8, y - 7) < R * 0.7, c = Math.hypot(x - 6 - R * 0.8, y - 7) < R * 0.7;
+        if (!a && !b && !c) return null;
+        if (f === 2 && H(x, y, 11) < 0.3) return null;
+        return y > 7 ? 'm' : y < 5 && x < 7 ? 'w' : 'l';
+      });
+      P.outline();
     } }
   };
+
+  /** Pone letras desde filas de texto ('.' = vacío) en (dx, dy). */
+  function rows(P, list, dx = 0, dy = 0) {
+    list.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') P.set(x + dx, y + dy, c); }));
+  }
+  /** Charco de veneno de w × h: borde oscuro, interior tramado, brillo arriba y burbujas que revientan. */
+  function puddle(w, h) {
+    return { w, h, frames: 3, gen(P, f) {
+      const cx = (w - 1) / 2, cy = (h - 1) / 2, rx = cx - 1.2, ry = cy - 1.2;
+      P.fill((x, y) => {
+        const a = Math.atan2(y - cy, x - cx), wob = 1 + Math.sin(a * 3 + w) * 0.07 + Math.sin(a * 5 + 1) * 0.05;
+        const e = Math.hypot((x - cx) / rx, (y - cy) / ry) / wob;
+        if (e > 1) return null;
+        if (e > 0.84) return 'd';
+        if (y < cy - ry * 0.2 && x < cx && e > 0.5 && e < 0.72) return 'l';
+        return e > 0.66 && (x + y) & 1 ? 'd' : 'm';
+      });
+      for (let k = 0; k < 3; k++) {
+        const bx = Math.round(cx + (H(k, w, 2) - 0.5) * rx * 1.1), by = Math.round(cy + (H(k, w, 3) - 0.3) * ry * 0.8);
+        const ph = (f + k) % 3;
+        if (ph === 0) P.set(bx, by, 'l');
+        else if (ph === 1) { rows(P, ['.l.', 'lLl', '.l.'], bx - 1, by - 1); P.set(bx - 1, by - 1, 'w'); }
+        else { P.set(bx - 1, by - 1, 'w'); P.set(bx + 1, by - 1, 'w'); P.set(bx, by + 1, 'l'); }
+      }
+      P.set(Math.round(cx - rx * 0.45), Math.round(cy - ry * 0.4), 'w');
+      P.outline();
+    } };
+  }
+  /** Lanza de w × h: llamas fantasma detrás, asta, guarda y punta brillante (mira a la derecha). */
+  function spear(w, h, headAt, half) {
+    const cy = (h - 1) / 2, tip = w - 2;
+    return { w, h, frames: 2, dir: true, gen(P, f) {
+      for (let x = 1; x < 6; x++) {                             // fuego fantasma
+        const th = (x - 1) * 0.45 + 0.4;
+        for (let y = 0; y < h; y++) {
+          const d = Math.abs(y - cy + Math.sin(x * 1.7 + f * 2) * 0.7);
+          if (d <= th && H(x, y + f * 5, 9) > 0.25) P.set(x, y, d < th * 0.5 ? 'l' : 'L');
+        }
+      }
+      for (let x = 4; x < headAt; x++) { P.set(x, cy - 1 < 1 ? cy : cy - 1, 'l'); P.set(x, cy, 'm'); if (half > 2) P.set(x, cy + 1, 'd'); }
+      for (let y = cy - half + 1; y <= cy + half - 1; y++) P.set(headAt, y, 'd');
+      for (let x = headAt + 1; x <= tip; x++) {
+        const hh = Math.round((tip - x) / (tip - headAt) * half);
+        for (let y = cy - hh; y <= cy + hh; y++) P.set(x, y, y < cy ? 'w' : y === cy ? 'l' : 'm');
+      }
+      P.set(tip, cy, 'w');
+      P.outline();
+    } };
+  }
 
   // ---------------- caché y dibujo ----------------
 
@@ -279,7 +456,7 @@ G.VFX = (() => {
     for (let y = 0; y < S.h; y++) for (let x = 0; x < S.w; x++) {
       const ch = P.g[y][x];
       if (!ch) continue;
-      c.fillStyle = ch === 'L' ? rgba(colors[3], 0.5) : colors[IDX[ch]];
+      c.fillStyle = ch === 'L' ? rgba(colors[3], 0.5) : IDX[ch] != null ? colors[IDX[ch]] : (S.cols && S.cols[ch]) || colors[2];
       c.fillRect(x, y, 1, 1);
     }
     cache.set(k, cv);
@@ -297,11 +474,46 @@ G.VFX = (() => {
     ctx.translate(Math.round(x), Math.round(y));
     let a = o.angle || 0;
     if (a) {
-      a = Math.round(a / (Math.PI / 8)) * (Math.PI / 8);          // 16 direcciones: menos parpadeo
+      const st = o.step || Math.PI / 8;
+      a = Math.round(a / st) * st;                                // 16 direcciones: menos parpadeo
       ctx.rotate(a);
     }
-    ctx.drawImage(cv, -S.w * k / 2, -S.h * k / 2, S.w * k, S.h * k);
+    // pivot: punto del sprite (en píxeles de arte) que va en (x, y); por defecto, el centro.
+    const ox = o.pivot ? o.pivot[0] * k : S.w * k / 2, oy = o.pivot ? o.pivot[1] * k : S.h * k / 2;
+    ctx.drawImage(cv, -ox, -oy, S.w * k, S.h * k);
     ctx.restore();
+  }
+
+  // ---------------- formas de suelo en la rejilla de píxeles ----------------
+  // Para avisos y zonas: en vez de elipses lisas y trazos discontinuos del canvas
+  // (que se ven vectoriales), filas de bloques de PX y puntos que "marchan".
+  const snap = v => Math.round(v / PX) * PX;
+
+  /** Elipse rellena con el fillStyle actual, hecha de filas de píxeles de arte. */
+  function oval(ctx, x, y, rx, ry) {
+    const R = Math.max(1, Math.round(ry / PX)), cx = snap(x), cy = snap(y), ax = rx / PX;
+    for (let j = -R; j < R; j++) {
+      const t = (j + 0.5) / R, hw = Math.round(ax * Math.sqrt(Math.max(0, 1 - t * t))) * PX;
+      if (hw > 0) ctx.fillRect(cx - hw, cy + j * PX, hw * 2, PX);
+    }
+  }
+  /** Contorno de elipse a puntos: `on` encendidos y `off` apagados, desplazados por `phase` (marcha). */
+  function dashOval(ctx, x, y, rx, ry, phase = 0, on = 3, off = 2, size = PX) {
+    const n = Math.max(16, Math.round(6.2832 * Math.sqrt((rx * rx + ry * ry) / 2) / PX));
+    const per = on + off;
+    for (let i = 0; i < n; i++) {
+      if (((i + phase) % per + per) % per >= on) continue;
+      const a = i / n * 6.2832;
+      ctx.fillRect(snap(x + Math.cos(a) * rx) - (size >> 1), snap(y + Math.sin(a) * ry) - (size >> 1), size, size);
+    }
+  }
+  /** Línea horizontal discontinua (en coordenadas locales, ya rotadas) de x0 a x1 a la altura y. */
+  function dashLine(ctx, x0, x1, y, phase = 0, on = 4, off = 3, size = PX) {
+    const per = (on + off) * PX, o = ((phase * PX) % per + per) % per;
+    for (let x = x0 - per + o; x < x1; x += per) {
+      const a = Math.max(x0, x), b = Math.min(x1, x + on * PX);
+      if (b > a) ctx.fillRect(Math.round(a), Math.round(y) - (size >> 1), Math.round(b - a), size);
+    }
   }
 
   function isDir(shape) { return !!(SHAPES[shape] && SHAPES[shape].dir); }
@@ -356,7 +568,7 @@ G.VFX = (() => {
     'aura-sphere':   { proj: 'ball', pal: 'aura', trail: 'spark' },
     'lick':          { melee: 'impact' },
     'shadow-ball':   { proj: 'shadow', trail: 'wisp' },
-    'ghost-spear':   { proj: 'needle', trail: 'wisp' },
+    'ghost-spear':   { proj: 'spear', trail: 'wisp' },
     'dragon-rage':   { beam: 'fire' },
     'dragon-dance':  { buff: 'arrow' },
     'fairy-wind':    { proj: 'star' },
@@ -415,5 +627,5 @@ G.VFX = (() => {
   }
   function forType(type) { return { proj: TYPE_SHAPE[type] || 'ball', pal: PAL[type] ? type : 'normal' }; }
 
-  return { PAL, SHAPES, draw, sprite, forMove, forType, isDir, spins, frames };
+  return { PAL, SHAPES, draw, sprite, forMove, forType, isDir, spins, frames, oval, dashOval, dashLine };
 })();

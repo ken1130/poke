@@ -732,7 +732,11 @@
         // Choques seguidos (en una esquina) cuentan como uno: así recorre la pantalla.
         if (c.t - (c.lastHit || -9) > 0.35) c.hits++;
         c.lastHit = c.t;
-        G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#ffd23f', 14, 200);
+        G.FX.burst(this.x, this.y - this.bodyH * 0.5, '#ffd23f', 10, 200);
+        G.FX.sp('pow', 'fire', this.x + Math.cos(c.dir) * this.r, this.y - this.bodyH * 0.5 + Math.sin(c.dir) * this.r * 0.6,
+                { life: 0.28, scale: 2, frameRate: 14 });
+        for (let k = 0; k < 6; k++) G.FX.sp('rock', 'ground', this.x + Math.cos(c.dir) * this.r, this.y - 6,
+                { vx: G.U.rand(-140, 140), vy: G.U.rand(-200, -80), grav: 520, spin: G.U.rand(-10, 10), life: 0.55 });
         G.FX.ring(this.x, this.y, this.r, this.r * 3, '#ff4a4a', 0.35, 4);
         if (G.Camera.sees(this.x, this.y, 60)) { G.Audio.sfx('break'); G.Camera.kick(0.35); }
         // Sentido de las agujas del reloj en pantalla (la y crece hacia abajo): +45°.
@@ -888,6 +892,42 @@
       }
     }
 
+    /**
+     * Carga de tren / embestida vista en píxeles (2026-10-16): líneas de velocidad detrás,
+     * polvo en los pies y vapor por arriba. Se calcula con lo que se mueve en pantalla,
+     * así que también lo ven los invitados (que no tienen ai.cast).
+     */
+    drawCharge(ctx) {
+      const now = performance.now() / 1000, last = this._cv;
+      this._cv = { x: this.x, y: this.y, t: now };
+      if (!last) return;
+      const dt = now - last.t;
+      if (dt <= 0 || dt > 0.1) return;
+      const dx = this.x - last.x, dy = this.y - last.y, v = Math.hypot(dx, dy) / dt;
+      this._cs = (this._cs || 0) * 0.7 + (v > 330 && v < 1400 && !this.jumpLift ? 1 : 0) * 0.3;
+      if (this._cs < 0.5) return;
+      const a = Math.atan2(dy, dx), ca = Math.cos(a), sa = Math.sin(a), PX = G.Sprites.PX;
+      if (now - (this._cdust || 0) > 0.05) {
+        this._cdust = now;
+        G.FX.sp('puff', 'ground', this.x - ca * this.r + G.U.rand(-6, 6), this.y + G.U.rand(-3, 3),
+                { vx: -ca * 50, vy: -12, life: 0.45, frameRate: 7 });
+        if (Math.random() < 0.35) G.FX.sp('puff', 'normal', this.x - ca * this.r * 0.4, this.y - this.bodyH - 2,
+                { vx: -ca * 40, vy: -55, life: 0.6, frameRate: 5 });
+      }
+      // Líneas de velocidad: tramos de bloques blancos detrás del cuerpo (giro a 16 direcciones).
+      ctx.save();
+      ctx.translate(Math.round(this.x), Math.round(this.y - this.bodyH * 0.5));
+      ctx.rotate(Math.round(a / (Math.PI / 8)) * (Math.PI / 8));
+      for (let i = 0; i < 5; i++) {
+        const off = (i - 2) * Math.max(6, this.bodyH * 0.22), h = G.U.hash(i, Math.floor(now * 20), 3);
+        const len = Math.round((16 + h * 22) / PX) * PX, x0 = -this.r - len - Math.round(h * 10 / PX) * PX;
+        ctx.globalAlpha = 0.75; ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x0, Math.round(off / PX) * PX, len, PX);
+        ctx.globalAlpha = 0.4; ctx.fillRect(x0 - len * 0.6, Math.round(off / PX) * PX, Math.round(len * 0.4 / PX) * PX, PX);
+      }
+      ctx.restore();
+    }
+
     draw(ctx) {
       const alpha = this.dead ? G.U.clamp(this.fade / 0.5, 0, 1) : 1;
       if (alpha <= 0) return;
@@ -911,6 +951,8 @@
         ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.6, this.r * 0.6, 0, 0, 6.2832); ctx.fill();
         ctx.restore();
       }
+
+      if (this.boss && !this.dead) this.drawCharge(ctx);
 
       ctx.save();
       ctx.globalAlpha = alpha;
