@@ -740,7 +740,23 @@ G.Player = class Player {
     }
     const alpha = this.invuln > 0 && !this.dead && !starOn ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
     const starFlash = starOn && Math.floor(now / 120) % 3 !== 2;
-    this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0 || starFlash, softFlash: true, alpha, color: starFlash ? `hsl(${hue},100%,70%)` : '#ffcb3d' });
+    const evoK = this.evoAnim ? G.Evo.progress(this) : null;
+    if (evoK != null) {
+      // Evolucionando (evo.js): silueta blanca que alterna entre las dos formas, cada vez más rápido.
+      const period = 0.42 - 0.36 * evoK, t = (now / 1000) % (period * 2);
+      const sh = G.Sprites.sheet(this.evoAnim.to, 'Idle', this.evoAnim.toAnim.shiny);
+      const an = t < period || !(sh && sh.ready) ? this.anim : this.evoAnim.toAnim;     // (la nueva, cuando ya ha cargado)
+      an.dir = this.anim.dir; an.loop('Idle'); if (an !== this.anim) an.update(1 / 60);
+      ctx.save();
+      ctx.globalAlpha = 0.25 + 0.35 * evoK; ctx.fillStyle = '#fff6c0';
+      const R = 18 + 20 * evoK;
+      for (let k = 0; k < 16; k++) {                 // aro de luz de píxeles a los pies
+        const b = k / 16 * 6.2832 + now / 300;
+        ctx.fillRect(Math.round(this.x + Math.cos(b) * R), Math.round(this.y + Math.sin(b) * R * 0.4), 3, 3);
+      }
+      ctx.restore();
+      an.draw(ctx, this.x, this.y, { flash: true });
+    } else this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0 || starFlash, softFlash: true, alpha, color: starFlash ? `hsl(${hue},100%,70%)` : '#ffcb3d' });
 
     // Arcos de buff alrededor de los pies.
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };

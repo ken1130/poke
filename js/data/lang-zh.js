@@ -2219,6 +2219,7 @@ G.I18n.add({
   'Un panda curioso que pregunta de todo.': '什麼都要問的好奇熊貓。',
   'Un pollito de píxeles que vino de un sticker.': '從貼圖來的像素地瓜球。',
   // 2026-10-16: rangos de objetos, equipo del compañero, tienda nueva, Tom y Lika
+  '¿Eh? ¡{x} está evolucionando!': '咦？{x}要進化了！',
   // 2026-10-16: movimientos exclusivos de los personajes originales
   'Puño Espuma': '泡泡拳',
   'EXCLUSIVO de Didi: un puñetazo al enemigo más cercano que estalla en espuma y moja a los de alrededor.': '迪迪專屬：一拳打向最近的敵人，炸出泡泡，波及周圍的敵人。',

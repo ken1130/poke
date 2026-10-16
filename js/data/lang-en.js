@@ -1219,6 +1219,7 @@ G.I18n.add({
   'Un panda curioso que pregunta de todo.': 'A curious panda that asks about everything.',
   'Un pollito de píxeles que vino de un sticker.': 'A pixel sweet potato ball that came from a sticker.',
   // 2026-10-16: rangos de objetos, equipo del compañero, tienda nueva, Tom y Lika
+  '¿Eh? ¡{x} está evolucionando!': 'Huh? {x} is evolving!',
   // 2026-10-16: movimientos exclusivos de los personajes originales
   'Puño Espuma': 'Foam Punch',
   'EXCLUSIVO de Didi: un puñetazo al enemigo más cercano que estalla en espuma y moja a los de alrededor.': 'Didi only: a punch at the nearest enemy that bursts into foam and splashes those around it.',
