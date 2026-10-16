@@ -95,13 +95,21 @@
 
     /**
      * Enemigo de élite (spawner.js, 2026-10-15): ×4 de vida y de experiencia, algo más de
-     * daño, un 25 % más grande y un afijo: fast (rápido), shield (escudo que se recarga),
-     * split (al caer se parte en 3) o blink (se teletransporta junto a ti).
-     * `copy`: copia de un invitado (sólo el aspecto; la vida ya viene multiplicada).
+     * daño, un 25 % más grande y uno o dos afijos (2026-10-16, Enemy.ELITE):
+     *   fast     más rápido               blink    se teletransporta junto a ti
+     *   shield   burbuja que absorbe el 40 % de su vida máxima (una vez); al romperse, estalla
+     *   split    al caer se parte en 2 más pequeños y con poca vida
+     *   explode  al caer deja un aviso rojo y a los 0,8 s explota (fuera del círculo, nada)
+     *   stealth  de lejos casi no se ve; de cerca (5 casillas) o al recibir un golpe, sí
+     *   rage     con menos del 30 % de vida se pone rojo: más rápido y pega más
+     * `affix`: uno, una lista o "a+b" (así viaja por la red). `copy`: copia de un invitado
+     * (sólo el aspecto; la vida ya viene multiplicada).
      */
     makeElite(affix, copy = false) {
-      if (!Enemy.ELITE[affix]) return;
-      this.elite = affix;
+      const list = (Array.isArray(affix) ? affix : String(affix).split('+')).filter(a => Enemy.ELITE[a]);
+      if (!list.length) return;
+      this.affixes = [...new Set(list)];
+      this.elite = this.affixes[0];
       this.scale = 1.25;
       this.anim = new G.Sprites.Animator(this.dex, this.scale, this.shiny);
       this.r = G.Sprites.bodyRadius(this.dex, this.scale);
@@ -109,20 +117,34 @@
       if (copy) return;
       this.maxHp *= 4; this.hp = this.maxHp;
       this.dmg *= 1.3; this.xp *= 4;
-      if (affix === 'fast') this.spd *= 1.5;
-      this.eliteT = affix === 'blink' ? 4 : affix === 'shield' ? 0.5 : 0;
+      if (this.has('fast')) this.spd *= 1.5;
+      if (this.has('blink')) this.eliteT = 4;
+      if (this.has('shield')) { this.shield = this.maxHp * Enemy.AFX.shield; this.shieldT = 0; this.eliteShield = true; }
+      // Ya estaba en la lista (casa de monstruos: se hace élite después de salir): a los invitados.
+      if (G.Coop.isHost && G.EnemyMgr.get(this.id) === this) G.Coop.broadcast(['ee', this.id, this.affixes.join('+'), Math.ceil(this.maxHp)]);
+    }
+    /** ¿Tiene este afijo de élite? */
+    has(a) { return !!(this.affixes && this.affixes.includes(a)); }
+    /** Más pequeño (los hijos del élite «Divisor»; los invitados lo reciben en 'ne'). */
+    makeSmall() {
+      this.small = true;
+      this.scale = 0.8;
+      this.anim = new G.Sprites.Animator(this.dex, this.scale, this.shiny);
+      this.r = G.Sprites.bodyRadius(this.dex, this.scale);
+      this.bodyH = G.Sprites.bodyHeight(this.dex, this.scale);
     }
 
     /** Lo de cada afijo de élite (sólo en quien manda sobre el enemigo). */
     eliteTick(dt, pl) {
       if (!this.elite || this.remote || this.dead) return;
-      if (this.elite === 'shield') {
-        if ((this.eliteT -= dt) <= 0) {
-          this.eliteT = 6;
-          this.shield = Math.max(this.shield, this.maxHp * 0.3); this.shieldT = 5;
-          G.FX.ring(this.x, this.y, this.r, this.r * 2.6, '#9fd8ff', 0.4, 3);
-        }
-      } else if (this.elite === 'blink' && pl && !pl.dead) {
+      // Escudo: la burbuja no caduca (shieldT 0); al romperse, estallido.
+      if (this.eliteShield && this.shield <= 0) { this.eliteShield = false; Enemy.shieldPop(this); }
+      if (this.has('rage') && !this.raging && this.hp < this.maxHp * Enemy.AFX.rageAt) {
+        this.raging = true;
+        this.spd *= Enemy.AFX.rageSpd; this.dmg *= Enemy.AFX.rageDmg;
+        Enemy.rageFx(this);
+      }
+      if (this.has('blink') && pl && !pl.dead) {
         if ((this.eliteT -= dt) <= 0) {
           this.eliteT = 4;
           for (let k = 0; k < 8; k++) {
@@ -186,6 +208,7 @@
     /** Lo que se VE al recibir un golpe. */
     showHurt(d, color, dirX = 0, dirY = 0, eff = null) {
       this.flash = 0.09;
+      if (this.has('stealth')) this.revealUntil = performance.now() + Enemy.AFX.reveal * 1000;     // sigiloso: al golpearlo se deja ver un momento
       // Slowpoke y familia se enteran tarde (funny.js): "…?" y el número 2,5 s después.
       if (this.dex === 79 || this.dex === 80 || this.dex === 199) {
         if (!this.slowT0 || performance.now() - this.slowT0 > 2500) { this.slowT0 = performance.now(); G.FX.dmgText(this.x, this.y - this.bodyH - 4, '…?', '#ffffff'); }
@@ -251,21 +274,29 @@
         // Élite: dos orbes grandes de experiencia y a veces un objeto; el "split" se parte en 3.
         for (let i = 0; i < 2; i++) G.Pickups.drop('xpBig', this.x + G.U.rand(-20, 20), this.y + G.U.rand(-14, 14), Math.ceil(this.xp / 4));
         if (G.Floors.eliteItem || Math.random() < Math.min(0.9, 0.4 * (1 + 0.2 * G.Floors.floor))) G.Pickups.drop('item', this.x + 18, this.y - 8, G.Items.roll());
-        if (this.elite === 'split') {
+        if (this.has('split')) {
+          // (2026-10-16: 2 más pequeños y con la mitad de la vida de uno normal; antes 3 casi enteros)
           const base = this.maxHp / 4, def = this.def, x0 = this.x, y0 = this.y;
-          const sc = { hp: base * 0.75 / Math.max(1, def.hp), dmg: this.dmg / 1.3 / Math.max(0.01, def.dmg), spd: 1 };
+          const sc = { hp: base * Enemy.AFX.splitHp / Math.max(1, def.hp), dmg: this.dmg / 1.3 / Math.max(0.01, def.dmg), spd: 1 };
           // Al fotograma siguiente (no se toca la lista de enemigos mientras se recorre).
           setTimeout(() => {
             if (!G.Game.player) return;
-            for (let i = 0; i < 3; i++) {
-              const a = i * 2.094 + Math.random() * 0.5, x = x0 + Math.cos(a) * 30, y = y0 + Math.sin(a) * 24;
+            for (let i = 0; i < 2; i++) {
+              const a = i * Math.PI + Math.random() * 0.8, x = x0 + Math.cos(a) * 30, y = y0 + Math.sin(a) * 24;
               if (!G.World.isFree(x, y, 10)) continue;
               const e = new Enemy(def, x, y, sc);
+              e.makeSmall();
               e.xp = Math.max(1, Math.round(e.xp * 0.5));
               G.EnemyMgr.add(e);
-              G.FX.burst(x, y - 10, '#5fe08a', 6, 100);
+              G.FX.burst(x, y - 10, '#5fe08a', 8, 110);
+              G.FX.ring(x, y, 3, 26, '#5fe08a', 0.3, 2);
             }
           }, 0);
+        }
+        if (this.has('explode')) {
+          // Aviso rojo y explosión (hazards.js: cada ordenador mira a SU Pokémon; el anfitrión lo reparte).
+          const r = Enemy.AFX.boomR + this.r;
+          G.Hazards.add({ kind: 'zone', x: this.x, y: this.y, r, delay: Enemy.AFX.boomDelay, dmg: this.dmg * Enemy.AFX.boomDmg, type: 'fire', color: '#ff4a3d' });
         }
       }
       if (this.boss) {
@@ -314,6 +345,11 @@
       }
       const n = this.net;
       if (!n) return;
+      // Élite «Escudo» del anfitrión: al romperse su burbuja, el estallido también aquí.
+      const sh = !!(n.st & 4);
+      if (this._sh && !sh && this.has('shield')) Enemy.shieldPop(this);
+      if (!this._rg && n.st & 8) { this._rg = true; Enemy.rageFx(this); }
+      this._sh = sh;
       const ox = this.x, oy = this.y;
       n.age += dt;
       // Con posiciones guardadas (2026-10-16): interpolación ~0,1 s en el pasado (coop.js).
@@ -939,21 +975,26 @@
     }
 
     draw(ctx) {
-      const alpha = this.dead ? G.U.clamp(this.fade / 0.5, 0, 1) : 1;
+      let alpha = this.dead ? G.U.clamp(this.fade / 0.5, 0, 1) : 1;
       if (alpha <= 0) return;
+      // Sigiloso (2026-10-16): de lejos, casi transparente y parpadeando.
+      const sneak = this.has('stealth') && !this.dead ? Enemy.sneakAlpha(this) : 1;
+      alpha *= sneak;
+      const raging = !this.dead && (this.raging || !!(this.net && this.net.st & 8));
 
       const gold = this.golden || this.behavior === 'thief' || (this.remote && !this.boss && G.Events.golden);
       // Élite: aro de su color latiendo bajo los pies.
       if (this.elite && !this.dead) {
-        const E = Enemy.ELITE[this.elite];
+        const E = raging ? Enemy.ELITE.rage : Enemy.ELITE[this.elite];
         ctx.save();
-        ctx.globalAlpha = 0.3 + Math.sin(this.bob * 0.8) * 0.12;
+        ctx.globalAlpha = (0.3 + Math.sin(this.bob * (raging ? 2.4 : 0.8)) * 0.12) * sneak;
         ctx.fillStyle = E.color;
         ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.9, this.r * 0.75, 0, 0, 6.2832); ctx.fill();
-        ctx.globalAlpha = 0.85; ctx.strokeStyle = E.color; ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.85 * sneak; ctx.strokeStyle = E.color; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 2.2, this.r * 0.9, 0, 0, 6.2832); ctx.stroke();
         ctx.restore();
       }
+      if (raging && sneak > 0.5) Enemy.rageSteam(this);
       if ((this.boss || this.shiny || gold) && !this.dead) {
         ctx.save();
         ctx.globalAlpha = (gold && !this.boss ? 0.32 : 0.22) + Math.sin(this.bob * 0.5) * 0.06;
@@ -970,7 +1011,10 @@
       // Los que flotan ya van en el aire en su sprite: sólo se mecen un poco.
       // (Y los que saltan, en arco.)
       const lift = (this.flying && !this.boss ? 1 + Math.sin(this.bob) * 1.5 : 0) + (this.jumpLift || 0);
+      // Furia: el sprite enrojecido (filtro del canvas; donde no lo hay, sólo el aura y el vapor).
+      if (raging && Enemy.FILTER) ctx.filter = 'sepia(1) saturate(8) hue-rotate(-55deg) brightness(0.95)';
       this.anim.draw(ctx, this.x, this.y - lift, { flash: this.flash > 0, alpha });
+      if (raging && Enemy.FILTER) ctx.filter = 'none';
       ctx.restore();
 
       if (this.dead) return;
@@ -994,17 +1038,22 @@
         ctx.restore();
       }
 
-      // Élite: "Élite · afijo" encima, en su color.
+      // Élite: "Élite · afijo · afijo" encima, cada afijo en su color (2026-10-16: pueden ser dos).
       if (this.elite) {
-        const E = Enemy.ELITE[this.elite];
-        const txt = G.T('Élite') + ' · ' + G.T(E.name);
+        const parts = [[G.T('Élite'), '#ffe9c8']];
+        for (const a of this.affixes || [this.elite]) parts.push([G.T(Enemy.ELITE[a].name), a === 'rage' && raging ? '#ff2a2a' : Enemy.ELITE[a].color]);
         ctx.save();
         ctx.font = '800 10px Pixelify,"Segoe UI",system-ui,sans-serif';
-        ctx.textAlign = 'center';
+        ctx.globalAlpha = Math.max(0.35, sneak);
         const sup = this.behavior === 'healer' || this.behavior === 'shielder' || this.behavior === 'summoner';
         const ly = this.y - this.bodyH - (this.hp < this.maxHp ? 16 : 8) - (sup ? 14 : 0);
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(txt, this.x, ly);
-        ctx.fillStyle = E.color; ctx.fillText(txt, this.x, ly);
+        const sep = ' · ', ws = parts.map(([t]) => ctx.measureText(t).width), wsep = ctx.measureText(sep).width;
+        let x = this.x - (ws.reduce((a, b) => a + b, 0) + wsep * (parts.length - 1)) / 2;
+        ctx.textAlign = 'left'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+        parts.forEach(([t, col], i) => {
+          if (i) { ctx.strokeText(sep, x, ly); ctx.fillStyle = '#c9d6ff'; ctx.fillText(sep, x, ly); x += wsep; }
+          ctx.strokeText(t, x, ly); ctx.fillStyle = col; ctx.fillText(t, x, ly); x += ws[i];
+        });
         ctx.restore();
       }
 
@@ -1012,7 +1061,7 @@
       const SUP = { healer: 'heart', shielder: 'shield', summoner: 'friends' };
       if (SUP[this.behavior]) G.Icons.draw(ctx, SUP[this.behavior], Math.round(this.x - 6), Math.round(this.y - this.bodyH - (this.hp < this.maxHp ? 26 : 18)), 12);
 
-      if (this.boss || this.hp < this.maxHp) {
+      if ((this.boss || this.hp < this.maxHp) && sneak > 0.5) {
         const w = this.boss ? 90 : Math.max(22, this.r * 2);
         const y = this.y - this.bodyH - 10;
         ctx.fillStyle = 'rgba(0,0,0,.6)';
@@ -1025,12 +1074,65 @@
 
   // ---------------- gestor ----------------
 
-  /** Afijos de élite: nombre (en español, se traduce) y color. */
+  /** Afijos de élite: nombre (en español, se traduce) y color. (2026-10-16: +explode, stealth, rage) */
   Enemy.ELITE = {
-    fast:   { name: 'Veloz', color: '#7fe0ff' },
-    shield: { name: 'Escudo', color: '#9fd8ff' },
-    split:  { name: 'Divisor', color: '#5fe08a' },
-    blink:  { name: 'Teletransporte', color: '#c47bff' }
+    fast:    { name: 'Veloz', color: '#7fe0ff' },
+    shield:  { name: 'Escudo', color: '#9fd8ff' },
+    split:   { name: 'Divisor', color: '#5fe08a' },
+    blink:   { name: 'Teletransporte', color: '#c47bff' },
+    explode: { name: 'Explosivo', color: '#ff7a3d' },
+    stealth: { name: 'Sigiloso', color: '#b8c4d8' },
+    rage:    { name: 'Furioso', color: '#ff5f6d' }
+  };
+  /*
+   * Números de los afijos (2026-10-16, ver docs/dev/MOD-NOTES.md):
+   *   shield   burbuja = 40 % de la vida máxima, no se recarga
+   *   split    2 hijos, ×0,8 de tamaño, cada uno con la mitad de la vida de uno normal
+   *   explode  círculo de 70 px + su radio, explota a los 0,8 s: ×1,6 su daño de contacto
+   *   stealth  se ve a menos de 160 px (5 casillas); al golpearlo, 1,5 s a la vista
+   *   rage     por debajo del 30 %: ×1,4 velocidad y ×1,25 daño
+   * Segundo afijo: 4 % + 7 % por piso + algo con el tiempo (desde el min 10), como mucho 40 %.
+   */
+  Enemy.AFX = { shield: 0.4, splitHp: 0.5, boomR: 70, boomDelay: 0.8, boomDmg: 1.6, seeR: 160, reveal: 1.5,
+                rageAt: 0.3, rageSpd: 1.4, rageDmg: 1.25 };
+  Enemy.FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d'); return !!c && 'filter' in c; } catch (e) { return false; } })();
+  /** Afijos para un élite nuevo: uno siempre; a veces un segundo distinto. */
+  Enemy.rollAffixes = t => {
+    const keys = Object.keys(Enemy.ELITE), a = G.U.pick(keys);
+    const p2 = Math.min(0.4, 0.04 + 0.07 * ((G.Floors && G.Floors.floor) || 0) + Math.max(0, t - 600) / 3000);
+    return Math.random() < p2 ? [a, G.U.pick(keys.filter(k => k !== a))] : [a];
+  };
+  /** Transparencia de un «Sigiloso» para TU pantalla (cada uno lo ve según lo cerca que esté). */
+  Enemy.sneakAlpha = e => {
+    const pl = G.Game.player;
+    if ((e.revealUntil || 0) > performance.now()) return 1;
+    if (!pl || G.U.dist2(e.x, e.y, pl.x, pl.y) < Enemy.AFX.seeR * Enemy.AFX.seeR) return 1;
+    // Parpadeo a escalones (como el pixel art): casi invisible y, a ratos, un poco más.
+    const k = Math.floor(performance.now() / 120 + e.id) % 7;
+    return k === 0 ? 0.42 : k === 3 ? 0.26 : 0.13;
+  };
+  /** Burbuja rota: esquirlas azules y un aro. */
+  Enemy.shieldPop = e => {
+    if (!G.Camera.sees(e.x, e.y, 60)) return;
+    const cy = e.y - e.bodyH * 0.45;
+    G.FX.ring(e.x, cy, e.r, e.r * 3, '#9fd8ff', 0.4, 4);
+    G.FX.burst(e.x, cy, '#cdeeff', 18, 220);
+    G.FX.burst(e.x, cy, '#5fb4ff', 10, 150);
+    G.FX.dmgText(e.x, e.y - e.bodyH - 18, G.T('¡Escudo roto!'), '#9fd8ff', true);
+    G.Audio.sfx('break');
+  };
+  /** Entra en furia: estallido rojo y aviso. */
+  Enemy.rageFx = e => {
+    if (!G.Camera.sees(e.x, e.y, 60)) return;
+    G.FX.ring(e.x, e.y, e.r, e.r * 3.4, '#ff4a4a', 0.45, 5);
+    G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#ff6b4d', 22, 200);
+    G.FX.dmgText(e.x, e.y - e.bodyH - 18, G.T('¡Furia!'), '#ff4a4a', true);
+  };
+  /** Vapor rojo que sube de un furioso (píxeles sueltos). */
+  Enemy.rageSteam = e => {
+    if (Math.random() > 0.45 || !G.Camera.sees(e.x, e.y, 20)) return;
+    const x = e.x + G.U.rand(-e.r, e.r), y = e.y - G.U.rand(e.bodyH * 0.4, e.bodyH);
+    G.FX.px(x, y, Math.random() < 0.5 ? '#ff4a4a' : '#ffb0a0', { vy: -46, life: 0.45 });
   };
 
   G.Enemy = Enemy;
@@ -1061,6 +1163,7 @@
       e.remote = true;
       if (o.shiny) e.makeShiny();
       if (o.elite) e.makeElite(o.elite, true);
+      if (o.small) e.makeSmall();
       e.maxHp = o.hp; e.hp = o.hp;
       e.net = { x: o.x, y: o.y, vx: 0, vy: 0, age: 0, dir: 0, anim: 0, st: 0 };
       list.push(e);
