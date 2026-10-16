@@ -18,10 +18,13 @@
 G.Coop = (() => {
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
   const COLORS = ['#ffcb3d', '#5fc8ff', '#7ee07a', '#ff8ad8'];
-  // Mensajes por segundo: 20 directo, 4 por el TURN y 6 por el relé de la Realtime
+  // Mensajes por segundo: 20 directo, 12 por el TURN y 6 por el relé de la Realtime
   // Database (en esta versión, plan gratis sin facturación: si se pasa del cupo, se para;
   // no cobra). Entre mensaje y mensaje, los demás se predicen (Player.netUpdate).
-  const RATE_FAST = 1 / 20, RATE_TURN = 1 / 4, RATE_SLOW = 1 / 6;
+  // (2026-10-16: TURN de 4 a 12. Con 4 el que iba por el TURN veía todo a saltos —"uno iba
+  // un poco a tirones" en una partida de tres—. El TURN tiene 1.000 GB gratis al mes y el
+  // Worker deja de dar claves a los 900 GB, así que nunca cobra; ~1-2 KB por mensaje.)
+  const RATE_FAST = 1 / 20, RATE_TURN = 1 / 12, RATE_SLOW = 1 / 6;
   const rateFor = u => (G.Net.slow(u) ? RATE_SLOW : G.Net.viaTurn(u) ? RATE_TURN : RATE_FAST);
   const NEAR = 950;                     // radio de enemigos que se mandan a cada uno
 
