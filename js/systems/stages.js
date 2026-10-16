@@ -428,7 +428,7 @@ G.Stages = (() => {
               ${R.need ? `<small style="color:${total >= R.need ? 'var(--muted)' : '#ff8a96'}">★${R.need}</small>` : ''}</div>
             <div style="display:flex;gap:4px;margin-top:4px">${LIST.filter(x => x.r === ri).map(chip).join('')}</div></div>`).join('')}
         </div>
-        <div class="panel" style="padding:10px 12px;margin-top:10px;position:sticky;bottom:-18px;z-index:2;background:#1c3570;box-shadow:0 -6px 16px #0007">
+        <div class="panel" style="padding:10px 12px;margin-top:10px;position:sticky;bottom:-18px;z-index:2;background:var(--box2);box-shadow:0 -6px 16px #0007">
           <div class="row between" style="gap:10px;align-items:flex-start">
             <div class="grow">
               <b class="gold">${title(s)}</b> <small style="color:var(--muted)">${G.T(G.Tiles.BIOMES[s.scene].name)}</small>
