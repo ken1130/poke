@@ -281,10 +281,10 @@ G.Game = (() => {
       // Las cartas se ponen en cola; mientras alguien elige, la partida se para para todos
       // (2026-10-14: antes seguía y te rodeaban mientras elegías).
       coopCards.push(level);
-      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear'].some(G.UI.isOpen)) nextCoopCard();
+      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear', 'scr-rest'].some(G.UI.isOpen)) nextCoopCard();
     },
     /** ¿Estás eligiendo algo? (lo manda coop.js en tu estado; si alguien elige, todo parado) */
-    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear'].some(G.UI.isOpen) || coopCards.length > 0; },
+    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear', 'scr-rest'].some(G.UI.isOpen) || coopCards.length > 0; },
     /** Invitado: has cogido un disco de movimientos / una poción (lo decide el anfitrión). */
     sbox() { if (pl) { pl.sboxes = (pl.sboxes || 0) + 1; offerBox(); } },
     fbox() { if (pl) offerBox(); },
@@ -364,7 +364,7 @@ G.Game = (() => {
   }
   let choiceT = 0;          // grupo: segundos que llevas eligiendo (a los 25, elige solo)
   let orphanT = 0;          // segundos eligiendo sin ninguna ventana de elección abierta (frame)
-  const CHOICE_SCR = ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick', 'scr-fclear'];
+  const CHOICE_SCR = ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick', 'scr-fclear', 'scr-rest'];
   /**
    * Elecciones en cola (2026-10-15): si ya hay una ventana de elección abierta, la nueva espera
    * a que se cierre (frame). Antes la segunda escondía la primera: en la casa de monstruos (mucha
@@ -733,6 +733,10 @@ G.Game = (() => {
       for (let i = 0; i < 2; i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.Floors.pickClear(i);
       return;
     }
+    if (G.UI.isOpen('scr-rest')) {
+      for (let i = 0; i < 3; i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.Rest.pick(i);
+      return;
+    }
     if (G.UI.isOpen('scr-sbox')) {
       if (G.Input.tap('keyr')) document.getElementById('sbox-reroll').click();
       else if (G.Input.tap('enter') || G.Input.tap('space') || G.Input.tap('digit1')) document.getElementById('sbox-ok').click();
@@ -849,6 +853,7 @@ G.Game = (() => {
         else if (G.UI.isOpen('scr-relic')) G.Relics.pick(0);
         else if (G.UI.isOpen('scr-boon')) G.Boons.pick(0);
         else if (G.UI.isOpen('scr-fclear')) G.Floors.pickClear(1);     // mazmorra superada: seguir (no acabar la run de todos)
+        else if (G.UI.isOpen('scr-rest')) G.Rest.pick(0);              // descanso: la hoguera
         else if (G.UI.isOpen('scr-roul')) G.Roulette.forceClose();
       }
     } else choiceT = 0;
@@ -886,7 +891,7 @@ G.Game = (() => {
       G.FX.ring(pl.x, pl.y, 10, G.Camera.outerRadius(), '#ffffff', 0.7, 6);
     }
 
-    const picking = coop && (state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear'].some(G.UI.isOpen));
+    const picking = coop && (state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear', 'scr-rest'].some(G.UI.isOpen));
     pl.frozen = coop && (G.UI.isOpen('scr-pause') || G.UI.isOpen('scr-item') || picking);
     pl.picking = picking;   // eligiendo cartas: nada te hace daño (Player.hurt)
     pl.update(dt);
