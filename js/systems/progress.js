@@ -191,6 +191,8 @@ G.Progress = (() => {
       grant(a.reward);
       notify('¡Logro: ' + a.name + '!', a.title ? 'Nuevo título: ' + a.title : '', a);
     }
+    // Aspecto (2026-10-16): auras y colores de nombre que dan los logros.
+    if (G.Cosmetic) G.Cosmetic.check((t, sub) => notify(t, sub));
   }
 
   /** Títulos que tienes (de los logros conseguidos). */

@@ -177,6 +177,8 @@
       sel.onchange = () => { P.title = sel.value; save(); };
       box.appendChild(sel);
       if (!titles.length) box.insertAdjacentHTML('beforeend', '<p class="note">Consigue logros para desbloquear títulos.</p>');
+      // Aspecto (2026-10-16): aura y color del nombre (cosmetic.js).
+      G.Cosmetic.renderPicker(box, () => { save(); render(); });
 
       const prev = document.createElement('button');
       prev.className = 'btn gold'; prev.style.marginTop = '16px';

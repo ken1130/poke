@@ -61,7 +61,7 @@ G.HUD = (() => {
     // ---------- vida + nivel ----------
     const px = 16, py = 20;
     ctx.font = F(800, 13);
-    ctx.fillStyle = '#eaf2ff';
+    ctx.fillStyle = G.Cosmetic.nameColor(pl) || '#eaf2ff';      // (color de nombre de los logros, cosmetic.js)
     ctx.textAlign = 'left';
     ctx.fillText(pl.mon.name, px, py + 10);
 

@@ -642,6 +642,8 @@ G.Player = class Player {
       ctx.restore();
     }
     G.Sprites.drawShadow(ctx, this.dex, this.x, this.y);
+    // Aspecto de los logros (cosmetic.js, 2026-10-16): el aura, bajo el Pokémon.
+    G.Cosmetic.drawFor(ctx, this);
     // Poder de altar: aro de su color latiendo bajo los pies.
     if (this.power && !this.dead) {
       ctx.save();
@@ -776,7 +778,7 @@ G.Player = class Player {
       const y = this.y - this.bodyH - 8;
       ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.75)';
       ctx.strokeText(this.tag, this.x, y);
-      ctx.fillStyle = this.dead ? '#ff8a96' : this.tagColor || '#fff';
+      ctx.fillStyle = this.dead ? '#ff8a96' : G.Cosmetic.nameColor(this) || this.tagColor || '#fff';   // (color de nombre de los logros)
       ctx.fillText(this.tag, this.x, y);
       // "Quédate a su lado" sólo si se le puede levantar (en PK, sólo los de tu equipo).
       const me = G.Coop.local;
