@@ -138,8 +138,19 @@ G.Companion = (() => {
     G.FX.dmgText(pl.x, pl.y - pl.bodyH - 18, G.I18n.f('Compañero Nv. {x}', lv), '#9fe0b0');
   }
 
+  /*
+   * Mascota elegida (2026-10-16): en el Pokédex se puede marcar un Pokémon que tengas (o un
+   * personaje original) con «Elegir de mascota» (save.petPick). Si la hay, sale ésa del huevo;
+   * si no, una al azar como siempre.
+   */
+  function pickedPet() {
+    const s = G.DB.save, d = s && s.petPick;
+    if (!d || !G.DEX_BY[d]) return 0;
+    if (!(G.CUSTOM_BY && G.CUSTOM_BY[d]) && !(s.owned && s.owned[d])) return 0;      // ya no la tienes
+    return G.Sprites.meta ? (G.Sprites.meta(d) ? d : 0) : d;
+  }
   function hatch(pl) {
-    const dex = rollHatch();
+    const dex = (pl === G.Game.player && pickedPet()) || rollHatch();
     const shiny = G.Sprites.hasShiny(dex) && Math.random() < 1 / 20;
     pl.egg = null;
     pl.buddy = { dex, shiny, lvl: 1, stage: 0, k0: (pl.kills || 0) - (pl.petLv || 0) * PER_LEVEL };   // + los caramelos comprados antes
@@ -153,18 +164,109 @@ G.Companion = (() => {
     G.Audio.sfx(shiny ? 'shiny' : 'legend');
   }
 
+  /*
+   * Segunda habilidad del compañero (2026-10-16): desde el Nv. 15, cada SKILL_CD s, un golpe
+   * en área según su tipo principal (6 grupos). Desde el Nv. 25, además, +25 % de radio de
+   * recogida para su entrenador. El daño sale de la misma base que sus disparos (petBase):
+   * ×mul. Sólo hace daño en el ordenador de su dueño; los demás ven el efecto (myState [21]
+   * lleva un contador que sube con cada uso).
+   */
+  const SKILL_LV = 15, MAG_LV = 25, SKILL_CD = 6, MAG_K = 1.25;
+  const SKILLS = {
+    blaze: { types: ['fire', 'dragon'], name: 'Estallido Ígneo', icon: 'type:fire', color: '#ff7b3d', r: 120, mul: 3,
+             desc: 'Cada 6 s, una explosión de fuego alrededor del compañero (×3 de su daño).' },
+    wave:  { types: ['water', 'ice'], name: 'Ola Rompiente', icon: 'type:water', color: '#4fb4ff', r: 140, mul: 2, knock: 300,
+             desc: 'Cada 6 s, una ola que daña (×2) y aparta a los enemigos.' },
+    heal:  { types: ['grass', 'bug'], name: 'Polen Curativo', icon: 'type:grass', color: '#5fe08a', r: 90, mul: 1, heal: 0.05,
+             desc: 'Cada 6 s, te cura un 5 % de la vida máxima y daña un poco (×1) a su alrededor.' },
+    chain: { types: ['electric', 'steel'], name: 'Cadena Voltio', icon: 'type:electric', color: '#ffd23f', r: 260, mul: 2.5, n: 3,
+             desc: 'Cada 6 s, un rayo salta entre los 3 enemigos más cercanos (×2,5 a cada uno).' },
+    slow:  { types: ['psychic', 'fairy', 'ghost', 'dark', 'poison'], name: 'Niebla Pesada', icon: 'type:psychic', color: '#c47bff', r: 150, mul: 1, slowK: 0.5, slowT: 3,
+             desc: 'Cada 6 s, una niebla que frena a la mitad a los enemigos 3 s y los daña (×1).' },
+    shock: { types: ['normal', 'fighting', 'rock', 'ground', 'flying'], name: 'Onda de Choque', icon: 'type:fighting', color: '#e8e8f0', r: 130, mul: 2.2, knock: 180,
+             desc: 'Cada 6 s, una onda de choque que daña (×2,2) y empuja.' }
+  };
+  function skillOf(dex) {
+    const mon = G.DEX_BY[dex], t = (mon && mon.types[0]) || 'normal';
+    for (const k in SKILLS) if (SKILLS[k].types.includes(t)) return k;
+    return 'shock';
+  }
+  /** Para la tienda (sección Mascotas) y el HUD: qué tiene tu compañero. */
+  function skillInfo(pl) {
+    const b = pl && pl.buddy;
+    if (!b) return null;
+    const k = skillOf(b.dex), sk = SKILLS[k], lv = b.lvl || 1;
+    return { id: k, name: sk.name, desc: sk.desc, icon: sk.icon, color: sk.color, unlocked: lv >= SKILL_LV, unlockLv: SKILL_LV,
+             magnet: lv >= MAG_LV, magnetLv: MAG_LV, magnetDesc: 'Nv. 25: +25 % de radio de recogida para ti.' };
+  }
+  /** Daño base de un disparo del compañero (también lo usa su habilidad). */
+  function petBase(pl) {
+    return 12 * pl.atk * (1 + 0.06 * Math.max(0, pl.level - 1)) * (1 + 0.08 * ((pl.buddy.lvl || 1) - 1)) * (1 + 0.25 * (pl.buddy.stage || 0))
+      * (gear(pl, 'collar') ? 1.35 : 1) * (gear(pl, 'giant') ? 1.15 : 1);
+  }
+  /** El efecto (todos los ordenadores); con `pl` (el dueño), también el daño. */
+  function skillFx(k, c, pl, targets) {
+    const sk = SKILLS[k], x = c.x, y = c.y;
+    G.FX.ring(x, y, 8, sk.r, sk.color, 0.45, 4);
+    if (k === 'blaze') { G.FX.burst(x, y - 10, '#ff7b3d', 26, 260); G.FX.burst(x, y - 10, '#ffd23f', 14, 180); }
+    else if (k === 'wave') { G.FX.ring(x, y, 20, sk.r * 0.8, '#b3defa', 0.6, 3); G.FX.burst(x, y, '#4fb4ff', 18, 240); }
+    else if (k === 'heal') { const o = pl || c.owner; if (o) { G.FX.burst(o.x, o.y - o.bodyH * 0.5, '#5fe08a', 18, 120); G.FX.ring(o.x, o.y, 6, 50, '#c8ffd8', 0.5, 3); } }
+    else if (k === 'slow') { G.FX.ring(x, y, sk.r * 0.6, sk.r, '#e8c8ff', 0.9, 2); G.FX.burst(x, y, '#c47bff', 14, 140); }
+    else if (k === 'shock') { G.FX.ring(x, y, 4, sk.r * 0.7, '#ffffff', 0.3, 5); G.FX.burst(x, y, '#e8e8f0', 16, 220); }
+    if (k === 'chain' && targets) {
+      let px = c.x, py = c.y - 12;
+      for (const e of targets) { G.FX.arc(px, py, e.x, e.y - e.bodyH * 0.5, { life: 0.22 }); px = e.x; py = e.y - e.bodyH * 0.5; }
+    }
+  }
+  function useSkill(c, pl) {
+    const k = skillOf(c.dex), sk = SKILLS[k], dmg = petBase(pl) * sk.mul;
+    let targets = null;
+    if (k === 'chain') {
+      targets = G.EnemyMgr.queryCircle(c.x, c.y, sk.r).filter(e => !e.dead)
+        .sort((a, b) => G.U.dist2(a.x, a.y, c.x, c.y) - G.U.dist2(b.x, b.y, c.x, c.y)).slice(0, sk.n);
+      if (!targets.length) return false;
+    } else {
+      targets = G.EnemyMgr.queryCircle(c.x, c.y, sk.r).filter(e => !e.dead);
+      if (!targets.length && k !== 'heal') return false;       // sin nadie cerca, espera
+    }
+    for (const e of targets) {
+      const before = e.hp;
+      e.hurt(dmg, sk.color, e.x - c.x, e.y - c.y, sk.knock || 0);
+      if (sk.slowK && !e.dead) e.applySlow(sk.slowK, sk.slowT);
+      pl.dmgDealt = (pl.dmgDealt || 0) + Math.max(0, Math.min(before, dmg));
+    }
+    if (sk.heal) pl.heal(pl.maxHp * sk.heal);
+    skillFx(k, c, pl, k === 'chain' ? targets : null);
+    pl.buddy.sk = (pl.buddy.sk || 0) + 1;                      // (myState [21]: los demás lo ven)
+    return true;
+  }
+  /** Nv. 25: radio de recogida (una vez por compañero). */
+  function magnetPerk(pl) {
+    const b = pl.buddy;
+    if (!b || b.magOn || (b.lvl || 1) < MAG_LV) return;
+    b.magOn = true;
+    pl.magnet *= MAG_K;
+    G.FX.dmgText(pl.x, pl.y - pl.bodyH - 20, G.T('Compañero: +25 % de recogida'), '#9fe0b0');
+  }
+
   /** Cada fotograma (todos los ordenadores): tu huevo, y mover/animar los compañeros. */
   function update(dt, pl) {
     if (pl && !pl.dead && pl.egg && eggProgress(pl) >= 1) hatch(pl);
-    if (pl && pl.buddy) grow(pl);
+    if (pl && pl.buddy) { grow(pl); magnetPerk(pl); }
     const players = G.Game.everyone();
     for (const p of players) {
       const info = p === pl ? p.buddy : (p.net && p.net.bd ? { dex: p.net.bd, shiny: !!p.net.bs } : null);
       let c = live.get(p);
       if (!info) { if (c) live.delete(p); continue; }
       if (!c || c.dex !== info.dex) {
-        c = { dex: info.dex, shiny: info.shiny, x: p.x - 30, y: p.y + 8, shotT: 1, anim: new G.Sprites.Animator(info.dex, 0.8, info.shiny), face: 0 };
+        c = { dex: info.dex, shiny: info.shiny, x: p.x - 30, y: p.y + 8, shotT: 1, skT: 2, anim: new G.Sprites.Animator(info.dex, 0.8, info.shiny), face: 0,
+              owner: p, sk: p === pl ? (p.buddy.sk || 0) : (p.net && p.net.pk) || 0 };
         live.set(p, c);
+      }
+      // Habilidad de un compañero ajeno: sólo el efecto, cuando su contador sube.
+      if (p !== pl && p.net) {
+        const n = p.net.pk || 0;
+        if (n > c.sk) { c.sk = n; if (G.Camera.sees(c.x, c.y, 200)) skillFx(skillOf(c.dex), c, null, null); }
       }
       // Detrás de su entrenador, en diagonal (así no se tapan el uno al otro).
       const b = (p.moveAngle || Math.PI / 2) + Math.PI + 0.75;
@@ -178,7 +280,10 @@ G.Companion = (() => {
       c.anim.update(dt);
       if (c.shiny && Math.random() < dt * 2) G.FX.twinkle(c.x + G.U.rand(-8, 8), c.y - G.U.rand(4, 20));
       // Sólo el tuyo dispara (en grupo, cada uno el suyo).
-      if (p === pl && !pl.dead) shoot(c, pl, dt);
+      if (p === pl && !pl.dead) {
+        shoot(c, pl, dt);
+        if ((pl.buddy.lvl || 1) >= SKILL_LV && (c.skT -= dt) <= 0) c.skT = useSkill(c, pl) ? SKILL_CD : 0.5;
+      }
     }
   }
 
@@ -194,8 +299,7 @@ G.Companion = (() => {
     c.face = a;
     c.anim.play('Attack', { speed: 1.6 });
     // Crece con tu nivel (+6 %), con el suyo (+8 %) y con cada evolución (+25 %); y con su equipo.
-    const base = 12 * pl.atk * (1 + 0.06 * Math.max(0, pl.level - 1)) * (1 + 0.08 * ((pl.buddy.lvl || 1) - 1)) * (1 + 0.25 * (pl.buddy.stage || 0))
-      * (gear(pl, 'collar') ? 1.35 : 1) * (gear(pl, 'giant') ? 1.15 : 1);
+    const base = petBase(pl);
     const r = (6 + 2 * (pl.buddy.stage || 0)) * (gear(pl, 'giant') ? 1.6 : 1);
     const fire = (ang, k = 1) => {
       const crit = gear(pl, 'bell') && Math.random() < 0.25;
@@ -226,6 +330,8 @@ G.Companion = (() => {
           ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
           const t = 'Lv.' + (own.lvl || 1);
           ctx.strokeText(t, c.x, c.y - 34); ctx.fillStyle = '#9fe0b0'; ctx.fillText(t, c.x, c.y - 34);
+          // Su habilidad, ya desbloqueada: el emblema del tipo al lado del nivel.
+          if ((own.lvl || 1) >= SKILL_LV) G.Icons.draw(ctx, SKILLS[skillOf(c.dex)].icon, c.x + ctx.measureText(t).width / 2 + 2, c.y - 42, 10);
           ctx.restore();
         }
       } });
@@ -235,6 +341,9 @@ G.Companion = (() => {
 
   /** Para myState (cooperativo): [dex, shiny] o [0, 0]. */
   function state(pl) { return pl && pl.buddy ? [pl.buddy.dex, pl.buddy.shiny ? 1 : 0] : [0, 0]; }
+  /** myState [21]: cuántas veces ha usado su habilidad (los demás ven el efecto cuando sube). */
+  function skillCount(pl) { return pl && pl.buddy ? pl.buddy.sk || 0 : 0; }
 
-  return { reset, tick, update, gotEgg, eggProgress, drawables, state, KILLS, GEAR, gear, addGear, addLevels, evoStone };
+  return { reset, tick, update, gotEgg, eggProgress, drawables, state, KILLS, GEAR, gear, addGear, addLevels, evoStone,
+           SKILLS, skillInfo, skillCount, pickedPet };
 })();

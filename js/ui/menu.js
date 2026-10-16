@@ -217,11 +217,32 @@ G.MenuUI = (() => {
     for (const c of list) {
       const cell = document.createElement('div');
       cell.className = 'cell custom';
-      cell.innerHTML = `<span class="no">${G.T('Original')}</span><b>${G.T(c.name)}</b>`;
+      cell.innerHTML = `<span class="no">${G.T('Original')}</span><b>${G.T(c.name)}</b>` + (G.DB.save.petPick === c.dex ? PET_TAG() : '');
       cell.insertBefore(G.UI.spriteCanvas(c.dex, 92, 80, { scale: 2, shadow: true }), cell.querySelector('b'));
       cell.onclick = () => { dexSel = c.dex; showCustom(c); };
       grid.appendChild(cell);
     }
+  }
+  /*
+   * Mascota (2026-10-16): el Pokémon (o personaje original) que saldrá del huevo de compañero
+   * (companion.js pickedPet). Un botón en la ficha para marcarlo / quitarlo.
+   */
+  const PET_TAG = () => `<span class="badge-pet" title="Mascota" style="position:absolute;left:4px;bottom:4px;font-size:10px;font-weight:800;padding:1px 5px;border-radius:5px;background:#5fc283;color:#10301c">${G.T('Mascota')}</span>`;
+  const petBtn = dex => {
+    const on = G.DB.save.petPick === dex;
+    return `<button id="dex-pet" class="btn ghost" style="width:100%;margin-top:6px${on ? ';border-color:#9fe0b0;color:#9fe0b0' : ''}">${G.T(on ? 'Quitar de mascota' : 'Elegir de mascota')}</button>
+      <p style="font-size:11px;color:var(--muted);margin:4px 0 0;text-align:center">${G.T('La mascota es la que sale del huevo de compañero en cada run.')}</p>`;
+  };
+  function wirePet(dex, name, redraw) {
+    const b = $('dex-pet');
+    if (!b) return;
+    b.onclick = () => {
+      const s = G.DB.save, on = s.petPick === dex;
+      if (on) delete s.petPick; else s.petPick = dex;
+      G.DB.commit();
+      G.UI.toast(G.I18n.f(on ? '{x} ya no es tu mascota' : '{x} es ahora tu mascota', name));
+      renderGrid(); redraw();
+    };
   }
   function showCustom(c) {
     const box = $('dex-detail');
@@ -244,7 +265,9 @@ G.MenuUI = (() => {
       <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
       ${usingThis
         ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
-        : '<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero</button>'}`;
+        : '<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero</button>'}
+      ${petBtn(dex)}`;
+    wirePet(dex, G.T(c.name), () => showCustom(c));
     $('dex-big').style.setProperty('--stage-c', G.U.TYPE_COLOR[(c.types || ['normal'])[0]]);
     G.UI.sprite($('dex-big'), dex, { lively: true, spin: true, scale: 3, hero: true });
     const pick = $('dex-pick');
@@ -283,6 +306,7 @@ G.MenuUI = (() => {
       const useShiny = sh && p.dex === s.partner && s.partnerShiny;
       cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
       cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
+      if (own && s.petPick === p.dex) cell.insertAdjacentHTML('beforeend', PET_TAG());
       cell.onclick = () => {
         dexSel = p.dex;
         grid.querySelectorAll('.cell').forEach(c => c.classList.remove('on'));
@@ -337,6 +361,7 @@ G.MenuUI = (() => {
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
         <button id="dex-team" class="btn ghost" style="width:100%;margin-top:6px">${s.team && s.team[dex] ? '★ Quitar de Mi equipo' : '☆ Añadir a Mi equipo'}</button>
+        ${petBtn(dex)}
         ${G.DexQuests.html(dex)}
       ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
@@ -348,6 +373,7 @@ G.MenuUI = (() => {
       b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
     });
     G.DexQuests.wire(box, dex, () => { renderGrid(); showDetail(dex); });
+    if (own) wirePet(dex, p.name, () => showDetail(dex));
     const team = $('dex-team');
     if (team) team.onclick = () => {
       s.team = s.team || {};
