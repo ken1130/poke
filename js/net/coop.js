@@ -194,7 +194,7 @@ G.Coop = (() => {
       if (e.dead || G.U.dist2(e.x, e.y, near.x, near.y) > r2n) continue;
       const a = ANIMS.indexOf(e.anim.cur);
       out.push([e.id, r1(e.x), r1(e.y), Math.ceil(e.hp), a < 0 ? 0 : a, e.anim.dir,
-                (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0)]);
+                (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0) | (e.raging ? 8 : 0)]);
     }
     return out;
   }
@@ -226,7 +226,7 @@ G.Coop = (() => {
       if (d2 > r2n) continue;
       seen.add(e.id);
       const a = Math.max(0, ANIMS.indexOf(e.anim.cur)), dir = e.anim.dir;
-      const st = (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0);
+      const st = (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0) | (e.raging ? 8 : 0);
       const h = Math.ceil(e.hp), qx = Math.round((e.x - ox) / Q), qy = Math.round((e.y - oy) / Q);
       const s = sent.get(e.id);
       // Repetición cada ~1 s, repartida entre enemigos (cada uno con su desfase) y con tope.
@@ -544,8 +544,10 @@ G.Coop = (() => {
   function applyHostEvent(ev) {
     switch (ev[0]) {
       case 'ne':
-        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], raid: ev[5] === 2, shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9], elite: ev[10] || null });
+        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], raid: ev[5] === 2, shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9], elite: ev[10] || null, small: !!ev[11] });
         break;
+      // Se ha hecho élite después de salir (casa de monstruos): afijos y vida nueva (2026-10-16).
+      case 'ee': { const e = G.EnemyMgr.get(ev[1]); if (e && e.remote && !e.elite) { e.makeElite(ev[2], true); e.maxHp = ev[3]; } break; }
       case 'ed': G.EnemyMgr.removeRemote(ev[1], true); break;
       case 'eg': G.EnemyMgr.removeRemote(ev[1], false); break;
       case 'hn': { const e = G.EnemyMgr.get(ev[1]); if (e && !e.dead) e.showHurt(ev[2], ev[3]); break; }
@@ -614,7 +616,7 @@ G.Coop = (() => {
   // anfitrión
   function hurtShown(e, d, color) { emitNear(['hn', e.id, d, color], e.x, e.y, hitFrom); }
   function enemyAdded(e) {
-    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? (e.raid ? 2 : 1) : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior, e.elite || 0]);
+    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? (e.raid ? 2 : 1) : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior, e.affixes ? e.affixes.join('+') : e.elite || 0, e.small ? 1 : 0]);
   }
   function enemyGone(e, died) { emit([died ? 'ed' : 'eg', e.id]); }
   function enemyShot(p, type) { emit(['es', r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r2(p.dmg), p.r, p.life, type]); }
