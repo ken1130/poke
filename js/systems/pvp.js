@@ -139,20 +139,22 @@ G.PvP = (() => {
     // Varios golpes casi a la vez (Lanzallamas, Hoja Afilada...): se suman en un solo aviso.
     const now = performance.now(), last = lastHit.get(foe.uid) || 0;
     const p = pending.get(foe.uid);
-    if (p) { p.dmg += dmg; p.crit = p.crit || crit; return; }
+    // Rayos (familia beam y Rayo Destructor): quien tenga Vuelo Celestial no los recibe (lo mira él, ev[9]).
+    const ray = kind === 'beam' || kind === 'dbeam';
+    if (p) { p.dmg += dmg; p.crit = p.crit || crit; p.ray = p.ray && ray; return; }
     if (now - last < 70) {
-      pending.set(foe.uid, { dmg, type, crit });
+      pending.set(foe.uid, { dmg, type, crit, ray });
       setTimeout(() => {
         const q = pending.get(foe.uid); pending.delete(foe.uid);
-        if (q && !foe.dead) { lastHit.set(foe.uid, performance.now()); sendHit(foe, q.dmg, q.type, q.crit); }
+        if (q && !foe.dead) { lastHit.set(foe.uid, performance.now()); sendHit(foe, q.dmg, q.type, q.crit, q.ray); }
       }, 70 - (now - last));
       return;
     }
     lastHit.set(foe.uid, now);
-    sendHit(foe, dmg, type, crit);
+    sendHit(foe, dmg, type, crit, ray);
   }
-  function sendHit(foe, dmg, type, crit) {
-    send(['pv', 'd', foe.uid, G.Net.uid, +(dmg).toFixed(1), type || null, crit ? 1 : 0, Math.round(foe.x), Math.round(foe.y)]);
+  function sendHit(foe, dmg, type, crit, ray) {
+    send(['pv', 'd', foe.uid, G.Net.uid, +(dmg).toFixed(1), type || null, crit ? 1 : 0, Math.round(foe.x), Math.round(foe.y), ray ? 1 : 0]);
   }
   /** Frenar a un rival (Grava, charcos...): se le pide a él. */
   function status(foe, t) { if (foe && foe.uid) send(['pv', 's', foe.uid, +t.toFixed(2)]); }
@@ -254,6 +256,12 @@ G.PvP = (() => {
       if (ev[7] != null && G.U.dist2(ev[7], ev[8], pl.x, pl.y) > DODGE * DODGE) {
         G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, G.T('¡Esquivado!'), '#bff3ff');
         send(['pv', 'm', ev[3], me, 'd']);
+        return;
+      }
+      // Vuelo Celestial: inmune a los rayos del rival (se le avisa como bloqueado).
+      if (ev[9] && G.Combat.beamImmune(pl)) {
+        G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, G.T('¡Inmune!'), '#ffc4e6');
+        send(['pv', 'm', ev[3], me, 'b']);
         return;
       }
       hurt(pl, ev[4], ev[5], owner, !!ev[6]);

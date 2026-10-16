@@ -785,8 +785,9 @@
         case 'fan': { const n = this.def.fanN || 5; this.shoot(dx, dy, n === 3 ? 0.6 : 0.9, n, 0.65); break; }
         case 'beamer':
           // Rayo con aviso: primero se ve la franja en el suelo.
+          // ray: es un rayo de verdad (Vuelo Celestial lo ignora; los de los jefes, no).
           G.Hazards.add({ kind: 'beam', x: this.x, y: this.y, angle: Math.atan2(dy, dx), len: 360, w: 22,
-                          delay: 1.0, dmg: this.shotDmg() * 1.05, type: this.atkType, color: col });
+                          delay: 1.0, dmg: this.shotDmg() * 1.05, type: this.atkType, color: col, ray: 1 });
           this.anim.play('Charge', { speed: 1.2 });
           break;
         case 'zoner': {

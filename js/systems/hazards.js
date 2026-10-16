@@ -27,7 +27,7 @@ G.Hazards = (() => {
                                 grow: o.grow, stay: o.stay, dmg: Math.round(o.dmg), type: o.type, color: o.color }]);
     } else if (!fromNet && G.Coop.isHost) {
       G.Coop.broadcast(['hz', { kind: o.kind, x: Math.round(o.x), y: Math.round(o.y), r: o.r, angle: o.angle, len: o.len, w: o.w,
-                                delay: o.delay, dmg: Math.round(o.dmg), type: o.type, color: o.color }]);
+                                delay: o.delay, dmg: Math.round(o.dmg), type: o.type, color: o.color, ray: o.ray || 0 }]);
     }
     return o;
   }
@@ -91,7 +91,11 @@ G.Hazards = (() => {
       if (!h.hit && h.t >= h.delay) {
         h.hit = true;
         detonate(h);
-        if (pl && !pl.dead && inside(h, pl.x, pl.y, pl.r)) { pl.invuln = 0; pl.hurt(h.dmg, h.type); }
+        if (pl && !pl.dead && inside(h, pl.x, pl.y, pl.r)) {
+          // Vuelo Celestial (Arte Sin Forma evolucionado): los rayos de los enemigos no le hacen nada.
+          if (h.ray && G.Combat.beamImmune(pl)) G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, G.T('¡Inmune!'), '#ffc4e6');
+          else { pl.invuln = 0; pl.hurt(h.dmg, h.type); }
+        }
       }
       if (h.hit && h.t >= h.delay + h.end) list.splice(i, 1);
     }
