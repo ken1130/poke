@@ -597,7 +597,7 @@ G.Combat = (() => {
     }
     const now = LOCAL_NOW();
     if ((pl.bsNext || 0) > now) return;
-    pl.bsNext = now + row.bcd * (pl.cdMul || 1) - 0.05;
+    pl.bsNext = now + row.bcd * (pl.cdK || pl.cdMul || 1) - 0.05;   // (cdK: también el Bastón de Saúco)
     const vis = G.VFX.forMove(m);
     const o = { dmg: row.bdmg * pl.atk, r: 8 * row.bsize, scale: row.bsize, life: row.r * TILE / BLADE_SPEED,
                 pierce: row.bpierce, vis, ghost, split90: row.split ? 1 : 0 };
@@ -768,7 +768,7 @@ G.Combat = (() => {
     const row = G.Moves.stat(m);
     m.cd = row.cd;                                   // (la barra de recarga del HUD)
     if (m.t > 0) m.t -= dt;
-    const ready = m.t <= 0, cd = row.cd * pl.cdMul;
+    const ready = m.t <= 0, cd = row.cd * (pl.cdK || pl.cdMul);
     switch (m.id) {
       case 'recover':
         if (ready && pl.hp < pl.maxHp) {

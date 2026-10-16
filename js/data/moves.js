@@ -750,7 +750,7 @@
       { dmg: 24, n: 1, w: 30, r: 10 },   { dmg: 30, n: 1, w: 44, r: 10 },   { dmg: 42, n: 2, w: 44, r: 10 },
       { dmg: 50, n: 2, w: 44, r: 11.5, crit: 0.15 },
       { dmg: 60, n: 3, w: 44, r: 11.5, crit: 0.15, back: true },
-      { dps: 100, n: 3, w: 48, r: 11.5, crit: 0.15, back: true, slow: 0.45, hole: 0.15, holeR: 7, holeDmg: 80, cd: 0.2 }
+      { dps: 140, n: 3, w: 48, r: 11.5, crit: 0.15, back: true, slow: 0.45, hole: 0.15, holeR: 7, holeDmg: 80, cd: 0.2 }
     ],
     // ---- apoyo (2026-10-15): cd en s; heal = fracción de la vida máxima ----
     'recover': [
