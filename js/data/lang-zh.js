@@ -2275,7 +2275,7 @@ G.I18n.add({
   'Tus golpes queman: unos 20 de daño por segundo (sube con tu nivel, como las quemaduras).': '攻擊會讓敵人燃燒：每秒約 20 傷害（跟一般燃燒一樣隨等級提高）。',
   'Equipo de Shixin': '仕昕的登山裝備',
   'El Tanque 64': '64坦克',
-  '+200 de vida máxima.': '最大生命 +200。',
+  '+500 de vida máxima.': '最大生命 +500。',
   'Tanque 64': '64坦克',
   '¡Artefacto: {x}!': '神器：{x}！',
   'Artefacto': '神器',

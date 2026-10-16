@@ -1275,7 +1275,7 @@ G.I18n.add({
   'Tus golpes queman: unos 20 de daño por segundo (sube con tu nivel, como las quemaduras).': 'Your hits set enemies on fire: about 20 damage per second (grows with your level, like burns).',
   'Equipo de Shixin': 'Shixin’s Gear',
   'El Tanque 64': 'Tank 64',
-  '+200 de vida máxima.': '+200 max HP.',
+  '+500 de vida máxima.': '+500 max HP.',
   'Tanque 64': 'Tank 64',
   '¡Artefacto: {x}!': 'Artifact: {x}!',
   'Artefacto': 'Artifact',

@@ -61,7 +61,7 @@ G.Items = (() => {
                 liver: { red: 0.35, cap: 10 },
                 dice: { win: 0.9, mul: 2 },
                 climber: { stacks: 6 },
-                tank64: { hp: 200 } };
+                tank64: { hp: 500 } };   // (主人 2026-10-16：200 → 500)
   const ARTS = [
     { id: 'quicksilver', art: true, name: 'Los Pies de Mercurio', short: 'Pies de Mercurio',
       desc: '+50% de velocidad. Dejas huellas que duran 1 s: los enemigos que las pisan reciben daño (14 × tu ataque, cada 0,5 s). Con Agilidad, la velocidad se acumula hasta Nv. 10. El agua no te frena.',
@@ -92,7 +92,7 @@ G.Items = (() => {
       desc: 'Tus golpes queman: unos 20 de daño por segundo (sube con tu nivel, como las quemaduras).',
       on: () => {}, off: () => {} },
     { id: 'tank64', art: true, name: 'El Tanque 64', short: 'Tanque 64',
-      desc: '+200 de vida máxima.',
+      desc: '+500 de vida máxima.',
       on: p => { p.addMaxHp(ART.tank64.hp); }, off: p => { p.maxHp -= ART.tank64.hp; p.hp = Math.min(p.hp, p.maxHp); } }
   ];
   const BY = {};
