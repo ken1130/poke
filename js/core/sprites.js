@@ -14,7 +14,7 @@ G.Sprites = (() => {
   const PX = 2;
   const sheets = new Map();          // "dex/Anim[/s]" -> {img, ready, failed}
 
-  function meta(dex) { return G.SPRITE_META[dex] || null; }
+  function meta(dex) { return G.SPRITE_META[dex] || (G.CUSTOM_BY && G.CUSTOM_BY[dex] && G.CUSTOM_BY[dex].sprite) || null; }
 
   /** ¿Flota en su sprite? (tools/hover_flags.py) Pasa por encima de rocas y agua. */
   function hovers(dex) { const m = meta(dex); return !!(m && m.hv); }
@@ -112,7 +112,7 @@ G.Sprites = (() => {
     }
     if (sheets.size >= MAX_SHEETS) evict(now);
     s = { ready: false, failed: false, img: new Image(), tries: 0, retryAt: 0, at: now,
-          src: `assets/pokemon/${dex}/${shiny ? 's/' : ''}${name}.png` };
+          src: `assets/pokemon/${dex}/${shiny ? 's/' : ''}${name}.png${m && m.v ? '?v=' + m.v : ''}` };
     s.img.onload = () => { s.ready = true; };
     s.img.onerror = () => { s.failed = true; s.retryAt = performance.now() + 1000 * Math.min(8, 2 ** s.tries++); };
     s.img.src = s.src;

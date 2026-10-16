@@ -1,0 +1,38 @@
+{
+ "id": 10002,
+ "mode": "pixel",
+ "grid": 30,
+ "src": "tools/custom_sprites/src/chick",
+ "out": "assets/pokemon/10002",
+ "erode": 1,
+ "margin": 6,
+ "poses": {
+  "idle": "025",
+  "blink": "001",
+  "walk1": "029",
+  "walk2": "030",
+  "attack": "028",
+  "shoot": "008",
+  "charge": "002",
+  "hurt": "016",
+  "faint": "010"
+ },
+ "keep_all": [
+  "faint"
+ ],
+ "strip": {
+  "walk2": [
+   [
+    255,
+    255,
+    255
+   ],
+   [
+    200,
+    200,
+    200
+   ]
+  ]
+ },
+ "back": false
+}

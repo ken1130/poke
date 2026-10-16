@@ -115,3 +115,10 @@
 
 - 用 `page.addInitScript` 先建立 `window.G`，在 `G.Net` 被設定時（`Object.defineProperty` 的 setter）包住 `on()` 記下處理函式，並把 `send`／`sendFast`／`toHost` 換成 `exposeFunction` 的轉送、`uid` 換成固定值；另一頁收到就呼叫記下的處理函式。兩頁 `G.Game.startRun({seed, host:'H', members:[…]})` 就能測事件同步（範例見 2026-10-16 樓層功能的測試）。
 - 注意：遊戲中途改了怪物血量（例如 `spawnBossNow` 之後才改 `maxHp`），隊友收到的 `'ne'` 是舊的血量 → 要在加入前改（`spawnBossNow(pl, t, def, tweak)` 的 `tweak`）。
+
+## 16. 換了精靈圖，遊戲裡還是舊圖，Ctrl+F5 也沒用（2026-10-16）
+
+- **症狀**：重新產生 `assets/pokemon/{dex}/*.png` 後，遊戲裡的角色還是舊的（朝上走還是舊的背面圖）。
+- **原因**：動畫表是進戰鬥後才用 `new Image()` 載入，不在頁面載入時抓，所以強制重新整理只會重抓 HTML／JS，圖片照用瀏覽器快取。
+- **修法**：自訂角色的 `sprite` meta 加 `v`（產生時間），`sprites.js` 組圖片網址時帶 `?v=`（`G.SPRITE_META` 的一般寶可夢沒有 `v`，網址不變）。
+- **以後怎麼避免**：換圖一定要連 meta 的 `v` 一起換（`tools/custom_sprites/` 的產生器會自動寫）；一般寶可夢的圖若要換，也要加同樣的版本號。

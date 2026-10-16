@@ -305,6 +305,13 @@ G.Player = class Player {
     }
     this.invuln = 0.45;
     this.flash = 0.14;
+    // Pose de daño (como los enemigos): no corta un ataque que esté a medias y dura
+    // como mucho 0,3 s (algunos sprites tienen un Hurt larguísimo que taparía los ataques).
+    if (!this.anim.busy()) {
+      const hm = G.Sprites.animMeta(this.dex, 'Hurt', this.shiny);
+      const len = hm ? hm.d.reduce((a, b) => a + b, 0) / 60 : 0.3;
+      this.anim.play('Hurt', { speed: Math.max(1, len / 0.3) });
+    }
     G.Audio.sfx('hurt');
     G.Camera.kick(0.28);
     G.FX.dmgText(this.x, this.y - this.bodyH - 4, '-' + Math.round(d), eff === 'super' ? '#ff3048' : eff === 'weak' ? '#c9a0a8' : '#ff6b7a', eff === 'super');

@@ -212,7 +212,8 @@ G.MenuUI = (() => {
     for (const c of list) {
       const cell = document.createElement('div');
       cell.className = 'cell custom';
-      cell.innerHTML = `<span class="no">${G.T('Original')}</span><div class="custom-pic">?</div><b>${G.T(c.name)}</b>`;
+      cell.innerHTML = `<span class="no">${G.T('Original')}</span><b>${G.T(c.name)}</b>`;
+      cell.insertBefore(G.UI.spriteCanvas(c.dex, 92, 80, { scale: 2, shadow: true }), cell.querySelector('b'));
       cell.onclick = () => showCustom(c);
       grid.appendChild(cell);
     }
@@ -220,10 +221,34 @@ G.MenuUI = (() => {
   function showCustom(c) {
     const box = $('dex-detail');
     if (!box) return;
-    box.innerHTML = `<div class="center"><h3 class="gold">${G.T(c.name)}</h3>
-      <p class="sub">${G.T('Personaje original · no cuenta para el Pokédex')}</p>
-      <div class="row" style="justify-content:center;gap:6px">${(c.types || []).map(t => `<span class="tag-chip" style="background:${G.U.TYPE_COLOR[t]}">${G.T(G.U.TYPE_NAME[t])}</span>`).join('')}</div>
-      ${c.desc ? `<p>${G.T(c.desc)}</p>` : ''}</div>`;
+    const s = G.DB.save, dex = c.dex, usingThis = s.partner === dex;
+    const max = { hp: 183, atk: 1.55, spd: 137 };
+    const bar = (label, v, m, txt) =>
+      `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${Math.min(100, v / m * 100)}%"></i></div><span>${txt}</span></div>`;
+    box.innerHTML = `
+      <canvas id="dex-big" class="stage" width="220" height="190"></canvas>
+      <div class="center">
+        <div style="color:var(--muted);font-size:13px">${G.T('Personaje original · no cuenta para el Pokédex')}</div>
+        <h3>${G.T(c.name)}</h3>
+        <div style="margin:6px 0">${G.UI.typeChips(c.types || [])}</div>
+        ${c.desc ? `<p>${G.T(c.desc)}</p>` : ''}
+      </div>
+      ${bar('Vida', c.hp, max.hp, c.hp)}
+      ${bar('Ataque', c.atk, max.atk, '×' + c.atk.toFixed(2))}
+      ${bar('Velocidad', c.spd, max.spd, c.spd)}
+      <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
+      ${usingThis
+        ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
+        : '<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero</button>'}`;
+    $('dex-big').style.setProperty('--stage-c', G.U.TYPE_COLOR[(c.types || ['normal'])[0]]);
+    G.UI.sprite($('dex-big'), dex, { lively: true, spin: true, scale: 3, hero: true });
+    const pick = $('dex-pick');
+    if (pick) pick.onclick = () => {
+      s.partner = dex; s.partnerShiny = false;
+      G.DB.commit();
+      G.UI.toast(G.T(c.name) + ' es ahora tu compañero');
+      renderGrid(); showCustom(c);
+    };
   }
 
   function renderGrid() {
@@ -343,11 +368,13 @@ G.MenuUI = (() => {
   function openUpgrades() {
     G.UI.show('scr-upgrades', true);
     const s = G.DB.save;
-    if (!upgDex || !s.owned[upgDex]) upgDex = s.partner;
+    if (!upgDex || !(s.owned[upgDex] || G.CUSTOM_BY[upgDex])) upgDex = s.partner;
     // Selector con tus Pokémon: el compañero primero, luego los que ya tienen mejoras.
+    // Los personajes originales (custom.js) siempre están: no se "consiguen".
     const sel = $('upg-mon');
     const lv = d => Object.values(s.pupg[d] || {}).reduce((a, b) => a + b, 0);
     const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d])
+      .concat((G.CUSTOM || []).map(c => c.dex))
       .sort((a, b) => (b === s.partner) - (a === s.partner) || lv(b) - lv(a) || a - b);
     sel.innerHTML = mons.map(d => `<option value="${d}">${G.DEX_BY[d].name}${d === s.partner ? ' (compañero)' : ''}${lv(d) ? ' · ' + lv(d) + ' niveles' : ''}</option>`).join('');
     sel.value = upgDex;

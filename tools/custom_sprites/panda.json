@@ -1,0 +1,24 @@
+{
+ "id": 10001,
+ "mode": "smooth",
+ "height": 34,
+ "colors": 10,
+ "src": "tools/custom_sprites/src/panda",
+ "out": "assets/pokemon/10001",
+ "erode": 2,
+ "margin": 6,
+ "faint_rotate": false,
+ "poses": {
+  "idle": "770422181",
+  "walk1": "770422200",
+  "walk2": "770422172",
+  "attack": "770422199",
+  "shoot": "770422175",
+  "charge": "770422169",
+  "hurt": "771978564",
+  "faint": "771978568"
+ },
+ "alpha": 150,
+ "back": false,
+ "thicken": 5
+}

@@ -116,7 +116,7 @@ G.Game = (() => {
     const save = G.DB.save;
     // PK con personaje al azar: el Pokémon que le ha tocado a cada uno (cfg.members), sin mejoras.
     const randomMe = coop && coop.rand ? (coop.members.find(m => m.uid === G.Net.uid) || {}).dex : null;
-    const mon = G.DEX_BY[randomMe || save.partner];
+    const mon = G.DEX_BY[randomMe || save.partner] || G.DEX_BY[G.STARTERS[0].dex];
     // Arena de PK: todos sin las mejoras de la tienda (igualdad).
     const flat = !!(coop && coop.pvp && coop.arena);
     const perks = G.Upgrades.perks(randomMe || flat ? {} : G.DB.upgradesOf(mon.dex));
