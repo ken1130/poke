@@ -204,7 +204,7 @@ G.Training = (() => {
       <div style="display:flex;gap:6px;margin-top:4px">
         <button class="btn small" type="button" data-act="reset">${G.T('Reiniciar')}</button>
         <button class="btn small gold" type="button" data-act="moves">${G.T('Movimientos')}</button>
-        <button class="btn small ghost" type="button" data-act="quit">${G.T('Salir')}</button></div>`;
+        <button class="btn small ghost" type="button" data-act="quit">${G.T('Salir de la sala')}</button></div>`;
     hud.querySelector('[data-act="reset"]').onclick = e => { e.currentTarget.blur(); resetStats(); G.Audio.sfx('click'); };
     hud.querySelector('[data-act="moves"]').onclick = e => { e.currentTarget.blur(); openPanel(); };
     hud.querySelector('[data-act="quit"]').onclick = e => { e.currentTarget.blur(); G.Game.quit(); };
@@ -257,7 +257,7 @@ G.Training = (() => {
         <div style="display:flex;gap:4px;flex-wrap:wrap">${lv.join('')}</div>
         <div style="display:flex;gap:4px">
           <button class="btn small ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''} title="${esc(G.T('Subir'))}">▲</button>
-          <button class="btn small ghost" data-del="${i}" title="${esc(G.T('Quitar'))}">✕</button></div></div>`;
+          <button class="btn small ghost" data-del="${i}" title="${esc(G.T('Quitar movimiento'))}">✕</button></div></div>`;
     }).join('') || `<p class="sub">${G.T('Ningún movimiento: elige alguno de la lista de abajo.')}</p>`;
     const q = query.trim().toLowerCase();
     const list = G.Moves.ALL.filter(d => {

@@ -1208,6 +1208,8 @@ G.I18n.add({
   'Bonus de monedas': 'Coin bonus',
   'Mi equipo': 'My team',
   'Entrar a la sala': 'Enter',
+  'Salir de la sala': 'Leave',
+  'Quitar movimiento': 'Remove',
   'Guardaespaldas': 'Bodyguard',
   'GUARDAESPALDAS': 'BODYGUARDS',
   'Sólo puedes comprar un huevo': 'You can only buy one egg',
