@@ -7,6 +7,8 @@
  */
 G.CHANGELOG = [
   { d: '2026-10-16', title: ['Subir de nivel te hace más fuerte', 'Levelling up makes you stronger'], new: [
+    ['Siete encuentros nuevos en el mapa (el primero hacia el minuto 3, luego cada 2,5-4 min): altar lunar de Clefairy, la venganza de Magikarp (30 golpes y se vuelve un Gyarados aliado 20 s), cofre-Ditto (un jefe con tu aspecto), Slowpoke pescando, enfermera Chansey (cura y levanta a todo el grupo), huellas de Mew (una mejora de movimiento) y el robo de Electrode (15 % de las monedas; vencedlo en 20 s para recuperar el 150 %).',
+     'Seven new map encounters (the first around minute 3, then every 2.5-4 min): Clefairy\'s moon altar, Magikarp\'s revenge (30 hits and it becomes an allied Gyarados for 20 s), the Ditto chest (a boss that looks like you), Slowpoke fishing, nurse Chansey (heals and revives the whole team), Mew\'s footprints (one move upgrade) and the Electrode heist (15% of coins; beat it within 20 s to get 150% back).'],
     ['Sala de entrenamiento (al final de Retos): 5 muñecos de Pikachu en corro que no se mueven ni caen; eliges hasta 5 movimientos de todos, con su nivel o evolucionados, y ves el daño total y por segundo. Sin enemigos ni premios.',
      'Training Room (end of Challenges): 5 Pikachu dummies in a ring that never move or fall; pick up to 5 moves from all of them, at any level or evolved, and see total and per-second damage. No enemies, no rewards.'],
     ['Jerry (normal/hada) en la pestaña «Otros», con su movimiento exclusivo Sartenazo: golpea al enemigo más cercano y a veces lo aturde. Evoluciona en Sartén Furiosa: 3 golpes a 3 enemigos, siempre aturde y salpica.',
