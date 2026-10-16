@@ -199,7 +199,8 @@ G.Game = (() => {
 
     state = 'playing';
     keepAwake(true);
-    G.PvP.arenaStart(pl);                 // arena de PK: elegir 3 de 5 movimientos
+    G.PvP.arenaStart(pl);
+    if (G.Modes.run === 'training') G.Training.begin(pl);     // sala de entrenamiento (training.js)                 // arena de PK: elegir 3 de 5 movimientos
   }
 
   function quitRun() {
@@ -406,6 +407,7 @@ G.Game = (() => {
   let clearWin = false;     // la run acaba como victoria (mazmorra superada, floors.js)
   function endRun(dead = true) {
     if (state === 'over' || !pl) return;
+    if (G.Modes.run === 'training') { endTraining(); return; }
     const el = document.getElementById('scr-fclear');
     if (el) el.classList.add('hidden');
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
@@ -485,6 +487,25 @@ G.Game = (() => {
     G.Modes.afterRun(rr);
     G.PvP.afterRun();
     if (lastTeam) { showTeam(lastTeam); lastTeam = null; }
+  }
+
+  /**
+   * Sala de entrenamiento (training.js): al salir no se guarda nada (ni monedas, ni récords,
+   * ni ranking, ni logros, ni misiones): se limpia y vuelves al menú.
+   */
+  function endTraining() {
+    state = 'over';
+    keepAwake(false);
+    G.Tips.reset();
+    coopCards = []; G.RunUI.closeLevelUp();
+    G.Audio.music(null);
+    G.Audio.sfx('back');
+    G.Training.end();
+    G.EnemyMgr.clear(); G.Projectiles.clear(); G.Combat.clearFields(); G.Pickups.clear(); G.FX.clear();
+    G.Modes.reset();
+    pl = null;
+    G.UI.hideAll();
+    G.Flow.afterRun();
   }
 
   // ---------------- subida de nivel ----------------
@@ -653,6 +674,7 @@ G.Game = (() => {
 
   /** @param who  quien lo ha cogido (en cooperativo puede ser un compañero) */
   function onCollect(p, who = pl) {
+    if (G.Modes.run === 'training') return;             // sala de entrenamiento: nada se recoge
     const mine = who === pl;
     if (G.Coop.active && !G.Coop.isHost) {
       // Copia de un objeto del anfitrión: el efecto lo decide él.
@@ -781,6 +803,8 @@ G.Game = (() => {
       return;
     }
     if (G.Coop.active && G.Input.tap('keyt')) { G.Chat.open(); return; }
+    // Sala de entrenamiento: con el panel de movimientos abierto, Esc lo cierra (y las teclas no mueven nada).
+    if (G.Training.isOpen()) { if (G.Input.tap('escape')) G.Training.closePanel(); return; }
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
     if (state !== 'playing' || !pl) return;
     if (spectating() && (G.Input.tap('tab') || G.Input.tap('space'))) { nextSpec(); return; }
@@ -894,6 +918,7 @@ G.Game = (() => {
       return;
     }
     time += dt;
+    if (G.Modes.run === 'training') { trainingUpdate(dt); return; }
 
     const b = G.Floors.biomeAt(Math.floor(time / 240) + G.Floors.floor);      // cada piso, el bioma siguiente (floors.js; «en llamas»: el volcán)
     if (b !== biome && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom) && fixedScene == null) {
@@ -972,6 +997,31 @@ G.Game = (() => {
     if (pl.bonds > 0) offerBond(true);
     if (G.Coop.isHost) checkAllDown(dt);
     G.PvP.tick();
+  }
+
+  /**
+   * Sala de entrenamiento (training.js): sólo tú, los muñecos y tus ataques. Sin aparecer
+   * enemigos ni jefes, sin eventos, grietas, tienda, escaleras, clima, huevo ni bendiciones,
+   * sin experiencia ni cartas de nivel.
+   */
+  function trainingUpdate(dt) {
+    pl.frozen = G.Training.isOpen();
+    pl.picking = false;
+    pl.update(dt);
+    G.Camera.follow(pl.x, pl.y, dt);
+    G.World.update(dt, G.Camera);
+    G.EnemyMgr.update(dt, [pl]);
+    G.EnemyMgr.rebuildGrid();
+    G.Combat.tick(dt, pl, time);
+    G.Projectiles.update(dt, pl, G.EnemyMgr.all());
+    G.Combat.resolve(dt, pl, time);
+    G.Arts.update(dt, pl);
+    G.Combat.updateFields(dt);
+    G.Pickups.update(dt, [pl], onCollect);
+    G.Hazards.update(dt);
+    G.Training.update(dt, pl);
+    G.FX.update(dt);
+    G.Audio.music(G.BIOME_MUSIC[0]);
   }
 
   /** Caído en grupo: un compañero a tu lado te va levantando. */

@@ -12,6 +12,7 @@
  *   'legend'  legendarios seguidos en la arena de la grieta (rift.js) hasta caer
  *   'weekly' / 'tower' / 'stage'   reto semanal, torre sin fin y aventura
  *             (challenges.js y stages.js): cada uno trae sus propias reglas
+ *   'training'  sala de entrenamiento (training.js): muñecos que no caen, sin enemigos ni premios
  *
  * Los ajustes de arriba (modos, escenario y dificultad a medida) SÓLO valen en la
  * run normal. Los retos, la torre, la aventura y los legendarios no los usan:
@@ -310,6 +311,9 @@ G.Modes = (() => {
         <div class="row between"><h3 style="margin:0">Reglas a medida</h3><button class="btn small ghost" data-close>Volver</button></div>
         <p class="sub" style="margin:6px 0 0">Sólo cambian «Jugar» (la run normal) y las partidas en grupo normales que crees tú. La aventura y los desafíos llevan sus propias reglas y no usan estas.</p>
 
+        <div class="set-row" style="margin-top:10px"><div class="grow"><b>Sala de entrenamiento</b><small>Muñecos Pikachu que nunca caen: prueba cualquier movimiento y mira tu daño por segundo. Sin premios ni récords.</small></div>
+          <button class="btn small gold" data-train ${G.Social.room ? 'disabled' : ''}>Entrar</button></div>
+
         <h3 class="set-h" style="margin-top:14px">Modos</h3>
         ${TOGGLES.map(([k, name, desc]) => `
           <div class="set-row"><div class="grow"><b>${name}</b><small>${desc}</small></div>
@@ -338,6 +342,7 @@ G.Modes = (() => {
     overlay.querySelectorAll('[data-s]').forEach(inp => {
       inp.oninput = () => { S().set(inp.dataset.s, +inp.value); overlay.querySelector(`[data-v="${inp.dataset.s}"]`).textContent = inp.value + '%'; };
     });
+    overlay.querySelector('[data-train]').onclick = () => { if (!G.Social.room) start('training'); };
     overlay.querySelector('[data-reset]').onclick = () => { for (const [k] of SLIDERS) S().set(k, 100); render(); };
     overlay.querySelectorAll('[data-scene]').forEach(b => {
       b.onclick = () => { S().set('scene', b.dataset.scene === '' ? null : +b.dataset.scene); G.Audio.sfx('click'); render(); };

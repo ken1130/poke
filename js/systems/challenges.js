@@ -311,6 +311,8 @@ G.Challenges = (() => {
               `<button class="btn small ${G.Modes.legendTier() === i ? 'gold' : ''}" data-tier="${i}">${G.T(t.name)}</button>`).join('')}</div>
              <small style="color:var(--muted)">${G.T(G.Modes.LEGEND_TIERS[G.Modes.legendTier()].desc)}</small>`,
           lb ? G.I18n.f('Récord: {x}', lb) : '', false)}
+        ${card('training', 'Sala de entrenamiento', '', G.T('Muñecos Pikachu que no se mueven, no atacan y nunca caen. Elige cualquier movimiento y su nivel y mira cuánto daño haces por segundo.')
+          + `<div><small style="color:var(--muted)">${G.T('Sin enemigos, sin premios y sin récords. Sólo en solitario.')}</small></div>`, '', false)}
       </div>`;
     overlay.querySelector('[data-close]').onclick = close;
     // El Pokémon del día, animado.
@@ -318,6 +320,9 @@ G.Challenges = (() => {
     if (dm) dm.appendChild(G.UI.spriteCanvas(G.Modes.daily().dex, 72, 72, { lively: true, scale: 1.5, shadow: true }));
     overlay.querySelectorAll('[data-tier]').forEach(b => { b.onclick = () => { G.Modes.setLegendTier(+b.dataset.tier); G.Audio.sfx('click'); open(); }; });
     overlay.querySelectorAll('[data-go]').forEach(b => { b.dataset.sfx = 'confirm'; b.onclick = () => go(b.dataset.go); });
+    // Sala de entrenamiento: sólo en solitario (en una sala de grupo, no).
+    const tr = overlay.querySelector('[data-go="training"]');
+    if (tr && G.Social.room) { tr.disabled = true; tr.title = G.T('Sólo en solitario: sal de la sala de grupo para entrenar.'); }
     overlay.querySelectorAll('[data-board]').forEach(b => {
       b.onclick = () => {
         const k = b.dataset.board;

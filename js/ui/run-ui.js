@@ -360,7 +360,7 @@ G.RunUI = (() => {
     showAuto();
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
-    $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';
+    $('btn-quit').textContent = coop ? 'Salir de la partida' : G.Modes.run === 'training' ? G.T('Salir del entrenamiento') : 'Abandonar run';
     G.UI.show('scr-pause');
   }
 

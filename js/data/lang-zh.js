@@ -2552,3 +2552,30 @@ G.I18n.add({
   '¡Reto cumplido!': '挑戰完成！',
   'Premio de cada uno: 1 ticket del gacha y {x} monedas de la run.': '每個挑戰的獎勵：1 張扭蛋券和 {x} 枚本局金幣。',
 }, 'zh');
+
+// Sala de entrenamiento (training.js, 2026-10-16)
+G.I18n.add({
+  'Sala de entrenamiento': '練功房',
+  'Daño total': '總傷害',
+  'Últimos 5 s': '最近 5 秒',
+  'Por segundo': '每秒傷害',
+  'Reiniciar': '歸零',
+  'Evolucionado': '進化',
+  'Exclusivo': '專屬',
+  'Subir': '往前移',
+  'Ningún movimiento: elige alguno de la lista de abajo.': '還沒有招式：從下面的清單選幾個。',
+  'Elige hasta {x} movimientos (de todos) y su nivel; se aplica sin volver a empezar.': '從全部招式中最多選 {x} 個並設定等級；套用後立即生效，不用重新開局。',
+  'Muñecos': '木樁數量',
+  'Vida de cada muñeco': '每個木樁的血量',
+  'La vida sólo cambia lo que quita un % de la vida (veneno...). Los muñecos nunca caen.': '血量只影響按百分比扣血的效果（中毒等）。木樁永遠不會倒下。',
+  'Quitar todos': '全部移除',
+  'Aplicar': '套用',
+  'Todos los movimientos': '全部招式',
+  '(máximo {x})': '（最多 {x} 個）',
+  'Buscar por nombre o tipo…': '用名稱或屬性搜尋…',
+  'Salir del entrenamiento': '離開練功房',
+  'Muñecos Pikachu que no se mueven, no atacan y nunca caen. Elige cualquier movimiento y su nivel y mira cuánto daño haces por segundo.': '不會動、不會攻擊、永遠打不倒的皮卡丘木樁。任選招式和等級，看看你每秒能打出多少傷害。',
+  'Sin enemigos, sin premios y sin récords. Sólo en solitario.': '沒有敵人、沒有獎勵、不記錄成績。只能單人。',
+  'Sólo en solitario: sal de la sala de grupo para entrenar.': '只能單人：先離開組隊房間再來練功。',
+  'Muñecos Pikachu que nunca caen: prueba cualquier movimiento y mira tu daño por segundo. Sin premios ni récords.': '永遠打不倒的皮卡丘木樁：試試任何招式，看看每秒傷害。沒有獎勵也不記錄。',
+}, 'zh');
