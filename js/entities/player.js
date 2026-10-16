@@ -194,7 +194,8 @@ G.Player = class Player {
 
   /** Lo que se puede hacer ahora con un vínculo: añadir a un grupo o unir dos sueltos. */
   bondOptions() {
-    const loose = this.slots.filter(s => s.length === 1).map(s => s[0]);
+    // Los pasivos y los de apoyo funcionan solos: no se unen (2026-10-16, lo pidió el dueño).
+    const loose = this.slots.filter(s => s.length === 1 && !G.Moves.isPassive(s[0])).map(s => s[0]);
     const grow = this.slots.find(s => s.length > 1 && s.length < Player.BOND_MAX);
     if (grow) return loose.length ? { mode: 'add', group: grow, loose } : null;
     return loose.length >= 2 ? { mode: 'pair', group: null, loose } : null;
