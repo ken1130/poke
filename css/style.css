@@ -1186,3 +1186,31 @@ body { background: #120f1a; }
 }
 /* Recuadro del Pokémon (Pokédex, mejoras…): fondo de gruta con luz cálida abajo; el borde sigue siendo del color del tipo. */
 .stage { background: radial-gradient(ellipse at 50% 88%, rgba(255,159,67,.22), rgba(255,159,67,0) 50%), linear-gradient(180deg, #2a2440, #15111d) !important; border-radius: 4px; }
+/* Lápida de la última run (2026-10-16): piedra con la cabeza en arco, grano de píxel y musgo al pie. */
+.menu-left { position: relative; }
+.grave {
+  position: absolute; left: calc(50% + 150px); bottom: 22%; width: 150px; padding: 26px 10px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; text-align: center;
+  font: inherit; color: #e6ddf0; text-shadow: 0 2px 0 rgba(0,0,0,.6);
+  background: repeating-conic-gradient(rgba(255,255,255,.04) 0 25%, transparent 0 50%) 0 0 / 8px 8px, linear-gradient(180deg, #8a8299, #5d566e 70%, #4a4459);
+  border: 0; box-shadow: inset 0 0 0 3px #2a2533, inset 4px 4px 0 3px rgba(255,255,255,.12);
+  clip-path: polygon(0 100%, 0 26%, 8% 12%, 20% 4%, 35% 0, 65% 0, 80% 4%, 92% 12%, 100% 26%, 100% 100%);
+  filter: drop-shadow(0 5px 0 #0f0c16);
+  transition: transform .1s;
+}
+.grave:hover, .grave:focus-visible { transform: translateY(-2px); outline: none; filter: drop-shadow(0 5px 0 #0f0c16) drop-shadow(0 0 10px rgba(255,216,138,.35)); }
+.grave.won { background: repeating-conic-gradient(rgba(255,255,255,.05) 0 25%, transparent 0 50%) 0 0 / 8px 8px, linear-gradient(180deg, #c9a45a, #8e6c30 70%, #6e5224); }
+.grave .g-head { font-size: 12px; color: #2a2533; text-shadow: 0 1px 0 rgba(255,255,255,.25); font-weight: 800; letter-spacing: 2px; }
+.grave .g-name { font-size: 17px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grave .g-line { font-size: 12px; color: #f0e6ff; }
+/* Musgo y hierba al pie: una tira de píxeles verdes. */
+.grave .g-moss { position: absolute; left: 0; right: 0; bottom: 0; height: 8px;
+  background: repeating-linear-gradient(90deg, #4f8a3c 0 4px, #6aa84f 4px 8px, transparent 8px 10px, #3f7030 10px 14px, transparent 14px 16px); }
+@media (max-width: 1100px) { .grave { left: calc(50% + 120px); width: 130px; } }
+/* Móvil: la lápida baja, pequeña, debajo del nombre. */
+@media (max-width: 760px), (max-height: 520px) {
+  .grave { position: static; width: 168px; margin: 8px auto 0; padding: 18px 8px 14px; }
+  .grave .g-name { font-size: 15px; }
+}
+@media (max-height: 520px) { .grave { display: none; } }
+.dlg-html { text-align: left; line-height: 1.55; } .dlg-html div:first-child { color: var(--ember-hi); font-weight: 800; text-align: center; margin-bottom: 4px; }

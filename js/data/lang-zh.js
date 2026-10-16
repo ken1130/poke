@@ -2221,6 +2221,15 @@ G.I18n.add({
   // 2026-10-16: rangos de objetos, equipo del compañero, tienda nueva, Tom y Lika
   '¿Eh? ¡{x} está evolucionando!': '咦？{x}要進化了！',
   'se desbloquea en Nv. {x}': 'Lv.{x} 解鎖',
+  // 2026-10-16: lápida de la última run (menú)
+  'Aquí yace': '安息於此',
+  'Victoria': '凱旋',
+  'Retirada': '撤退',
+  'Tu última run': '上一局紀錄',
+  'Modo': '模式',
+  'Desafío diario': '每日挑戰',
+  'Otro modo': '其他模式',
+  '{x} derrotados': '擊倒 {x}',
   // 2026-10-16: movimientos exclusivos de los personajes originales
   'Puño Espuma': '泡泡拳',
   'EXCLUSIVO de Didi: un puñetazo al enemigo más cercano que estalla en espuma y moja a los de alrededor.': '迪迪專屬：一拳打向最近的敵人，炸出泡泡，波及周圍的敵人。',
@@ -2325,7 +2334,7 @@ G.I18n.add({
   'Un gato que se pasa la vida persiguiendo a un ratón. Nunca lo atrapa.': '一輩子都在追一隻老鼠的貓，從來沒抓到過。',
   'Un monstruo sin piel que caza a ciegas, guiándose por el oído. Su lengua es un látigo.': '沒有皮膚的怪物，看不見，靠聽聲音獵食，舌頭像鞭子一樣。',
   'Didi': '迪迪', 'Heroe': '英雄', 'Turbo Abuela': '高速婆婆',
-  'Un bichón esponjoso que reparte puñetazos y chorros de agua.': '蓬蓬的比熊犬，會揮拳也會噴水。',
+  'Un bichón esponjoso que reparte puñetazos y chorros de agua.': '夢的翅膀已經受了傷，多比 is free',
   'Le da miedo todo, pero siempre acaba salvando a los suyos.': '什麼都怕，但最後總是挺身救大家。',
   'Una abuela fantasma metida en un gato de la suerte. Corre rapidísimo.': '附身在招財貓裡的幽靈婆婆，跑超快。',
   'Original': '原創',

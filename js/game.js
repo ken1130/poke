@@ -453,6 +453,10 @@ G.Game = (() => {
     if (G.PvP.wonByMe()) add('pvpWins');
     save.scenes = save.scenes || {};
     if (G.Tiles.SCENES.includes(G.World.biome)) save.scenes[G.World.biome] = Date.now();
+    // Lápida del menú (2026-10-16, menu.js): lo esencial de esta run, para verlo al volver.
+    save.lastRun = { dex: pl.dex, shiny: !!pl.shiny, time: Math.floor(time), level: pl.level, kills: pl.kills, bosses: pl.bosses,
+      floor: G.Floors.floor || 0, clear: !!clearWin, dead: !!dead && !clearWin, mode: G.Modes.run, group: coop, coins, at: Date.now(),
+      moves: pl.moves.filter(m => !G.Moves.isPassive(m)).slice(0, 4).map(m => [m.name, m.lvl]) };
     G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
     G.Progress.checkAch();
     G.DB.commit();

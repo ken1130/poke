@@ -1221,6 +1221,15 @@ G.I18n.add({
   // 2026-10-16: rangos de objetos, equipo del compañero, tienda nueva, Tom y Lika
   '¿Eh? ¡{x} está evolucionando!': 'Huh? {x} is evolving!',
   'se desbloquea en Nv. {x}': 'unlocks at Lv. {x}',
+  // 2026-10-16: lápida de la última run (menú)
+  'Aquí yace': 'Here lies',
+  'Victoria': 'Victory',
+  'Retirada': 'Retreated',
+  'Tu última run': 'Your last run',
+  'Modo': 'Mode',
+  'Desafío diario': 'Daily challenge',
+  'Otro modo': 'Other mode',
+  '{x} derrotados': '{x} defeated',
   // 2026-10-16: movimientos exclusivos de los personajes originales
   'Puño Espuma': 'Foam Punch',
   'EXCLUSIVO de Didi: un puñetazo al enemigo más cercano que estalla en espuma y moja a los de alrededor.': 'Didi only: a punch at the nearest enemy that bursts into foam and splashes those around it.',
@@ -1325,7 +1334,7 @@ G.I18n.add({
   'Un gato que se pasa la vida persiguiendo a un ratón. Nunca lo atrapa.': 'A cat who spends his life chasing a mouse. He never catches it.',
   'Un monstruo sin piel que caza a ciegas, guiándose por el oído. Su lengua es un látigo.': 'A skinless monster that hunts blind, by sound. Its tongue is a whip.',
   'Heroe': 'Hero', 'Turbo Abuela': 'Turbo Granny',
-  'Un bichón esponjoso que reparte puñetazos y chorros de agua.': 'A fluffy bichon that throws punches and water jets.',
+  'Un bichón esponjoso que reparte puñetazos y chorros de agua.': 'The wings of dreams are already hurt. Dobby is free',
   'Le da miedo todo, pero siempre acaba salvando a los suyos.': 'Scared of everything, but always ends up saving the day.',
   'Una abuela fantasma metida en un gato de la suerte. Corre rapidísimo.': 'A ghost granny stuck inside a lucky cat. Insanely fast.',
   'Original': 'Original',

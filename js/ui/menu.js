@@ -61,6 +61,7 @@ G.MenuUI = (() => {
       };
     });
 
+    grave(s.lastRun);
     $('btn-logout').classList.toggle('hidden', G.DB.mode === 'local' || G.DB.unbound);   // sin cuenta, no hay sesión que cerrar
     G.AccountUI.refresh();
     modesLine();
@@ -563,6 +564,41 @@ G.MenuUI = (() => {
       };
     });
     return el;
+  }
+
+  /*
+   * Lápida de la última run (2026-10-16, pedido del dueño): al lado de la hornacina, con lo que
+   * pasó la última vez. «Aquí yace» si caíste, «Victoria» si superaste la mazmorra, «Retirada»
+   * si la dejaste. Al pulsarla, el detalle (movimientos, modo, fecha).
+   */
+  const MODE_NAME = { normal: 'Jugar', daily: 'Desafío diario', weekly: 'Reto semanal', legend: 'Desafío legendario', tower: 'Torre sin fin', stage: 'Aventura' };
+  function grave(r) {
+    const el = $('menu-grave');
+    if (!el) return;
+    const mon = r && G.DEX_BY[r.dex];
+    el.classList.toggle('hidden', !mon);
+    if (!mon) return;
+    const head = r.clear ? 'Victoria' : r.dead ? 'Aquí yace' : 'Retirada';
+    el.classList.toggle('won', !!r.clear);
+    el.innerHTML = `<span class="g-head">${G.T(head)}</span><b class="g-name">${G.T(mon.name)}</b>` +
+      `<span class="g-line">${r.mode === 'normal' || r.floor ? 'B' + (r.floor + 1) + 'F · ' : ''}${G.U.mmss(r.time)}</span>` +
+      `<span class="g-line">Lv.${r.level} · ${G.I18n.f('{x} derrotados', r.kills.toLocaleString())}</span>` +
+      `<span class="g-moss"></span>`;
+    el.title = G.T('Tu última run');
+    el.onclick = () => {
+      const d = new Date(r.at);
+      const lines = [
+        G.T(head) + ' · ' + G.T(mon.name) + (r.shiny ? ' ✨' : ''),
+        G.T('Modo') + ': ' + G.T(MODE_NAME[r.mode] || 'Otro modo') + (r.group ? ' · ' + G.T('en grupo') : ''),
+        G.T('Tiempo') + ': ' + G.U.mmss(r.time) + (r.floor || r.mode === 'normal' ? ' · ' + G.T('Piso más hondo') + ': B' + (r.floor + 1) + 'F' : ''),
+        G.T('Nivel') + ': ' + r.level + ' · ' + G.T('Derrotados') + ': ' + r.kills.toLocaleString() + ' · ' + G.T('Jefes') + ': ' + r.bosses,
+        G.T('Pokémonedas ganadas') + ': +' + r.coins,
+        (r.moves || []).length ? G.T('Movimientos') + ': ' + r.moves.map(([n, l]) => G.T(n) + ' Lv.' + l).join(', ') : '',
+        d.toLocaleString()
+      ].filter(Boolean);
+      const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      G.Dialog.alertHtml(lines.map(l => `<div>${esc(l)}</div>`).join(''), 'Tu última run');
+    };
   }
 
   return { init, open, GEN_NAMES };

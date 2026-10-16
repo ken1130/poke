@@ -8,7 +8,7 @@ G.Dialog = (() => {
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   /** onOk: se llama DENTRO del clic de aceptar (para lo que el navegador sólo deja hacer en un clic, como abrir la ventana de Google). */
-  function open({ title = '', text = '', input = null, ok = 'Aceptar', cancel = null, danger = false, onOk = null }) {
+  function open({ title = '', text = '', html = '', input = null, ok = 'Aceptar', cancel = null, danger = false, onOk = null }) {
     return new Promise(done => {
       const el = document.createElement('section');
       el.className = 'scr dim';
@@ -16,6 +16,7 @@ G.Dialog = (() => {
       el.innerHTML = `<div class="box center" style="width:min(380px,calc(100% - 32px))">
         ${title ? `<h3>${esc(G.T(title))}</h3>` : ''}
         ${text ? `<p class="sub" style="white-space:pre-line">${esc(G.T(text))}</p>` : ''}
+        ${html ? `<div class="sub dlg-html">${html}</div>` : ''}
         ${input ? `<input class="field" maxlength="${input.max || 64}" spellcheck="false" style="width:100%;margin-top:6px" translate="no">` : ''}
         <div style="display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap">
           ${cancel ? `<button class="btn ghost" data-a="no">${esc(G.T(cancel))}</button>` : ''}
@@ -39,6 +40,8 @@ G.Dialog = (() => {
 
   return {
     alert: (text, title = '') => open({ title, text, ok: 'Entendido' }),
+    /** Ya traducido y maquetado (G.T junta los saltos de línea): el que llama escapa lo que haga falta. */
+    alertHtml: (html, title = '') => open({ title, html, ok: 'Entendido' }),
     confirm: (text, opts = {}) => open({ title: opts.title || '', text, ok: opts.ok || 'Confirmar', cancel: opts.cancel || 'Cancelar', danger: !!opts.danger, onOk: opts.onOk }),
     prompt: (title, value = '', opts = {}) => open({ title, text: opts.text || '', input: { value, max: opts.max }, ok: opts.ok || 'Confirmar', cancel: 'Cancelar' })
   };

@@ -63,6 +63,7 @@
 | 寵物進階（2026-10-16） | `save.petPick` 指定蛋孵出的寵物（原創角色可）；Lv.15 依第一屬性 6 組技能（`SKILLS`，每 6 秒），Lv.25 撿取 ×1.25；商店寵物專區顯示 `skillInfo` |
 | 成就外觀（2026-10-16） | `cosmetic.js`：AURAS 6／NAMES 5，存 `save.profile.aura／nameCol`；組隊 myState **[22]**（[21] 是寵物技能次數）= 光環 + 16×顏色，0 = 無 |
 | 介面主題「營火石窟」（2026-10-16） | 主人不要跟原作一樣：`css/style.css` 最後的「Tema propio」區塊（換 :root 變數＋.box/.btn/.menu-item/.topbar/.stage 覆寫、火炬 `--torch-a/b`、角色石龕、手機直式/橫式規則）；要退回就刪那一段 |
+| 上一局墓碑（2026-10-16） | `game.js endRun` 存 `save.lastRun`；`menu.js grave()` 畫在石龕旁（手機直式在名牌下、橫式不顯示），點擊用 `G.Dialog.alertHtml`（`G.T` 會把換行壓掉，所以排好版的內容不要再經過 G.T） |
 | 自動選取升級卡（2026-10-16） | `run-ui.js` 的 `autoChoice`：存檔 `save.autoPick` = off／stats／all；能力順序 `STAT_ORDER`（攻擊>冷卻>血量>減傷>經驗>速度>回復>磁力，血 <35% 先回血）；綠框標示 0.7 秒後才拿（`planAuto`），可以取消 |
 | 道具等級（2026-10-16） | `items.js` 的 `TIER`：1 普通／2 稀有／3 史詩、神器＝4 傳說；掉落權重 4/3/2。兩格滿時只能換同級或更低（`game.js offerItem`），全部比較高級就直接賣 `6+6×等級` 金幣、不跳視窗；HUD 框線＝等級色 |
 | 寵物裝備（2026-10-16） | `companion.js` 的 `GEAR`（8 件，每件一局一次，存在 `pl.petGear`，蛋的時候也能買）；只有商店「寵物專區」賣；夥伴糖果 +3 級、進化石到下次進化等級（蛋的時候存在 `pl.petLv`）。效果只在擁有者的電腦算（跟夥伴傷害一樣） |
