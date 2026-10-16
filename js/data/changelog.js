@@ -28,6 +28,8 @@ G.CHANGELOG = [
     ['Nuevo truco levelup30: +30 niveles desde el que tengas (en partida), eligiendo las cartas.',
      'New cheat levelup30: +30 levels from your current one (while playing), picking your cards.']
   ], chg: [
+    ['Móvil y tableta: el HUD de la partida es más grande (mínimo 11 px), la información de arriba a la izquierda y el minimapa evitan la muesca del iPhone, el ataque combinado es un botón grande abajo a la derecha y en pantallas bajas hay como mucho 3 flechas de borde.',
+     'Phones and tablets: bigger in-run HUD (at least 11 px), the top-left info and the minimap avoid the iPhone notch, the combo attack is a big bottom-right button, and short screens show at most 3 edge arrows.'],
     ['Más fluido en el móvil: el tinte rojo de los élite enfurecidos ya no se recalcula cada fotograma, menos resolución interna con muchos enemigos, los sprites se precargan por partes y el minimapa y los iconos de la tienda cuestan menos.',
      'Smoother on phones: the red tint of enraged elites is no longer recomputed every frame, lower internal resolution when crowded, sprites preload in batches, and the minimap and shop icons are cheaper.'],
     ['Móvil: la ruleta, la pausa, el resumen, el gacha y las ventanas de elección caben en pantallas bajas; el título del menú no se parte; márgenes para la muesca del iPhone; los campos no hacen zoom en iOS; controles y enlaces más fáciles de tocar.',

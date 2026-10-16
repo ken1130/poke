@@ -1072,6 +1072,10 @@ G.HUD = (() => {
     const cam = G.Camera;
     const bsx = (wx - cam.left()) * cam.scale, bsy = (wy - cam.top()) * cam.scale;
     if (bsx >= 0 && bsx <= w && bsy >= 0 && bsy <= h) return;
+    // Móvil con poca altura: como mucho 3 flechas (las primeras que se piden son las más
+    // importantes); el resto ya sale en la lista del minimapa. (2026-10-16: con 5-6 a la vez
+    // acababan amontonadas en medio de la pantalla, encima de tu Pokémon.)
+    if (G.Touch.active && h < 500 && arrowSpots.length >= 3) return;
     const M = 46;
     let ex = edgeX(bsx, M, w), ey = G.U.clamp(bsy, M + 70, h - M - 90);
     [ex, ey] = avoidZones(ex, ey, h - M - 90);
