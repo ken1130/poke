@@ -652,7 +652,8 @@ G.Game = (() => {
       sellItem(worst, 'Demasiados objetos esperando: {x} se vende por {x} monedas');
     }
     G.Audio.sfx('select');
-    G.Spawner.say(G.I18n.f('{x}: toca el icono (o pulsa I) para cambiarlo', G.T(G.Items.BY[id].name)), 2.8, true);
+    // (Móvil: sin teclado no tiene sentido «o pulsa I».)
+    G.Spawner.say(G.I18n.f(G.Touch.active ? '{x}: toca el icono que brilla para cambiarlo' : '{x}: toca el icono (o pulsa I) para cambiarlo', G.T(G.Items.BY[id].name)), 2.8, true);
     pendingUI(true);
   }
   /** Abre la elección del primer objeto pendiente (si ahora se puede). */

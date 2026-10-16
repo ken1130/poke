@@ -1270,3 +1270,77 @@ body { background: #120f1a; }
 }
 /* Mejoras en el móvil vertical: el selector de Pokémon tenía 220 px mínimos y se salía de la caja. */
 @media (max-width: 600px) { .upg-head .grow { min-width: 0; } #upg-mon { min-width: 0 !important; width: 100% !important; } }
+
+/* ===== Revisión móvil (2026-10-16): ventanas que no cabían en el móvil en horizontal ===== */
+@media (max-height: 520px) {
+  /* Ventanas de la partida: no hay barra de arriba, no hace falta dejarle 50 px (en 360 px de alto la
+     tercera carta del descanso / la bendición / la reliquia quedaba cortada). */
+  #scr-sbox, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-bond, #scr-pkpick, #scr-roul, #scr-shop { padding: 6px 10px; }
+  /* Ruleta: la rueda a la izquierda y los botones a la derecha (antes «Apostar» y «Volver» quedaban
+     debajo de la pantalla y había que desplazar sin saberlo). */
+  #scr-roul > .box { width: min(640px, 100%); display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-items: center; align-content: center; }
+  #scr-roul > .box > * { grid-column: 2; }
+  #scr-roul > .box > #roul-wheel { grid-column: 1; grid-row: 1 / span 6; width: min(60vh, 40vw); height: min(60vh, 40vw); margin: 0; }
+  #scr-roul .roul-res { margin: 2px 0; }
+  #scr-roul .note { margin-top: 4px; }
+  #scr-roul #roul-leave { justify-self: center; }
+  /* Pausa y resumen: los botones siempre a la vista, pegados abajo («Abandonar run» y «Volver al menú»
+     quedaban fuera de la pantalla). */
+  #scr-pause .box > .row:last-child {
+    position: sticky; bottom: -10px; z-index: 2; margin-bottom: -10px; padding: 6px 0 10px;
+    background: rgba(28, 23, 40, .96); box-shadow: 0 -6px 10px rgba(5, 10, 25, .6);
+  }
+  #scr-over #btn-again { position: sticky; bottom: 0; z-index: 2; width: 100%; margin-top: 8px; box-shadow: 0 -4px 14px rgba(5, 10, 25, .8); }
+  /* Gacha: el cartel más bajo y los botones de tirar pegados abajo (estaban a 480 px en un móvil de 375). */
+  #scr-gacha .banner { padding: 10px 12px; }
+  #scr-gacha .banner h3 { font-size: 20px; }
+  #scr-gacha .banner .feat { height: 80px; margin: 2px -6px -10px; }
+  #scr-gacha .banner .feat canvas { height: 80px; width: auto; }
+  #scr-gacha .banner p { margin: 2px 0 !important; font-size: 14px; }
+  #gacha-gens { padding-bottom: 4px; }
+  #gacha-gens .gen-tab small { display: none; }
+  #scr-gacha .banner + .row { position: sticky; bottom: -10px; z-index: 2; margin-top: 8px !important; padding: 6px 0 8px;
+    background: rgba(28, 23, 40, .96); box-shadow: 0 -6px 10px rgba(5, 10, 25, .6); }
+  /* Desafíos: con los tres botones en fila, la descripción del reto diario quedaba en una columna de 6 letras. */
+  .panel > .row.between:has(> .ch-btns) { flex-wrap: wrap; }
+  .panel > .row.between:has(> .ch-btns) > .grow { min-width: min(260px, 100%); }
+  .ch-btns { margin-left: auto; }
+  /* Sala: los cuatro jugadores en una fila (en horizontal sobra ancho y falta alto). */
+  .lobby-members { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  /* Pokédex: las regiones se desplazan a los lados; el borde difuminado avisa de que hay más («Otros»). */
+  #scr-dex .gen-tabs, #scr-gacha .gen-tabs { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); padding-right: 24px; }
+  /* Letra mínima legible (10 px se leía mal en el móvil). */
+  .logo .t2, .menu-item small { font-size: 11px; }
+}
+/* Teléfonos de 360 px de alto: las cartas un poco más bajas para que entren las tres y «Volver a tirar». */
+@media (max-height: 380px) {
+  #scr-levelup .card, #scr-boon .card, #scr-relic .card, #scr-rest .card { padding-top: 5px; padding-bottom: 5px; }
+  #scr-levelup .cards, #scr-boon .cards, #scr-relic .cards, #scr-rest .cards { gap: 6px; }
+  #scr-levelup .box h2, #scr-boon .box h2, #scr-relic .box h2, #scr-rest .box h2 { margin-bottom: 2px; }
+}
+/* Título del menú en móviles estrechos en horizontal: sin que «者» se quede solo en otra línea. */
+@media (max-height: 520px) and (max-width: 760px) {
+  .menu-left .logo { padding: 0 34px; }
+  .menu-left .logo .t1 { font-size: 25px; }
+}
+@media (pointer: coarse) {
+  /* iPhone amplía la página al tocar un campo con letra de menos de 16 px. */
+  input:not([type=range]):not([type=checkbox]):not([type=radio]), select, textarea { font-size: max(16px, 1em); }
+  /* Deslizadores de volumen: el tirador más grande, más fácil de coger con el dedo. */
+  input[type=range] { margin: 8px 0; }
+  input[type=range]::-webkit-slider-thumb { width: 24px; height: 24px; }
+  /* Enlaces de la pantalla de inicio: zona de toque más alta. */
+  #scr-login .note a { display: inline-block; padding: 8px 4px; }
+}
+/* Ajustes → Controles → «En PC»: con táctil se escondían las teclas y quedaba «o flechas / moverse» sin teclas. */
+body.touch .keys kbd { display: inline-block !important; }
+/* iPhone en horizontal (viewport-fit=cover): la muesca y las esquinas redondeadas tapaban los bordes de las
+   ventanas, la barra de arriba y el botón del objeto pendiente. env() vale 0 en el resto de móviles. */
+@media (max-height: 520px) {
+  .scr:not(#scr-menu) { padding-left: max(10px, env(safe-area-inset-left)) !important; padding-right: max(10px, env(safe-area-inset-right)) !important;
+    padding-bottom: max(6px, env(safe-area-inset-bottom)) !important; }
+  #scr-menu .menu-left { padding-left: max(8px, env(safe-area-inset-left)); }
+  #scr-menu .menu-right { padding-right: max(8px, env(safe-area-inset-right)); }
+  .topbar { right: max(6px, env(safe-area-inset-right)); }
+  .ach-pop { right: max(8px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); }
+}

@@ -2250,6 +2250,8 @@ G.I18n.add({
   'Bonus de experiencia': '經驗加成',
   'Bonus de monedas': '金幣加成',
   'Mi equipo': '我的戰隊',
+  // Revisión móvil (2026-10-16): aviso del objeto pendiente sin «pulsa I»
+  '{x}: toca el icono que brilla para cambiarlo': '{x}：點一下發光的圖示來更換',
   // Extras del PK (pvp-extra.js, 2026-10-16)
   '{x} ha caído en una trampa': '{x} 踩到陷阱倒下了',
   'Revancha: elige {x} de {x} nuevos o quédate con los tuyos · quedan {x} s': '復仇：選 {x} 招（共 {x} 招新招式），或保留原本的 · 剩 {x} 秒',
