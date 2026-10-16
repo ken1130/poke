@@ -361,6 +361,8 @@ G.HUD = (() => {
         if (s.type === 'shop' && (s.state === 'open' || s.state === 'free')) edgeArrow(ctx, w, h, pl, s.x, s.y - 20, '#5fcf8a', '#d8ffe6', '#0a2a18', '#b8f5cc', 'Tienda de Kecleon');
         else if (s.type === 'mhouse' && s.state === 'idle') edgeArrow(ctx, w, h, pl, s.x, s.y - 20, '#b98aff', '#efe2ff', '#22103a', '#e2d0ff', 'Sala misteriosa');
       }
+      const en = G.Encounters.marker();        // encuentro (encounters.js)
+      if (en && !en.noArrow) edgeArrow(ctx, w, h, pl, en.x, en.y - 20, en.col, '#ffffff', '#1a1a2a', en.col, en.name);
       // Dos escaleras (2026-10-16): la segura en azul, la peligrosa en rojo.
       for (const st of G.Floors.stairsAll) {
         if (st.route === 'danger') edgeArrow(ctx, w, h, pl, st.x, st.y, '#ff7a5a', '#ffe2d8', '#3a0f0a', '#ffc4b0', G.T('Ruta peligrosa') + '・' + G.T(G.Floors.THEMES[st.theme].name));
@@ -829,7 +831,16 @@ G.HUD = (() => {
     shop(ctx, x, y) { G.Pickups.sprite(ctx, 'mmicon', 2, x, y, 1); },
     statue(ctx, x, y) { G.Pickups.sprite(ctx, 'statue', Math.floor(performance.now() / 600) % 6, x, y, 0.45); },
     elite(ctx, x, y, on) { G.Pickups.sprite(ctx, 'mmicon', 3, x, y + (on ? -1 : 0), 1); },
-    mate(ctx, x, y, dead) { G.Pickups.sprite(ctx, 'mmicon', dead ? 5 : 4, x, y, 1); }
+    mate(ctx, x, y, dead) { G.Pickups.sprite(ctx, 'mmicon', dead ? 5 : 4, x, y, 1); },
+    // Encuentro (encounters.js): estrella de su color que late.
+    enc(ctx, x, y, on, col) {
+      const r = on ? 6.5 : 5.5;
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * 0.45 : r; ctx.lineTo(x + Math.cos(a) * q, y + Math.sin(a) * q); }
+      ctx.closePath();
+      ctx.fillStyle = col || '#ffe9a0'; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = '#1a1a2a'; ctx.stroke();
+    }
   };
 
   /*
@@ -892,6 +903,7 @@ G.HUD = (() => {
     const door = G.Dungeon.roomDoor;
     if (door) icon('shop', door.x, door.y, false);
     for (const s of G.Dungeon.sites) icon(s.type, s.x, s.y, true, blink);
+    { const en = G.Encounters.marker(); if (en) { const q = at(en.x, en.y, !inside); if (q) MM_ICON.enc(ctx, q[0], q[1], blink, en.col); } }
     for (const st of G.Floors.stairsAll) icon(st.route === 'danger' ? 'stairsD' : 'stairs', st.x, st.y, true);
     for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) icon('boss', e.x, e.y, true);
     for (const e of G.EnemyMgr.all()) if (e.elite && !e.boss && !e.dead) icon('elite', e.x, e.y, false, blink);
@@ -985,6 +997,7 @@ G.HUD = (() => {
       if (st.route === 'danger') add(st, G.T('Ruta peligrosa') + '・' + G.T(G.Floors.THEMES[st.theme].name), '#ffb08a', 'stairsD');
       else add(st, G.T('Ruta segura') + '・' + G.T(G.Floors.THEMES[st.theme].name), '#9fc8ff', 'stairs');
     }
+    { const en = G.Encounters.marker(); if (en) add(en, en.name, en.col, 'enc'); }
     add(near(G.EnemyMgr.all(), e => e.boss && !e.dead), 'Jefe', '#ff5f6d', 'boss');
     add(near(G.EnemyMgr.all(), e => e.elite && !e.boss && !e.dead), 'Élite', '#ffb84d', 'elite');
     if (!rows.length) return 0;
@@ -994,7 +1007,7 @@ G.HUD = (() => {
     ctx.font = F(800, FS);
     ctx.textAlign = 'right';
     // Lo más importante primero (caben 6).
-    const PRI = ['art', 'stairs', 'stairsD', 'sbox', 'egg', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'elite', 'item', 'bigchest', 'altar', 'spring'];
+    const PRI = ['art', 'stairs', 'stairsD', 'sbox', 'enc', 'egg', 'potion', 'mhouse', 'shop', 'statue', 'boss', 'rift', 'elite', 'item', 'bigchest', 'altar', 'spring'];
     if (G.Dungeon.roomDoor) for (let i = rows.length - 1; i >= 0; i--) if (rows[i].d > 700) rows.splice(i, 1);
     rows.sort((a, b) => PRI.indexOf(a.ic) - PRI.indexOf(b.ic));
     rows.slice(0, max).forEach((r, k) => {
@@ -1004,7 +1017,7 @@ G.HUD = (() => {
       const tw = ctx.measureText(txt).width + 30, y = top + k * STEP;
       roundRect(ctx, right - tw, y, tw, RH, 7);
       ctx.fillStyle = 'rgba(8,12,24,.85)'; ctx.fill();
-      ctx.save(); ctx.translate(right - tw + 11, y + RH / 2); ctx.scale(1.25, 1.25); MM_ICON[r.ic](ctx, 0, 0, false); ctx.restore();
+      ctx.save(); ctx.translate(right - tw + 11, y + RH / 2); ctx.scale(1.25, 1.25); MM_ICON[r.ic](ctx, 0, 0, false, r.col); ctx.restore();
       ctx.font = F(800, FS);
       ctx.fillStyle = r.col;
       ctx.fillText(txt, right - 6, y + RH / 2 + FS * 0.36);

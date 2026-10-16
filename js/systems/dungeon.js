@@ -56,7 +56,7 @@ G.Dungeon = (() => {
     kRep = { buys: 0, robbed: false, stole: false };
     sites = []; nextId = 1; blessing = null; buyT = 0; buyKey = ''; room = null; lastExit = -99; shopSkip = null;
     houseT = 150; shopT = 240; statueT = 200;      // (2026-10-16: la primera tienda a los 4:00, antes 4:30)
-    G.Funny.reset(); timed = false;
+    G.Funny.reset(); G.Encounters.reset(); timed = false;
   }
   const allowed = () => !G.PvP.on && !G.Rift.inArena && !room && G.Modes.run !== 'legend';
   const byId = id => sites.find(s => s.id === id);
@@ -79,6 +79,7 @@ G.Dungeon = (() => {
     else if (k === 'say') G.Spawner.say(G.T(ev[2]), ev[3] || 3, true);
     else if (k === 'ach') G.Progress.event(ev[2]);
     else if (k === 'fn') G.Funny.onNet(ev);
+    else if (k === 'en') G.Encounters.onNet(ev);       // encuentros (encounters.js)
     else if (k === 'spun') G.Roulette.onSpun(ev[2], ev[3], ev[4]);
     else if (k === 'rspin') G.Roulette.watch(ev[2], ev[3], ev[4]);
     else if (k === 'room') { if (ev[2] === 'heal' && room) room.springFull = false; roomFx(ev[2], ev[3], ev[4]); }
@@ -145,6 +146,7 @@ G.Dungeon = (() => {
   /** Anfitrión o solitario: programa lo que sale y lo que pasa. */
   function tick(dt, players) {
     G.Funny.tick(dt, players);
+    G.Encounters.tick(dt, players);
     const live = players.filter(p => !p.dead);
     if (!live.length) return;
     const t = T();
@@ -201,6 +203,7 @@ G.Dungeon = (() => {
   /** Cada ordenador, para su jugador: comprar en la tienda (quedarse encima). */
   function update(dt, pl) {
     G.Funny.update(dt, pl);
+    G.Encounters.update(dt, pl);
     if (room && pl && !pl.dead) collideFurniture(pl);
     if (room && G.Coop.isHost !== false) for (const e of G.EnemyMgr.all()) if (!e.dead && !e.remote) collideFurniture(e);
     if (!pl || pl.dead || !room || room.kind !== 'shop') { closeShop(); return; }
@@ -991,6 +994,7 @@ G.Dungeon = (() => {
                       carbos: 'Carburante', iron: 'Hierro', ppup: 'Más PP', magnet: 'Imán', incense: 'Incienso Fortuna', pcandy: 'Caramelo Compañero', pstone: 'Piedra Evolutiva' };
   function drawAir(ctx) {
     G.Funny.drawAir(ctx);
+    G.Encounters.drawAir(ctx);
     const now = performance.now() / 1000;
     if (room) { drawRoomAir(ctx, now); return; }
     for (const s of sites) {
@@ -1112,7 +1116,7 @@ G.Dungeon = (() => {
   }
 
   /** Al bajar de piso (floors.js): lo del mapa anterior desaparece (la bendición sigue). */
-  function clearSites() { sites = []; buyT = 0; buyKey = ''; }
+  function clearSites() { sites = []; buyT = 0; buyKey = ''; G.Encounters.clear(); }
 
   const ROOM_NAME = { shop: 'Tienda de Kecleon', house: 'Casa de monstruos', treasure: 'Sala del tesoro', heal: 'Sala de curación', trap: 'Sala trampa' };
   return { reset, clearSites, tick, update, onNet, onClient, drawGround, drawAir, drawables, blessingInfo, mod,
