@@ -1224,3 +1224,12 @@ body { background: #120f1a; }
 }
 @media (max-height: 520px) { .grave { display: none; } .shrine::after { display: none; } }
 .dlg-html { text-align: left; line-height: 1.55; } .dlg-html div:first-child { color: var(--ember-hi); font-weight: 800; text-align: center; margin-bottom: 4px; }
+/* Ventanas que se abren con la tira de arriba a la vista: empiezan por debajo de ella (2026-10-16: faltaba Novedades,
+   y la tira de piedra es algo más alta que las pastillas de antes). */
+@media (min-height: 521px) {
+  #scr-news, #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile { padding-top: 80px; }
+}
+@media (max-width: 600px) and (min-height: 521px) {
+  #scr-news, #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile { padding-top: 104px; align-items: flex-start; }
+}
+@media (max-height: 520px) { #scr-news { padding-top: 50px; } }
