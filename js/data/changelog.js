@@ -7,6 +7,8 @@
  */
 G.CHANGELOG = [
   { d: '2026-10-16', title: ['Subir de nivel te hace más fuerte', 'Levelling up makes you stronger'], new: [
+    ['PK: una ronda o al mejor de 3 (vida llena entre rondas y marcador arriba). Con 2: premio en el centro cada 30 s (ataque ×2, velocidad o 3 s de invisibilidad: los rivales no te apuntan ni te ven en el minimapa), suelo trampa que estalla (−15 % de vida) y el que pierde la ronda puede cambiar sus movimientos. Con 3 o más: los caídos son fantasmas que lanzan piedras que frenan, rachas de K.O. y duelo final con la zona cerrándose. Todo se activa o no en la sala.',
+     'PvP: one round or best of 3 (full HP between rounds, score on top). With 2: a center power-up every 30 s (×2 attack, speed or 3 s invisibility: rivals cannot target you or see you on the minimap), exploding trap floors (−15% HP) and the round loser may change moves. With 3+: downed players are ghosts throwing slowing pebbles, K.O. streaks and a final duel with the zone closing. Each one can be turned on or off in the room.'],
     ['PK: la zona segura se ve desde el principio (mapa y minimapa, con el círculo final en blanco), cuenta atrás de 30 s, aviso al empezar, flecha hacia el centro con los metros y pantalla en rojo fuera de la zona (−8 % de vida por segundo).',
      'PvP: the safe zone is visible from the start (map and minimap, with the final circle in white), a 30 s countdown, an announcement when it starts, an arrow to the center with the distance, and a red screen outside the zone (−8% HP per second).'],
     ['Ataque combinado: cuando está lleno lo avisa («¡Pulsa F!» o el botón en el móvil) y lo recuerda encima de tu Pokémon.',
