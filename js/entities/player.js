@@ -98,9 +98,12 @@ G.Player = class Player {
     // hasteT/hasteK: Arte Sin Forma (combat.js) acelera un rato al acertar.
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1) * (this.hasteT > 0 ? 1 + (this.hasteK || 0) : 1);
     const w = G.Weather.speedFor(this.mon.types);
-    const slow = this.inLiquid ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
+    // Pies de Mercurio (artefacto): el agua no te frena, seas del tipo que seas.
+    const slow = this.inLiquid && !this.hasItem('quicksilver') ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
     return s * slow * w;
   }
+  /** Multiplicador de recarga de verdad: cdMul y la Varita de Saúco (artefacto, se queda quieto). */
+  get cdK() { return this.cdMul * (this.wandN ? 1 - Math.min(G.Items.ART.elderwand.max, this.wandN * G.Items.ART.elderwand.per) : 1); }
   // bulkRed: Peso Pesado (combat.js), que también da bulkArmor contra los choques.
   // + Paz Mental y Velo Sagrado evolucionado (apoyo)
   get reduction() { return Math.min(0.8, this.dmgReduce + (this.bulkRed || 0) + (this.potionRed || 0) + this.buffs.def.n * this.buffs.def.amount + (this.calmN || 0) * (this.calmAmt || 0) + (this.supRed || 0)); }
@@ -254,7 +257,7 @@ G.Player = class Player {
     if (this.anim.busy() && this.anim.progress() < 0.65) return;
     const meta = G.Sprites.animMeta(this.dex, anim);
     const len = meta ? meta.d.reduce((a, b) => a + b, 0) / 60 : 0.4;
-    const cd = Math.max(0.12, m.cd * this.cdMul);
+    const cd = Math.max(0.12, m.cd * this.cdK);
     this.anim.play(anim, { speed: Math.max(1, len / (cd * 0.9)) });
     this.attackFace = 0.35;
   }
@@ -394,7 +397,8 @@ G.Player = class Player {
     if (this.remote || (G.PvP && G.PvP.on)) return;
     const want = Math.max(0, Math.min(this.level, Player.LV.max) - 1), add = want - (this.lvGrown || 0);
     if (add <= 0) return;
-    if (!this.lvHpBase) this.lvHpBase = this.maxHp;
+    // (sin los +200 del Tanque 64: el crecimiento por nivel va sobre la vida propia)
+    if (!this.lvHpBase) this.lvHpBase = this.maxHp - (this.hasItem('tank64') ? G.Items.ART.tank64.hp : 0);
     const tot = k => Math.round(this.lvHpBase * Player.LV.hp * k);     // (por el total: sin acumular redondeos)
     const hp = tot(want) - tot(this.lvGrown || 0);
     this.maxHp += hp; this.hp = Math.min(this.maxHp, this.hp + hp);
@@ -494,6 +498,7 @@ G.Player = class Player {
     this.y += this.svy * dt;
     G.World.collide(this);
     if (this.walking) this.moveAngle = Math.atan2(ay, ax);
+    if (this.walking && this.wandN) this.wandN = 0;          // Varita de Saúco: al moverte se pierde
 
     // --- terreno líquido ---
     this.inLiquid = G.World.isLiquid(this.x, this.y);

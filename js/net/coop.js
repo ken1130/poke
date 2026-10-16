@@ -422,6 +422,7 @@ G.Coop = (() => {
           const e = G.EnemyMgr.get(ev[1]);
           if (!e || e.dead) break;
           if (ev[2] === 'b') e.applyBurn(ev[3]);
+          else if (ev[2] === 'B') e.applyBurnFloor(ev[3]);           // artefacto Equipo de Shixin
           else if (ev[2] === 'p') e.applyPoison(ev[3]);
           else if (ev[2] === 's') e.applySlow(ev[3]);
           else if (ev[2] === 'r') e.applyRoot(ev[3]);

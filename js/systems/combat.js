@@ -66,9 +66,10 @@ G.Combat = (() => {
       return;
     }
     const row = G.Moves.stat(m);
-    m.t = Math.max(0.05, ((row && row.cd) || m.cd) * pl.cdMul);
+    m.t = Math.max(0.05, ((row && row.cd) || m.cd) * pl.cdK);
     // Los pasivos no hacen animación ni se mandan a los demás (sólo cuenta su efecto).
     if (!G.Moves.isPassive(m)) {
+      G.Arts.onAttack(pl, m);           // Varita de Saúco: cada ataque, un poco menos de recarga
       pl.cast(m);
       if (G.Coop.active) G.Coop.cast(pl, m);
     }
@@ -1004,7 +1005,7 @@ G.Combat = (() => {
   }
 
   function buff(pl, m) {
-    pl.addBuff(m.stat, m.amount, m.dur, m.stacks | 0);
+    pl.addBuff(m.stat, m.amount, m.dur, G.Arts.buffCap(pl, m, m.stacks | 0));
     const col = G.U.TYPE_COLOR[m.type];
     G.FX.ring(pl.x, pl.y, pl.r * 2.4, pl.r * 1.1, col, 0.35, 2.5);
     const vis = G.VFX.forMove(m);
@@ -1579,6 +1580,7 @@ G.Combat = (() => {
     const crit = !ghost && (opt && opt.crit != null ? opt.crit
       : m.critBonus ? Math.random() < (pl.critChance || 0) + m.critBonus : isCrit(pl));
     dmg *= k * (crit ? (opt && opt.cmul) || pl.critMul || CRIT_MUL : 1) * itemK(pl, m.type, e);
+    if (G.Arts.zeroed()) { G.Arts.miss(e); return; }          // Dados del Doble o Nada: este golpe no hace nada
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
     pl.dmgDealt += dmg;
@@ -1586,6 +1588,7 @@ G.Combat = (() => {
     if (m.poison) e.applyPoison(m.poison);
     if (m.slow) e.applySlow(m.slow);
     if (!ghost && (m.rootCh || m.weakCh)) extraFx(e, m.rootCh, m.rootT, m.weakCh);
+    if (!ghost) G.Arts.onHit(pl, e);               // Equipo de Shixin: quema
   }
 
   /**
@@ -1601,7 +1604,7 @@ G.Combat = (() => {
       e.applyRoot(0.6);
       if (G.Camera.sees(e.x, e.y, 20)) G.FX.ring(e.x, e.y, 4, 22, '#9aa6b5', 0.3, 2);
     }
-    return venom * (pl.hasItem('expertbelt') && type && G.Types.mult(type, e.types) > 1 ? 1.3 : 1);
+    return venom * G.Arts.diceK(pl) * (pl.hasItem('expertbelt') && type && G.Types.mult(type, e.types) > 1 ? 1.3 : 1);
   }
 
   // ---------------- colisiones ----------------
@@ -1633,7 +1636,9 @@ G.Combat = (() => {
           continue;
         }
         if (G.U.dist2(p.x, p.y, pl.x, pl.y) < (p.r + pl.r) * (p.r + pl.r)) {
-          pl.hurt(p.dmg, p.mtype);
+          // Hígado del Ingeniero (artefacto): los proyectiles no te hacen nada.
+          if (pl.hasItem('liver') && !pl.dead) G.Arts.blocked(pl);
+          else pl.hurt(p.dmg, p.mtype);
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 7, 110);
           projectiles.splice(i, 1);
         }
@@ -1729,15 +1734,19 @@ G.Combat = (() => {
         }
         const crit = isCrit(pl);
         const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? pl.critMul || CRIT_MUL : 1) * itemK(pl, p.mtype, e);
-        e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
-               crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
-        if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
-        pl.dmgDealt += p.dmg * k;
-        pl.onDealt(p.dmg * k);
-        if (p.burn) e.applyBurn(p.burn);
-        if (p.poison) e.applyPoison(p.poison);
-        if (p.slow) e.applySlow(p.slow);
-        if (p.rootCh || p.weakCh) extraFx(e, p.rootCh, p.rootT, p.weakCh);
+        if (G.Arts.zeroed()) G.Arts.miss(e);                   // Dados: el disparo no hace nada (pero choca igual)
+        else {
+          e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
+                 crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
+          if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
+          pl.dmgDealt += p.dmg * k;
+          pl.onDealt(p.dmg * k);
+          if (p.burn) e.applyBurn(p.burn);
+          if (p.poison) e.applyPoison(p.poison);
+          if (p.slow) e.applySlow(p.slow);
+          if (p.rootCh || p.weakCh) extraFx(e, p.rootCh, p.rootT, p.weakCh);
+          G.Arts.onHit(pl, e);
+        }
 
         if (!p.orb) {
           if (p.split && p.pierce > 0) splitSpear(p, e);   // Lanza Sombría: se parte al perforar

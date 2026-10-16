@@ -48,14 +48,67 @@ G.Items = (() => {
       on: p => { p.balloon = true; p.balloonT = 0; p.spdMul *= 1.25; },
       off: p => { if (p.balloon) p.spdMul /= 1.25; p.balloon = false; p.balloonT = 0; } }
   ];
+  /*
+   * ---- Artefactos (2026-10-16) ----
+   * Sólo salen de los cofres con candado (10 %, world.js). Ocupan un hueco de objeto y
+   * sólo otro artefacto los puede sustituir (game.js offerItem). Lo que hacen al golpear,
+   * al moverse, etc. está en systems/artifacts.js (G.Arts); aquí sólo lo fijo.
+   * Números ajustados a la escala del juego (ver docs/dev/MOD-NOTES.md, "Artefactos").
+   */
+  const ART = { quicksilver: { spd: 1.5, stepDmg: 14, stepEvery: 0.5, stepLife: 1, cap: 10 },
+                arsenal: { atk: 1.3, crit: 0.15, critMul: 1.5, cap: 15 },
+                elderwand: { per: 0.05, max: 0.6 },
+                liver: { red: 0.35, cap: 10 },
+                dice: { win: 0.9, mul: 2 },
+                climber: { stacks: 6 },
+                tank64: { hp: 200 } };
+  const ARTS = [
+    { id: 'quicksilver', art: true, name: 'Los Pies de Mercurio', short: 'Pies de Mercurio',
+      desc: '+50% de velocidad. Dejas huellas que duran 1 s: los enemigos que las pisan reciben daño (14 × tu ataque, cada 0,5 s). Con Agilidad, la velocidad se acumula hasta Nv. 10. El agua no te frena.',
+      on: p => { p.spdMul *= ART.quicksilver.spd; }, off: p => { p.spdMul /= ART.quicksilver.spd; } },
+    { id: 'arsenal', art: true, name: 'El Arsenal del Vecino', short: 'Arsenal del Vecino',
+      desc: '+30% de ataque. Con Danza Espada, el ataque se acumula hasta Nv. 15. Si no tienes crítico, +15% de probabilidad de crítico. Los críticos hacen +150% de daño.',
+      on: p => {
+        p.atkMul *= ART.arsenal.atk;
+        p._arsCrit = (p.critChance || 0) > 0 ? 0 : ART.arsenal.crit;
+        p.critChance = (p.critChance || 0) + p._arsCrit;
+        p.critMul = (p.critMul || 1.5) + ART.arsenal.critMul;
+      },
+      off: p => {
+        p.atkMul /= ART.arsenal.atk;
+        p.critChance -= p._arsCrit || 0; p._arsCrit = 0;
+        p.critMul -= ART.arsenal.critMul; if (p.critMul <= 1.5) p.critMul = 0;
+      } },
+    { id: 'elderwand', art: true, name: 'La Varita de Saúco Partida', short: 'Varita de Saúco',
+      desc: 'Cada ataque baja un 5% más la recarga (se acumula, hasta -60%). Si te mueves, vuelve a 0.',
+      on: p => { p.wandN = 0; }, off: p => { p.wandN = 0; } },
+    { id: 'liver', art: true, name: 'El Hígado del Ingeniero de Guardia', short: 'Hígado del Ingeniero',
+      desc: '+35% de reducción de daño. Con Fortaleza, la defensa se acumula hasta Nv. 10. Inmune a todos los proyectiles (no a cuerpo a cuerpo ni rayos).',
+      on: p => { p.dmgReduce += ART.liver.red; }, off: p => { p.dmgReduce -= ART.liver.red; } },
+    { id: 'dice', art: true, name: 'Los Dados del Doble o Nada', short: 'Dados Doble o Nada',
+      desc: 'Cada golpe: 90% de hacer el doble de daño y 10% de no hacer nada.',
+      on: () => {}, off: () => {} },
+    { id: 'climber', art: true, name: 'El Equipo de Escalada de Shixin', short: 'Equipo de Shixin',
+      desc: 'Tus golpes queman: unos 20 de daño por segundo (sube con tu nivel, como las quemaduras).',
+      on: () => {}, off: () => {} },
+    { id: 'tank64', art: true, name: 'El Tanque 64', short: 'Tanque 64',
+      desc: '+200 de vida máxima.',
+      on: p => { p.addMaxHp(ART.tank64.hp); }, off: p => { p.maxHp -= ART.tank64.hp; p.hp = Math.min(p.hp, p.maxHp); } }
+  ];
   const BY = {};
   for (const it of LIST) BY[it.id] = it;
+  for (const it of ARTS) BY[it.id] = it;
 
-  /** Uno al azar, distinto del que ya llevas. */
+  /** Uno al azar, distinto del que ya llevas (nunca un artefacto). */
   function roll(except) {
     const pool = LIST.filter(i => i.id !== except);
     return G.U.pick(pool).id;
   }
+  /** Un artefacto al azar. */
+  function rollArt() { return G.U.pick(ARTS).id; }
+  const isArt = id => !!(BY[id] && BY[id].art);
+  /** Probabilidad de artefacto en cada cofre con candado. */
+  const ART_CHANCE = 0.1;
 
-  return { LIST, BY, roll };
+  return { LIST, ARTS, ART, BY, roll, rollArt, isArt, ART_CHANCE };
 })();

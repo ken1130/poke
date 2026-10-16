@@ -185,6 +185,38 @@ G.Icons = (() => {
     airballoon: { pal: { r: '#ff5f6d', d: '#b8283a', w: '#ffd3d8', s: '#e8eef8' }, rows: [
       '...kkkkkk...', '..krrrrrrk..', '.krwwrrrrdk.', '.krwrrrrrdk.', '.krrrrrrrdk.', '.krrrrrrddk.',
       '..krrrrddk..', '...krrddk...', '....kddk....', '.....kk.....', '......s.....', '.....s......'] },
+    // ---------- artefactos (data/items.js ARTS, 2026-10-16): 18×18, más detalle que los objetos ----------
+    quicksilver: { pal: { s: '#e6eef8', m: '#a9b6c9', d: '#66758c', w: '#ffffff', b: '#5fd4ff', c: '#2a8fd0', y: '#ffd23f' }, rows: [
+      '..................', '.........kkkk.....', '........kmssk.....', '.kk.....kmssk.....', 'kwwk....kmssk.....', 'kwwwkk..kmssk.....',
+      '.kwwwwk.kmsssk....', '.kkwwwbkkmsssk....', 'kwwwwbbbkmssssk...', '.kkkwbbkmsssssskk.', '...kkkkmssssswsssk', '.....kmsssssssssk.',
+      '....kmmsssssssssk.', '....kmdddddddddsk.', '....kyyyyyyyyyyyk.', '.....kkkkkkkkkkkk.', '.b..b.....b....b..', 'b....c..b....c...b'] },
+    arsenal: { pal: { s: '#e6eef8', m: '#a9b6c9', d: '#66758c', h: '#8a5a2b', j: '#5c3a1a', g: '#4f8a3a', f: '#2f5a22', y: '#ffd23f', r: '#ff5f6d' }, rows: [
+      'kk..............kk', 'kmk............kmk', '.kmk..........kmk.', '..ksk........ksk..', '...ksk......ksk...', '....ksk....ksk....',
+      '.....ksk..ksk.....', '......kskksk......', '.......kssk.......', '....kkkkkkkkkk....', '...kyhkkkkkkhyk...', '..kggggggggggggk..',
+      '..kgyyggrrggyygk..', '..kggggggggggggk..', '..kgggfffffgggfk..', '..kffffffffffffk..', '..kffffffffffffk..', '...kkkkkkkkkkkk...'] },
+    elderwand: { pal: { h: '#8a5a2b', j: '#5c3a1a', l: '#c08a50', w: '#ffffff', y: '#fff3a0', p: '#c47bff', q: '#e2b8ff' }, rows: [
+      '...............q..', '..............qwq.', '...............q..', '............kk....', '...........klhk...', '..........klhjk...',
+      '.........klhjk....', '........kkhjkk....', '.......kjlhjk.....', '.......klhjk.k....', '......kklhkk.kk...', '.....klhjk..kjjk..',
+      '....klhjk..kljk...', '...klhjk...khk..y.', '..klhjk.....kk.yw.', '.kkhjk.........y..', '.kjjk.............', '..kk..............'] },
+    liver: { pal: { r: '#b8283a', d: '#7a1222', l: '#ff7a8a', w: '#ffd3d8', c: '#f4f4ff', s: '#c9d2de', b: '#6b3a1a', y: '#ffd23f' }, rows: [
+      '..................', '....kkkkkkkk......', '..kkllrrrrrrkkk...', '.klwlrrrrrrrrrrk..', 'klwlrrrrrdrrrrrrk.', 'klrrrrrrrdrrrrrrdk',
+      'krrrrrrrdrrrrrrddk', 'krrrrrrrdrrrrrddk.', '.krrrrrrdrrrrddk..', '.kdrrrrrdrkkkkk...', '..kddrrrrk..s.s...', '...kkddrdk.s.s....',
+      '.....kkdk.kkkkkk..', '.......kk.kcbbbckk', '..........kccccckk', '..........kcyyyck.', '..........kccccck.', '...........kkkkk..'] },
+    dice: { pal: { w: '#ffffff', s: '#d8dee8', g: '#9aa6b5', r: '#ff3048', d: '#a01428', p: '#ffd3d8' }, rows: [
+      '..........kkkkkkk.', '.........krrrrrrdk', '........kprwwrrrdk', '........krwwrrrrdk', '........krrrrwwrdk', '..kkkkkkkrrrrwwrdk',
+      '.kwwwwwwkrrrrrrrdk', 'kwwwwwwwskddddddk.', 'kwkkwwwwsgkkkkkk..', 'kwkkwwwwsgk.......', 'kwwwwwwwsgk.......', 'kwwwkkwwsgk.......',
+      'kwwwkkwwsgk.......', 'kwwwwwwwsgk.......', 'kwwwwwkksgk.......', 'kwwwwwkksgk.......', '.ksssssssgk.......', '..kkkkkkkkk.......'] },
+    climber: { pal: { o: '#ff9a3d', d: '#c0601a', l: '#ffc070', s: '#e6eef8', m: '#a9b6c9', g: '#66758c', h: '#8a5a2b', j: '#5c3a1a', r: '#ff5f6d', y: '#ffd23f' }, rows: [
+      '.kkkkkk...........', 'kssmmmgk..........', 'kkkkskgk..........', '....kkhk..........', '.....khjk.........', '......khjk........',
+      '.......khjkkkkk...', '.....kkkhjooooookk', '....kooolkjkkkkook', '...kolkkkkhjk..kok', '...kok.kgk.khjkkok', '...kok.kmk..khjkok',
+      '...kok.kmk...kkdok', '...kook.kmk....kdk', '....kooookgk.kdok.', '.....kddddkkkddk..', '......kkkkkkkkk...', '..................'] },
+    tank64: { pal: { g: '#5fa84a', f: '#3a7030', l: '#9ad870', d: '#2a2a3a', m: '#66758c', w: '#ffffff', y: '#ffd23f', r: '#ff5f6d' }, rows: [
+      '..................', '..................', '..................', '..................', '.......kkkkkk.....', '......klggggfk....',
+      '.....klgyyggfkkkkk', '.....kggyggggmmmmk', '.....kgyyygffkkkkk', '..kkkkkkkkkkkkkk..', '.klllgggggggggffk.', 'kggggggggggggggffk',
+      'kkkkkkkkkkkkkkkkkk', 'kdmdmdmdmdmdmdmdmk', 'kmdmdmdmdmdmdmdmdk', '.kddddddddddddddk.', '..kkkkkkkkkkkkkk..', '..................'] },
+    lock: { pal: { y: '#ffd23f', o: '#c08a10', g: '#9aa6b5', w: '#fff3b0' }, rows: [
+      '....kkkk....', '...kggggk...', '..kgk..kgk..', '..kgk..kgk..', '.kkkkkkkkkk.', '.kwyyyyyyok.',
+      '.kyyykkyyok.', '.kyyykkyyok.', '.kyyyykyyok.', '.kyyyyyyyok.', '.kkkkkkkkkk.', '............'] },
     // ---------- reliquias de la torre (relics.js, 2026-10-15) ----------
     relic_fang: { pal: { w: '#f4f4ff', s: '#b8c0d0', r: '#ff3048', d: '#a01428' }, rows: [
       '....kkkk....', '...kwwwsk...', '...kwwwsk...', '...kwwwsk...', '....kwwsk...', '....kwwsk...',

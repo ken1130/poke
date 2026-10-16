@@ -125,7 +125,7 @@ G.Game = (() => {
     G.UI.chrome(false);
     G.FX.clear();
     G.Projectiles.clear();
-    G.Combat.clearFields();
+    G.Combat.clearFields(); G.Arts.reset();
     G.EnemyMgr.clear();
     G.Pickups.clear();
     G.Loot.reset();
@@ -596,9 +596,14 @@ G.Game = (() => {
     let mine = false;            // esta elección es la que ha parado el juego
     const take = replace => {    // replace: el que se quita (undefined = hay hueco, null = no lo coges)
       if (replace !== null) {
-        pl.equip(id, replace);
-        G.Spawner.say('¡Llevas ' + G.Items.BY[id].name + '!', 2.6, true);
-        G.Progress.event('item', { id });
+        // (un artefacto sólo lo quita otro artefacto: la ventana ya no deja elegirlo, pero por si acaso)
+        if (replace && G.Items.isArt(replace) && !G.Items.isArt(id)) replace = null;
+        else {
+          pl.equip(id, replace);
+          G.Spawner.say(G.I18n.f(G.Items.isArt(id) ? '¡Artefacto: {x}!' : '¡Llevas {x}!', G.T(G.Items.BY[id].name)), 2.6, true);
+          if (G.Items.isArt(id)) { G.Audio.sfx('legend'); G.FX.ring(pl.x, pl.y, 8, 120, '#ffd23f', 0.7, 5); G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ff8ad8', 24, 200); }
+          G.Progress.event('item', { id });
+        }
       }
       if (!mine) return;
       if (G.Coop.active) doneChoosing();
@@ -719,7 +724,7 @@ G.Game = (() => {
     }
     if (G.UI.isOpen('scr-item')) {
       for (let i = 0; i < 3; i++) {
-        const c = document.querySelectorAll('#item-cards .card')[i];
+        const c = document.querySelectorAll('#item-cards .card:not(.locked)')[i];
         if (c && (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1)))) c.click();
       }
       return;
@@ -817,7 +822,7 @@ G.Game = (() => {
         choiceT = 20;
         if (G.UI.isOpen('scr-levelup')) G.RunUI.pick(0);
         else if (G.UI.isOpen('scr-bond')) G.RunUI.pickBond(0);
-        else if (G.UI.isOpen('scr-item')) { const c = document.querySelector('#item-cards .card'); if (c) c.click(); }
+        else if (G.UI.isOpen('scr-item')) { const c = document.querySelector('#item-cards .card:not(.locked)'); if (c) c.click(); }
         else if (G.UI.isOpen('scr-sbox')) document.getElementById('sbox-ok').click();
         else if (G.UI.isOpen('scr-relic')) G.Relics.pick(0);
         else if (G.UI.isOpen('scr-boon')) G.Boons.pick(0);
@@ -895,6 +900,7 @@ G.Game = (() => {
     G.Combat.tick(dt, pl, time);
     G.Projectiles.update(dt, pl, G.EnemyMgr.all());
     G.Combat.resolve(dt, pl, time);
+    G.Arts.update(dt, pl);                                       // artefactos: huellas de Pies de Mercurio
     G.Combat.updateFields(dt);
     G.Pickups.update(dt, all, onCollect);
     if (!coop || G.Coop.isHost) G.Loot.tick(dt, time, all);      // discos de movimientos y pociones
@@ -1054,6 +1060,7 @@ G.Game = (() => {
     G.World.drawLiquid(ctx, cam, t);
     G.Hazards.draw(ctx);
     G.Combat.drawGroundFields(ctx);
+    G.Arts.draw(ctx);
     G.Dungeon.drawGround(ctx);
     G.Pickups.draw(ctx);
 

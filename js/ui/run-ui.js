@@ -145,21 +145,32 @@ G.RunUI = (() => {
     const box = $('item-cards');
     box.innerHTML = '';
     const nx = G.Items.BY[next];
+    // Artefactos (2026-10-16): sólo otro artefacto puede quitar uno. Con un objeto normal,
+    // los artefactos que llevas salen bloqueados (y si los dos lo son, sólo queda no cogerlo).
+    const art = id => G.Items.isArt(id);
+    const tag = id => art(id) ? `<span class="art-chip">${G.T('Artefacto')}</span> ` : '';
     const opts = cur.map(id => {
       const it = G.Items.BY[id];
-      return { icon: id, title: G.I18n.f('Cambiar {x} por {x}', G.T(it.name), G.T(nx.name)),
+      if (art(id) && !art(next)) {
+        return { icon: id, title: tag(id) + G.T(it.name), locked: true, isArt: true,
+          desc: `<span class="swap-lock">${G.T('Un artefacto sólo se puede cambiar por otro artefacto.')}</span>` };
+      }
+      return { icon: id, title: tag(next) + G.I18n.f('Cambiar {x} por {x}', G.T(it.name), G.T(nx.name)),
         desc: `<span class="swap-lose">${G.I18n.f('Pierdes {x}: {x}', G.T(it.name), G.T(it.desc))}</span><br>` +
               `<span class="swap-gain">${G.I18n.f('Ganas {x}: {x}', G.T(nx.name), G.T(nx.desc))}</span>`,
-        val: id, evo: true };
+        val: id, evo: !art(next), isArt: art(next) };
     })
-      .concat([{ icon: next, title: G.I18n.f('No coger {x}', G.T(nx.name)), desc: G.T('Te quedas con los dos que llevas.'), val: null }]);
-    opts.forEach((o, i) => {
+      .concat([{ icon: next, title: tag(next) + G.I18n.f('No coger {x}', G.T(nx.name)),
+        desc: cur.every(art) && !art(next) ? G.T('Llevas dos artefactos: un objeto normal no los puede sustituir.') : G.T('Te quedas con los dos que llevas.'), val: null }]);
+    let n = 0;
+    opts.forEach(o => {
       const el = document.createElement('div');
-      el.className = 'card' + (o.evo ? ' evo' : '');
+      el.className = 'card' + (o.evo ? ' evo' : '') + (o.isArt ? ' art' : '') + (o.locked ? ' locked' : '');
       el.innerHTML = `<div class="ico">${G.Icons.html(o.icon, 36)}</div>
         <div class="txt"><div class="nm">${o.title}</div><div class="ds">${o.desc}</div></div>
-        <div class="key">${i + 1}</div>`;
-      el.onclick = () => { G.UI.hide('scr-item'); cb(o.val); };
+        <div class="key">${o.locked ? G.Icons.html('lock', 24) : ++n}</div>`;
+      if (o.locked) el.dataset.sfx = 'none';
+      else el.onclick = () => { G.UI.hide('scr-item'); cb(o.val); };
       box.appendChild(el);
     });
     G.UI.show('scr-item');
@@ -241,7 +252,7 @@ G.RunUI = (() => {
       ['Vida', Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp)],
       ['Ataque', mul(pl.atk)],
       ['Velocidad', String(Math.round(pl.spd))],
-      ['Recarga', pl.cdMul < 1 ? '−' + pct(1 - pl.cdMul) : '—'],
+      ['Recarga', pl.cdK < 1 ? '−' + pct(1 - pl.cdK) : '—'],
       ['Crítico', pct(pl.critChance || 0)],
       ['Daño crítico', mul(pl.critMul || 1.5)],
       ['Reducción de daño', pl.reduction > 0 ? pct(pl.reduction) : '—'],

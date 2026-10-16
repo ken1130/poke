@@ -214,6 +214,15 @@
       if (this.remote) { G.Coop.status(this, 'b', stacks); return; }
       this.burn = Math.min(8, this.burn + stacks); this.burnT = 3;
     }
+    /** Quemadura mínima (Equipo de Shixin, artefacto): al menos `n` acumulaciones durante 3 s. */
+    applyBurnFloor(n) {
+      if (this.remote) {
+        const t = performance.now();
+        if (t - (this.bfAt || 0) > 500) { this.bfAt = t; G.Coop.status(this, 'B', n); }
+        return;
+      }
+      this.burn = Math.max(this.burn, Math.min(8, n)); this.burnT = Math.max(this.burnT, 3);
+    }
     applyPoison(stacks = 1) {
       if (this.remote) { G.Coop.status(this, 'p', stacks); return; }
       this.poison = Math.min(8, this.poison + stacks); this.poisonT = 4;
