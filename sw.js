@@ -5,7 +5,7 @@
  *   (se van guardando según se usan: no se descarga todo de golpe).
  * - Firebase y demás servicios de fuera no se tocan.
  */
-const CODE = 'ps-code-v1', ART = 'ps-art-v1';
+const CODE = 'ps-code-v2', ART = 'ps-art-v1';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CODE).then(c => c.addAll(['./', './index.html', './css/style.css', './manifest.webmanifest'])).catch(() => {}));
@@ -33,7 +33,11 @@ self.addEventListener('fetch', e => {
     }));
     return;
   }
-  e.respondWith(fetch(req).then(res => {
+  // (2026-10-16) Siempre se pregunta al servidor si ha cambiado (cache: 'no-cache'): si no, la caché HTTP del
+  // navegador podía devolver un index.html viejo aunque hubiera versión nueva (el botón nuevo no aparecía).
+  // Las navegaciones no admiten opciones sobre la misma Request: se piden por URL.
+  const fresh = req.mode === 'navigate' ? fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(req, { cache: 'no-cache' });
+  e.respondWith(fresh.then(res => {
     if (res.ok) { const copy = res.clone(); caches.open(CODE).then(c => c.put(req, copy)); }
     return res;
   }).catch(async () => {
