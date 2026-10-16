@@ -68,11 +68,67 @@ G.Modes = (() => {
 
   // ---------------- reto diario ----------------
 
-  function today() {
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  /*
+   * (2026-10-16) El día va por la hora de Taiwán (UTC+8), no por la de cada aparato: así el
+   * reto cambia a la vez para todos (antes, con el reloj de cada uno, dos amigos en husos
+   * distintos jugaban retos distintos el mismo rato).
+   */
+  const TZ = 8 * 3600 * 1000;
+  function dayKey(ms) {
+    const d = new Date(ms + TZ);
+    return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
   }
+  function today() { return dayKey(Date.now()); }
+  function yesterday() { return dayKey(Date.now() - 86400000); }
   function dailySeed() { return +today().replace(/-/g, ''); }
+
+  /*
+   * Lo que cambia cada día (2026-10-16), igual para todos: el Pokémon con el que se juega
+   * (en solitario; no hace falta tenerlo y va sin las mejoras de la tienda, para que la
+   * clasificación sea justa) y 1 o 2 reglas de DAILY_RULES. `excl`: no salen dos del mismo
+   * grupo (p. ej. dos que tocan tu vida). Ninguna sube el premio: el reto no es para farmear.
+   */
+  const DAILY_RULES = [
+    { id: 'fast',   excl: 'spd',  name: 'Enemigos veloces', desc: 'Los enemigos van un 25 % más rápido.', rules: { spd: 1.25 } },
+    { id: 'tough',  excl: 'hp',   name: 'Piel dura', desc: 'Los enemigos tienen un 40 % más de vida.', rules: { hp: 1.4 } },
+    { id: 'horde',  excl: 'cnt',  name: 'Marea', desc: 'Un 35 % más de enemigos.', rules: { count: 1.35 } },
+    { id: 'glass',  excl: 'me',   name: 'Cañón de cristal', desc: 'Tu vida ×0,3, pero tu ataque ×2.', rules: { glass: 1 } },
+    { id: 'allin',  excl: 'me',   name: 'Todo o nada', desc: 'Recibes ×1,5 de daño, pero haces ×1,4.', rules: { taken: 1.5, meAtk: 1.4 } },
+    { id: 'rush',   excl: 'spd',  name: 'Carrera loca', desc: 'Tú vas un 20 % más rápido y los enemigos un 15 %.', rules: { meSpd: 1.2, spd: 1.15 } },
+    { id: 'lowheal', excl: 'heal', name: 'Curas escasas', desc: 'Todo lo que te cura, a la mitad.', rules: { heal: 0.5 } },
+    { id: 'dark',   excl: 'dark', name: 'Noche oscura', desc: 'Sólo ves lo que tienes cerca.', rules: { dark: 1 } },
+    { id: 'elites', excl: 'cnt',  name: 'Día de élites', desc: 'Los enemigos de élite salen ×3 más a menudo.', rules: { eliteK: 3 } },
+    { id: 'onemove', excl: 'me',  name: 'Un solo ataque', desc: 'Sólo puedes llevar un movimiento de ataque.', rules: { oneMove: 1 } },
+    { id: 't-bug',  excl: 'type', name: 'Día del bosque', desc: 'Sólo salen Pokémon de tipo Bicho y Planta.', rules: { types: ['bug', 'grass'] } },
+    { id: 't-sea',  excl: 'type', name: 'Día del mar', desc: 'Sólo salen Pokémon de tipo Agua y Hielo.', rules: { types: ['water', 'ice'] } },
+    { id: 't-fire', excl: 'type', name: 'Día del volcán', desc: 'Sólo salen Pokémon de tipo Fuego y Roca.', rules: { types: ['fire', 'rock'] } },
+    { id: 't-mind', excl: 'type', name: 'Día místico', desc: 'Sólo salen Pokémon de tipo Psíquico y Hada.', rules: { types: ['psychic', 'fairy'] } },
+    { id: 't-night', excl: 'type', name: 'Día de sombras', desc: 'Sólo salen Pokémon de tipo Fantasma y Siniestro.', rules: { types: ['ghost', 'dark'] } }
+  ];
+  let dayCache = null;          // { day, dex, rules: [DAILY_RULES...] }
+  function daily() {
+    const day = today();
+    if (dayCache && dayCache.day === day) return dayCache;
+    const r = rng(dailySeed() * 31 + 7);
+    // Pokémon del día: cualquiera con sprite que no sea legendario ni singular (y no los originales).
+    const pool = G.DEX.filter(p => G.SPRITE_META[p.dex] && !p.leg && p.rarity < 5 && p.bst >= 300 && p.bst <= 560);
+    const dex = pool.length ? pool[Math.floor(r() * pool.length)].dex : G.STARTERS[0].dex;
+    const n = r() < 0.5 ? 1 : 2, picked = [];
+    for (let k = 0; k < 40 && picked.length < n; k++) {
+      const c = DAILY_RULES[Math.floor(r() * DAILY_RULES.length)];
+      if (!picked.some(o => o.excl === c.excl)) picked.push(c);
+    }
+    dayCache = { day, dex, rules: picked };
+    return dayCache;
+  }
+  /** Las reglas de hoy juntas (multiplicando las que se repiten). */
+  function dailyRules() {
+    const out = {};
+    for (const c of daily().rules) for (const [k, v] of Object.entries(c.rules)) out[k] = typeof v === 'number' && typeof out[k] === 'number' ? out[k] * v : v;
+    return out;
+  }
+  /** ¿Es mejor la marca a que la b? Tiempo primero; a igual tiempo, más derrotados. */
+  const better = (a, b) => !b || a.time > b.time || (a.time === b.time && (a.kills | 0) > (b.kills | 0));
 
   /** Aleatorio con semilla (mulberry32). */
   function rng(seed) {
@@ -141,15 +197,18 @@ G.Modes = (() => {
       const mon = G.T(G.DEX_BY[r.dex].name);
       const line = G.I18n.f('Pokémon Dungeon Survivors · Reto diario {x} · {x} · {x} · Lv {x} · {x} derrotados',
         today(), mon, G.U.mmss(r.time), r.level, r.kills);
-      const best = dailyBest();
-      const better = !best || r.time > best.time;
-      if (better) writeJSON(KEY_DAILY + today(), { time: Math.floor(r.time), level: r.level, kills: r.kills, dex: r.dex });
+      const best = dailyBest(), mine = { time: Math.floor(r.time), level: r.level, kills: r.kills | 0, dex: r.dex };
+      const isBest = better(mine, best);
+      if (isBest) writeJSON(KEY_DAILY + today(), mine);
+      const rulesTxt = daily().rules.map(c => G.T(c.name)).join(' · ');
       postDaily(r);
       const streak = G.Challenges.markDaily();
       html = `<div style="grid-column:1/-1" class="panel"><span>${G.T('Reto diario')} ${today()}</span>
         <div style="color:#ff9a3d"><b>🔥 ${G.I18n.f('Racha: {x} días seguidos', streak)}</b></div>
         <p class="daily-line" style="margin:6px 0;font-size:14px;user-select:all">${line}</p>
-        ${better ? `<div class="gold">${G.T('¡Tu mejor marca de hoy!')}</div>` : `<div style="color:var(--muted)">${G.I18n.f('Tu mejor marca de hoy: {x}', G.U.mmss(best.time))}</div>`}
+        <div style="font-size:13px;color:var(--muted)">${G.T('Reglas de hoy')} · ${rulesTxt}</div>
+        <div><b class="gold">${G.I18n.f('Marca: {x} · {x} derrotados', G.U.mmss(mine.time), mine.kills)}</b></div>
+        ${isBest ? `<div class="gold">${G.T('¡Tu mejor marca de hoy!')}</div>` : `<div style="color:var(--muted)">${G.I18n.f('Tu mejor marca de hoy: {x} · {x} derrotados', G.U.mmss(best.time), best.kills | 0)}</div>`}
         <button class="btn small gold" type="button" id="over-share">${G.T('Copiar resultado')}</button></div>`;
       box.insertAdjacentHTML('beforeend', html);
       $('over-share').onclick = () => copy(line);
@@ -176,7 +235,7 @@ G.Modes = (() => {
     try {
       const ref = dailyCol().doc(G.DB.fb.uid);
       const old = await ref.get();
-      if (old.exists && (old.data().t || 0) >= Math.floor(r.time)) return;
+      if (old.exists && !better({ time: Math.floor(r.time), kills: r.kills | 0 }, { time: old.data().t || 0, kills: old.data().kills | 0 })) return;
       await ref.set({ name: String(G.DB.user || '').slice(0, 16), t: Math.floor(r.time), lv: r.level | 0, kills: r.kills | 0, dex: r.dex | 0,
                       at: firebase.firestore.FieldValue.serverTimestamp() });
     } catch (e) { console.warn('[Reto diario] no se pudo subir:', e.code || e.message); }
@@ -195,11 +254,13 @@ G.Modes = (() => {
     const list = ov.querySelector('#db-list');
     if (!G.DB.online) { list.textContent = G.T('Vincula tu cuenta de Google para salir en la clasificación y verla.'); return; }
     try {
+      // Los 50 de más tiempo y, entre ellos, a igual tiempo manda quien derrotó más: se enseñan 20.
       const snap = await dailyCol().orderBy('t', 'desc').limit(50).get();
+      const docs = snap.docs.slice().sort((a, b) => (b.data().t - a.data().t) || ((b.data().kills | 0) - (a.data().kills | 0))).slice(0, 20);
       const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
       const me = G.DB.fb.uid;
       list.innerHTML = snap.empty ? G.T('Nadie ha jugado el reto de hoy todavía. ¡Sé el primero!')
-        : `<table style="width:100%;border-collapse:collapse;font-size:14px">` + snap.docs.map((d, i) => {
+        : `<table style="width:100%;border-collapse:collapse;font-size:14px">` + docs.map((d, i) => {
             const v = d.data(), mon = G.DEX_BY[v.dex];
             return `<tr${d.id === me ? ' class="gold"' : ''} style="border-bottom:1px solid #ffffff14">
               <td style="padding:4px 6px">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</td>
@@ -294,7 +355,7 @@ G.Modes = (() => {
   }
 
   return {
-    openBoard, on, scene, scale, countMul, rewardMul, healMul, setRules, rule, dailySeed, seeded, rng, start, reset, setRoom, afterRun, openPanel, summary, copy,
+    openBoard, on, scene, daily, dailyRules, yesterday, DAILY_RULES, scale, countMul, rewardMul, healMul, setRules, rule, dailySeed, seeded, rng, start, reset, setRoom, afterRun, openPanel, summary, copy,
     today, dailyBest, legendBest, closePanel, LEGEND_TIERS, legendTier, setLegendTier,
     get run() { return run; }
   };

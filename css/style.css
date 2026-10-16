@@ -983,3 +983,10 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 /* Pokédex: pestaña «Otros» (personajes originales, data/custom.js) */
 .gen-tab.gen-other { border-style: dashed; }
 .cell.custom .custom-pic { width: 92px; height: 80px; display: grid; place-items: center; font: 800 30px Pixelify, sans-serif; color: rgba(255,255,255,.35); }
+
+/* Reto diario (2026-10-16): el Pokémon del día y las reglas en la tarjeta de Desafíos. */
+.daily-card { display: flex; gap: 10px; align-items: flex-start; margin-top: 4px; }
+.daily-mon { flex: none; width: 72px; height: 72px; border-radius: 10px; background: radial-gradient(circle at 50% 60%, rgba(255,210,63,.22), rgba(0,0,0,.3)); border: 1px solid rgba(255,210,63,.35); }
+.daily-mon { overflow: hidden; } .daily-mon canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.daily-rule { margin-top: 3px; padding: 2px 7px; border-left: 3px solid #ff9a3d; background: rgba(255,154,61,.08); border-radius: 0 5px 5px 0; font-size: 13px; }
+@media (max-width: 420px) { .daily-mon { width: 56px; height: 56px; } }

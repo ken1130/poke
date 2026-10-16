@@ -85,7 +85,7 @@ G.Challenges = (() => {
       // Desafío legendario: dificultad elegida (en grupo, normal).
       const T = G.Modes.LEGEND_TIERS[G.Coop.active ? 0 : G.Modes.legendTier()];
       G.Modes.setRules({ lhp: T.hp, ldmg: T.dmg, reward: T.rw });
-    } else if (run === 'daily') G.Modes.setRules({});
+    } else if (run === 'daily') G.Modes.setRules(G.Modes.dailyRules());     // (2026-10-16: las 1-2 reglas del día)
   }
   /** Semilla del mapa: igual para todos (reto diario / semanal) o null. */
   function seed() {
@@ -166,6 +166,7 @@ G.Challenges = (() => {
       return { title: G.I18n.f('Piso {x}', tower.floor), sub: names.join(' · ') };
     }
     if (G.Modes.run === 'weekly') return { title: G.T('Reto semanal'), sub: G.T(weekly().name) };
+    if (G.Modes.run === 'daily') return { title: G.T('Reto diario'), sub: G.Modes.daily().rules.map(c => G.T(c.name)).join(' · ') };
     return null;
   }
 
@@ -258,6 +259,22 @@ G.Challenges = (() => {
 
   // ---------------- ventana "Desafíos" ----------------
 
+  /** Reto diario (2026-10-16): el Pokémon del día, sus reglas y cómo se puntúa. */
+  function dailyBlock() {
+    const d = G.Modes.daily(), mon = G.DEX_BY[d.dex];
+    return `<div class="daily-card">
+        <div class="daily-mon" data-dmon></div>
+        <div class="grow">
+          <div>${G.T('Mismo mapa y mismos enemigos para todos hoy.')}</div>
+          <div><b style="color:#ffd23f">${G.I18n.f('Pokémon del día: {x}', G.T(mon.name))}</b> <small>${G.UI.typeChips ? G.UI.typeChips(mon.types) : ''}</small></div>
+          <small style="color:var(--muted)">${G.T('No hace falta tenerlo; todos sin las mejoras de la tienda.')}</small>
+          ${d.rules.map(c => `<div class="daily-rule"><b>${G.T(c.name)}</b> — ${G.T(c.desc)}</div>`).join('')}
+          <small style="color:var(--muted)">${G.T('Puntúa el tiempo que aguantas; a igual tiempo, gana quien derrota más. En grupo, cada uno con su Pokémon.')}</small>
+        </div>
+      </div>
+      <div style="margin-top:4px;color:#ff9a3d"><b>🔥 ${G.I18n.f('Racha: {x} días seguidos', streakNow())}</b> <small style="color:var(--muted)">${G.T('Premios a los 3, 7, 14 y 30 días')}</small></div>`;
+  }
+
   let overlay = null;
   function close() { if (overlay) { overlay.remove(); overlay = null; } }
   function go(kind) { close(); G.Modes.start(kind); }
@@ -284,9 +301,7 @@ G.Challenges = (() => {
         <div class="row between"><h3 style="margin:0">${G.T('Desafíos')}</h3><button class="btn small ghost" data-close>${G.T('Volver')}</button></div>
         <p class="sub" style="margin:6px 0 0">${G.T('Cada desafío tiene sus propias reglas: las «Reglas a medida» no cuentan aquí.')}
           ${G.T('Con amigos: crea una sala en «Jugar con amigos» y elige el desafío en «Qué jugar» (tiene su clasificación de grupos).')}</p>
-        ${card('daily', 'Reto diario', G.Modes.today(), G.T('Mismo mapa y mismos enemigos para todos hoy. Comparte tu tiempo con tus amigos.')
-          + `<div style="margin-top:4px;color:#ff9a3d"><b>🔥 ${G.I18n.f('Racha: {x} días seguidos', streakNow())}</b> <small style="color:var(--muted)">${G.T('Premios a los 3, 7, 14 y 30 días')}</small></div>`,
-          db ? G.I18n.f('Tu mejor marca de hoy: {x}', G.U.mmss(db.time)) : '', true)}
+        ${card('daily', 'Reto diario', G.Modes.today(), dailyBlock(), db ? G.I18n.f('Tu mejor marca de hoy: {x} · {x} derrotados', G.U.mmss(db.time), db.kills | 0) : '', true)}
         ${card('weekly', 'Reto semanal', isoWeek().key, `<b style="color:#ffd23f">${G.T(wk.name)}</b> — ${G.T(wk.desc)}`,
           wb ? G.I18n.f('Tu mejor marca de la semana: {x}', G.U.mmss(wb.time)) : '', true)}
         ${card('tower', 'Torre sin fin', '', G.T('Cada minuto subes un piso y cae una maldición nueva. ¿Hasta dónde llegas?'),
@@ -298,6 +313,9 @@ G.Challenges = (() => {
           lb ? G.I18n.f('Récord: {x}', lb) : '', false)}
       </div>`;
     overlay.querySelector('[data-close]').onclick = close;
+    // El Pokémon del día, animado.
+    const dm = overlay.querySelector('[data-dmon]');
+    if (dm) dm.appendChild(G.UI.spriteCanvas(G.Modes.daily().dex, 72, 72, { lively: true, scale: 1.5, shadow: true }));
     overlay.querySelectorAll('[data-tier]').forEach(b => { b.onclick = () => { G.Modes.setLegendTier(+b.dataset.tier); G.Audio.sfx('click'); open(); }; });
     overlay.querySelectorAll('[data-go]').forEach(b => { b.dataset.sfx = 'confirm'; b.onclick = () => go(b.dataset.go); });
     overlay.querySelectorAll('[data-board]').forEach(b => {
@@ -322,8 +340,7 @@ G.Challenges = (() => {
   // ---------------- racha del reto diario ----------------
   // save.stats.dailyStreak (días seguidos), dailyLast (último día jugado), bestDailyStreak.
   // Los premios (3, 7, 14 y 30 días) son logros (achievements.js): sale su aviso solo.
-  const dayKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); };
+  const yesterday = () => G.Modes.yesterday();        // (2026-10-16: hora de Taiwán, como today())
   /** Has jugado el reto de hoy: sube la racha. Devuelve la racha. */
   function markDaily() {
     const s = G.DB.save;
