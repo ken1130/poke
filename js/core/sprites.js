@@ -40,6 +40,28 @@ G.Sprites = (() => {
     return c;
   }
 
+  /**
+   * Versión con filtro de una imagen (la furia de los élite: enrojecida). Igual que
+   * white(): se hace una vez por hoja. (2026-10-16: ctx.filter en cada dibujo era lo
+   * que más costaba en el móvil con varios enfurecidos a la vez.) null si no hay filtro.
+   */
+  const tints = new Map();
+  function tinted(img, filter) {
+    let m = tints.get(filter);
+    if (!m) { m = new WeakMap(); tints.set(filter, m); }
+    let c = m.get(img);
+    if (c !== undefined) return c;
+    c = null;
+    try {
+      const cv = document.createElement('canvas');
+      cv.width = img.width; cv.height = img.height;
+      const x = cv.getContext('2d');
+      if (x && 'filter' in x) { x.filter = filter; x.drawImage(img, 0, 0); c = cv; }
+    } catch (e) { c = null; }
+    m.set(img, c);
+    return c;
+  }
+
   /** ¿Tiene versión shiny? (assets/pokemon/{dex}/s/) */
   function hasShiny(dex) { const m = meta(dex); return !!(m && m.sh); }
 
@@ -69,7 +91,11 @@ G.Sprites = (() => {
   // más de una hora pasaban cientos de especies, se llenaba la memoria gráfica
   // y la pantalla se quedaba en negro hasta que el navegador recargaba la página.
   const MAX_SHEETS = 200, IDLE_MS = 20000;   // ~0,66 MB cada una ya dibujada: ~130 MB
+  let evictAt = 0;
   function evict(now) {
+    // (2026-10-16: con el tope lleno se ordenaban las 200 hojas por cada hoja nueva; una vez por segundo basta.)
+    if (now - evictAt < 1000) return;
+    evictAt = now;
     const old = [...sheets].filter(([, s]) => now - s.at > IDLE_MS).sort((a, b) => a[1].at - b[1].at);
     const drop = old.slice(0, Math.max(sheets.size - Math.floor(MAX_SHEETS * 0.75), 0));
     for (const [k, s] of drop) {
@@ -123,13 +149,22 @@ G.Sprites = (() => {
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
 
   /** Precarga todas las animaciones de esos Pokémon. */
+  // Muchos a la vez (la lista de los que van a salir, cada 10 s y al cambiar de bioma):
+  // 7 hojas por Pokémon pedidas en el mismo fotograma daban un tirón de 30-100 ms en el
+  // móvil (2026-10-16). Los dos primeros se piden ya; el resto, de dos en dos, poco a poco.
+  const PRE_NOW = 2, PRE_STEP_MS = 80;
   function preload(dexes, timeout = 8000, shiny = false) {
-    const hs = [];
-    for (const d of dexes) for (const a of ANIMS) { const s = sheet(d, a, shiny); if (s) { s.pre = true; hs.push(s); } }
+    const hs = [], list = dexes.slice();
+    let left = list.length;
+    const take = n => {
+      for (const d of list.splice(0, n)) { left--; for (const a of ANIMS) { const s = sheet(d, a, shiny); if (s) { s.pre = true; hs.push(s); } } }
+      if (list.length) setTimeout(() => take(PRE_NOW), PRE_STEP_MS);
+    };
+    take(PRE_NOW);
     return new Promise(res => {
       const t0 = performance.now();
       (function check() {
-        if (hs.every(h => h.ready || h.failed) || performance.now() - t0 > timeout) return res();
+        if ((!left && hs.every(h => h.ready || h.failed)) || performance.now() - t0 > timeout) return res();
         setTimeout(check, 50);
       })();
     });
@@ -241,7 +276,7 @@ G.Sprites = (() => {
       }
     }
 
-    /** Dibuja con los pies en (x, y). opts: { flash, alpha } */
+    /** Dibuja con los pies en (x, y). opts: { flash, alpha, tint (filtro CSS, se guarda hecho) } */
     draw(ctx, x, y, opts = {}) {
       let m = animMeta(this.dex, this.cur, this.shiny);
       let s = sheet(this.dex, this.cur, this.shiny);
@@ -266,15 +301,16 @@ G.Sprites = (() => {
       const prev = ctx.globalAlpha;
       if (alpha < 1) ctx.globalAlpha = prev * alpha;
       // Destello: blanco entero (enemigos) o medio blanco encima (tu Pokémon).
-      if (!opts.flash || opts.softFlash) ctx.drawImage(s.img, sx, sy, m.w, m.h, dx, dy, m.w * k, m.h * k);
+      const tint = opts.tint ? img => tinted(img, opts.tint) || img : img => img;
+      if (!opts.flash || opts.softFlash) ctx.drawImage(tint(s.img), sx, sy, m.w, m.h, dx, dy, m.w * k, m.h * k);
       if (opts.flash) {
         if (opts.softFlash) ctx.globalAlpha = prev * alpha * 0.55;
-        ctx.drawImage(white(s.img), sx, sy, m.w, m.h, dx, dy, m.w * k, m.h * k);
+        ctx.drawImage(tint(white(s.img)), sx, sy, m.w, m.h, dx, dy, m.w * k, m.h * k);
       }
       ctx.globalAlpha = prev;
     }
   }
 
-  return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight,
+  return { PX, meta, hasShiny, hovers, white, tinted, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight,
            drawShadow, Animator, ANIMS, get sheetCount() { return sheets.size; } };
 })();

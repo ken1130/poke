@@ -250,8 +250,15 @@ G.Dungeon = (() => {
                       carbos: '+8 % de velocidad el resto de la run.', iron: '+5 % de reducción de daño el resto de la run.', ppup: '-6 % de recarga el resto de la run.',
                       magnet: '+30 % de alcance para recoger cosas el resto de la run.', incense: '+15 % de Pokémonedas al acabar la run.',
                       pcandy: 'Tu compañero sube 3 niveles (si aún es un huevo, saldrá con ellos).', pstone: 'Tu compañero sube hasta su próxima evolución (+5 niveles si ya no evoluciona).' };
+  // (2026-10-16: toDataURL de cada icono cada vez que se rehacía la lista; ahora una vez por bioma y dibujo.)
+  const wareUrl = new Map();
   function wareIcon(w) {
-    if (WARE_SPRITE[w.kind]) return `<img src="${G.Tiles.propSprite(G.World.biome, WARE_SPRITE[w.kind], 0).toDataURL()}" style="width:36px;height:36px;image-rendering:pixelated">`;
+    if (WARE_SPRITE[w.kind]) {
+      const k = G.World.biome + ':' + WARE_SPRITE[w.kind];
+      let url = wareUrl.get(k);
+      if (!url) { url = G.Tiles.propSprite(G.World.biome, WARE_SPRITE[w.kind], 0).toDataURL(); wareUrl.set(k, url); }
+      return `<img src="${url}" style="width:36px;height:36px;image-rendering:pixelated">`;
+    }
     return G.Icons.html(w.kind === 'item' ? w.item : w.kind === 'pgear' ? G.Companion.GEAR[w.gear].icon : WARE_ICON[w.kind], 36);
   }
   function showShop(s, tab = 'gen') {

@@ -21,6 +21,7 @@
     return G.U.clamp(Math.round(110 / h * 2) / 2, 1, 2);
   }
 
+  const RAGE_TINT = 'sepia(1) saturate(8) hue-rotate(-55deg) brightness(0.95)';
   class Enemy {
     constructor(def, x, y, sc, boss = false) {
       this.id = nextId++;
@@ -1012,9 +1013,8 @@
       // (Y los que saltan, en arco.)
       const lift = (this.flying && !this.boss ? 1 + Math.sin(this.bob) * 1.5 : 0) + (this.jumpLift || 0);
       // Furia: el sprite enrojecido (filtro del canvas; donde no lo hay, sólo el aura y el vapor).
-      if (raging && Enemy.FILTER) ctx.filter = 'sepia(1) saturate(8) hue-rotate(-55deg) brightness(0.95)';
-      this.anim.draw(ctx, this.x, this.y - lift, { flash: this.flash > 0, alpha });
-      if (raging && Enemy.FILTER) ctx.filter = 'none';
+      // (2026-10-16: la hoja enrojecida se hace una vez y se guarda; ctx.filter en cada dibujo iba muy lento en el móvil.)
+      this.anim.draw(ctx, this.x, this.y - lift, { flash: this.flash > 0, alpha, tint: raging && Enemy.FILTER ? RAGE_TINT : null });
       ctx.restore();
 
       if (this.dead) return;

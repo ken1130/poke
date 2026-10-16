@@ -118,6 +118,13 @@ G.Loot = (() => {
    * brillo dorado; con 4, ¡premio gordo! (borde arcoíris y fiesta). Volver a tirar
    * repite la animación, más corta.
    */
+  const discUrls = new Map();
+  function discUrl(i) {
+    const k = G.World.biome + '/' + i;
+    let u = discUrls.get(k);
+    if (!u) { u = G.Tiles.propSprite(G.World.biome, 'disc', i).toDataURL(); discUrls.set(k, u); }
+    return u;
+  }
   function showBox(pl, done) {
     let list = rollBox(pl), run = 0;
     const boxEl = document.querySelector('#scr-sbox > .box');
@@ -144,7 +151,12 @@ G.Loot = (() => {
       chest.innerHTML = '<img class="sb-disc" alt="">';
       const img = chest.firstChild;
       let fr = 0;
-      const spin = () => { if (!chest.firstChild) return; img.src = G.Tiles.propSprite(G.World.biome, 'disc', fr++ % 6).toDataURL(); setTimeout(spin, quick ? 60 : 90); };
+      // (2026-10-16: los 6 dibujos se pasan a imagen una vez, no un toDataURL cada 90 ms; y el giro
+      // para si la ventana se cierra o se vuelve a abrir, en vez de seguir solo en segundo plano.)
+      const spin = () => {
+        if (me !== run || img.parentNode !== chest || !G.UI.isOpen('scr-sbox')) return;
+        img.src = discUrl(fr++ % 6); setTimeout(spin, quick ? 60 : 90);
+      };
       spin();
       chest.className = 'on shake';
       G.Audio.sfx('select');

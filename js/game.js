@@ -40,10 +40,20 @@ G.Game = (() => {
     requestAnimationFrame(loop);
   }
 
+  // Móvil en calidad baja (2026-10-16): resolución interna ×1 (la mitad de píxeles que ×1,5).
+  // En un móvil lento lo que más cuesta es rellenar píxeles. Una vez que la calidad
+  // automática baja a "baja" se queda así (si no, al ir mejor volvería a subir y a tirones).
+  let lowRes = false;
+  function wantDpr() {
+    if (G.Settings.touch && G.Settings.fx === 0) lowRes = true;
+    return Math.min(lowRes ? 1 : 1.5, window.devicePixelRatio || 1);
+  }
+  G.Settings.on(k => { if (k === 'quality') { lowRes = false; if (cv) resize(); } });
+
   function resize() {
     // Resolución interna como mucho ×1,5: en pantallas ×2 dibujar el doble de
     // píxeles era de lo que más costaba, y con el pixel art no se nota.
-    dpr = Math.min(1.5, window.devicePixelRatio || 1);
+    dpr = wantDpr();
     w = cv.clientWidth; h = cv.clientHeight;
     cv.width = Math.round(w * dpr);
     cv.height = Math.round(h * dpr);
@@ -901,6 +911,7 @@ G.Game = (() => {
     const dt = Math.min(1 / 30, real) * speedK * (state === 'playing' ? G.PvP.timeScale(real) : 1);   // PK: parón al golpear
     last = ts;
     if (state === 'playing') G.Settings.sample(real);
+    if (cv && wantDpr() !== dpr) resize();          // (la calidad automática ha bajado a "baja" en el móvil)
     fpsAcc += real; fpsN++;
     if (fpsAcc >= 0.5) { fpsShown = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
     frameDt = state === 'playing' ? dt : 0;

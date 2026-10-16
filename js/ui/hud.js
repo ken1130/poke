@@ -773,13 +773,36 @@ G.HUD = (() => {
     const ox = Math.round(pl.x / cell) * cell - MM_R, oy = Math.round(pl.y / cell) * cell - MM_R;
     if (!mmTer) { mmTer = document.createElement('canvas'); mmTer.width = mmTer.height = MM_N; }
     const c = mmTer.getContext('2d'), B = G.Tiles.BIOMES[G.World.biome] || G.Tiles.BIOMES[0];
-    const floor = B.floor[0], wall = B.wallTop ? B.wallTop[0] : '#222', liq = B.liq || '#3b7fc6';
-    for (let j = 0; j < MM_N; j++) for (let i = 0; i < MM_N; i++) {
+    const floor = rgb(B.floor[0]), wall = rgb(B.wallTop ? B.wallTop[0] : '#222'), liq = rgb(B.liq || '#3b7fc6');
+    // (2026-10-16: antes 2304 fillRect con su fillStyle cada medio segundo; en el móvil se notaba. Ahora los píxeles de una vez.)
+    if (!mmPix) mmPix = c.createImageData(MM_N, MM_N);
+    const d = mmPix.data;
+    for (let j = 0, o = 0; j < MM_N; j++) for (let i = 0; i < MM_N; i++, o += 4) {
       const x = ox + (i + 0.5) * cell, y = oy + (j + 0.5) * cell;
-      c.fillStyle = G.World.isWall(x, y) ? wall : G.World.isLiquid(x, y) ? liq : floor;
-      c.fillRect(i, j, 1, 1);
+      const col = G.World.isWall(x, y) ? wall : G.World.isLiquid(x, y) ? liq : floor;
+      d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
     }
+    c.putImageData(mmPix, 0, 0);
     mmAt = { ox, oy, cell };
+  }
+  let mmPix = null;
+  const rgbCache = new Map();
+  /** Color CSS -> [r, g, b] (una vez por color). */
+  function rgb(css) {
+    let v = rgbCache.get(css);
+    if (v) return v;
+    const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(css);
+    if (m) {
+      const h = m[1].length === 3 ? m[1].replace(/./g, ch => ch + ch) : m[1];
+      v = [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    } else {
+      const t = document.createElement('canvas').getContext('2d');
+      t.fillStyle = css; t.fillRect(0, 0, 1, 1);
+      const p = t.getImageData(0, 0, 1, 1).data;
+      v = [p[0], p[1], p[2]];
+    }
+    rgbCache.set(css, v);
+    return v;
   }
 
   /** Iconitos del minimapa (dibujados a mano, unos 10-14 px). */

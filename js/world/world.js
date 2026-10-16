@@ -97,10 +97,14 @@ G.World = (() => {
 
   // ---------------- datos de chunk ----------------
 
+  // El último chunk pedido (2026-10-16): casi todas las consultas seguidas (colisiones, minimapa,
+  // caminos) caen en el mismo, y así no se arma la clave "cx,cy" cada vez. Se olvida al borrar datos.
+  let memoX = 0, memoY = 0, memoC = null;
   function chunkData(cx, cy) {
+    if (memoC && cx === memoX && cy === memoY) return memoC;
     const k = cx + ',' + cy;
     let c = data.get(k);
-    if (c) return c;
+    if (c) { memoX = cx; memoY = cy; memoC = c; return c; }
 
     c = { cx, cy, terr: new Uint8Array(N * N),
           props: [], propAt: new Map(), liquids: [] };
@@ -110,7 +114,7 @@ G.World = (() => {
       c.terr[j * N + i] = t;
       if (t === LIQUID) c.liquids.push(tx, ty);
     }
-    if (data.size > MAX_DATA) data.delete(data.keys().next().value);
+    if (data.size > MAX_DATA) { data.delete(data.keys().next().value); memoC = null; }
     data.set(k, c);
     placeProps(c);
     return c;
@@ -118,7 +122,7 @@ G.World = (() => {
 
   function terrainAt(tx, ty) {
     const cx = Math.floor(tx / N), cy = Math.floor(ty / N);
-    const c = data.get(cx + ',' + cy) || chunkData(cx, cy);
+    const c = chunkData(cx, cy);
     return c.terr[(ty - cy * N) * N + (tx - cx * N)];
   }
 
@@ -226,7 +230,7 @@ G.World = (() => {
 
   function propAtTile(tx, ty) {
     const cx = Math.floor(tx / N), cy = Math.floor(ty / N);
-    const c = data.get(cx + ',' + cy) || chunkData(cx, cy);
+    const c = chunkData(cx, cy);
     return c.propAt.get(tx + ',' + ty) || null;
   }
 
@@ -572,7 +576,7 @@ G.World = (() => {
 
   function reset(s) {
     seed = (s | 0) || 1;
-    data.clear(); images.clear(); caches.clear(); broken.clear();
+    data.clear(); memoC = null; images.clear(); caches.clear(); broken.clear();
     fade = null; arena = null;
   }
 
@@ -623,7 +627,7 @@ G.World = (() => {
       const all = [images, ...caches.values()];                // (también los de otros biomas guardados)
       for (const k of new Set([...data.keys(), ...all.flatMap(m => [...m.keys()])])) {
         const [cx, cy] = k.split(',').map(Number);
-        if (Math.abs(cx * N + N / 2 - a.tx) < R + N && Math.abs(cy * N + N / 2 - a.ty) < R + N) { data.delete(k); for (const m of all) m.delete(k); }
+        if (Math.abs(cx * N + N / 2 - a.tx) < R + N && Math.abs(cy * N + N / 2 - a.ty) < R + N) { data.delete(k); memoC = null; for (const m of all) m.delete(k); }
       }
     },
     get arena() { return arena; }, drawGround, drawLiquid, visibleProps, drawProp, drawVignette,
