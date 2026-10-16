@@ -770,7 +770,7 @@ G.Tiles = (() => {
     /** Ruleta de Kecleon: rueda de colores sobre un pie dorado. variante = giro 0..3. */
     roulette(B, variant) {
       const P = Pix(24, 30);
-      const C = ['#8c2f35', '#e9dcb8', '#8c2f35', '#e9dcb8', '#2b2433', '#e9dcb8'];     // como la de la ventana (roulette.js)
+      const C = ['#14302a', '#1b3d34', '#14302a', '#1b3d34', '#14302a', '#4d3b10'];     // como la de la ventana (roulette.js PAL)
       const gold = pack('#f2c443'), goldD = pack('#b5832a'), wood = pack('#6b3a1e');
       // Pie.
       for (let y = 21; y <= 28; y++) for (let x = 10; x <= 13; x++) P.set(x, y, x === 10 ? goldD : gold);
@@ -778,12 +778,13 @@ G.Tiles = (() => {
       // Rueda.
       disc(P, 11.5, 11, 10.4, (x, y, d) => {
         if (d > 0.86) return d > 0.95 ? goldD : gold;
-        if (d < 0.2) return pack('#ffe9a0');
+        if (d < 0.2) return pack('#f0d68c');
+        if (d > 0.78) return pack('#0c1411');                         // aro oscuro
         const a = (Math.atan2(y - 11, x - 11.5) / 6.2832 + 1 + variant / 24) % 1;
         return pack(C[Math.floor(a * 12) % 6]);
       });
       // Flecha arriba.
-      [[11, 0], [12, 0], [11, 1], [12, 1]].forEach(([x, y]) => P.set(x, y, pack('#ff5f6d')));
+      [[11, 0], [12, 0], [11, 1], [12, 1]].forEach(([x, y]) => P.set(x, y, pack('#f0d68c')));
       outline(P, pack('#1e0f06'));
       return P.canvas();
     },

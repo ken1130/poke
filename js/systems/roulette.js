@@ -13,15 +13,18 @@
 G.Roulette = (() => {
   const $ = id => document.getElementById(id);
   const SLOTS = [0, 1, 0.5, 1.5, 0, 2, 1, 0, 0.5, 3, 0, 1, 1.5, 0, 2, 0.5, 0, 1, 5, 0];
-  // Colores sobrios (2026-10-15: antes uno por premio y quedaba muy chillón): casillas
-  // alternas granate / crema como una ruleta de verdad, ×0 en oscuro y sólo ×3 y ×5 en oro.
-  const slotCol = i => { const k = SLOTS[i]; return k === 0 ? '#2b2433' : k >= 3 ? '#e0a92e' : i % 2 ? '#e9dcb8' : '#8c2f35'; };
-  const slotInk = i => { const c = slotCol(i); return c === '#e9dcb8' || c === '#e0a92e' ? '#3a2410' : '#ffffff'; };
+  // Aspecto (2026-10-16): mesa de casino, sólo dos verdes oscuros alternos y oro (antes
+  // granate/crema/oro: demasiados colores, quedaba barato). El color va en el texto:
+  // ×0 apagado, ×2 o más en oro; sólo la casilla del ×5 lleva fondo dorado oscuro.
+  const PAL = { a: '#14302a', b: '#1b3d34', jack: '#4d3b10', rim: '#0c1411', rimL: '#1f2b26',
+                gold: '#c9a54e', goldL: '#f0d68c', cream: '#ece3cb', mute: '#7d8a84' };
+  const slotCol = i => (SLOTS[i] >= 5 ? PAL.jack : i % 2 ? PAL.b : PAL.a);
+  const slotInk = i => { const k = SLOTS[i]; return k === 0 ? PAL.mute : k >= 2 ? PAL.goldL : PAL.cream; };
   const SPINS = 3, MIN_COINS = 10;
   const label = k => (k === 0 ? '×0' : '×' + String(k).replace('.', ','));
 
   let cur = null;         // { site, done, angle, anim }
-  let buf = null;         // lienzo pequeño (pixel art) de la rueda
+  let watchR = null;      // tirada de otro que estás viendo (watch)
 
   // ---------------- anfitrión: decide ----------------
   /** Anfitrión: tirada de `who` (null = tú). Devuelve { idx, delta, left } o null. */
@@ -41,6 +44,10 @@ G.Roulette = (() => {
     const k = SLOTS[idx];
     const msg = k === 0 ? '¡La ruleta se lo ha llevado todo! Kecleon se ríe' : k >= 2 ? '¡Premio en la ruleta! ' + label(k) : 'Ruleta: ' + label(k);
     if (G.Coop.active) G.Coop.broadcast(['dg', 'say', (name ? name + ': ' : '') + msg, 3]);
+    // Todos ven girar la ruleta de la tienda (2026-10-16: antes sólo quien tiraba).
+    const shown = name || (G.Coop.active ? G.DB.user || '' : '');
+    if (G.Coop.active) G.Coop.broadcast(['dg', 'rspin', idx, shown, delta]);
+    watch(idx, shown, delta);
     return { idx, delta, left: site.spins, msg };
   }
 
@@ -135,56 +142,126 @@ G.Roulette = (() => {
     render();
   }
 
-  // ---------------- dibujo (pixel art: rueda pequeña escalada sin suavizar) ----------------
+  // ---------------- dibujo ----------------
+  /** La rueda en (cx, cy) de radio R girada `angle`, con la flecha arriba. Sirve para la ventana y la tienda. */
+  function drawWheel(ctx, cx, cy, R, angle) {
+    const n = SLOTS.length, slot = 6.2832 / n, rIn = R * 0.84;
+    ctx.save();
+    ctx.translate(cx, cy);
+    // Sombra y aro exterior (metal oscuro con filete de oro).
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.arc(0, R * 0.04, R * 1.02, 0, 6.2832); ctx.fill();
+    const rim = ctx.createRadialGradient(0, 0, rIn, 0, 0, R);
+    rim.addColorStop(0, PAL.rimL); rim.addColorStop(1, PAL.rim);
+    ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = PAL.gold; ctx.lineWidth = Math.max(1, R * 0.018);
+    ctx.beginPath(); ctx.arc(0, 0, R * 0.985, 0, 6.2832); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, rIn, 0, 6.2832); ctx.stroke();
+    // Bombillas del aro (una por casilla, quietas; brillan alternas).
+    const blink = Math.floor(performance.now() / 400) % 2;
+    for (let i = 0; i < n; i++) {
+      const a = i * slot - Math.PI / 2;
+      ctx.fillStyle = (i + blink) % 2 ? PAL.goldL : 'rgba(240,214,140,.35)';
+      ctx.beginPath(); ctx.arc(Math.cos(a) * R * 0.92, Math.sin(a) * R * 0.92, Math.max(1, R * 0.025), 0, 6.2832); ctx.fill();
+    }
+    // Casillas.
+    for (let i = 0; i < n; i++) {
+      const a0 = angle + i * slot;
+      ctx.fillStyle = slotCol(i);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, rIn, a0, a0 + slot); ctx.closePath(); ctx.fill();
+    }
+    // Filetes de oro entre casillas.
+    ctx.strokeStyle = 'rgba(201,165,78,.55)'; ctx.lineWidth = Math.max(0.6, R * 0.008);
+    for (let i = 0; i < n; i++) {
+      const a = angle + i * slot;
+      ctx.beginPath(); ctx.moveTo(Math.cos(a) * R * 0.2, Math.sin(a) * R * 0.2); ctx.lineTo(Math.cos(a) * rIn, Math.sin(a) * rIn); ctx.stroke();
+    }
+    // Brillo suave encima (da volumen sin más colores).
+    const gl = ctx.createRadialGradient(-R * 0.3, -R * 0.35, 0, 0, 0, rIn);
+    gl.addColorStop(0, 'rgba(255,255,255,.10)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, rIn, 0, 6.2832); ctx.fill();
+    // Rótulos.
+    if (R >= 40) {
+      ctx.font = `700 ${Math.round(R * 0.11)}px Pixelify,"Segoe UI",system-ui,sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (let i = 0; i < n; i++) {
+        ctx.save(); ctx.rotate(angle + (i + 0.5) * slot); ctx.translate(rIn * 0.72, 0); ctx.rotate(Math.PI / 2);
+        ctx.fillStyle = slotInk(i); ctx.fillText(label(SLOTS[i]), 0, 0);
+        ctx.restore();
+      }
+    }
+    // Buje dorado.
+    const hub = ctx.createRadialGradient(-R * 0.04, -R * 0.05, 0, 0, 0, R * 0.17);
+    hub.addColorStop(0, PAL.goldL); hub.addColorStop(0.7, PAL.gold); hub.addColorStop(1, '#6e5520');
+    ctx.fillStyle = hub; ctx.beginPath(); ctx.arc(0, 0, R * 0.16, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = PAL.rim; ctx.beginPath(); ctx.arc(0, 0, R * 0.05, 0, 6.2832); ctx.fill();
+    // Flecha arriba.
+    const w = R * 0.09;
+    ctx.fillStyle = PAL.goldL; ctx.strokeStyle = PAL.rim; ctx.lineWidth = Math.max(1, R * 0.02); ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(-w, -R * 1.04); ctx.lineTo(w, -R * 1.04); ctx.lineTo(0, -R * 0.8); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  /** La ventana: lienzo nítido según la pantalla (devicePixelRatio). */
   function draw() {
     const cv = $('roul-wheel');
     if (!cv || !cur) return;
-    const ctx = cv.getContext('2d'), W = cv.width, R = W / 2;
-    const N = 64, s = W / N;               // la rueda se pinta en 64×64 y se escala ×(W/64)
-    if (!buf) { buf = document.createElement('canvas'); buf.width = buf.height = N; }
-    const b = buf.getContext('2d'), img = b.createImageData(N, N), px = new Uint32Array(img.data.buffer);
-    const pack = h => { const n = parseInt(h.slice(1), 16); return (255 << 24 | (n & 255) << 16 | ((n >> 8) & 255) << 8 | (n >> 16)) >>> 0; };
-    const slot = 6.2832 / SLOTS.length, c = N / 2 - 0.5;
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-      const dx = x - c, dy = y - c, d = Math.hypot(dx, dy);
-      if (d > 31) continue;
-      let col;
-      if (d > 29) col = '#2a1a08';                                   // borde
-      else if (d > 27) col = '#f2c443';                              // aro dorado
-      else if (d < 4) col = d < 2.5 ? '#ffe9a0' : '#8a5a2b';         // centro
-      else {
-        let a = Math.atan2(dy, dx) - cur.angle; a = ((a % 6.2832) + 6.2832) % 6.2832;
-        const i = Math.floor(a / slot), f = (a / slot) % 1;
-        col = f < 0.06 ? '#5a3a18' : slotCol(i);                    // línea entre casillas
-      }
-      px[y * N + x] = pack(col);
+    const css = 240, k = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+    if (cv.width !== css * k) { cv.width = cv.height = css * k; }
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.clearRect(0, 0, css, css);
+    drawWheel(ctx, css / 2, css / 2 + 6, css / 2 - 12, cur.angle);
+  }
+
+  // ---------------- lo que ven los demás (2026-10-16) ----------------
+  /*
+   * Cuando alguien gira, a los demás les sale la misma ruleta girando arriba en el centro
+   * de la pantalla (con quién gira y el resultado). No tapa nada ni se puede tocar: se sigue
+   * jugando. Quien gira ya la ve en su ventana.
+   */
+  const WATCH_DUR = 3.2, WATCH_HOLD = 2.6;
+  function watch(idx, who, delta) {
+    if (cur) return;                                  // eres tú quien gira: ya tienes la ventana
+    const slot = 6.2832 / SLOTS.length;
+    const target = -Math.PI / 2 - (idx + 0.5) * slot;
+    const w = watchR = { idx, who, delta, t0: performance.now(), to: ((target % 6.2832) + 6.2832) % 6.2832 + 6.2832 * 6, tick: 0 };
+    let el = $('roul-watch');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'roul-watch';
+      el.innerHTML = '<p class="who"></p><canvas width="200" height="200"></canvas><p class="res"></p>';
+      document.body.appendChild(el);
     }
-    b.putImageData(img, 0, 0);
-    ctx.clearRect(0, 0, W, W);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(buf, 0, 0, W, W);
-    // Rótulos de las casillas.
-    ctx.save();
-    ctx.translate(R, R);
-    ctx.font = '800 13px Pixelify,"Segoe UI",system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    SLOTS.forEach((k, i) => {
-      const a = cur.angle + (i + 0.5) * slot;
-      ctx.save(); ctx.rotate(a); ctx.translate(R * 0.66, 0); ctx.rotate(Math.PI / 2);
-      const ink = slotInk(i);
-      if (ink === '#ffffff') { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(label(k), 0, 0); }
-      ctx.fillStyle = ink; ctx.fillText(label(k), 0, 0);
-      ctx.restore();
-    });
-    ctx.restore();
-    // Flecha arriba (pixel).
-    ctx.fillStyle = '#2a1a08';
-    for (let r = 0; r < 6; r++) ctx.fillRect(R - (6 - r) * s * 0.5 - s * 0.5, r * s * 0.6, (6 - r) * s + s, s * 0.6);
-    ctx.fillStyle = '#ff5f6d';
-    for (let r = 0; r < 5; r++) ctx.fillRect(R - (5 - r) * s * 0.5, r * s * 0.6, (5 - r) * s, s * 0.6);
+    el.classList.remove('hidden');
+    const cv = el.querySelector('canvas'), css = 200, k = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+    if (cv.width !== css * k) cv.width = cv.height = css * k;
+    el.querySelector('.who').textContent = who ? G.I18n.f('{x} gira la ruleta…', who) : G.T('Girando la ruleta…');
+    const res = el.querySelector('.res'); res.textContent = ''; res.className = 'res';
+    G.Audio.sfx('select');
+    const slotA = 6.2832 / SLOTS.length;
+    const step = () => {
+      if (watchR !== w) return;
+      const t = (performance.now() - w.t0) / 1000;
+      if (t > WATCH_DUR + WATCH_HOLD || !G.Dungeon.inRoom) { watchR = null; el.classList.add('hidden'); return; }
+      const e = 1 - Math.pow(1 - Math.min(1, t / WATCH_DUR), 3), ang = w.to * e;
+      const cell = Math.floor(ang / slotA);
+      if (cell !== w.tick && t < WATCH_DUR - 0.05) { w.tick = cell; G.Audio.sfx('xp'); }
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(k, 0, 0, k, 0, 0); ctx.clearRect(0, 0, css, css);
+      drawWheel(ctx, css / 2, css / 2 + 5, css / 2 - 10, ang);
+      if (t >= WATCH_DUR && !res.textContent) {
+        const m = SLOTS[w.idx];
+        res.textContent = label(m) + '  ' + (w.delta >= 0 ? '+' : '') + w.delta + ' ' + G.T('monedas');
+        res.className = 'res ' + (m === 0 ? 'lose' : m >= 2 ? 'win' : '');
+        G.Audio.sfx(m === 0 ? 'hurt' : m >= 2 ? 'shiny' : 'coin');
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
   }
 
   /** Para el autoelegir a los 25 s del grupo. */
   function forceClose() { if (cur && !cur.anim) close(); }
 
-  return { open, hostSpin, onSpun, forceClose, SLOTS, get busy() { return !!cur; } };
+  return { open, hostSpin, onSpun, forceClose, watch, drawWheel, PAL, SLOTS, get busy() { return !!cur; } };
 })();

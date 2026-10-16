@@ -79,6 +79,7 @@ G.Dungeon = (() => {
     else if (k === 'ach') G.Progress.event(ev[2]);
     else if (k === 'fn') G.Funny.onNet(ev);
     else if (k === 'spun') G.Roulette.onSpun(ev[2], ev[3], ev[4]);
+    else if (k === 'rspin') G.Roulette.watch(ev[2], ev[3], ev[4]);
     else if (k === 'room') { if (ev[2] === 'heal' && room) room.springFull = false; roomFx(ev[2], ev[3], ev[4]); }
     else if (k === 'chest') openChest(ev[2]);
     else if (k === 'enter') beginRoom(ev[2]);
@@ -353,15 +354,42 @@ G.Dungeon = (() => {
     out.push([rx - 20, ry - 6, rx + 20, ry + 30]);
     return out;
   }
-  /** Saca al Pokémon de dentro de un mueble (por el lado más cercano). */
+  /**
+   * Los muebles son sólidos. Se mira el camino desde la última posición buena: si cruza un
+   * mueble, te quedas en el lado por el que llegabas (2026-10-16: antes se te sacaba por el
+   * lado más cercano y, corriendo o con un acelerón, se atravesaba el mostrador).
+   */
   function collideFurniture(p) {
-    const r = Math.max(6, p.r * 0.5);
-    for (const [x0, y0, x1, y1] of furniture()) {
-      if (p.x < x0 - r || p.x > x1 + r || p.y < y0 - r || p.y > y1 + r) continue;
-      const dl = p.x - (x0 - r), dr = (x1 + r) - p.x, du = p.y - (y0 - r), dd = (y1 + r) - p.y;
-      const m = Math.min(dl, dr, du, dd);
-      if (m === dl) p.x = x0 - r; else if (m === dr) p.x = x1 + r; else if (m === du) p.y = y0 - r; else p.y = y1 + r;
+    const r = Math.max(8, p.r * 0.8);
+    const px = p._fx != null && G.U.dist2(p._fx, p._fy, p.x, p.y) < 400 * 400 ? p._fx : p.x;
+    const py = p._fx != null && G.U.dist2(p._fx, p._fy, p.x, p.y) < 400 * 400 ? p._fy : p.y;
+    for (const [bx0, by0, bx1, by1] of furniture()) {
+      const x0 = bx0 - r, y0 = by0 - r, x1 = bx1 + r, y1 = by1 + r;
+      const inside = (x, y) => x > x0 && x < x1 && y > y0 && y < y1;
+      if (!inside(p.x, p.y) && !segBox(px, py, p.x, p.y, x0, y0, x1, y1)) continue;
+      if (inside(px, py)) {
+        // Ya estaba dentro (al entrar en la sala, un empujón...): fuera por el lado más cercano.
+        const dl = p.x - x0, dr = x1 - p.x, du = p.y - y0, dd = y1 - p.y, m = Math.min(dl, dr, du, dd);
+        if (m === dl) p.x = x0; else if (m === dr) p.x = x1; else if (m === du) p.y = y0; else p.y = y1;
+        continue;
+      }
+      // Venía de fuera: se queda pegado a la cara por la que llegaba (y puede deslizarse por ella).
+      if (px <= x0) p.x = x0; else if (px >= x1) p.x = x1;
+      else if (py <= y0) p.y = y0; else p.y = y1;
     }
+    p._fx = p.x; p._fy = p.y;
+  }
+  /** ¿El segmento (ax, ay)-(bx, by) pasa por dentro de la caja? */
+  function segBox(ax, ay, bx, by, x0, y0, x1, y1) {
+    let t0 = 0, t1 = 1;
+    const dx = bx - ax, dy = by - ay;
+    for (const [pp, q] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+      if (pp === 0) { if (q < 0) return false; continue; }
+      const t = q / pp;
+      if (pp < 0) { if (t > t1) return false; if (t > t0) t0 = t; }
+      else { if (t < t0) return false; if (t < t1) t1 = t; }
+    }
+    return t0 < t1;
   }
   const doorP = () => [room.cx, room.cy + (room.rh - 1) * room.ts];
   const chestP = i => [room.cx + (i - 1) * room.ts * 3, room.cy - (room.rh - 2) * room.ts];
@@ -606,14 +634,17 @@ G.Dungeon = (() => {
     for (const o of slots) if (o.at <= t) slot = o;
     // Fuerza de los jefes de ese momento, más un extra por el nivel del grupo.
     const lvl = Math.max(...G.Game.everyone().map(p => p.level || 1));
-    // (2026-10-15: más duro; antes caía enseguida.)
-    const def = G.Enemies.bossFor(352, slot, 2.5 * (1 + lvl * 0.03));
+    // (2026-10-15: más duro; antes caía enseguida. 2026-10-16: aún más con el nivel y con
+    // cuántos sois: con la vida/ataque por nivel y en grupo, robar salía siempre a cuenta.)
+    const n = G.Game.everyone().length, more = Math.max(0, n - 1);
+    const def = G.Enemies.bossFor(352, slot, 2.5 * (1 + lvl * 0.05));
     def.behavior = 'charger';
     const e = G.Spawner.spawnBossNow(pl, t, def);
     if (e) {
-      const floor = Math.round(G.Enemies.bossFloor(t) * 1.8 * G.Coop.scaleHp(G.Game.everyone().length));
+      const floor = Math.round(G.Enemies.bossFloor(t) * 2.5 * G.Coop.scaleHp(n));
       if (e.maxHp < floor) e.maxHp = floor;
-      e.hp = e.maxHp; e.dmg *= 1.5; e.spd *= 1.25;
+      e.maxHp = Math.round(e.maxHp * (1 + 0.25 * more));          // además del extra de jefe en grupo
+      e.hp = e.maxHp; e.dmg *= 1.5 * (1 + lvl * 0.02); e.spd *= 1.25;
       // Ya le habíais vencido antes en esta run: viene con ganas de revancha.
       if (kRep.robbed) { e.maxHp = e.hp = Math.round(e.maxHp * 1.4); e.dmg *= 1.2; }
     }

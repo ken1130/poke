@@ -28,6 +28,11 @@ G.Rift = (() => {
   let checkT = CHECK, asked = false, downT = 0, misses = 0;
   // Desafío legendario (modes.js): una arena tras otra, sin grietas en el mapa.
   let rushWins = 0, rushT = 0;
+  // Desafío legendario: cada vez más duros. Vida: 0,3 + 0,15 por victoria hasta ×1,3 (7 victorias)
+  // y desde ahí +8 % por cada una más; daño +4 % por victoria (2026-10-16: antes se quedaba en
+  // ×1,3 de vida y el daño no subía, así que los últimos no eran más fuertes).
+  const rushHp = () => (rushWins <= 7 ? 0.3 + rushWins * 0.15 : 1.35 * Math.pow(1.08, rushWins - 7));
+  const rushDmg = () => 1 + 0.04 * rushWins;
   const rush = () => G.Modes.run === 'legend';
   const authority = () => !G.Coop.active || G.Coop.isHost;
   const TS = () => G.Tiles.T * G.Sprites.PX;
@@ -163,11 +168,11 @@ G.Rift = (() => {
       dex: mon.dex, name: mon.name,
       // Desafío legendario: el primero más flojo (empiezas a nivel 1) y cada vez más duros.
       // Fuera del Desafío legendario, nunca menos que 1,2× el mínimo de un jefe de ese momento.
-      hp: Math.round(Math.max(rush() ? 0 : G.Enemies.bossFloor(t) * 1.2, (3200 + t * 9) * lk) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1) * (rush() ? Math.min(1.3, 0.3 + rushWins * 0.15) * (G.Modes.rule('lhp') || 1) : 1)),
+      hp: Math.round(Math.max(rush() ? 0 : G.Enemies.bossFloor(t) * 1.2, (3200 + t * 9) * lk) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1) * (rush() ? rushHp() * (G.Modes.rule('lhp') || 1) : 1)),
       spd: Math.round(G.U.clamp(48 + (mon.spd - 78) * 0.6, 48, 105)),
-      dmg: Math.round((36 + t / 20) * Math.pow(lk, 0.7) * (rush() ? G.Modes.rule('ldmg') || 1 : 1)), xp: Math.round(500 + t * 1.2),
+      dmg: Math.round((36 + t / 20) * Math.pow(lk, 0.7) * (rush() ? (G.Modes.rule('ldmg') || 1) * rushDmg() : 1)), xp: Math.round(500 + t * 1.2),
       behavior: mon.types.some(x => ['psychic', 'electric', 'ghost', 'fairy', 'fire', 'water', 'ice', 'dragon'].includes(x)) ? 'ranged' : 'charger',
-      shotDmg: Math.round((18 + t / 40) * Math.pow(lk, 0.7) * (rush() ? G.Modes.rule('ldmg') || 1 : 1)), shotCd: 0.9, range: 300
+      shotDmg: Math.round((18 + t / 40) * Math.pow(lk, 0.7) * (rush() ? (G.Modes.rule('ldmg') || 1) * rushDmg() : 1)), shotCd: 0.9, range: 300
     };
     const e = new G.Enemy(def, arena.x, arena.y - ts * 3.5, { hp: 1, spd: 1, dmg: 1 }, true);
     e.legend = true;

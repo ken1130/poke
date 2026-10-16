@@ -1207,6 +1207,8 @@ G.I18n.add({
   'Bonus de experiencia': 'XP bonus',
   'Bonus de monedas': 'Coin bonus',
   'Mi equipo': 'My team',
+  '{x} gira la ruleta…': '{x} is spinning the wheel…',
+  'Girando la ruleta…': 'Spinning the wheel…',
   '☆ Añadir a Mi equipo': '☆ Add to My team',
   '★ Quitar de Mi equipo': '★ Remove from My team',
   '{x} está en Mi equipo': '{x} is now in My team',

@@ -5,11 +5,17 @@
 G.MODNEWS = [
   { d: '2026-10-16', title: { zh: '升等變強、組隊難度依人數調整、迷宮設施不再跑到幾千公尺外', en: 'Level-ups make you stronger, co-op difficulty by player count, dungeon spots stay nearby' },
     new: [
+      { zh: '卡克隆輪盤：有人在轉的時候，其他人畫面上方也會出現同一個輪盤一起轉，顯示誰在轉和結果（不會擋住操作）', en: 'Kecleon roulette: when someone spins, everyone else sees the same wheel spinning at the top of the screen, with who spins and the result (it does not block anything)' },
       { zh: '每升 1 級：最大生命 +2%（並補回這些血）、攻擊 +1%，算到 50 級（PK 不算）', en: 'Each level: +2% max HP (healed too) and +1% attack, up to level 50 (not in PvP)' },
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }
     ],
     fix: [
+      { zh: '卡克隆輪盤換新外觀：深綠與金色的賭場風格，顏色更乾淨、不再花俏', en: 'New look for the Kecleon roulette: a dark green and gold casino style, cleaner and less flashy' },
+      { zh: '卡克隆（偷東西後的頭目）隨等級和人數變強：每級 +5% 血量、+2% 傷害，每多 1 人再 +25% 血量', en: 'Kecleon (the boss after stealing) now scales with level and party size: +5% HP and +2% damage per level, +25% HP per extra player' },
+      { zh: '傳說連戰越後面越強：第 7 隻之後每贏 1 隻，下一隻血量再 +8%；傷害每贏 1 隻 +4%', en: 'Legend rush gets harder the further you go: after the 7th win each win adds +8% HP to the next one, and +4% damage per win' },
+      { zh: '無盡塔詛咒有上限（血量／傷害各 4 層，速度、數量、治療減弱、黑暗各 3 層，疊滿後只出頭目）；塔裡的頭目每層血量 +5%、傷害 +3%', en: 'Endless Tower curses now have caps (HP/damage 4 each; speed, count, weaker healing and darkness 3 each; once all are maxed only bosses appear); tower bosses get +5% HP and +3% damage per floor' },
       { zh: '組隊難度依人數調整（一個人維持原本難度）：每多 1 人，怪物 +60%、血量 +30%（冒險、每日／每週挑戰、無盡塔、傳說連戰 +40%）、傷害 +10%，同時在場上限 +30%。修正三人迷宮 9 分鐘後怪物全變精英、打不完的問題', en: 'Co-op difficulty now scales with player count (solo unchanged): per extra player, +60% enemies, +30% HP (+40% in Adventure, Daily/Weekly, Endless Tower and Legend rush), +10% damage and +30% enemy cap. Fixes 3-player dungeon runs where after 9 min every enemy was elite and it never ended' },
+      { zh: '修正卡克隆商店裡會穿過櫃檯、架子和輪盤（跑太快或衝刺時）', en: 'Fixed walking through the counter, shelves and roulette in Kecleon\'s shop (when moving fast or dashing)' },
       { zh: '迷宮的神秘房間、商店、雕像和樓梯離所有人超過 100 公尺時，會重新出現在附近（之前走遠後小地圖會顯示幾千公尺）', en: 'Dungeon mystery rooms, shops, statues and stairs now move back near you when everyone is more than 100 m away (before, the minimap could show thousands of metres)' }
     ] },
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },

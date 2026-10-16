@@ -7,14 +7,26 @@
  */
 G.CHANGELOG = [
   { d: '2026-10-16', title: ['Subir de nivel te hace más fuerte', 'Levelling up makes you stronger'], new: [
+    ['Ruleta de Kecleon: cuando alguien gira, los demás ven la misma ruleta girando arriba de la pantalla, con quién gira y el resultado (sin tapar nada).',
+     'Kecleon roulette: when someone spins, everyone else sees the same wheel spinning at the top of the screen, with who spins and the result (without blocking anything).'],
     ['Cada nivel: +2 % de vida máxima (y te cura eso) y +1 % de ataque, hasta el nivel 50 (en PK no).',
      'Each level: +2% max HP (healed too) and +1% attack, up to level 50 (not in PvP).'],
     ['Nuevo truco levelup30: +30 niveles desde el que tengas (en partida), eligiendo las cartas.',
      'New cheat levelup30: +30 levels from your current one (while playing), picking your cards.']
   ], chg: [
+    ['Nuevo aspecto de la ruleta de Kecleon: verde oscuro y oro, como una mesa de casino, sin tantos colores.',
+     'New look for the Kecleon roulette: dark green and gold, like a casino table, without so many colours.'],
+    ['Kecleon (al robar) se hace más fuerte con vuestro nivel y con cuántos sois: +5 % de vida y +2 % de daño por nivel y +25 % de vida por cada jugador más.',
+     'Kecleon (after stealing) gets stronger with your level and party size: +5% HP and +2% damage per level and +25% HP per extra player.'],
+    ['Desafío legendario: cada vez más duro: desde la 7.ª victoria, +8 % de vida por victoria (antes se quedaba igual) y +4 % de daño por victoria.',
+     'Legend rush keeps getting harder: from the 7th win on, +8% HP per win (it used to stop growing) and +4% damage per win.'],
+    ['Torre sin fin: las maldiciones tienen tope (vida y daño 4, velocidad, número, curas y oscuridad 3; con todas al máximo sólo salen jefes) y sus jefes son un poco más fuertes en cada piso (+5 % de vida, +3 % de daño).',
+     'Endless Tower: curses are capped (HP and damage 4; speed, count, healing and darkness 3; once all are maxed only bosses appear) and its bosses get a bit stronger each floor (+5% HP, +3% damage).'],
     ['En grupo, la dificultad va según cuántos sois (solo, igual que siempre): por cada jugador más, +60 % de enemigos, +30 % de vida (+40 % en Aventura, retos, torre y desafío legendario), +10 % de daño y +30 % de enemigos a la vez. En la mazmorra con 3, a los 9 minutos ya todo era élite y no se acababa nunca.',
      'In a group, difficulty depends on how many you are (solo is unchanged): per extra player, +60% enemies, +30% HP (+40% in Adventure, challenges, tower and legend rush), +10% damage and +30% enemies at once. In the dungeon with 3, after 9 minutes everything was elite and it never ended.']
   ], fix: [
+    ['En la tienda de Kecleon se podía atravesar el mostrador, las estanterías y la ruleta corriendo o con un acelerón.',
+     'In Kecleon\'s shop you could pass through the counter, shelves and roulette when running or dashing.'],
     ['La sala misteriosa, la tienda, la estatua y las escaleras vuelven a aparecer cerca si todos os alejáis más de 100 m (en el minimapa salían a miles de metros).',
      'The mystery room, shop, statue and stairs reappear nearby if everyone gets more than 100 m away (the minimap showed them thousands of metres away).']
   ] },

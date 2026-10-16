@@ -50,15 +50,19 @@ G.Challenges = (() => {
   // ---------------- torre sin fin ----------------
 
   const FLOOR = 60;          // segundos por piso
+  // max: cuántas veces puede tocar cada maldición (2026-10-16: antes se acumulaban sin fin).
+  // Con todas al máximo, en cada piso sale un jefe.
   const CURSES = [
-    { id: 'hp', name: 'Enemigos más duros', apply: r => { r.hp = (r.hp || 1) * 1.25; } },
-    { id: 'dmg', name: 'Enemigos más fuertes', apply: r => { r.dmg = (r.dmg || 1) * 1.2; } },
-    { id: 'spd', name: 'Enemigos más rápidos', apply: r => { r.spd = (r.spd || 1) * 1.1; } },
-    { id: 'count', name: 'Más enemigos', apply: r => { r.count = (r.count || 1) * 1.2; } },
-    { id: 'heal', name: 'Curas más débiles', apply: r => { r.heal = (r.heal == null ? 1 : r.heal) * 0.7; } },
-    { id: 'dark', name: 'Oscuridad', apply: r => { r.dark = Math.min(3, (r.dark || 0) + 1); } },
+    { id: 'hp', name: 'Enemigos más duros', max: 4, apply: r => { r.hp = (r.hp || 1) * 1.25; } },
+    { id: 'dmg', name: 'Enemigos más fuertes', max: 4, apply: r => { r.dmg = (r.dmg || 1) * 1.2; } },
+    { id: 'spd', name: 'Enemigos más rápidos', max: 3, apply: r => { r.spd = (r.spd || 1) * 1.1; } },
+    { id: 'count', name: 'Más enemigos', max: 3, apply: r => { r.count = (r.count || 1) * 1.2; } },
+    { id: 'heal', name: 'Curas más débiles', max: 3, apply: r => { r.heal = (r.heal == null ? 1 : r.heal) * 0.7; } },
+    { id: 'dark', name: 'Oscuridad', max: 3, apply: r => { r.dark = Math.min(3, (r.dark || 0) + 1); } },
     { id: 'boss', name: '¡Un jefe!', once: true }
   ];
+  // Jefes de la torre: un poco más fuertes en cada piso (+5 % de vida y +3 % de daño).
+  const TOWER_BOSS_HP = 0.05, TOWER_BOSS_DMG = 0.03;
   let tower = null;          // { floor, curses: [id] }
 
   // ---------------- récords (este dispositivo) ----------------
@@ -105,9 +109,20 @@ G.Challenges = (() => {
     if (f <= tower.floor) return;
     tower.floor = f;
     // En la arena de una grieta no sale el jefe (se perdería al volver): otra maldición.
-    const c = G.U.pick(G.Rift.inArena ? CURSES.filter(x => !x.once) : CURSES);
+    const times = id => tower.curses.filter(x => x === id).length;
+    let pool = CURSES.filter(x => x.once || times(x.id) < x.max);
+    if (G.Rift.inArena) pool = pool.filter(x => !x.once);
+    if (!pool.length) pool = CURSES.filter(x => x.once);           // (en la arena con todo al máximo: piso sin nada nuevo)
+    const c = G.U.pick(pool);
     if (c.once) {
-      G.Spawner.spawnBossNow(pl, time);
+      if (!G.Rift.inArena) {
+        const e = G.Spawner.spawnBossNow(pl, time);
+        if (e) {
+          const k = f - 1;
+          e.maxHp = e.hp = Math.round(e.maxHp * (1 + TOWER_BOSS_HP * k));
+          e.dmg *= 1 + TOWER_BOSS_DMG * k;
+        }
+      }
     } else {
       const r = Object.assign({}, rulesNow());
       c.apply(r);

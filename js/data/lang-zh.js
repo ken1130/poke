@@ -2207,6 +2207,8 @@ G.I18n.add({
   'Bonus de experiencia': '經驗加成',
   'Bonus de monedas': '金幣加成',
   'Mi equipo': '我的戰隊',
+  '{x} gira la ruleta…': '{x} 轉輪盤中…',
+  'Girando la ruleta…': '轉輪盤中…',
   '☆ Añadir a Mi equipo': '☆ 加入我的戰隊',
   '★ Quitar de Mi equipo': '★ 移出我的戰隊',
   '{x} está en Mi equipo': '{x} 已加入我的戰隊',

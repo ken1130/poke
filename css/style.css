@@ -881,7 +881,18 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .dex-types .chip { padding: 2px 8px; font-size: 12px; border-width: 2px; }
 /* Ruleta de Kecleon (2026-10-15). */
 #scr-roul > .box { width: min(440px, 100%); }
-#roul-wheel { width: 240px; height: 240px; image-rendering: pixelated; display: block; margin: 6px auto; }
+#roul-wheel { width: 240px; height: 240px; display: block; margin: 6px auto; }
+/* La ruleta que ven los demás mientras alguien gira (roulette.js watch): arriba, sin tapar nada. */
+#roul-watch { position: fixed; top: 54px; left: 50%; transform: translateX(-50%); z-index: 18; pointer-events: none;
+  background: rgba(10,16,14,.86); border: 1px solid #c9a54e; border-radius: 14px; padding: 8px 14px 6px; text-align: center;
+  box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+#roul-watch.hidden { display: none; }
+#roul-watch canvas { width: 200px; height: 200px; display: block; margin: 0 auto; }
+#roul-watch .who { margin: 0 0 2px; color: #ece3cb; font-weight: 800; font-size: 14px; }
+#roul-watch .res { margin: 2px 0 0; min-height: 20px; font-weight: 800; font-size: 16px; color: #ece3cb; }
+#roul-watch .res.win { color: #f0d68c; text-shadow: 0 0 8px rgba(240,214,140,.6); }
+#roul-watch .res.lose { color: #ff8a95; }
+@media (max-height: 520px) { #roul-watch { top: 40px; padding: 4px 10px; } #roul-watch canvas { width: 140px; height: 140px; } }
 .roul-res { min-height: 22px; font-size: 18px; font-weight: 800; margin: 4px 0; }
 .roul-res.win { color: #ffd23f; text-shadow: 0 0 10px rgba(255,210,63,.8); }
 .roul-res.lose { color: #ff8a95; }
