@@ -576,7 +576,7 @@ G.HUD = (() => {
         const ph = performance.now() / 900, g = ctx.createLinearGradient(ix, iy, ix + S, iy + S);
         for (let c = 0; c < 6; c++) g.addColorStop(c / 5, `hsl(${(c * 60 + ph * 57) % 360},95%,65%)`);
         ctx.strokeStyle = g;
-      } else ctx.strokeStyle = id ? '#ffd23f' : 'rgba(140,170,210,.18)';
+      } else ctx.strokeStyle = id ? G.Items.TIER_COLOR[G.Items.tier(id)] : 'rgba(140,170,210,.18)';   // marco del color de su rango
       ctx.stroke();
       if (id) {
         const it = G.Items.BY[id];
@@ -588,7 +588,7 @@ G.HUD = (() => {
         ctx.font = F(700, fs);
         while (fs > 7 && ctx.measureText(nm).width > S + 10) ctx.font = F(700, --fs);
         ctx.textAlign = 'center';
-        ctx.fillStyle = art ? '#ff9ef0' : '#ffd23f';
+        ctx.fillStyle = art ? '#ff9ef0' : G.Items.TIER_COLOR[G.Items.tier(id)];
         ctx.fillText(nm, ix + S / 2, iy - 6);
         // Varita de Saúco: lo que lleva acumulado.
         if (id === 'elderwand' && pl.wandN) {
@@ -597,7 +597,7 @@ G.HUD = (() => {
           ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.strokeText(t, ix + S / 2, iy + S - 4);
           ctx.fillStyle = '#c8f0ff'; ctx.fillText(t, ix + S / 2, iy + S - 4);
         }
-        tapInfo(ix, iy, S, S, 'item' + k, () => ({ title: (art ? G.T('Artefacto') + ' · ' : '') + G.T(it.name), color: art ? '#ff9ef0' : '#ffd23f',
+        tapInfo(ix, iy, S, S, 'item' + k, () => ({ title: (art ? G.T('Artefacto') + ' · ' : G.T(G.Items.TIER_NAME[it.tier]) + ' · ') + G.T(it.name), color: art ? '#ff9ef0' : G.Items.TIER_COLOR[it.tier],
           lines: [G.T(it.desc), art ? G.T('Sólo otro artefacto puede sustituirlo.') : G.T('Puedes llevar 2 objetos; duran toda la run.')] }), 'up');
       }
     }

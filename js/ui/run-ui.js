@@ -155,18 +155,24 @@ G.RunUI = (() => {
     // los artefactos que llevas salen bloqueados (y si los dos lo son, sólo queda no cogerlo).
     const art = id => G.Items.isArt(id);
     const tag = id => art(id) ? `<span class="art-chip">${G.T('Artefacto')}</span> ` : '';
+    // Rangos (2026-10-16): uno de más rango que el nuevo sale bloqueado.
+    const chip = G.Items.tierChip;
     const opts = cur.map(id => {
       const it = G.Items.BY[id];
       if (art(id) && !art(next)) {
-        return { icon: id, title: tag(id) + G.T(it.name), locked: true, isArt: true,
+        return { icon: id, title: chip(id) + tag(id) + G.T(it.name), locked: true, isArt: true,
           desc: `<span class="swap-lock">${G.T('Un artefacto sólo se puede cambiar por otro artefacto.')}</span>` };
       }
-      return { icon: id, title: tag(next) + G.I18n.f('Cambiar {x} por {x}', G.T(it.name), G.T(nx.name)),
+      if (G.Items.tier(id) > G.Items.tier(next)) {
+        return { icon: id, title: chip(id) + G.T(it.name), locked: true,
+          desc: `<span class="swap-lock">${G.I18n.f('Es de más rango que {x}: no se cambia.', G.T(nx.name))}</span>` };
+      }
+      return { icon: id, title: chip(next) + tag(next) + G.I18n.f('Cambiar {x} por {x}', G.T(it.name), G.T(nx.name)),
         desc: `<span class="swap-lose">${G.I18n.f('Pierdes {x}: {x}', G.T(it.name), G.T(it.desc))}</span><br>` +
               `<span class="swap-gain">${G.I18n.f('Ganas {x}: {x}', G.T(nx.name), G.T(nx.desc))}</span>`,
         val: id, evo: !art(next), isArt: art(next) };
     })
-      .concat([{ icon: next, title: tag(next) + G.I18n.f('No coger {x}', G.T(nx.name)),
+      .concat([{ icon: next, title: chip(next) + tag(next) + G.I18n.f('No coger {x}', G.T(nx.name)),
         desc: cur.every(art) && !art(next) ? G.T('Llevas dos artefactos: un objeto normal no los puede sustituir.') : G.T('Te quedas con los dos que llevas.'), val: null }]);
     let n = 0;
     opts.forEach(o => {

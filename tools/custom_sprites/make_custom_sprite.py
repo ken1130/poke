@@ -37,13 +37,14 @@ def load_pixel(path, grid, keep_all=False):
     if not keep_all: out = keep_main(out)
     return crop_alpha(out)
 
-def load_smooth(path, height, colors, athr=127, thick=1, boost=None, outline=0):
+def load_smooth(path, height, colors, athr=127, thick=1, boost=None, outline=0, keep_all=False):
     im = np.array(Image.open(path).convert('RGBA'))
     mask = im[..., 3] > 40
     lab, n = ndimage.label(mask, structure=np.ones((3, 3)))
     sizes = ndimage.sum(mask, lab, range(1, n + 1))
     main = 1 + int(np.argmax(sizes))
-    im[lab != main] = 0
+    if keep_all: im[~np.isin(lab, 1 + np.where(sizes >= sizes.max() * 0.01)[0])] = 0   # 分開的手腳也留著（只清小雜點）
+    else: im[lab != main] = 0
     im = crop_alpha(im)
     if thick > 1:   # 縮圖前把深色線條加粗，細的五官才不會消失
         rgb = Image.fromarray(np.where(im[..., 3:4] > 0, im[..., :3], 255).astype(np.uint8), 'RGB').filter(ImageFilter.MinFilter(thick))
@@ -116,7 +117,7 @@ def main(cfg_path):
     poses = {}
     for key, fname in cfg['poses'].items():
         p = os.path.join(cfg['src'], fname + '.png')
-        img = load_pixel(p, cfg['grid'], key in cfg.get('keep_all', [])) if cfg['mode'] == 'pixel' else load_smooth(p, cfg.get('heights', {}).get(key, cfg['height']), cfg.get('colors', 10), cfg.get('alpha', 127), cfg.get('thickens', {}).get(key, cfg.get('thicken', 1)), cfg.get('boost'), cfg.get('outline', 0))
+        img = load_pixel(p, cfg['grid'], key in cfg.get('keep_all', [])) if cfg['mode'] == 'pixel' else load_smooth(p, cfg.get('heights', {}).get(key, cfg['height']), cfg.get('colors', 10), cfg.get('alpha', 127), cfg.get('thickens', {}).get(key, cfg.get('thicken', 1)), cfg.get('boost'), cfg.get('outline', 0), key in cfg.get('keep_all', []))
         for col in cfg.get('strip', {}).get(key, []):
             near = (np.abs(img[..., :3].astype(int) - np.array(col)).max(axis=2) < 40) & (img[..., 3] > 0)
             img[near] = 0; img = crop_alpha(keep_main(img))
@@ -126,6 +127,7 @@ def main(cfg_path):
     erode = cfg.get('erode', 2)
     variants = {}
     for key, img in poses.items():
+        if cfg.get('face_left'): img = mirror(img)   # 原圖臉朝左：先翻成朝右
         back = make_back(img, erode) if cfg.get('back', True) else img
         variants[key] = [img, img, img, back, back, mirror(back), mirror(img), mirror(img)]
     maxw = max(v.shape[1] for vs in variants.values() for v in vs)

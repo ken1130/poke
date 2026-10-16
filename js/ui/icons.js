@@ -227,6 +227,53 @@ G.Icons = (() => {
     relic_venom: { pal: { p: '#a043d0', q: '#d995f2', g: '#c8d4e6', w: '#ffffff', c: '#8a5a2b' }, rows: [
       '....kkkk....', '....kcck....', '....kggk....', '...kkggkk...', '..kqqqqppk..', '.kqwwqqpppk.',
       '.kqwkwqpppk.', '.kqqwqqpppk.', '.kpqqqppppk.', '.kppppppppk.', '..kppppppk..', '...kkkkkk...'] },
+    // ---------- 2026-10-16: equipo del compañero (companion.js GEAR) ----------
+    pg_split: { pal: { y: '#ffd23f', o: '#e08a1e', w: '#fff3b0', g: '#9fb1c9', d: '#5d6f8c' }, rows: [
+      '............', '.kkk....kkk.', 'kwyok..kwyok', 'kyook..kyook', 'kyook..kyook', 'kyook..kyook',
+      'kyook..kyook', 'kkkkkkkkkkkk', 'kggggggggddk', 'kgggggggdddk', 'kkkkkkkkkkkk', '............'] },
+    pg_collar: { pal: { r: '#ff5f6d', s: '#b8283a', y: '#ffd23f', w: '#fff3b0' }, rows: [
+      '............', '...kkkkkk...', '.kkrrrrrrkk.', 'krrkkkkkkrrk', 'krk......ksk', 'krk......ksk',
+      'krrk....kssk', '.kssk..kssk.', '..kkkkkkkk..', '....kwyk....', '....kyyk....', '.....kk.....'] },
+    pg_motor: { pal: { g: '#9fb1c9', d: '#5d6f8c', w: '#e6eef8', b: '#4fb4ff', c: '#2a6fb0', y: '#ffd23f' }, rows: [
+      '............', '..kkkkkkk...', '.kwggggggk..', '.kgkbbbkgk.k', 'kkgkbwbkgkky', 'kygkbbbkgkyk',
+      'kkgkcbckgkky', '.kgkkkkkgk.k', '.kdddddddk..', '..kkkkkkk...', '...kk.kk....', '............'] },
+    pg_scope: { pal: { g: '#9fb1c9', d: '#5d6f8c', b: '#5fd4ff', w: '#e6f4ff', r: '#ff5f6d' }, rows: [
+      '....kkkk....', '..kkggggkk..', '.kgkbbbbkgk.', '.kkbwbrbbkk.', 'kgkbbbrbbkgk', 'kgkrrrrrrkgk',
+      'kgkbbbrbbkgk', '.kkbbbrbbkk.', '.kdkbbbbkdk.', '..kkddddkk..', '....kkkk....', '............'] },
+    pg_pierce: { pal: { s: '#e6eef8', m: '#a9b6c9', d: '#66758c', r: '#ff5f6d', o: '#ff9a3d' }, rows: [
+      '..........kk', '........kksk', '.......ksmk.', '......ksmk..', '.....ksmk...', '..k.ksmk....',
+      '..kksmk.....', '..kdmk......', '.korkk......', 'korkdk......', 'krk..k......', '.k..........'] },
+    pg_giant: { pal: { y: '#ffd23f', o: '#e08a1e', w: '#fff3b0', r: '#ff5f6d' }, rows: [
+      '....kkkk....', '..kkyyyykk..', '.kywwyyyyok.', '.kywkyykyok.', 'kyyykyykyyok', 'kyyykkkkyyok',
+      'kyyykyykyyok', 'kyyykyykyyok', '.kyykyykyok.', '.koyyyyyook.', '..kkooookk..', '....kkkk....'] },
+    pg_bell: { pal: { y: '#ffd23f', o: '#c08a10', w: '#fff3b0', r: '#ff5f6d' }, rows: [
+      '.....kk.....', '....krrk....', '...kkkkkk...', '..kwyyyyok..', '..kwyyyyok..', '.kwyyyyyyok.',
+      '.kyyyyyyyok.', 'kyyyyyyyyyok', 'kkkkkkkkkkkk', '....kook....', '.....kk.....', '............'] },
+    pg_fork: { pal: { s: '#e6eef8', m: '#a9b6c9', d: '#66758c', p: '#c47bff', q: '#e8c8ff' }, rows: [
+      '.kk.....kk..', 'kqpk...kmsk.', '.kk.ksk.ksk.', '....ksk.ksk.', 'kk..ksk.ksk.', 'qpk.ksskssk.',
+      'kk..kmsssmk.', '.....kmmmk..', '......kmk...', '......kmk..k', '......kdk.kq', '......kkk..k'] },
+    // ---------- 2026-10-16: más género de la tienda ----------
+    w_carbos: { pal: { b: '#4fb4ff', c: '#2a6fb0', w: '#e6f4ff', g: '#c9d6ff' }, rows: [
+      '....kkkk....', '....kggk....', '...kkkkkk...', '..kwbbbbck..', '..kwkbbkck..', '..kbkkbkck..',
+      '..kbbkkbck..', '..kbkbbkck..', '..kbbbbbck..', '..kcccccck..', '...kkkkkk...', '............'] },
+    w_iron: { pal: { s: '#c9d2de', d: '#7d8899', w: '#ffffff', r: '#ff5f6d' }, rows: [
+      '....kkkk....', '....kddk....', '...kkkkkk...', '..kwssssdk..', '..kwssssdk..', '..ksrrrrdk..',
+      '..ksrwrrdk..', '..ksrrrrdk..', '..ksssssdk..', '..kddddddk..', '...kkkkkk...', '............'] },
+    w_ppup: { pal: { y: '#ffd23f', o: '#e08a1e', g: '#5fe08a', d: '#2f9a52', w: '#fff3b0' }, rows: [
+      '....kkkk....', '....kook....', '...kkkkkk...', '..kwyddyok..', '..kwdggdok..', '..kdggggdk..',
+      '..kwyggyok..', '..kyyggyok..', '..kyyggyok..', '..kooooook..', '...kkkkkk...', '............'] },
+    w_magnet: { pal: { r: '#ff5f6d', s: '#b8283a', w: '#e6eef8', g: '#9fb1c9' }, rows: [
+      '............', '...kkkkkk...', '..krrrrrrk..', '.krrkkkkrrk.', '.krk....ksk.', '.krk....ksk.',
+      '.krk....ksk.', '.kkk....kkk.', '.kwk....kwk.', '.kgk....kgk.', '.kkk....kkk.', '............'] },
+    w_incense: { pal: { p: '#c47bff', q: '#7a3fb0', y: '#ffd23f', w: '#e8c8ff', g: '#c8d4e6' }, rows: [
+      '.....kg.....', '....kg......', '.....kg.....', '....kkkk....', '...kyyyyk...', '..kpppppqk..',
+      '.kpwppppqqk.', '.kppyyyyqqk.', '.kpppppqqqk.', '..kqqqqqqk..', '...kkkkkk...', '............'] },
+    w_pcandy: { pal: { b: '#4fb4ff', c: '#2a6fb0', w: '#e6f4ff', y: '#ffd23f' }, rows: [
+      '............', '............', '............', 'kk.kkkkkk.kk', 'kykkwbbbkkyk', 'kyykbbbbkyyk',
+      'kyykbbbckyyk', 'kykkbbcckkyk', 'kk.kkkkkk.kk', '............', '............', '............'] },
+    w_pstone: { pal: { g: '#5fe08a', d: '#2f9a52', w: '#c8ffd8', y: '#ffd23f' }, rows: [
+      '.....kk.....', '....kwgk....', '...kwgggk...', '...kwgygk...', '..kwggyggk..', '..kggyyygdk.',
+      '.kgggyygddk.', '.kggggygddk.', '..kgggddddk.', '...kggddk...', '....kddk....', '.....kk.....'] },
     // ---------- medallas de logros (bronce, plata, oro) ----------
     medal1: { pal: { r: '#ff5f6d', q: '#b8283a', m: '#d08a4a', n: '#8a5226', w: '#ffd0a0', s: '#ffe8c8' }, rows: MEDAL },
     medal2: { pal: { r: '#4fb4ff', q: '#2a6fb0', m: '#c9d2de', n: '#7d8899', w: '#ffffff', s: '#ffffff' }, rows: MEDAL },

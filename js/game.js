@@ -595,7 +595,7 @@ G.Game = (() => {
 
   /**
    * Has cogido un objeto: se pueden llevar 2 (2026-10-15). Con hueco, te lo pones; con los
-   * dos ocupados, eliges cuál cambias (o te quedas como estás).
+   * dos ocupados, eliges cuál cambias (o te quedas como estás) entre los de su rango o peor.
    */
   function offerItem(id) {
     if (!pl || !G.Items.BY[id]) return;
@@ -617,6 +617,16 @@ G.Game = (() => {
     };
     if (pl.hasItem(id)) { G.Spawner.say('Ya llevas ' + G.Items.BY[id].name, 2, true); return; }
     if (pl.items.length < G.Player.MAX_ITEMS) { take(undefined); return; }
+    // Rangos (2026-10-16): si todo lo que llevas es de más rango (o un artefacto que éste no
+    // puede quitar), ni se pregunta: se vende solo y te quedas como estás.
+    const T = G.Items.tier(id);
+    if (!pl.items.some(o => G.Items.tier(o) <= T && (!G.Items.isArt(o) || G.Items.isArt(id)))) {
+      const v = G.Items.sellValue(id);
+      pl.coins = (pl.coins || 0) + v;
+      G.Spawner.say(G.I18n.f('Lo que llevas es mejor: {x} se vende por {x} monedas', G.T(G.Items.BY[id].name), v), 2.6, true);
+      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '+' + v, '#ffd23f');
+      return;
+    }
     if (queued(() => offerItem(id))) return;
     // Se para el juego mientras eliges; en grupo, para todos (como con las
     // fusiones). Antes en grupo seguía y te pegaban mientras elegías.

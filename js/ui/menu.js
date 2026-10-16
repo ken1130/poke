@@ -127,7 +127,8 @@ G.MenuUI = (() => {
   function openDex() {
     G.UI.show('scr-dex', true);
     const s = G.DB.save;
-    if (dexSel == null) { dexSel = s.partner; dexGen = G.DEX_BY[s.partner].gen; }
+    // (2026-10-16: con un personaje original de compañero, se abría en Kanto mostrándolo como Pokémon: «undefined»)
+    if (dexSel == null) { dexSel = s.partner; dexGen = G.CUSTOM_BY[s.partner] ? OTHER : G.DEX_BY[s.partner].gen; }
     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
     $('dex-total').textContent = `${owned} / ${G.DEX.length}`;
 
@@ -187,9 +188,13 @@ G.MenuUI = (() => {
     renderGrid();
     if (dexGen === OTHER && !dexQuery.trim() && !dexType && dexFilter !== 'team') {
       const list = G.CUSTOM || [];
-      if (list.length) showCustom(list[0]);
+      if (list.length) showCustom(G.CUSTOM_BY[dexSel] || list[0]);
       else $('dex-detail').innerHTML = `<div class="center"><h3 class="gold">${G.T('Otros')}</h3><p class="sub">${G.T('Aquí aparecerán los personajes originales del juego. No cuentan para el Pokédex.')}</p></div>`;
-    } else showDetail(dexSel);
+    } else {
+      // Un original seleccionado no es un Pokémon: en las regiones se enseña el primero de la región.
+      if (G.CUSTOM_BY[dexSel]) dexSel = (G.DEX.find(p => p.gen === dexGen) || G.DEX[0]).dex;
+      showDetail(dexSel);
+    }
   }
 
   /** ¿Coincide el Pokémon con lo buscado? Nombre (como se ve o el original) o número. */
@@ -214,7 +219,7 @@ G.MenuUI = (() => {
       cell.className = 'cell custom';
       cell.innerHTML = `<span class="no">${G.T('Original')}</span><b>${G.T(c.name)}</b>`;
       cell.insertBefore(G.UI.spriteCanvas(c.dex, 92, 80, { scale: 2, shadow: true }), cell.querySelector('b'));
-      cell.onclick = () => showCustom(c);
+      cell.onclick = () => { dexSel = c.dex; showCustom(c); };
       grid.appendChild(cell);
     }
   }

@@ -4,7 +4,7 @@
  *   mhouse  Casa de monstruos: un "?" en el suelo. Al entrar, salen muchos
  *           enemigos alrededor; aguanta 30 s (o acaba con todos) y suelta un
  *           buen botín en el centro.
- *   shop    Tienda de Kecleon: 3 cosas a la venta (se pagan con las monedas de la
+ *   shop    Tienda de Kecleon: 5 artículos + 4 de mascotas (se pagan con las monedas de la
  *           run). Quédate encima para comprar. Sin dinero suficiente, si sigues
  *           encima, la robas... y Kecleon se enfada: sale como jefe (tan fuerte como
  *           los jefes de ese momento y algo más según tu nivel). Si lo vences, lo
@@ -210,6 +210,10 @@ G.Dungeon = (() => {
     room.atRoul = nearR;
     if (G.Roulette.busy) return;
     if (shop.state !== room.seen) { room.seen = shop.state; shopSkip = null; }   // Kecleon vencido: otra vez el menú
+    const [ptx, pty] = petP(), nearP = G.U.dist2(pl.x, pl.y, ptx, pty + 12) < 80 * 80;
+    if (nearP && !room.atPet) { shopTab = 'pet'; shopKey = ''; if (openShop) refreshShop(); else { showShop(shop, 'pet'); } }
+    room.atPet = nearP;
+    if (nearP && openShop) { refreshShop(); return; }
     const atCounter = G.U.dist2(pl.x, pl.y, room.cx, counterY()) < 110 * 110;
     if (!atCounter) room.wasAway = true;
     if (shopSkip === shop.id && atCounter && !openShop && room.wasAway) shopSkip = null;
@@ -218,20 +222,23 @@ G.Dungeon = (() => {
   }
 
   // ---------------- menú de la tienda ----------------
-  let openShop = null, shopKey = '', shopSkip = null;
+  let openShop = null, shopKey = '', shopSkip = null, shopTab = 'gen';
   /** ¿Hay una elección abierta? (mientras, nada de tienda ni ruleta) */
   const CHOICE_SCR = ['scr-levelup', 'scr-item', 'scr-bond', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick', 'scr-fclear'];
   const choosing = () => CHOICE_SCR.some(id => document.getElementById(id) && G.UI.isOpen(id));
   const WARE_DESC = { potion: 'Una poción al azar.', upgrade: 'Una mejora de las cartas de nivel (sobre todo movimientos).', heal: 'Recuperas el 60 % de la vida.',
                       rerolls: '+3 cambios de cartas de nivel.', disc: 'Un disco de movimientos: de 1 a 4 mejoras.', tm: 'Aprendes un movimiento nuevo (o una mejora si no caben más).',
                       protein: '+10 % de daño el resto de la run.', hpup: '+30 de vida máxima.', revive: 'Si caes, vuelves con la mitad de la vida (una vez).',
-                      ticket: 'Un ticket del gacha (para el grupo).', ticket10: 'Un ticket ×10 del gacha (para el grupo).', egg: 'Un huevo Pokémon (si aún no tienes compañero).' };
+                      ticket: 'Un ticket del gacha (para el grupo).', ticket10: 'Un ticket ×10 del gacha (para el grupo).', egg: 'Un huevo Pokémon (si aún no tienes compañero).',
+                      carbos: '+8 % de velocidad el resto de la run.', iron: '+5 % de reducción de daño el resto de la run.', ppup: '-6 % de recarga el resto de la run.',
+                      magnet: '+30 % de alcance para recoger cosas el resto de la run.', incense: '+15 % de Pokémonedas al acabar la run.',
+                      pcandy: 'Tu compañero sube 3 niveles (si aún es un huevo, saldrá con ellos).', pstone: 'Tu compañero sube hasta su próxima evolución (+5 niveles si ya no evoluciona).' };
   function wareIcon(w) {
     if (WARE_SPRITE[w.kind]) return `<img src="${G.Tiles.propSprite(G.World.biome, WARE_SPRITE[w.kind], 0).toDataURL()}" style="width:36px;height:36px;image-rendering:pixelated">`;
-    return G.Icons.html(w.kind === 'item' ? w.item : WARE_ICON[w.kind], 36);
+    return G.Icons.html(w.kind === 'item' ? w.item : w.kind === 'pgear' ? G.Companion.GEAR[w.gear].icon : WARE_ICON[w.kind], 36);
   }
-  function showShop(s) {
-    openShop = s; shopKey = '';
+  function showShop(s, tab = 'gen') {
+    openShop = s; shopKey = ''; shopTab = tab;
     const el = document.getElementById('shop-leave');
     el.onclick = () => { shopSkip = s.id; closeShop(); requestExit(); };
     document.getElementById('shop-roul').onclick = () => { if (!choosing() && (s.spins == null ? 3 : s.spins) > 0) openRoulette(s); };
@@ -253,24 +260,53 @@ G.Dungeon = (() => {
     const s = openShop, pl = G.Game.player;
     if (!s || G.Roulette.busy) return;
     const coins = Math.floor(pl.coins || 0), free = s.state === 'free', left = s.spins == null ? 3 : s.spins;
-    const key = s.state + ':' + coins + ':' + left + ':' + s.wares.map(w => w.sold ? 1 : 0).join('');
+    const key = s.state + ':' + coins + ':' + left + ':' + shopTab + ':' + (pl.petGear || []).length + ':' + (pl.buddy ? pl.buddy.lvl + '' + pl.buddy.dex : pl.egg ? 'e' : '') + ':' + s.wares.map(w => w.sold ? 1 : 0).join('');
     if (key === shopKey) return;
     shopKey = key;
     document.getElementById('shop-sub').textContent = free ? G.T('¡Has vencido a Kecleon! Todo es GRATIS') : G.I18n.f('Monedas de esta run: {x}', coins)
       + (kRep.robbed ? ' · ' + G.T('Kecleon te guarda rencor: +50 %') : loyal() ? ' · ' + G.T('Cliente fiel: −20 %') : kRep.buys ? ' · ' + G.I18n.f('Compras: {x}/{x} para ser cliente fiel', kRep.buys, LOYAL) : '');
+    // Pestañas (2026-10-16): lo normal y la sección de mascotas.
+    const tabs = document.getElementById('shop-tabs');
+    const inSec = sec => s.wares.filter(w => (w.sec || 'gen') === sec);
+    const left2 = sec => inSec(sec).filter(w => !w.sold).length;
+    tabs.innerHTML = [['gen', 'Artículos', 'bag'], ['pet', 'Mascotas', 'egg']].map(([k, label]) =>
+      `<button class="shop-tab${shopTab === k ? ' on' : ''}" data-tab="${k}">${G.T(label)} <small>${left2(k)}</small></button>`).join('');
+    tabs.querySelectorAll('[data-tab]').forEach(b => { b.onclick = () => { shopTab = b.dataset.tab; shopKey = ''; G.Audio.sfx('select'); refreshShop(); }; });
     const box = document.getElementById('shop-list');
     box.innerHTML = '';
+    if (shopTab === 'pet') {
+      // Quién es tu compañero y lo que ya lleva puesto.
+      const b = pl.buddy, mon = b && G.DEX_BY[b.dex];
+      const gearIc = (pl.petGear || []).map(g => `<span title="${G.T(G.Companion.GEAR[g].name)}">${G.Icons.html(G.Companion.GEAR[g].icon, 24)}</span>`).join('');
+      const head = document.createElement('div');
+      head.className = 'shop-pet';
+      head.innerHTML = `<div class="txt"><b>${mon ? G.I18n.f('Tu compañero: {x}', G.T(mon.name)) + ' · Lv.' + (b.lvl || 1)
+          : pl.egg ? G.T('Tu compañero aún es un huevo') : G.T('Aún no tienes compañero')}</b>` +
+        `<small>${mon ? G.T('El equipo es para toda la run y sólo se vende aquí.') : G.T('Lo que compres se lo pondrá en cuanto salga del huevo.')}</small></div>` +
+        `<div class="gear">${gearIc || `<small>${G.T('Sin equipo')}</small>`}</div>`;
+      box.appendChild(head);
+    }
     s.wares.forEach((w, i) => {
+      if ((w.sec || 'gen') !== shopTab) return;
       const row = document.createElement('div');
-      row.className = 'shop-row' + (w.sold ? ' sold' : '');
-      const name = w.kind === 'item' && G.Items.BY[w.item] ? G.Items.BY[w.item].name : WARE_NAME[w.kind];
-      const desc = w.kind === 'item' && G.Items.BY[w.item] ? G.Items.BY[w.item].desc : WARE_DESC[w.kind];
-      const can = free || coins >= w.price;
-      row.innerHTML = `<div class="ico">${wareIcon(w)}</div><div class="txt"><b>${w.feat ? `<span class="tag-chip" style="background:#e0a92e;color:#3a2410;margin-right:4px">★ ${G.T('Especial')}</span>` : ''}${G.T(name)}</b><small>${G.T(desc || '')}</small></div>` +
-        (w.sold ? `<span class="sold">${G.T('Vendido')}</span>` :
-          `<div class="act"><span class="price ${can ? '' : 'poor'}">${free ? G.T('Gratis') : G.Icons.html('coin', 14) + ' ' + w.price}</span>` +
-          `<div class="row" style="gap:4px"><button class="btn small gold" data-buy="${i}" ${can ? '' : 'disabled'}>${G.T('Comprar')}</button>` +
-          (free ? '' : `<button class="btn small steal" data-steal="${i}" title="${G.T('Kecleon se enfadará')}">${G.T('Robar')}</button>`) + '</div></div>');
+      const gi = w.kind === 'pgear' ? G.Companion.GEAR[w.gear] : null;
+      const tier = w.kind === 'item' && G.Items.BY[w.item] ? G.Items.tier(w.item) : gi ? gi.tier : 0;
+      // Ya no te sirve (lo llevas puesto, o ya tienes compañero): no se puede comprar.
+      const useless = w.kind === 'pgear' ? G.Companion.gear(pl, w.gear) : w.kind === 'egg' ? !!(pl.buddy || pl.egg) : false;
+      row.className = 'shop-card' + (tier ? ' t' + tier : '') + (w.feat ? ' feat' : '') + (w.sold ? ' sold' : '');
+      const name = w.kind === 'item' && G.Items.BY[w.item] ? G.Items.BY[w.item].name : gi ? gi.name : WARE_NAME[w.kind];
+      const desc = w.kind === 'item' && G.Items.BY[w.item] ? G.Items.BY[w.item].desc : gi ? gi.desc : WARE_DESC[w.kind];
+      const can = (free || coins >= w.price) && !useless;
+      const chips = (w.feat ? `<span class="tag-chip feat-chip">★ ${G.T('Especial')}</span>` : '') +
+        (tier ? `<span class="tier-chip t${tier}">${G.T(G.Items.TIER_NAME[tier])}</span>` : '') +
+        (gi ? `<span class="tag-chip pet-chip">${G.T('Equipo de mascota')}</span>` : '');
+      row.innerHTML = `<div class="ico">${wareIcon(w)}</div>` +
+        `<div class="txt"><div class="chips">${chips}</div><b>${G.T(name)}</b><small>${G.T(desc || '')}</small></div>` +
+        (w.sold ? `<span class="stamp">${G.T('Vendido')}</span>` :
+          `<div class="act"><span class="price ${can || useless ? '' : 'poor'}">${free ? G.T('Gratis') : G.Icons.html('coin', 14) + ' ' + w.price}</span>` +
+          `<div class="row" style="gap:4px">` + (useless ? `<span class="owned">${G.T(w.kind === 'egg' ? 'Ya tienes' : 'Equipado')}</span>`
+            : `<button class="btn small gold" data-buy="${i}" ${can ? '' : 'disabled'}>${G.T('Comprar')}</button>` +
+              (free ? '' : `<button class="btn small steal" data-steal="${i}" title="${G.T('Kecleon se enfadará')}">${G.T('Robar')}</button>`)) + '</div></div>');
       box.appendChild(row);
     });
     box.querySelectorAll('[data-buy]').forEach(b => { b.onclick = () => { if (choosing()) return; G.Audio.sfx('coin'); request(s, +b.dataset.buy, false); }; });
@@ -342,16 +378,19 @@ G.Dungeon = (() => {
 
   // ---------------- interiores ----------------
 
-  const ROOMS = { shop: { rw: 7, rh: 5, theme: 'fighting' }, myst: { rw: 9, rh: 7, theme: 'ghost' } };
+  // (2026-10-16: la tienda, más grande — con 3 jugadores se quedaba pequeña: 7×5 → 10×7)
+  const ROOMS = { shop: { rw: 10, rh: 7, theme: 'fighting' }, myst: { rw: 9, rh: 7, theme: 'ghost' } };
   const TSZ = () => G.Tiles.T * G.Sprites.PX;
   const counterY = () => room.cy - (room.rh - 2.6) * room.ts;
   /** Muebles de la tienda que no se atraviesan: [x0, y0, x1, y1] (mostrador, estanterías, ruleta). */
   function furniture() {
     if (!room || room.kind !== 'shop') return [];
     const ts = room.ts, cy = counterY() + 14, out = [[room.cx - 70, cy - 16, room.cx + 70, cy + 16]];
-    for (let i = -2; i <= 2; i++) if (i) { const x = room.cx + i * ts * 2.2, y = room.cy - (room.rh - 1.4) * ts; out.push([x - 30, y - 30, x + 30, y + 30]); }
+    for (let i = -3; i <= 3; i++) if (i) { const x = room.cx + i * ts * 2.2, y = room.cy - (room.rh - 1.4) * ts; out.push([x - 30, y - 30, x + 30, y + 30]); }
     const [rx, ry] = roulP();
     out.push([rx - 20, ry - 6, rx + 20, ry + 30]);
+    const [px, py] = petP();
+    out.push([px - 30, py - 30, px + 30, py + 30]);
     return out;
   }
   /**
@@ -395,6 +434,8 @@ G.Dungeon = (() => {
   const chestP = i => [room.cx + (i - 1) * room.ts * 3, room.cy - (room.rh - 2) * room.ts];
   const springP = () => [room.cx, room.cy - 8];
   const roulP = () => [room.cx + (room.rw - 1.6) * room.ts, room.cy - room.ts * 0.6];
+  /** Rincón de mascotas (2026-10-16): enfrente de la ruleta; al acercarte se abre la tienda en «Mascotas». */
+  const petP = () => [room.cx - (room.rw - 1.6) * room.ts, room.cy - room.ts * 0.6];
   /** Todos: se abre el cofre i de la sala del tesoro. */
   function openChest(i) {
     if (!room || room.chests[i]) return;
@@ -559,7 +600,7 @@ G.Dungeon = (() => {
 
   /*
    * Lo que vende (precio base en monedas de la run; sube con el tiempo). Cada tienda pone
-   * 4 al azar (2026-10-16: antes 3 de 5):
+   * 5 al azar (2026-10-16: antes 4; el huevo pasa a «Mascotas»; más abajo, carbos…incense):
    *   potion   una poción al azar          upgrade  una mejora de las cartas (sobre todo movimientos)
    *   item     un objeto equipable         heal     te cura el 60 %
    *   rerolls  +3 cambios de cartas         disc     un disco de movimientos (1-4 mejoras)
@@ -568,18 +609,31 @@ G.Dungeon = (() => {
    *   revive   Semilla Revivir: al caer, vuelves (una vez)   ticket  un ticket del gacha
    *   egg      un huevo Pokémon (si aún no tienes compañero)
    */
-  const WARES = { potion: 15, upgrade: 35, item: 40, heal: 12, rerolls: 20, disc: 55, tm: 30, protein: 35, hpup: 25, revive: 45, ticket: 60, egg: 50 };
+  const WARES = { potion: 15, upgrade: 35, item: 40, heal: 12, rerolls: 20, disc: 55, tm: 30, protein: 35, hpup: 25, revive: 45, ticket: 60,
+                  // 2026-10-16: más género
+                  carbos: 30, iron: 35, ppup: 35, magnet: 20, incense: 30 };
+  /*
+   * Sección «Mascotas» (2026-10-16): equipo del compañero (companion.js GEAR), caramelos,
+   * piedra evolutiva y el huevo (si a alguien le falta compañero). Cada tienda: 5 cosas
+   * normales y 4 de mascotas, al azar.
+   */
+  const PET_WARES = { pcandy: 35, pstone: 60, egg: 50 };
+  const N_GEN = 5, N_PET = 4;
   function rollWares(t) {
     const k = 1 + t / 900;
     // El huevo sólo si a alguien del grupo le falta compañero.
     const needEgg = G.Game.everyone().some(p => !p.buddy && !p.egg && !(p.net && p.net.bd));
-    const kinds = Object.keys(WARES).filter(w => w !== 'egg' || needEgg);
     const mul = (kRep.robbed ? 1.5 : 1) * (loyal() ? 0.8 : 1);
-    const out = G.U.pickN(kinds, 4).map(kind => ({ kind, price: Math.round(WARES[kind] * k * mul), item: kind === 'item' ? G.Items.roll() : null }));
-    // Cliente fiel: un artículo especial más (un objeto o un ticket ×10), a buen precio.
-    if (loyal()) out.push(Math.random() < 0.7 ? { kind: 'item', price: Math.round(WARES.item * k * 0.9), item: G.Items.roll(), feat: true }
-                                              : { kind: 'ticket10', price: Math.round(150 * k * 0.8), item: null, feat: true });
-    return out;
+    const price = b => Math.round(b * k * mul);
+    const gen = G.U.pickN(Object.keys(WARES), N_GEN).map(kind => ({ kind, sec: 'gen', price: price(WARES[kind]), item: kind === 'item' ? G.Items.roll() : null }));
+    // Cliente fiel: uno de los cinco pasa a ser un artículo especial (un objeto o un ticket ×10), a buen precio.
+    if (loyal()) gen[N_GEN - 1] = Math.random() < 0.7 ? { kind: 'item', sec: 'gen', price: Math.round(WARES.item * k * 0.9), item: G.Items.roll(), feat: true }
+                                                     : { kind: 'ticket10', sec: 'gen', price: Math.round(150 * k * 0.8), item: null, feat: true };
+    const petPool = Object.keys(G.Companion.GEAR).map(g => ({ kind: 'pgear', gear: g }))
+      .concat(Object.keys(PET_WARES).filter(w => w !== 'egg' || needEgg).map(kind => ({ kind })));
+    const pet = G.U.pickN(petPool, N_PET).map(o => ({ kind: o.kind, sec: 'pet', gear: o.gear || null, item: null,
+      price: price(o.kind === 'pgear' ? G.Companion.GEAR[o.gear].price : PET_WARES[o.kind]) }));
+    return gen.concat(pet);
   }
 
   function shopTick(s, live) {
@@ -671,6 +725,14 @@ G.Dungeon = (() => {
         break;
       }
       case 'protein': pl.atkMul *= 1.1; G.Spawner.say(G.T('+10% de daño (resto de la run)'), 2.4, true); break;
+      case 'carbos': pl.spdMul *= 1.08; G.Spawner.say(G.T('+8% de velocidad (resto de la run)'), 2.4, true); break;
+      case 'iron': pl.dmgReduce += 0.05; G.Spawner.say(G.T('+5% de reducción de daño (resto de la run)'), 2.4, true); break;
+      case 'ppup': pl.cdMul *= 0.94; G.Spawner.say(G.T('-6% de recarga (resto de la run)'), 2.4, true); break;
+      case 'magnet': pl.magnet *= 1.3; G.Spawner.say(G.T('+30% de alcance del imán (resto de la run)'), 2.4, true); break;
+      case 'incense': pl.coinMul *= 1.15; G.Spawner.say(G.T('+15% de Pokémonedas al acabar la run'), 2.4, true); break;
+      case 'pgear': G.Companion.addGear(pl, w.gear); break;
+      case 'pcandy': G.Companion.addLevels(pl, 3); break;
+      case 'pstone': G.Companion.evoStone(pl); break;
       case 'hpup': pl.addMaxHp(30); G.Spawner.say(G.T('+30 de vida máxima'), 2.4, true); break;
       case 'revive': pl.reviveSeed = true; G.Spawner.say(G.T('Llevas una Semilla Revivir: si caes, vuelves'), 2.8, true); break;
       case 'egg':
@@ -784,10 +846,12 @@ G.Dungeon = (() => {
     ctx.restore();
   }
   // Iconos: los de G.Icons; el disco, la poción y el huevo, con su pixel art del mapa (tiles.js).
-  const WARE_ICON = { upgrade: 'up', heal: 'berry', rerolls: 'cards', tm: 'book', protein: 'fist', hpup: 'heart', revive: 'sprout', ticket: 'ticket', ticket10: 'ticket10' };
+  const WARE_ICON = { upgrade: 'up', heal: 'berry', rerolls: 'cards', tm: 'book', protein: 'fist', hpup: 'heart', revive: 'sprout', ticket: 'ticket', ticket10: 'ticket10',
+                      carbos: 'w_carbos', iron: 'w_iron', ppup: 'w_ppup', magnet: 'w_magnet', incense: 'w_incense', pcandy: 'w_pcandy', pstone: 'w_pstone' };
   const WARE_SPRITE = { potion: 'potion', disc: 'disc', egg: 'egg' };
   const WARE_NAME = { ticket10: 'Ticket ×10', potion: 'Poción', upgrade: 'Mejora', item: 'Objeto', heal: 'Curación', rerolls: '+3 cambios', disc: 'Disco', tm: 'MT',
-                      protein: 'Proteína', hpup: 'Más PS', revive: 'Semilla Revivir', ticket: 'Ticket', egg: 'Huevo' };
+                      protein: 'Proteína', hpup: 'Más PS', revive: 'Semilla Revivir', ticket: 'Ticket', egg: 'Huevo',
+                      carbos: 'Carburante', iron: 'Hierro', ppup: 'Más PP', magnet: 'Imán', incense: 'Incienso Fortuna', pcandy: 'Caramelo Compañero', pstone: 'Piedra Evolutiva' };
   function drawAir(ctx) {
     G.Funny.drawAir(ctx);
     const now = performance.now() / 1000;
@@ -823,7 +887,12 @@ G.Dungeon = (() => {
     if (r.kind === 'shop') {
       const s = byId(r.siteId);
       // Estanterías contra la pared norte.
-      for (let i = -2; i <= 2; i++) if (i) sprite(ctx, 'shelf', (i + 3) % 3, r.cx + i * ts * 2.2, r.cy - (r.rh - 1.4) * ts);
+      for (let i = -3; i <= 3; i++) if (i) sprite(ctx, 'shelf', (i + 3) % 3, r.cx + i * ts * 2.2, r.cy - (r.rh - 1.4) * ts);
+      // Rincón de mascotas: una estantería con huevos encima.
+      { const [px, py] = petP();
+        sprite(ctx, 'shelf', 1, px, py);
+        sprite(ctx, 'egg', 0, px - 12, py - 30, 1.5); sprite(ctx, 'egg', 0, px + 12, py - 26, 1.5);
+        label(ctx, G.T('Mascotas'), px, py - ts * 1.3, '#9fe0b0', 11); }
       // La ruleta, a un lado (se juega desde el menú).
       sprite(ctx, 'roulette', Math.floor(now * 6) % 4, r.cx + (r.rw - 1.6) * ts, r.cy - ts * 0.6);
       label(ctx, G.T('Ruleta'), r.cx + (r.rw - 1.6) * ts, r.cy - ts * 1.9, '#ffd23f', 11);

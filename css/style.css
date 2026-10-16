@@ -925,17 +925,40 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 /* z-index 19: las elecciones (cartas, objeto, disco) siempre por encima del menú de la tienda */
 #scr-shop { z-index: 19; background: none; pointer-events: none; justify-content: flex-end; align-items: center; }
 #scr-shop > .box { pointer-events: auto; width: min(420px, calc(100% - 24px)); margin-right: 16px; max-height: calc(100dvh - 40px); overflow-y: auto; }
-.shop-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
-.shop-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.25); border: 2px solid rgba(160,190,255,.25); }
-.shop-row .ico { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex: none; }
-.shop-row .txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.shop-row .txt b { font-size: 15px; } .shop-row .txt small { color: var(--muted); font-size: 12px; line-height: 1.3; }
-.shop-row .act { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
-.shop-row .price { color: #ffe14d; font-weight: 800; white-space: nowrap; } .shop-row .price.poor { color: #ff8a95; }
-.shop-row .steal { background: #c8282a; border-color: #ff8a95; color: #fff; }
-.shop-row.sold { opacity: .45; } .shop-row .sold { color: var(--muted); font-weight: 800; }
-@media (max-height: 520px) { #scr-shop > .box { padding: 10px 12px; } .shop-row { padding: 5px 8px; } .shop-row .txt small { display: none; } }
-.shop-row button[disabled] { opacity: .4; pointer-events: none; }
+/* Tienda (2026-10-16): pestañas Artículos / Mascotas y tarjetas con el color del rango. */
+#scr-shop > .box { width: min(460px, calc(100% - 24px)); }
+.shop-tabs { display: flex; gap: 6px; margin-top: 6px; }
+.shop-tab { flex: 1; padding: 7px 8px; border-radius: 9px 9px 4px 4px; border: 2px solid rgba(160,190,255,.25); background: rgba(0,0,0,.25);
+  color: var(--muted); font: inherit; font-weight: 800; font-size: 14px; cursor: pointer; }
+.shop-tab small { display: inline-block; min-width: 18px; margin-left: 4px; padding: 0 5px; border-radius: 8px; background: rgba(255,255,255,.12); font-size: 11px; }
+.shop-tab.on { color: #1b1528; background: linear-gradient(#9fe0b0, #5fc283); border-color: #c8ffd8; }
+.shop-tab.on small { background: rgba(0,0,0,.18); }
+.shop-list { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+.shop-card { --tc: rgba(160,190,255,.35); position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 8px; border-radius: 10px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 16%, transparent), rgba(0,0,0,.28) 60%); border: 2px solid rgba(160,190,255,.2); border-left: 5px solid var(--tc); }
+.shop-card.t1 { --tc: #b8c4d8; } .shop-card.t2 { --tc: #4fb4ff; } .shop-card.t3 { --tc: #c47bff; } .shop-card.t4 { --tc: #ffb02e; }
+.shop-card.feat { --tc: #e0a92e; box-shadow: 0 0 0 1px #e0a92e66, 0 0 12px #e0a92e44; }
+.shop-card .ico { width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; flex: none; border-radius: 9px;
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--tc) 35%, transparent), rgba(0,0,0,.35)); border: 1px solid color-mix(in srgb, var(--tc) 50%, transparent); }
+.shop-card .txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.shop-card .txt b { font-size: 15px; } .shop-card .txt small { color: var(--muted); font-size: 12px; line-height: 1.3; }
+.shop-card .chips { display: flex; gap: 4px; flex-wrap: wrap; } .shop-card .chips:empty { display: none; }
+.shop-card .act { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.shop-card .price { color: #ffe14d; font-weight: 800; white-space: nowrap; padding: 1px 8px; border-radius: 10px; background: rgba(0,0,0,.35); }
+.shop-card .price.poor { color: #ff8a95; }
+.shop-card .steal { background: #c8282a; border-color: #ff8a95; color: #fff; }
+.shop-card .owned { color: #9fe0b0; font-weight: 800; font-size: 12px; }
+.shop-card.sold { opacity: .5; filter: grayscale(.7); }
+.shop-card .stamp { flex: none; padding: 2px 8px; border: 2px solid #ff8a95; border-radius: 6px; color: #ff8a95; font-weight: 900; transform: rotate(-8deg); }
+.shop-card button[disabled] { opacity: .4; pointer-events: none; }
+.shop-pet { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; background: rgba(95,194,131,.12); border: 1px dashed rgba(159,224,176,.5); }
+.shop-pet .txt { flex: 1; display: flex; flex-direction: column; min-width: 0; } .shop-pet .txt b { font-size: 14px; color: #9fe0b0; }
+.shop-pet .txt small, .shop-pet .gear small { color: var(--muted); font-size: 11px; }
+.shop-pet .gear { display: flex; gap: 2px; flex-wrap: wrap; justify-content: flex-end; max-width: 45%; }
+.tier-chip { font-size: 11px; padding: 1px 6px; border-radius: 5px; font-weight: 800; color: #1b1528; margin-right: 4px; vertical-align: 1px; }
+.tier-chip.t1 { background: #b8c4d8; } .tier-chip.t2 { background: #4fb4ff; } .tier-chip.t3 { background: #c47bff; } .tier-chip.t4 { background: linear-gradient(90deg, #ffd23f, #ff8a3d); }
+.feat-chip { background: #e0a92e; color: #3a2410; } .pet-chip { background: #5fc283; color: #10301c; }
+@media (max-height: 520px) { #scr-shop > .box { padding: 10px 12px; } .shop-card { padding: 5px 8px; } .shop-card .txt small { display: none; } .shop-card .ico { width: 38px; height: 38px; } }
 
 /* PK en la arena: movimiento elegido (pvp.js, 2026-10-15) */
 #scr-pkpick .card.pk-sel { border-color: var(--gold, #ffd23f); background: rgba(255, 210, 63, .14); }

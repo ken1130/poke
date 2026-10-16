@@ -61,5 +61,6 @@
  "thickens": {
   "walk1": 1,
   "walk2": 1
- }
+ },
+ "face_left": true
 }

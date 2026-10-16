@@ -14,6 +14,46 @@ G.Companion = (() => {
   const RANGE = 260, RATE = 0.9;    // alcance y cadencia de sus disparos
   const BABIES = [172, 173, 174, 175, 236, 238, 239, 240, 298, 360, 406, 447];
 
+  /*
+   * Equipo del compañero (2026-10-16): sólo se compra en la tienda de Kecleon (sección
+   * «Mascotas», dungeon.js). Cada pieza una vez por run; vale para el huevo que aún no ha
+   * eclosionado. Lo lleva el jugador (pl.petGear) y sólo cuenta en su ordenador, como el daño
+   * del compañero. tier: mismo rango que los objetos (items.js).
+   */
+  const GEAR = {
+    split:  { name: 'Cargador Doble', desc: '+1 proyectil (sale en abanico).', tier: 3, price: 70, icon: 'pg_split' },
+    collar: { name: 'Collar Fuerza', desc: '+35% de daño del compañero.', tier: 2, price: 55, icon: 'pg_collar' },
+    motor:  { name: 'Motor Turbo', desc: 'El compañero dispara un 40% más rápido.', tier: 2, price: 55, icon: 'pg_motor' },
+    scope:  { name: 'Mira Telescópica', desc: '+50% de alcance y +30% de velocidad de proyectil.', tier: 1, price: 40, icon: 'pg_scope' },
+    pierce: { name: 'Punta Perforante', desc: 'Sus proyectiles atraviesan 2 enemigos más.', tier: 2, price: 50, icon: 'pg_pierce' },
+    giant:  { name: 'Insignia Gigante', desc: 'Proyectiles un 60% más grandes y +15% de daño.', tier: 1, price: 40, icon: 'pg_giant' },
+    bell:   { name: 'Campanilla Suerte', desc: '25% de probabilidad de crítico (daño ×2).', tier: 2, price: 50, icon: 'pg_bell' },
+    fork:   { name: 'Diapasón Eco', desc: 'Cada 3 disparos, suelta además una onda de 6 proyectiles alrededor.', tier: 3, price: 75, icon: 'pg_fork' }
+  };
+  const gear = (pl, id) => !!(pl && pl.petGear && pl.petGear.includes(id));
+  /** Compra de la tienda: se lo pones (aunque aún sea un huevo). */
+  function addGear(pl, id) {
+    if (!pl || !GEAR[id]) return;
+    pl.petGear = pl.petGear || [];
+    if (pl.petGear.includes(id)) { G.Spawner.say(G.T('Tu compañero ya lleva eso'), 2, true); return; }
+    pl.petGear.push(id);
+    G.Spawner.say(G.I18n.f('Equipo de compañero: {x}', G.T(GEAR[id].name)) + (pl.buddy ? '' : ' · ' + G.T('se lo pondrá al eclosionar')), 2.8, true);
+    G.FX.ring(pl.x, pl.y, 6, 90, '#9fe0b0', 0.5, 4);
+  }
+  /** Caramelo / piedra: niveles para el compañero (si aún no hay, se guardan para cuando salga). */
+  function addLevels(pl, n) {
+    if (!pl) return;
+    if (!pl.buddy) { pl.petLv = (pl.petLv || 0) + n; G.Spawner.say(G.I18n.f('Tu compañero empezará con +{x} niveles', n), 2.6, true); return; }
+    pl.buddy.k0 = (pl.buddy.k0 || 0) - n * PER_LEVEL;
+    G.Spawner.say(G.I18n.f('¡Compañero +{x} niveles!', n), 2.4, true);
+  }
+  /** Piedra evolutiva: hasta el nivel de su próxima evolución (o +5 si ya no evoluciona). */
+  function evoStone(pl) {
+    const b = pl && pl.buddy, lv = b ? b.lvl || 1 : 1 + (pl.petLv || 0);   // (huevo: cuenta lo que ya lleva comprado)
+    const next = !(b && b.final) ? EVO_LV.find(x => x > lv) : null;
+    addLevels(pl, next ? next - lv : 5);
+  }
+
   let spawned = false;
   const live = new Map();           // jugador -> { dex, shiny, x, y, anim, shotT }
 
@@ -102,7 +142,8 @@ G.Companion = (() => {
     const dex = rollHatch();
     const shiny = G.Sprites.hasShiny(dex) && Math.random() < 1 / 20;
     pl.egg = null;
-    pl.buddy = { dex, shiny, lvl: 1, stage: 0, k0: pl.kills || 0 };
+    pl.buddy = { dex, shiny, lvl: 1, stage: 0, k0: (pl.kills || 0) - (pl.petLv || 0) * PER_LEVEL };   // + los caramelos comprados antes
+    pl.petLv = 0;
     if (pl === G.Game.player) G.Progress.event('hatch', { shiny });
     G.Sprites.preload([dex], 8000, shiny);
     const name = G.T(G.DEX_BY[dex].name);
@@ -143,21 +184,31 @@ G.Companion = (() => {
 
   function shoot(c, pl, dt) {
     if ((c.shotT -= dt) > 0) return;
-    const e = G.Projectiles.nearest(G.EnemyMgr.all(), c.x, c.y, RANGE);
+    const range = RANGE * (gear(pl, 'scope') ? 1.5 : 1);
+    const e = G.Projectiles.nearest(G.EnemyMgr.all(), c.x, c.y, range);
     if (!e) { c.shotT = 0.2; return; }
-    c.shotT = RATE;
+    c.shotT = RATE / (gear(pl, 'motor') ? 1.4 : 1);
+    c.shots = (c.shots || 0) + 1;
     const mon = G.DEX_BY[c.dex], type = (mon && mon.types[0]) || 'normal';
-    const a = Math.atan2(e.y - c.y, e.x - c.x), sp = 330;
+    const a = Math.atan2(e.y - c.y, e.x - c.x), sp = 330 * (gear(pl, 'scope') ? 1.3 : 1);
     c.face = a;
     c.anim.play('Attack', { speed: 1.6 });
-    G.Projectiles.spawn({
-      x: c.x + Math.cos(a) * 6, y: c.y + Math.sin(a) * 6, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-      // Crece con tu nivel (+6 %), con el suyo (+8 %) y con cada evolución (+25 %).
-      dmg: 12 * pl.atk * (1 + 0.06 * Math.max(0, pl.level - 1)) * (1 + 0.08 * ((pl.buddy.lvl || 1) - 1)) * (1 + 0.25 * (pl.buddy.stage || 0)),
-      r: 6 + 2 * (pl.buddy.stage || 0), life: RANGE / sp + 0.15,
-      pierce: 0, color: G.U.TYPE_COLOR[type], hits: new Set(), vis: G.VFX.forType(type), ghost: false,
-      owner: pl, mtype: type
-    });
+    // Crece con tu nivel (+6 %), con el suyo (+8 %) y con cada evolución (+25 %); y con su equipo.
+    const base = 12 * pl.atk * (1 + 0.06 * Math.max(0, pl.level - 1)) * (1 + 0.08 * ((pl.buddy.lvl || 1) - 1)) * (1 + 0.25 * (pl.buddy.stage || 0))
+      * (gear(pl, 'collar') ? 1.35 : 1) * (gear(pl, 'giant') ? 1.15 : 1);
+    const r = (6 + 2 * (pl.buddy.stage || 0)) * (gear(pl, 'giant') ? 1.6 : 1);
+    const fire = (ang, k = 1) => {
+      const crit = gear(pl, 'bell') && Math.random() < 0.25;
+      G.Projectiles.spawn({
+        x: c.x + Math.cos(ang) * 6, y: c.y + Math.sin(ang) * 6, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+        dmg: base * k * (crit ? 2 : 1), r: crit ? r * 1.25 : r, life: range / sp + 0.15,
+        pierce: gear(pl, 'pierce') ? 2 : 0, color: crit ? '#ffe14d' : G.U.TYPE_COLOR[type], hits: new Set(), vis: G.VFX.forType(type), ghost: false,
+        owner: pl, mtype: type
+      });
+    };
+    if (gear(pl, 'split')) { fire(a - 0.16); fire(a + 0.16); } else fire(a);
+    // Diapasón: cada 3 disparos, una onda de 6 alrededor (a medio daño).
+    if (gear(pl, 'fork') && c.shots % 3 === 0) for (let i = 0; i < 6; i++) fire(a + i * Math.PI / 3, 0.5);
   }
 
   /** Para ordenarlos por Y con el resto (game.js drawScene). */
@@ -185,5 +236,5 @@ G.Companion = (() => {
   /** Para myState (cooperativo): [dex, shiny] o [0, 0]. */
   function state(pl) { return pl && pl.buddy ? [pl.buddy.dex, pl.buddy.shiny ? 1 : 0] : [0, 0]; }
 
-  return { reset, tick, update, gotEgg, eggProgress, drawables, state, KILLS };
+  return { reset, tick, update, gotEgg, eggProgress, drawables, state, KILLS, GEAR, gear, addGear, addLevels, evoStone };
 })();

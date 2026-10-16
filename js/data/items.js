@@ -1,7 +1,7 @@
 /* ============ items.js — objetos equipables (uno por run) ============
  * Se encuentran en los cofres (a veces en los normales, a menudo en los de
  * candado) y los sueltan los jefes. Sólo puedes llevar UNO; si encuentras
- * otro, eliges con cuál quedarte. Duran lo que dura la run.
+ * otro, eliges con cuál quedarte (sólo entre los de su rango o peor). Duran lo que dura la run.
  *
  *   on(pl)   se lo pones (lo que hace mientras lo llevas)
  *   off(pl)  se lo quitas (deshace lo de on)
@@ -95,14 +95,33 @@ G.Items = (() => {
       desc: '+500 de vida máxima.',
       on: p => { p.addMaxHp(ART.tank64.hp); }, off: p => { p.maxHp -= ART.tank64.hp; p.hp = Math.min(p.hp, p.maxHp); } }
   ];
+  /*
+   * ---- Rangos (2026-10-16, pedido del dueño) ----
+   * 1 Común · 2 Raro · 3 Épico · 4 Legendario (los artefactos). Con los dos huecos llenos, sólo
+   * se ofrece cambiar un objeto por otro de su rango o mejor; si todos los que llevas son
+   * mejores, el nuevo se vende solo (game.js offerItem). Los mejores salen menos (TIER_W).
+   */
+  const TIER = { amuletcoin: 1, luckyegg: 1, rockyhelmet: 1, kingsrock: 1,
+                 leftovers: 2, shellbell: 2, choicescarf: 2, scopelens: 2, expertbelt: 2, airballoon: 2, eviolite: 2,
+                 choiceband: 3, lifeorb: 3, quickclaw: 3, assaultvest: 3, focussash: 3, brightpowder: 3 };
+  const TIER_NAME = { 1: 'Común', 2: 'Raro', 3: 'Épico', 4: 'Legendario' };
+  const TIER_COLOR = { 1: '#b8c4d8', 2: '#4fb4ff', 3: '#c47bff', 4: '#ffb02e' };
+  const TIER_W = { 1: 4, 2: 3, 3: 2 };
   const BY = {};
-  for (const it of LIST) BY[it.id] = it;
-  for (const it of ARTS) BY[it.id] = it;
+  for (const it of LIST) { BY[it.id] = it; it.tier = TIER[it.id] || 1; }
+  for (const it of ARTS) { BY[it.id] = it; it.tier = 4; }
+  const tier = id => (BY[id] && BY[id].tier) || 1;
+  /** Etiqueta de color con el rango (para las ventanas). */
+  const tierChip = id => `<span class="tier-chip t${tier(id)}">${G.T(TIER_NAME[tier(id)])}</span>`;
+  /** Lo que te dan por un objeto que no te puedes poner (todos los tuyos son mejores). */
+  const sellValue = id => 6 + 6 * tier(id);
 
-  /** Uno al azar, distinto del que ya llevas (nunca un artefacto). */
+  /** Uno al azar, distinto del que ya llevas (nunca un artefacto); los de más rango, menos a menudo. */
   function roll(except) {
     const pool = LIST.filter(i => i.id !== except);
-    return G.U.pick(pool).id;
+    let r = Math.random() * pool.reduce((a, i) => a + TIER_W[i.tier], 0);
+    for (const i of pool) if ((r -= TIER_W[i.tier]) <= 0) return i.id;
+    return pool[0].id;
   }
   /** Un artefacto al azar. */
   function rollArt() { return G.U.pick(ARTS).id; }
@@ -110,5 +129,5 @@ G.Items = (() => {
   /** Probabilidad de artefacto en cada cofre con candado. */
   const ART_CHANCE = 0.1;
 
-  return { LIST, ARTS, ART, BY, roll, rollArt, isArt, ART_CHANCE };
+  return { LIST, ARTS, ART, BY, roll, rollArt, isArt, ART_CHANCE, tier, tierChip, sellValue, TIER_NAME, TIER_COLOR };
 })();

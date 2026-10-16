@@ -1,0 +1,71 @@
+{
+ "id": 10006,
+ "mode": "smooth",
+ "height": 40,
+ "colors": 16,
+ "src": "tools/custom_sprites/src/tom",
+ "out": "assets/pokemon/10006",
+ "erode": 2,
+ "margin": 6,
+ "faint_rotate": false,
+ "poses": {
+  "idle": "idle",
+  "blink": "blink",
+  "walk1": "walk1",
+  "walk2": "walk2",
+  "attack": "attack",
+  "shoot": "shoot",
+  "charge": "charge",
+  "hurt": "hurt",
+  "faint": "faint"
+ },
+ "alpha": 150,
+ "back": false,
+ "thicken": 3,
+ "outline": 0.3,
+ "heights": {
+  "attack": 37,
+  "charge": 44,
+  "walk1": 26,
+  "walk2": 26,
+  "faint": 34
+ },
+ "keep_all": [
+  "faint",
+  "walk1",
+  "walk2"
+ ],
+ "thickens": {
+  "walk1": 1,
+  "walk2": 1
+ },
+ "anims": {
+  "Walk": [
+   [
+    "walk1",
+    0,
+    1,
+    6
+   ],
+   [
+    "walk2",
+    0,
+    0,
+    6
+   ],
+   [
+    "walk1",
+    0,
+    1,
+    6
+   ],
+   [
+    "walk2",
+    0,
+    0,
+    6
+   ]
+  ]
+ },
+ "face_left": true
+}
