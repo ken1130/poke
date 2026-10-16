@@ -33,7 +33,7 @@
 ## 製作團隊
 
 - **主要創作者**：ken
-- **協作者**：peter、readyplayer、bebe、didi
+- **協作者**：peter、readyplayer1996、bebe、didi
 
 ## 授權與聲明
 
