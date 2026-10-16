@@ -270,7 +270,11 @@ G.Combat = (() => {
       if (d.bleed && !e.dead) {
         keep = true;
         hit(pl, e, d.bleed * 0.5 * pl.atk, '#e0303a', 0, 0, 0, d.bm, NOCRIT);
-        if (Math.random() < 0.5 && G.Camera.sees(e.x, e.y, 20)) G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#e0303a', 2, 40);
+        // Gotas de sangre en píxeles que caen (en vez de una nube de puntos).
+        if (G.Camera.sees(e.x, e.y, 20)) for (let k = 0; k < 3; k++) {
+          G.FX.px(e.x + G.U.rand(-e.r, e.r) * 0.5, e.y - e.bodyH * G.U.rand(0.4, 0.7), k ? '#8a0f18' : '#ff4a4a',
+                  { vx: G.U.rand(-25, 25), vy: G.U.rand(-50, -15), grav: 420, drag: 0.97, life: G.U.rand(0.35, 0.55), size: k === 2 ? 2 : 1 });
+        }
       }
       if (d.drip > now && !e.dead) {
         keep = true;
@@ -321,18 +325,26 @@ G.Combat = (() => {
     if (!list.length) return;
     m.punches = (m.punches || 0) + 1;
     const sure = m.punches % row.every === 0;
+    const P = G.VFX.PAL.fighting;
     for (const e of list) {
-      const a = Math.atan2(e.y - pl.y, e.x - pl.x);
+      const a = Math.atan2(e.y - pl.y, e.x - pl.x), ca = Math.cos(a), sa = Math.sin(a);
+      const crit = !ghost && (sure || Math.random() < row.crit + (pl.critChance || 0));
       if (G.Camera.sees(e.x, e.y, 20)) {
-        G.FX.sp('impact', 'fighting', e.x, e.y - e.bodyH * 0.5, { life: 0.16, scale: sure ? 2.2 : 1.4 });
-        if (row.n) G.FX.beam(pl.x, pl.y - G.LIFT * 0.5, a, Math.hypot(e.x - pl.x, e.y - pl.y), 2, col, G.VFX.forMove(m));
+        // Guante de píxel que llega disparado al objetivo + estallido (crítico: estrella amarilla).
+        const ex = e.x, ey = e.y - e.bodyH * 0.5, back = row.n ? 30 : 20, big = sure || crit;
+        G.FX.sp('fist', 'fighting', ex - ca * back, ey - sa * back,
+                { vx: ca * back * 7, vy: sa * back * 7, life: 0.13, angle: a, fade: false, scale: 1.5 });
+        if (row.n) for (let k = 1; k <= 3; k++) {          // estela del puñetazo a distancia
+          G.FX.px(ex - ca * (back + k * 10), ey - sa * (back + k * 10), P[k === 1 ? 4 : 3], { life: 0.1 + k * 0.03 });
+        }
+        G.FX.sp(big ? 'pow' : 'impact', big ? 'electric' : 'fighting', ex + ca * 4, ey + sa * 4,
+                { life: big ? 0.22 : 0.16, scale: 1.5, frameRate: 14, fade: !big });
+        G.FX.spark(ex, ey, big ? '#fff36a' : P[3], ca, sa, big ? 7 : 3);
       }
       if (ghost) continue;
-      const crit = sure || Math.random() < row.crit + (pl.critChance || 0);
       hit(pl, e, row.dmg * pl.atk, col, Math.cos(a), Math.sin(a), row.knock || 0, m, { crit, cmul: row.cmul });
       if (crit && row.bleed && !e.dead) { const d = dotOf(pl, e); d.bleed = row.bleed; d.bm = m; }
     }
-    if (!row.n) G.FX.spark(pl.x, pl.y - G.LIFT * 0.5, col, Math.cos(pl.aim), Math.sin(pl.aim), 3);
     if (sure && !ghost) G.Camera.kick(0.06);
   }
 
@@ -366,7 +378,7 @@ G.Combat = (() => {
   }
   function spears(pl, m) {
     const row = G.Moves.stat(m), vis = G.VFX.forMove(m);
-    const o = { dmg: row.dmg * pl.atk, r: 8 * row.size, scale: 1.6 * row.size, life: row.r * TILE / SPEAR_SPEED,
+    const o = { dmg: row.dmg * pl.atk, r: 8 * row.size, scale: 1, life: row.r * TILE / SPEAR_SPEED,
                 pierce: row.pierce, vis, ghost, split: row.split || 0, sdmg: (row.sdmg || 0) * pl.atk };
     if (row.radial) {
       const rot = Math.random() * 0.785;
@@ -378,7 +390,8 @@ G.Combat = (() => {
   function splitSpear(p, e) {
     const a = Math.atan2(p.vy, p.vx);
     for (const s of [-0.5, 0.5]) {
-      spearProj(p.owner, e.x, e.y, a + s, { dmg: p.sdmg, r: 6, scale: 1.1, life: 0.55, pierce: 1, vis: p.vis,
+      spearProj(p.owner, e.x, e.y, a + s, { dmg: p.sdmg, r: 6, scale: 1, life: 0.55, pierce: 1,
+                                            vis: p.svis || (p.svis = Object.assign({}, p.vis, { proj: 'spearS' })),
                                             ghost: p.ghost, hits: new Set([e.id]) });
     }
   }
@@ -917,9 +930,20 @@ G.Combat = (() => {
       } else if (f.kind === 'tree') {
         if (f.t >= f.fall) {
           G.FX.ring(f.x, f.y, 4, f.r, '#97e36c', 0.35, 4);
-          G.FX.burst(f.x, f.y - 6, '#45b23c', 14, 170);
-          G.FX.burst(f.x, f.y - 4, '#8a5a2b', 6, 120);
-          if (G.Camera.sees(f.x, f.y, 40)) { G.Audio.sfx('break'); G.Camera.kick(0.1); }
+          if (G.Camera.sees(f.x, f.y, 40)) {
+            G.Audio.sfx('break'); G.Camera.kick(0.1);
+            // Hojas que salen volando, astillas y polvo (sprites de píxel).
+            for (let k = 0; k < 9; k++) {
+              const a = Math.random() * 6.2832, sp = G.U.rand(50, 130);
+              G.FX.sp('leaf', 'grass', f.x + Math.cos(a) * 10, f.y - 14 + Math.sin(a) * 8,
+                      { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6 - 70, grav: 170, spin: G.U.rand(-9, 9), life: G.U.rand(0.5, 0.8) });
+            }
+            for (let k = 0; k < 7; k++) {
+              G.FX.px(f.x + G.U.rand(-8, 8), f.y - 6, k & 1 ? '#6b4220' : '#c08a4a',
+                      { vx: G.U.rand(-110, 110), vy: G.U.rand(-170, -60), grav: 480, drag: 0.98, life: 0.5, size: 2 });
+            }
+            for (const s of [-1, 1]) G.FX.sp('puff', 'ground', f.x + s * f.r * 0.45, f.y - 4, { vx: s * 40, life: 0.42, frameRate: 7 });
+          }
           blast(f, f.r);
           const row = f.row;
           if (row.zone) fields.push({ kind: 'grove', owner: f.owner, ghost: f.ghost, m: f.m, row, col: f.col, x: f.x, y: f.y,
@@ -934,7 +958,8 @@ G.Combat = (() => {
           f.done = true;
           for (let k = 0; k < 6; k++) {
             const a = Math.random() * 6.2832, d = Math.random() * f.r * 0.8;
-            G.FX.spark(f.x + Math.cos(a) * d, f.y + Math.sin(a) * d * 0.6, '#c89a5a', 0, -1, 2);
+            G.FX.px(f.x + Math.cos(a) * d, f.y + Math.sin(a) * d * 0.6, k & 1 ? '#6e4c1e' : '#dcb66c',
+                    { vx: G.U.rand(-40, 40), vy: G.U.rand(-120, -60), grav: 420, drag: 0.98, life: 0.4, size: 1 + (k & 1) });
           }
           blast(f, f.r);
         }
@@ -976,45 +1001,48 @@ G.Combat = (() => {
         ctx.globalAlpha = 0.5 * a;
         ctx.strokeStyle = f.col; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * 0.8, f.r * 0.5, 0, 0, 6.2832); ctx.stroke();
-      } else if (f.kind === 'puddle' || f.kind === 'grove') {
+      } else if (f.kind === 'puddle') {
+        // Charco de veneno en píxeles (borde oscuro, tramado, burbujas que revientan).
         const a = Math.min(1, (f.life - f.t) * 1.5, f.t * 6);
-        const vine = f.kind === 'grove';
-        ctx.globalAlpha = (vine ? 0.28 : 0.38) * a;
-        ctx.fillStyle = vine ? (f.row.root ? '#2f7a28' : '#5fae3a') : '#7a2fa0';
-        ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r, f.r * 0.6, 0, 0, 6.2832); ctx.fill();
-        ctx.globalAlpha = 0.55 * a;
-        ctx.strokeStyle = vine ? '#97e36c' : '#d995f2'; ctx.lineWidth = 1.5;
-        if (vine) {
-          // Enredaderas: unas curvas que salen del centro.
-          for (let k = 0; k < 5; k++) {
-            const ang = k * 1.2566 + f.x * 0.01;
-            ctx.beginPath(); ctx.moveTo(f.x, f.y);
-            ctx.quadraticCurveTo(f.x + Math.cos(ang + 0.6) * f.r * 0.5, f.y + Math.sin(ang + 0.6) * f.r * 0.3,
-                                 f.x + Math.cos(ang) * f.r * 0.9, f.y + Math.sin(ang) * f.r * 0.55);
-            ctx.stroke();
-          }
-        } else {
-          const w = Math.sin(now * 3 + f.x) * 0.08 + 0.7;
-          ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * w, f.r * w * 0.6, 0, 0, 6.2832); ctx.stroke();
+        G.VFX.draw(ctx, f.r > 30 ? 'puddleL' : 'puddleS', 'poison', f.x, f.y,
+                   { frame: Math.floor(now * 4 + f.x * 0.37), alpha: a > 0.66 ? 0.92 : a > 0.33 ? 0.6 : 0.3 });
+      } else if (f.kind === 'grove') {
+        // Zona del árbol: hierba oscura a píxeles, borde a puntos y enredaderas que salen del suelo.
+        const a = Math.min(1, (f.life - f.t) * 1.5, f.t * 6), st = a > 0.66 ? 1 : a > 0.33 ? 0.66 : 0.33;
+        ctx.globalAlpha = 0.26 * st; ctx.fillStyle = f.row.root ? '#14400f' : '#24721e';
+        G.VFX.oval(ctx, f.x, f.y, f.r, f.r * 0.6);
+        ctx.globalAlpha = 0.7 * st; ctx.fillStyle = '#97e36c';
+        G.VFX.dashOval(ctx, f.x, f.y, f.r, f.r * 0.6, Math.floor(now * 6), 2, 3);
+        const n = f.row.root ? 9 : 6, grow = Math.min(1, f.t / 0.25);
+        for (let k = 0; k < n; k++) {
+          const ang = k * 2.399 + f.x * 0.013, d = f.r * (0.25 + 0.6 * ((k * 0.618 + 0.3) % 1));
+          G.VFX.draw(ctx, 'vine', 'grass', f.x + Math.cos(ang) * d, f.y + Math.sin(ang) * d * 0.6 + (1 - grow) * 8,
+                     { pivot: [6, 11], frame: Math.floor(now * 3 + k) % 2, alpha: st * (grow < 1 ? 0.66 : 1) });
         }
-      } else if (f.kind === 'tree' || f.kind === 'spikes') {
+      } else if (f.kind === 'tree') {
+        // Sombra que crece a píxeles y círculo de aviso a puntos que marchan.
+        const k = G.U.clamp(f.t / f.fall, 0, 1), s = 0.3 + k * 0.7;
+        ctx.globalAlpha = 0.15 + k * 0.25; ctx.fillStyle = '#000';
+        G.VFX.oval(ctx, f.x, f.y, f.r * s, f.r * 0.6 * s);
+        ctx.globalAlpha = 0.85; ctx.fillStyle = '#97e36c';
+        G.VFX.dashOval(ctx, f.x, f.y, f.r, f.r * 0.6, Math.floor(now * 10), 3, 2);
+      } else if (f.kind === 'spikes') {
+        // Púas de madera (sprite) que salen del suelo, con grietas de tierra en la base.
         const k = G.U.clamp(f.t / f.fall, 0, 1);
-        ctx.globalAlpha = f.kind === 'tree' ? 0.15 + k * 0.3 : 0.3;
-        ctx.fillStyle = f.kind === 'tree' ? '#000' : '#5a3a1a';
-        ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r * (0.3 + k * 0.7), f.r * 0.6 * (0.3 + k * 0.7), 0, 0, 6.2832); ctx.fill();
-        if (f.kind === 'tree') {
-          ctx.globalAlpha = 0.6;
-          ctx.strokeStyle = '#97e36c'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
-          ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r, f.r * 0.6, 0, 0, 6.2832); ctx.stroke();
-        } else {
-          // Púas de madera saliendo del suelo.
-          const h = 24 * k * (f.t > f.fall + 0.4 ? Math.max(0, 1 - (f.t - f.fall - 0.4) / 0.2) : 1);
-          ctx.globalAlpha = 1; ctx.fillStyle = '#c89a5a'; ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = 1.5;
-          for (let s = 0; s < 9; s++) {
-            const a = s * 2.399, d = f.r * (0.2 + 0.7 * ((s * 0.618) % 1));
-            const x = f.x + Math.cos(a) * d, y = f.y + Math.sin(a) * d * 0.6;
-            ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x, y - h); ctx.lineTo(x + 5, y); ctx.closePath(); ctx.fill(); ctx.stroke();
-          }
+        const out = k * (f.t > f.fall + 0.4 ? Math.max(0, 1 - (f.t - f.fall - 0.4) / 0.2) : 1);
+        ctx.globalAlpha = 0.3; ctx.fillStyle = '#3a250c';
+        G.VFX.oval(ctx, f.x, f.y, f.r * (0.3 + k * 0.7), f.r * 0.6 * (0.3 + k * 0.7));
+        ctx.globalAlpha = 1;
+        const cv = G.VFX.sprite('stake', 'ground'), PXs = G.Sprites.PX;
+        ctx.imageSmoothingEnabled = false;
+        for (let s = 0; s < 9; s++) {
+          const a = s * 2.399, d = f.r * (0.2 + 0.7 * ((s * 0.618) % 1)), sc = s % 3 ? 1 : 1.5, q = PXs * sc;
+          const x = Math.round(f.x + Math.cos(a) * d), y = Math.round(f.y + Math.sin(a) * d * 0.6);
+          const vis = Math.round((cv.height - 1) * out);            // cuánto ha salido (en píxeles de arte)
+          if (vis <= 0) continue;
+          ctx.fillStyle = '#3a250c';
+          ctx.fillRect(x - q * 3, y - PXs, q * 6, PXs);             // grieta
+          ctx.drawImage(cv, 0, 0, cv.width, vis, x - cv.width * q / 2, y - vis * q, cv.width * q, vis * q);
         }
       } else if (f.kind === 'mine') {
         const armed = f.t >= f.arm, blink = armed && Math.sin(now * 8 + f.x) > 0.3;
@@ -1063,38 +1091,33 @@ G.Combat = (() => {
         continue;
       }
       if (f.kind === 'rain') {
-        // Lluvia: rayitas moradas que caen (sobre el círculo, o sobre cada enemigo si evolucionó).
-        const fade = Math.min(1, (f.life - f.t) * 3, f.t * 8);
-        ctx.save();
-        ctx.strokeStyle = '#c46cf0'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.7 * fade;
+        // Lluvia (2026-10-16, en píxeles): nubes tóxicas encima y gotas-sprite que caen y
+        // salpican al llegar al suelo (sobre el círculo, o sobre cada enemigo si evolucionó).
+        const fade = Math.min(1, (f.life - f.t) * 3, f.t * 8), al = fade > 0.66 ? 1 : fade > 0.33 ? 0.66 : 0.33;
+        const clouds = f.spots ? f.spots.slice(0, 8) : null;
+        const nC = clouds ? clouds.length : Math.min(9, Math.max(3, Math.round(f.r / 32)));
+        for (let c = 0; c < nC; c++) {
+          const cx = clouds ? clouds[c][0] : f.x + (c - (nC - 1) / 2) * f.r * 1.6 / nC;
+          const cy = (clouds ? clouds[c][1] : f.y - (c & 1) * 10) - 104;
+          G.VFX.draw(ctx, 'cloud', 'poison', cx, cy - (1 - fade) * 10, { frame: Math.floor(now * 3 + c), alpha: al * 0.95 });
+        }
         const n = f.spots ? f.spots.length * 2 : 46;
-        ctx.beginPath();
         for (let k = 0; k < n; k++) {
           const h = (Math.sin(k * 12.9898 + f.x) * 43758.5453) % 1, h2 = (Math.sin(k * 78.233 + f.y) * 12543.13) % 1;
           let x, y;
-          if (f.spots) { const s = f.spots[k >> 1]; x = s[0] + h * 18; y = s[1] + h2 * 10; }
+          if (f.spots) { const sp = f.spots[k >> 1]; x = sp[0] + h * 18; y = sp[1] + h2 * 10; }
           else { const a = h * 6.2832, d = Math.sqrt(Math.abs(h2)) * f.r; x = f.x + Math.cos(a) * d; y = f.y + Math.sin(a) * d * 0.7; }
-          const fall = ((f.t * 3 + Math.abs(h)) % 1) * 90;
-          ctx.moveTo(x + 6 - fall * 0.06, y - 96 + fall); ctx.lineTo(x + 4 - fall * 0.06, y - 84 + fall);
+          const ph = (f.t * 2.6 + Math.abs(h)) % 1;
+          if (ph < 0.8) G.VFX.draw(ctx, 'acidrop', 'poison', x, y - 92 + ph / 0.8 * 88, { alpha: al });
+          else G.VFX.draw(ctx, 'splash', 'poison', x, y - 2, { frame: Math.floor((ph - 0.8) / 0.2 * 3), alpha: al });
         }
-        ctx.stroke();
-        ctx.restore();
         continue;
       }
       if (f.kind === 'tree' && f.t > 0) {
-        // Árbol que cae del cielo en diagonal (45°), girando hasta quedar tumbado.
-        const k = G.U.clamp(f.t / f.fall, 0, 1), s = f.r / 54;
-        ctx.save();
-        ctx.translate(f.x - (1 - k) * 150, f.y - (1 - k) * 150 - 10);
-        ctx.rotate(-0.785 + k * 0.785 + 0.6);
-        ctx.scale(s, s);
-        ctx.fillStyle = '#6b4220'; ctx.strokeStyle = '#3a220c'; ctx.lineWidth = 2;
-        ctx.fillRect(-6, -8, 12, 46); ctx.strokeRect(-6, -8, 12, 46);
-        for (const [cx, cy, rr, c] of [[0, -26, 26, '#24721e'], [-12, -14, 16, '#2f8a28'], [12, -16, 17, '#2f8a28'], [0, -34, 15, '#45b23c']]) {
-          ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 6.2832); ctx.fill();
-        }
-        ctx.strokeStyle = '#14400f'; ctx.beginPath(); ctx.arc(0, -26, 26, 0, 6.2832); ctx.stroke();
-        ctx.restore();
+        // Árbol de píxel (sprite) que cae del cielo en diagonal girando hasta estrellarse.
+        const k = G.U.clamp(f.t / f.fall, 0, 1), e = k * k;
+        G.VFX.draw(ctx, 'tree', 'grass', f.x - (1 - e) * 150, f.y - (1 - e) * 150 - 18,
+                   { pivot: [13, 13], angle: -1.1 + e * 1.5, step: Math.PI / 16, scale: f.r > 60 ? 1.5 : 1 });
         continue;
       }
       if (f.kind === 'meteor' && f.t > 0) {

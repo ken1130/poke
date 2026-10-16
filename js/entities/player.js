@@ -633,8 +633,17 @@ G.Player = class Player {
       const t = performance.now() / 1000;
       // Shaq (Peso Pesado evolucionado): el campo que no deja pasar (radio = combat.js FIELD_R).
       if (this.bulkField) {
-        ctx.save(); ctx.globalAlpha = 0.35 + Math.sin(t * 4) * 0.1; ctx.strokeStyle = '#ffe9a0'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r + 28, (this.r + 28) * 0.62, 0, 0, 6.2832); ctx.stroke(); ctx.restore();
+        // (2026-10-16) En píxeles: suelo dorado tenue, aro de bloques y tramos brillantes que giran, 2 destellos.
+        const rx = this.r + 28, ry = rx * 0.62;
+        ctx.save();
+        ctx.globalAlpha = 0.1; ctx.fillStyle = '#ffd21a'; G.VFX.oval(ctx, this.x, this.y, rx, ry);
+        ctx.globalAlpha = 0.55; ctx.fillStyle = '#c48a00'; G.VFX.dashOval(ctx, this.x, this.y, rx, ry, 0, 1, 0);
+        ctx.globalAlpha = 1; ctx.fillStyle = '#fff36a'; G.VFX.dashOval(ctx, this.x, this.y, rx, ry, Math.floor(t * 16), 5, 9);
+        ctx.restore();
+        for (let i = 0; i < 2; i++) {
+          const a = t * 1.6 + i * Math.PI;
+          G.VFX.draw(ctx, 'star', 'electric', this.x + Math.cos(a) * rx, this.y + Math.sin(a) * ry - 2, { frame: Math.floor(t * 5 + i) });
+        }
       }
       if (this.screenT > 0) {
         ctx.save(); ctx.globalAlpha = 0.6;

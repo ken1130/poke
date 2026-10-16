@@ -99,6 +99,8 @@
 
 ## 五、踩過的坑
 
+- **特效一律像素風（2026-10-16）**：新招式／頭目攻擊的外觀不要再用 `arc`／`ellipse`／`stroke`／`setLineDash` 畫圓、線、漸層（看起來很廉價）。做法：在 `js/entities/vfx.js` 的 `SHAPES` 加小像素圖（用 `o d m l w` 五階調色盤＋`outline()`，要固定顏色就在形狀上加 `cols`），用 `G.VFX.draw`（`pivot` 可指定旋轉點、`step` 角度格數，縮放只用 1／1.5／2 讓每格都是整數像素）；地面範圍用 `G.VFX.oval`（像素列填滿）、外框用 `G.VFX.dashOval`／`dashLine`（會「走動」的點線）；粒子用 `G.FX.sp`（像素圖）和 `G.FX.px`（方塊）。透明度用三段（1／0.66／0.33）。長條重複圖案（荊棘）先拼成一張快取圖再一次畫。已改：酸雨、李家拳、幽冥矛、大自然的洗禮、俠客歐尼爾力場、頭目刀刃／荊棘／火車衝撞、所有 hazards 警示。
+
 - **不要用瀏覽器原生的 `confirm()`／`alert()`／`prompt()`**（主人覺得很醜）：一律用 `G.Dialog.confirm/alert/prompt`（遊戲風格，async）。
 
 - 西文 key 共用翻譯：例如 `Salir` 已經翻成「登出」，新按鈕不要重用通用字，改用專屬字串（如 `Salir de la tienda`）。
