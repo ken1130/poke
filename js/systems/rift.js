@@ -249,6 +249,9 @@ G.Rift = (() => {
     const pl = G.Game.player;
     const a = arena;
     arena = null;
+    // (2026-10-16) La arena del mapa también se quita (como al salir de la tienda): si no, el
+    // mapa seguía teniendo la arena puesta hasta la siguiente sala o grieta.
+    G.World.setArena(null);
     G.World.setBiome(a.biome, true);
     G.Weather.clear();
     if (authority()) G.EnemyMgr.restore(); else G.EnemyMgr.clearRemote();
