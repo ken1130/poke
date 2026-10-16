@@ -11,9 +11,9 @@ G.FX = (() => {
   // Topes según la calidad (Ajustes → Gráficos): bajo, medio, alto.
   const CAP_PARTS = [350, 800, 1400], CAP_SPRITES = [110, 210, 320], CAP_TEXTS = [25, 45, 70], DENS = [0.35, 0.65, 1];
   const q = () => G.Settings.fx;
-  let parts = [], sprites = [], texts = [], rings = [], slashes = [], beams = [];
+  let parts = [], sprites = [], texts = [], rings = [], slashes = [], beams = [], bolts = [];
 
-  function clear() { parts = []; sprites = []; texts = []; rings = []; slashes = []; beams = []; }
+  function clear() { parts = []; sprites = []; texts = []; rings = []; slashes = []; beams = []; bolts = []; }
 
   const snap = v => Math.round(v / PX) * PX;
 
@@ -140,12 +140,71 @@ G.FX = (() => {
       if (t.t >= t.life) { texts.splice(i, 1); continue; }
       t.y += t.vy * dt; t.vy *= 0.94;
     }
-    for (const arr of [rings, slashes, beams]) {
+    for (const arr of [rings, slashes, beams, bolts]) {
       for (let i = arr.length - 1; i >= 0; i--) {
         arr[i].t += dt;
         if (arr[i].t >= arr[i].life) arr.splice(i, 1);
       }
     }
+  }
+
+  // ---------------- rayos de píxeles (2026-10-16: Caída de Rayo) ----------------
+
+  /** Zigzag de (x1,y1) a (x2,y2): puntos con desvío lateral `jag`, quieto en los extremos. */
+  function zig(x1, y1, x2, y2, n, jag) {
+    const pts = [], dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, o = i === 0 || i === n ? 0 : G.U.rand(-jag, jag);
+      pts.push([x1 + dx * t + nx * o, y1 + dy * t + ny * o]);
+    }
+    return pts;
+  }
+  /**
+   * Rayo que cae del cielo sobre (x, y): zigzag en bloques de píxel (borde oscuro, halo
+   * amarillo, núcleo blanco), con 1-2 ramas, que parpadea y se apaga. o: { h, life, pal }
+   */
+  function bolt(x, y, o = {}) {
+    const h = o.h || 300, top = x + G.U.rand(-40, 40);
+    const main = zig(top, y - h, x, y, 10, 14);
+    const branches = [];
+    for (let b = 0; b < 1 + (Math.random() < 0.6 ? 1 : 0); b++) {
+      const i = 3 + Math.floor(Math.random() * 5), [bx, by] = main[i], side = Math.random() < 0.5 ? -1 : 1;
+      branches.push(zig(bx, by, bx + side * G.U.rand(30, 60), by + G.U.rand(30, 70), 3, 8));
+    }
+    bolts.push({ lines: [main, ...branches], t: 0, life: o.life || 0.26, pal: o.pal || 'electric', w: 1 });
+  }
+  /** Descarga corta entre dos puntos (cadenas eléctricas): se redibuja con otra forma cada vez. */
+  function arc(x1, y1, x2, y2, o = {}) {
+    const n = Math.max(3, Math.round(Math.hypot(x2 - x1, y2 - y1) / 22));
+    bolts.push({ lines: [zig(x1, y1, x2, y2, n, 9)], t: 0, life: o.life || 0.12, pal: o.pal || 'electric', w: 0 });
+  }
+  /** Trazo grueso a bloques (alineado a la rejilla de píxeles). */
+  function blockLine(ctx, a, b, size) {
+    const d = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(d / PX));
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      ctx.fillRect(snap(a[0] + (b[0] - a[0]) * t) - size / 2, snap(a[1] + (b[1] - a[1]) * t) - size / 2, size, size);
+    }
+  }
+  function drawBolt(ctx, b) {
+    const k = 1 - b.t / b.life;
+    // Parpadeo: un fotograma de cada pocos se apaga el núcleo (como un rayo de verdad).
+    const flick = Math.floor(b.t * 45) % 4 === 3;
+    const P = G.VFX.PAL[b.pal] || G.VFX.PAL.normal;
+    const W = b.w ? [PX * 6, PX * 4, PX * 2] : [PX * 4, PX * 2.5, PX];
+    ctx.save();
+    // Entero casi todo el tiempo; sólo el final se apaga (a medias se veía lavado).
+    ctx.globalAlpha = k > 0.35 ? 1 : 0.6;
+    const glow = P[2] || '#ffd21a';
+    const layers = [['#1a1430', W[0]], [glow, W[1]], [flick ? glow : '#ffffff', W[2]]];
+    for (const [col, size] of layers) {
+      ctx.fillStyle = col;
+      b.lines.forEach((pts, li) => {
+        const s = li ? size * 0.66 : size;          // las ramas, más finas
+        for (let i = 1; i < pts.length; i++) blockLine(ctx, pts[i - 1], pts[i], Math.max(PX, snap(s)));
+      });
+    }
+    ctx.restore();
   }
 
   // ---------------- dibujo ----------------
@@ -230,6 +289,7 @@ G.FX = (() => {
 
   function draw(ctx) {
     for (const b of beams) drawBeam(ctx, b);
+    for (const b of bolts) drawBolt(ctx, b);
     for (const s of slashes) drawSlash(ctx, s);
     for (const r of rings) drawRing(ctx, r);
 
@@ -265,6 +325,6 @@ G.FX = (() => {
     }
   }
 
-  return { clear, px, burst, spark, sp, twinkle, trail, dmgText, ring, slash, beam, update, draw,
+  return { clear, px, burst, spark, sp, twinkle, trail, dmgText, ring, slash, beam, bolt, arc, update, draw,
            get count() { return parts.length + sprites.length + texts.length; } };
 })();

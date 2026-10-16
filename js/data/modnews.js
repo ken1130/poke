@@ -14,6 +14,7 @@ G.MODNEWS = [
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }
     ],
     chg: [
+      { zh: '落雷改成像素風：粗的鋸齒閃電從天而降（深色外框、黃色光暈、白色核心，還會分岔），落地有星狀火花和焦痕；進化後的連鎖電流也改成會閃動的像素電弧', en: 'Thunder Strike now uses pixel-art lightning: thick jagged bolts with branches, star sparks and a scorch mark; the evolved chain current is a crackling pixel arc' },
       { zh: '減傷上限從 80% 提高到 90%；神器「輪班工程師的肝」減傷 35% 改成 40%', en: 'Damage reduction cap raised from 80% to 90%; artifact “Shift Engineer’s Liver” now gives 40% damage reduction (was 35%)' },
       { zh: '神器「64 坦克」最大生命 +200 改成 +500', en: 'Artifact “Tank 64”: max HP +200 → +500' },
       { zh: '組隊連線優化：無法直連、要走中繼伺服器的玩家，同步頻率從每秒 4 次提高到 12 次，不會再一頓一頓的', en: 'Co-op netcode: players who can’t connect directly and go through the relay now sync 12 times per second instead of 4, so movement is no longer choppy' },

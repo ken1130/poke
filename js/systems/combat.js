@@ -139,10 +139,18 @@ G.Combat = (() => {
   }
 
   /** Un rayo que cae del cielo en (x, y). */
+  // (2026-10-16: antes un rayo recto genérico y un círculo; ahora rayo de píxeles en zigzag con
+  // ramas, chispas en estrella y una quemadura en el suelo que dura un momento.)
   function boltFx(x, y, vis) {
-    G.FX.beam(x, y - 300, Math.PI / 2, 300, 7, '#ffe14d', vis);
-    G.FX.burst(x, y - 6, '#fff3a0', 10, 140);
-    G.FX.ring(x, y, 4, 26, '#ffe14d', 0.25, 3);
+    G.FX.bolt(x, y, { h: 320 });
+    for (let i = 0; i < 8; i++) {
+      const a = i / 8 * 6.2832 + G.U.rand(-0.2, 0.2), sp = G.U.rand(90, 170);
+      G.FX.px(x, y - 4, i % 2 ? '#fffbe6' : '#ffd23f', { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6 - 40, life: G.U.rand(0.18, 0.32), size: 2 });
+    }
+    G.FX.sp('pow', 'electric', x, y - 6, { life: 0.16, scale: 1.2 });
+    // Quemadura: cruz oscura en el suelo que se apaga.
+    for (const [dx, dy] of [[0, 0], [-6, 0], [6, 0], [0, -3], [0, 3], [-10, 2], [10, -2]])
+      G.FX.px(x + dx, y + dy, '#2a2238', { life: 0.9, size: 2, grav: 0 });
   }
 
   /**
@@ -1229,7 +1237,7 @@ G.Combat = (() => {
           for (let k = 1; k < f.pts.length; k++) {
             const a = f.pts[k - 1], b = f.pts[k];
             const len = Math.hypot(b.x - a.x, b.y - a.y);
-            if (G.Camera.sees(a.x, a.y, len)) G.FX.beam(a.x, a.y - 8, Math.atan2(b.y - a.y, b.x - a.x), len, 3, '#bfe8ff', f.vis);
+            if (G.Camera.sees(a.x, a.y, len)) G.FX.arc(a.x, a.y - 8, b.x, b.y - 8, { life: 0.2 });
             if (f.ghost) continue;
             for (const e of enemiesIn((a.x + b.x) / 2, (a.y + b.y) / 2, len / 2 + 16)) {
               if (!e.dead && segDist2(a.x, a.y, b.x, b.y, e.x, e.y) <= (14 + e.r) ** 2) hit(f.owner, e, f.dmg, f.col, 0, 0, 0, f.m);
