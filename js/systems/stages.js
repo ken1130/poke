@@ -277,7 +277,7 @@ G.Stages = (() => {
     const cam = G.Camera;
     const sx = (tx - cam.left()) * cam.scale, sy = (ty - cam.top()) * cam.scale;
     if (sx > 20 && sx < w - 20 && sy > 20 && sy < h - 20) return;
-    const M = 40, ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 70);
+    const M = 40, ex = G.HUD.edgeX(sx, M, w), ey = G.U.clamp(sy, M + 70, h - M - 70);
     const a = Math.atan2(sy - ey, sx - ex);
     ctx.save();
     ctx.translate(ex, ey);

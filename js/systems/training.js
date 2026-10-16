@@ -213,6 +213,9 @@ G.Training = (() => {
   }
   function drawHud() {
     if (!hud) return;
+    // Móvil: debajo del bloque de la izquierda del HUD (va escalado, hud.js) y fuera de la muesca.
+    const touch = G.Touch.active, top = touch ? Math.max(64, Math.round(G.HUD.leftBottom + 6)) : 64, left = 14 + (touch ? G.HUD.SL : 0);
+    if (hud.dataset.pos !== top + ',' + left) { hud.dataset.pos = top + ',' + left; hud.style.top = top + 'px'; hud.style.left = left + 'px'; }
     const s = stats();
     hud.querySelector('[data-t="total"]').textContent = num(s.total);
     hud.querySelector('[data-t="last"]').textContent = num(s.last);

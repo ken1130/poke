@@ -91,6 +91,7 @@ G.RunGoals = (() => {
   };
 
   /** HUD: cajita a la izquierda (debajo de la vida / del grupo). Devuelve su alto. */
+  let hudW = 0;                     // ancho de la cajita (hud.js: carril del centro y flechas)
   function drawHud(ctx, w, h, F, x, top, roundRect) {
     if (!goals.length || !normal()) return 0;
     const rows = goals.map(g => [G.T(LIST[g.id].name), prog(g), g.done ? '#7dffb0' : g.failed ? '#ff8a96' : '#e6eeff']);
@@ -100,6 +101,7 @@ G.RunGoals = (() => {
     ctx.font = F(800, 11);
     for (const [n, p] of rows) tw = Math.max(tw, ctx.measureText(n + '  ' + p).width + 12);
     const W = Math.min(230, tw + 16), H = 18 + rows.length * 15 + 3;
+    hudW = W;
     roundRect(ctx, x, top, W, H, 7);
     ctx.fillStyle = 'rgba(8,12,24,.62)'; ctx.fill();
     ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(125,255,176,.45)'; ctx.stroke();
@@ -123,6 +125,6 @@ G.RunGoals = (() => {
   /** Pausa y resumen: [nombre, progreso, hecho]. */
   function summary() { return goals.map(g => ({ name: LIST[g.id].name, desc: LIST[g.id].desc, prog: prog(g), done: g.done, failed: g.failed })); }
 
-  return { LIST, reset, update, onEvent, drawHud, summary, get goals() { return goals; },
+  return { LIST, reset, update, onEvent, drawHud, summary, get goals() { return goals; }, get hudW() { return hudW; },
            /** Pruebas: estos retos. */ debugSet(ids) { rolled = true; goals = ids.map(id => ({ id, n: 0, done: false, failed: false })); } };
 })();

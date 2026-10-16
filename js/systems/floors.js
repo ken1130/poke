@@ -704,6 +704,30 @@ G.Floors = (() => {
     return e && !e.dead ? e : null;
   }
 
+  function comboBar(ctx, x, y, bw, roundRect) {
+    roundRect(ctx, x, y, bw, 8, 4); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
+    if (combo > 0) {
+      ctx.save(); roundRect(ctx, x, y, bw, 8, 4); ctx.clip();
+      const g = ctx.createLinearGradient(x, 0, x + bw, 0);
+      g.addColorStop(0, '#ff8ad8'); g.addColorStop(1, '#ffe14d');
+      ctx.fillStyle = combo >= 1 && Math.sin(performance.now() / 90) > 0 ? '#ffffff' : g;
+      ctx.fillRect(x, y, bw * Math.min(1, combo), 8);
+      ctx.restore();
+    }
+  }
+  /** Móvil (hud.js, dentro del bloque escalado): «Combo» y su barra en una fila. Devuelve el ancho. */
+  function drawComboRow(ctx, x, y, Fh, roundRect) {
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.font = Fh(800, 9);
+    ctx.fillStyle = combo >= 1 ? '#ffe14d' : '#cfd8ea';
+    const t = G.T('Combo') + (combo >= 1 ? '!' : ''), tw = ctx.measureText(t).width;
+    ctx.fillText(t, x, y + 9);
+    comboBar(ctx, x + tw + 6, y + 2, 74, roundRect);
+    ctx.restore();
+    return tw + 6 + 74;
+  }
+
   /** HUD (coordenadas de pantalla): piso y tema, barra del combinado, avisos grandes. */
   function drawHud(ctx, w, h, pl, Fh, roundRect) {
     ctx.save();
@@ -713,7 +737,7 @@ G.Floors = (() => {
       const txt = G.T('Piso del tesoro'), st = G.I18n.f('Siguiente piso en {x}', G.U.mmss(Math.max(0, Math.ceil(treasureT))));
       ctx.font = Fh(800, 12); const w1 = ctx.measureText(txt).width;
       ctx.font = Fh(700, 11); const w2 = ctx.measureText(st).width + 10;
-      const tw = w1 + w2 + 16, x0 = Math.round(w / 2 - tw / 2), y0 = boss ? 87 : 64;
+      const tw = w1 + w2 + 16, x0 = Math.round(G.HUD.laneX(tw, w) - tw / 2), y0 = boss ? 87 : 64;
       roundRect(ctx, x0, y0, tw, 19, 9);
       ctx.fillStyle = 'rgba(40,28,4,.85)'; ctx.fill();
       ctx.lineWidth = 1.5; ctx.strokeStyle = '#ffd23f'; ctx.stroke();
@@ -736,7 +760,7 @@ G.Floors = (() => {
       const w1 = ctx.measureText(txt).width;
       ctx.font = Fh(700, 11);
       const w2 = st ? ctx.measureText(st).width + 10 : 0;
-      const tw = w1 + w2 + 16, x0 = Math.round(w / 2 - tw / 2), y0 = boss ? 87 : 64;
+      const tw = w1 + w2 + 16, x0 = Math.round(G.HUD.laneX(tw, w) - tw / 2), y0 = boss ? 87 : 64;
       roundRect(ctx, x0, y0, tw, 19, 9);
       ctx.fillStyle = 'rgba(8,12,24,.78)'; ctx.fill();
       ctx.lineWidth = 1.5; ctx.strokeStyle = t0.color; ctx.stroke();
@@ -751,25 +775,24 @@ G.Floors = (() => {
                 age >= 0 ? G.I18n.f('Escaleras abiertas hace {x}', G.U.mmss(age)) : ''] }));
     }
     if (G.Coop.active && !G.PvP.on && pl && !pl.dead) {
-      // A la derecha de las monedas de la run (hud.js), no encima (2026-10-15: se tapaban).
-      const x = (G.HUD.coinEnd || 16 + 48 + 168 + 8) + 12, y = 37, bw = 74;
-      ctx.textAlign = 'left';
-      ctx.font = Fh(800, 9);
-      ctx.fillStyle = combo >= 1 ? '#ffe14d' : '#cfd8ea';
       const touch = G.Touch.active;
-      ctx.fillText(G.T('Combo') + (combo >= 1 ? (touch ? '!' : ' [F]') : ''), x, y - 3);
-      roundRect(ctx, x, y, bw, 8, 4); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
-      if (combo > 0) {
-        ctx.save(); roundRect(ctx, x, y, bw, 8, 4); ctx.clip();
-        const g = ctx.createLinearGradient(x, 0, x + bw, 0);
-        g.addColorStop(0, '#ff8ad8'); g.addColorStop(1, '#ffe14d');
-        ctx.fillStyle = combo >= 1 && Math.sin(performance.now() / 90) > 0 ? '#ffffff' : g;
-        ctx.fillRect(x, y, bw * combo, 8);
-        ctx.restore();
+      // A la derecha de las monedas de la run (hud.js), no encima (2026-10-15: se tapaban).
+      // (Móvil: la dibuja hud.js en su propia fila del bloque de la izquierda, drawComboRow.)
+      if (!G.HUD.comboRow) {
+        const x = (G.HUD.coinEnd || 16 + 48 + 168 + 8) + 12, y = 37;
+        ctx.textAlign = 'left';
+        ctx.font = Fh(800, 9);
+        ctx.fillStyle = combo >= 1 ? '#ffe14d' : '#cfd8ea';
+        ctx.fillText(G.T('Combo') + (combo >= 1 ? (touch ? '!' : ' [F]') : ''), x, y - 3);
+        comboBar(ctx, x, y, 74, roundRect);
       }
-      // Móvil: botón grande cuando está lleno.
+      // Móvil: botón grande cuando está lleno. Abajo a la derecha, junto a la barra de
+      // movimientos (antes, a media altura, tapaba la lista del minimapa en horizontal).
       if (combo >= 1 && touch) {
-        const S = 64, bx = w - S - 24, by = h - S - 150;
+        const S = 64;
+        const bx = w - S - 16 - G.HUD.SR;
+        let by = h - S - 18 - G.HUD.SB;
+        if (bx < G.HUD.barRight + 10) by -= S + 34;          // (no cabe al lado: encima)
         ctx.globalAlpha = 0.9;
         ctx.beginPath(); ctx.arc(bx + S / 2, by + S / 2, S / 2, 0, 6.2832);
         ctx.fillStyle = Math.sin(performance.now() / 120) > 0 ? '#ffd23f' : '#ff8ad8'; ctx.fill();
@@ -838,7 +861,7 @@ G.Floors = (() => {
     ctx.restore();
   }
 
-  return { reset, update, onNet, scaleEnemy, graceMul, get inGrace() { return graceT > 0; }, drawable, drawAir, drawHud, drawFade, fireCombo, comboFx, descend,
+  return { reset, update, onNet, scaleEnemy, graceMul, get inGrace() { return graceT > 0; }, drawable, drawAir, drawHud, drawComboRow, drawFade, fireCombo, comboFx, descend,
            diffTime, holdBoss, pickDef, biomeAt, pickClear, floorBoss, THEMES, LAST,
            get floor() { return floor; }, get coinMul() { return coinMul(); },
            /** Compatibilidad: la primera escalera (tips.js). Todas: stairsAll. */

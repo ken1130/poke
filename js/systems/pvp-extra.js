@@ -486,9 +486,9 @@ G.PvPX = (() => {
     if (sc) {
       const line = G.I18n.f('Ronda {x}', round) + ' · ' + sc;
       ctx.font = F(14);
-      const tw = ctx.measureText(line).width + 22, y = 118;
-      ctx.fillStyle = 'rgba(10,14,32,.8)'; ctx.fillRect(w / 2 - tw / 2, y - 17, tw, 24);
-      ctx.fillStyle = '#ffd23f'; ctx.fillText(line, w / 2, y);
+      const tw = ctx.measureText(line).width + 22, y = 118, cx = G.HUD.laneX(tw, w);
+      ctx.fillStyle = 'rgba(10,14,32,.8)'; ctx.fillRect(cx - tw / 2, y - 17, tw, 24);
+      ctx.fillStyle = '#ffd23f'; ctx.fillText(line, cx, y);
     }
     // Resultado de la ronda (entre rondas).
     if (inBreak) {

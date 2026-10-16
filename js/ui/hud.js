@@ -2,7 +2,39 @@
  * Se dibuja en coordenadas de PANTALLA (sin la transformación de cámara).
  */
 G.HUD = (() => {
-  const F = (w, s) => `${w} ${s}px Pixelify,"Segoe UI",system-ui,sans-serif`;
+  /*
+   * Tamaño del HUD en el móvil / tableta (2026-10-16): en un móvil en horizontal las letras de
+   * 9-10 px se quedaban en nada. Con el táctil, el bloque de la izquierda (vida, monedas,
+   * potenciadores, grupo, retos de la run) se dibuja escalado ×K y ninguna letra del HUD baja
+   * de 11 px. Además, lo de los lados se aparta de la muesca del iPhone (safe-area).
+   * K y los márgenes se calculan sólo cuando cambia el tamaño (layout()), no en cada fotograma.
+   * En el ordenador todo queda igual (K = 1, sin márgenes ni mínimo de letra).
+   */
+  let K = 1, SL = 0, SR = 0, SB = 0, MINF = 0, layKey = '';
+  let zk = 1, zx = 0, zy = 0;              // transformación del bloque escalado (para los botones táctiles)
+  let lane = null, leftBottom = 0, barRight = 0;
+  function layout(w, h, touch) {
+    const sa = touch ? G.Touch.safeArea() : null;
+    const key = w + 'x' + h + (sa ? ':' + sa.left + ',' + sa.right + ',' + sa.bottom : '');
+    if (key === layKey) return;
+    layKey = key;
+    K = touch ? G.U.clamp(Math.min(h / 290, w / 540), 1, 1.5) : 1;
+    MINF = touch ? 11 : 0;
+    SL = sa ? Math.min(44, sa.left) : 0;
+    SR = sa ? Math.min(44, sa.right) : 0;
+    SB = sa ? Math.min(28, sa.bottom) : 0;
+  }
+  const F = (w, s) => `${w} ${MINF && s * zk < MINF ? MINF / zk : s}px Pixelify,"Segoe UI",system-ui,sans-serif`;
+  function zoomIn(ctx, ox, oy, k) { ctx.save(); ctx.translate(ox, oy); ctx.scale(k, k); zk = k; zx = ox; zy = oy; }
+  function zoomOut(ctx) { ctx.restore(); zk = 1; zx = zy = 0; }
+  /** Centro x para algo de `bw` de ancho arriba en el centro: en el móvil, sin pisar la columna de la izquierda ni el minimapa. */
+  function laneX(bw, w) {
+    if (!lane) return w / 2;
+    if (bw >= lane.r - lane.l) return (lane.l + lane.r) / 2;
+    return G.U.clamp(w / 2, lane.l + bw / 2, lane.r - bw / 2);
+  }
+  /** x de una flecha de borde: dentro de la pantalla y fuera de la muesca. */
+  function edgeX(x, M, w) { return G.U.clamp(x, M + SL, w - M - SR); }
 
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
@@ -38,6 +70,7 @@ G.HUD = (() => {
     ctx.textBaseline = 'alphabetic';
     G.Touch.clearButtons();
     const touch = G.Touch.active;
+    layout(w, h, touch);
 
     // ---------- oscuridad (reto semanal / torre): sólo ves lo de cerca ----------
     const dark = G.Modes.rule('dark');
@@ -59,7 +92,14 @@ G.HUD = (() => {
     ctx.fillRect(0, 0, w * G.U.clamp(xpF, 0, 1), 7);
 
     // ---------- vida + nivel ----------
+    // (Táctil: todo este bloque de la izquierda, escalado ×K y apartado de la muesca.)
     const px = 16, py = 20;
+    const zoomed = K !== 1 || SL > 0;
+    if (zoomed) zoomIn(ctx, SL, 0, K);
+    // En el móvil la barra es más corta y las monedas bajan a la fila de las pastillas:
+    // si no, al escalar llegaban al reloj del centro.
+    const HPW = touch ? 140 : 168;
+    let leftRight = px + 48 + HPW;            // borde derecho del bloque (para el carril del centro)
     ctx.font = F(800, 13);
     ctx.fillStyle = G.Cosmetic.nameColor(pl) || '#eaf2ff';      // (color de nombre de los logros, cosmetic.js)
     ctx.textAlign = 'left';
@@ -69,34 +109,36 @@ G.HUD = (() => {
     ctx.fillStyle = '#ffcb3d';
     ctx.fillText('Lv. ' + pl.level, px, py + 26);
 
-    bar(ctx, px + 48, py + 17, 168, 11, pl.hp / pl.maxHp, '#ff5f6d');
+    bar(ctx, px + 48, py + 17, HPW, 11, pl.hp / pl.maxHp, '#ff5f6d');
     ctx.font = F(700, 10);
     ctx.fillStyle = 'rgba(255,255,255,.95)';
     ctx.textAlign = 'center';
-    ctx.fillText(Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp), px + 48 + 84, py + 26);
-
-    // Monedas de esta run (2026-10-15): bien visibles; tocando, para qué sirven.
-    {
-      const cx0 = px + 48 + 168 + 8, cy0 = py + 13;
-      ctx.font = F(800, 12);
-      const txt = String(Math.floor(pl.coins || 0));
-      const tw = ctx.measureText(txt).width + 30;
-      roundRect(ctx, cx0, cy0, tw, 19, 9);
-      G.HUD.coinEnd = cx0 + tw;             // floors.js pone la barra del ataque combinado a su derecha
-      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
-      ctx.lineWidth = 1.5; ctx.strokeStyle = '#ffd23f'; ctx.stroke();
-      G.Icons.draw(ctx, 'coin', cx0 + 4, cy0 + 2, 15);
-      ctx.textAlign = 'left'; ctx.fillStyle = '#ffe14d';
-      ctx.fillText(txt, cx0 + 22, cy0 + 14);
-      tapInfo(cx0, cy0, tw, 19, 'coins', () => ({ title: G.I18n.f('Monedas de esta run: {x}', Math.floor(pl.coins || 0)), color: '#ffd23f',
-        lines: [G.T('Se gastan en la tienda de Kecleon (pociones, objetos, mejoras...) y en su ruleta.'),
-                G.T('Lo que no gastes se suma a tus Pokémonedas al acabar la run.')] }));
-    }
+    ctx.fillText(Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp), px + 48 + HPW / 2, py + 26);
 
     // buffs activos
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
     const LBL = { atk: 'ATK', spd: 'VEL', def: 'DEF', regen: 'REG' };
     let bx = px;
+
+    // Monedas de esta run (2026-10-15): bien visibles; tocando, para qué sirven.
+    {
+      const big = !touch;
+      const cx0 = big ? px + 48 + 168 + 8 : bx, cy0 = big ? py + 13 : py + 34, ch = big ? 19 : 15;
+      ctx.font = F(800, big ? 12 : 11);
+      const txt = String(Math.floor(pl.coins || 0));
+      const tw = ctx.measureText(txt).width + (big ? 30 : 24);
+      roundRect(ctx, cx0, cy0, tw, ch, big ? 9 : 7);
+      G.HUD.coinEnd = cx0 + tw;             // floors.js pone la barra del ataque combinado a su derecha
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = '#ffd23f'; ctx.stroke();
+      G.Icons.draw(ctx, 'coin', cx0 + (big ? 4 : 3), cy0 + 2, big ? 15 : 11);
+      ctx.textAlign = 'left'; ctx.fillStyle = '#ffe14d';
+      ctx.fillText(txt, cx0 + (big ? 22 : 17), cy0 + (big ? 14 : 11.5));
+      tapInfo(cx0, cy0, tw, ch, 'coins', () => ({ title: G.I18n.f('Monedas de esta run: {x}', Math.floor(pl.coins || 0)), color: '#ffd23f',
+        lines: [G.T('Se gastan en la tienda de Kecleon (pociones, objetos, mejoras...) y en su ruleta.'),
+                G.T('Lo que no gastes se suma a tus Pokémonedas al acabar la run.')] }));
+      if (big) leftRight = cx0 + tw; else bx += tw + 5;
+    }
     ctx.textAlign = 'left';
     for (const k in pl.buffs) {
       const b = pl.buffs[k];
@@ -168,15 +210,60 @@ G.HUD = (() => {
       tapInfo(bx, py + 34, tw, 15, 'bless', () => ({ title: G.T(bl.name), color: bl.color, lines: [G.T(bl.desc || ''), G.T('Para todo el grupo.')] }));
       bx += tw + 5;
     }
+    // Poder de altar activo.
+    if (pl.power) {
+      const pw = pl.power, txt = pw.def.name.toUpperCase() + ' ' + Math.ceil(pw.t) + 's';
+      ctx.font = F(800, 9);
+      ctx.textAlign = 'left';
+      const tw = ctx.measureText(txt).width + 12;
+      roundRect(ctx, bx, py + 34, tw, 15, 7);
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
+      ctx.fillStyle = pw.def.color;
+      ctx.fillText(txt, bx + 6, py + 45);
+      bx += tw + 5;
+    }
+    leftRight = Math.max(leftRight, bx - 5);
+    let rowY = py + (bx > px ? 56 : 40);
+    // Móvil, en grupo: la barra del ataque combinado va en su propia fila (arriba, junto a las
+    // monedas, chocaba con el reloj al escalar).
+    G.HUD.comboRow = touch && G.Coop.active && !G.PvP.on && !pl.dead;
+    if (G.HUD.comboRow) { leftRight = Math.max(leftRight, px + G.Floors.drawComboRow(ctx, px, rowY, F, roundRect)); rowY += 16; }
+    let mates = 0;
+    if (G.Coop.active) { const r = drawCoopRows(ctx, pl, px, rowY, touch); mates = r.n; leftRight = Math.max(leftRight, r.right); }
+    leftBottom = zy + (rowY + mates * 15) * zk;
+    // Retos de la run (rungoals.js): debajo de la vida y, en grupo, de la lista del grupo.
+    {
+      const gy = rowY + (mates ? mates * 15 + 6 : 0);
+      const gh = G.RunGoals.drawHud(ctx, w, h, F, px, gy, roundRect);
+      // (Táctil: la zona es todo el bloque de la izquierda, que va escalado: vida, grupo y retos.)
+      if (!touch) goalZone = gh ? { right: px + 230, bottom: gy + gh } : null;
+      else goalZone = { right: zx + Math.max(leftRight, gh ? px + G.RunGoals.hudW : 0) * zk, bottom: zy + (gh ? gy + gh : rowY + mates * 15) * zk };
+      // (Si la cajita empieza a la altura de lo del centro, también cuenta para el carril.)
+      if (gh && zy + gy * zk < 110) leftRight = Math.max(leftRight, px + G.RunGoals.hudW);
+    }
+    if (zoomed) zoomOut(ctx);
+    // Carril del centro (sólo táctil): entre el bloque de la izquierda y el minimapa / los botones.
+    if (touch) {
+      const mmS = h < 450 ? 104 : 124;
+      const rightStart = Math.min(w - mmS - 14 - SR - 3, w - 52 - SR - (G.Coop.active ? 48 : 0));
+      lane = { l: SL + leftRight * K + 8, r: rightStart - 8 };
+    } else lane = null;
 
     // ---------- reloj / bioma / kills ----------
     ctx.textAlign = 'center';
     ctx.font = F(800, 26);
     ctx.fillStyle = 'rgba(255,255,255,.95)';
     ctx.fillText(G.U.mmss(st.time), w / 2, 42);
-    ctx.font = F(600, 10);
-    ctx.fillStyle = '#8fa3c4';
-    ctx.fillText((G.Dungeon.roomName ? G.T(G.Dungeon.roomName) : G.World.biomeName()).toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 58);
+    {
+      const fs = touch ? Math.min(13, 10 * K) : 10;
+      ctx.font = F(600, fs);
+      ctx.fillStyle = '#8fa3c4';
+      let line = (G.Dungeon.roomName ? G.T(G.Dungeon.roomName) : G.World.biomeName()).toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS';
+      const full = line + '  ·  ' + pl.coins + ' MONEDAS';
+      // (Móvil: si no cabe en el carril, sin las monedas, que ya están en su pastilla.)
+      if (!lane || ctx.measureText(full).width <= lane.r - lane.l) line = full;
+      ctx.fillText(line, laneX(ctx.measureText(line).width, w), touch ? 58 + fs - 10 : 58);
+    }
 
     // ---------- clima (arriba a la derecha) ----------
     const wx = G.Weather.current;
@@ -185,7 +272,7 @@ G.HUD = (() => {
       ctx.textAlign = 'left';
       const txt = wx.name.toUpperCase() + (wx.left > 3600 ? '' : ' · ' + Math.ceil(wx.left) + 's');     // (piso de niebla: todo el piso)
       const tw = ctx.measureText(txt).width + 40;
-      const x0 = w - tw - 16 - (touch ? 56 : 0), y0 = 14;
+      const x0 = w - tw - 16 - (touch ? (G.Coop.active ? 104 : 56) + SR : 0), y0 = 14;
       roundRect(ctx, x0, y0, tw, 26, 9);
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
       G.Icons.draw(ctx, wx.icon, x0 + 6, y0 + 3, 20);
@@ -205,12 +292,12 @@ G.HUD = (() => {
     const fboss = G.Floors.floorBoss();
     const boss = fboss || G.EnemyMgr.all().find(e => e.boss && !e.dead);
     if (boss) {
-      const bw = Math.min(420, w - 80);
-      bar(ctx, (w - bw) / 2, 70, bw, 12, boss.hp / boss.maxHp, fboss ? (G.Floors.LAST === G.Floors.floor && !G.Floors.cleared ? '#d98aff' : '#ff9a3d') : '#ffcb3d');
+      const bw = Math.min(420, w - 80, lane ? lane.r - lane.l : 1e9), bcx = laneX(bw, w);
+      bar(ctx, bcx - bw / 2, 70, bw, touch ? 14 : 12, boss.hp / boss.maxHp, fboss ? (G.Floors.LAST === G.Floors.floor && !G.Floors.cleared ? '#d98aff' : '#ff9a3d') : '#ffcb3d');
       ctx.font = F(800, 10);
       ctx.fillStyle = '#20160a';
       const tag = fboss ? G.T(fboss.lord || (G.Floors.floor === G.Floors.LAST) ? 'SEÑOR DEL LABERINTO' : 'JEFE DEL PISO') + ' · ' : boss.raid ? G.T('INCURSIÓN') + ' · ' : '';
-      ctx.fillText(tag + G.T(boss.name).toUpperCase(), w / 2, 80);
+      ctx.fillText(tag + G.T(boss.name).toUpperCase(), bcx, touch ? 81.5 : 80);
     }
 
     // ---------- incursión: a quién va el jefe ----------
@@ -237,7 +324,8 @@ G.HUD = (() => {
       const sx = (e.x - cam.left()) * cam.scale, sy = (e.y - cam.top()) * cam.scale;
       if (sx > 0 && sx < w && sy > 0 && sy < h) continue;
       const M = 34;
-      const ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 60, h - M - 70);
+      let ex = edgeX(sx, M, w), ey = G.U.clamp(sy, M + 60, h - M - 70);
+      if (touch) [ex, ey] = avoidZones(ex, ey, h - M - 70);
       const a = Math.atan2(sy - ey, sx - ex);
       ctx.save();
       ctx.globalAlpha = pulse;
@@ -282,27 +370,7 @@ G.HUD = (() => {
       }
     }
 
-    // Poder de altar activo.
-    if (pl.power) {
-      const pw = pl.power, txt = pw.def.name.toUpperCase() + ' ' + Math.ceil(pw.t) + 's';
-      ctx.font = F(800, 9);
-      ctx.textAlign = 'left';
-      const tw = ctx.measureText(txt).width + 12;
-      roundRect(ctx, bx, py + 34, tw, 15, 7);
-      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
-      ctx.fillStyle = pw.def.color;
-      ctx.fillText(txt, bx + 6, py + 45);
-      bx += tw + 5;
-    }
-
-    if (G.Coop.active) drawCoop(ctx, w, h, pl, px, py + (bx > px ? 56 : 40));
-    // Retos de la run (rungoals.js): debajo de la vida y, en grupo, de la lista del grupo.
-    {
-      const mates = G.Coop.active ? G.Coop.mates.filter(m => m.connected).length : 0;
-      const gy = py + (bx > px ? 56 : 40) + (mates ? mates * 15 + 6 : 0);
-      const gh = G.RunGoals.drawHud(ctx, w, h, F, px, gy, roundRect);
-      goalZone = gh ? { right: px + 230, bottom: gy + gh } : null;
-    }
+    if (G.Coop.active) drawCoop(ctx, w, h, pl);
 
     // Grieta: flecha grande que late en el borde si no se ve, y si se ve, una
     // flecha que bota encima; en la arena, cuenta atrás.
@@ -314,7 +382,9 @@ G.HUD = (() => {
       const off = sx < 0 || sx > w || sy < 0 || sy > h;
       ctx.save();
       if (off) {
-        const M = 52, ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 80);
+        const M = 52;
+        let ex = edgeX(sx, M, w), ey = G.U.clamp(sy, M + 70, h - M - 80);
+        if (touch) [ex, ey] = avoidZones(ex, ey, h - M - 80);
         const a = Math.atan2(sy - ey, sx - ex), ca = Math.cos(a), sa = Math.sin(a);
         ctx.translate(ex, ey);
         // Halo que late.
@@ -376,7 +446,8 @@ G.HUD = (() => {
       ctx.textAlign = 'center';
       ctx.font = F(800, 12);
       ctx.fillStyle = '#d9c2ff';
-      ctx.fillText('GRIETA · ' + G.U.mmss(G.Rift.timeLeft), w / 2, boss ? 98 : 76);
+      const t = 'GRIETA · ' + G.U.mmss(G.Rift.timeLeft);
+      ctx.fillText(t, laneX(ctx.measureText(t).width, w), boss ? 98 : 76);
     }
 
     // Desafíos y aventura: piso de la torre, regla de la semana, objetivo de la fase.
@@ -384,15 +455,18 @@ G.HUD = (() => {
     if (ch && !G.Rift.inArena) {
       ctx.textAlign = 'center';
       const y0 = boss ? 98 : 76;
+      ctx.font = F(800, 13); let cw = ctx.measureText(ch.title).width;
+      if (ch.sub) { ctx.font = F(700, 10); cw = Math.max(cw, ctx.measureText(ch.sub).width); }
+      const cx = laneX(Math.max(cw, ch.bar != null ? 180 : 0), w);
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
-      ctx.font = F(800, 13); ctx.strokeText(ch.title, w / 2, y0); ctx.fillStyle = ch.color || '#e2b0ff'; ctx.fillText(ch.title, w / 2, y0);
-      if (ch.sub) { ctx.font = F(700, 10); ctx.strokeText(ch.sub, w / 2, y0 + 14); ctx.fillStyle = '#d6dcf0'; ctx.fillText(ch.sub, w / 2, y0 + 14); }
+      ctx.font = F(800, 13); ctx.strokeText(ch.title, cx, y0); ctx.fillStyle = ch.color || '#e2b0ff'; ctx.fillText(ch.title, cx, y0);
+      if (ch.sub) { ctx.font = F(700, 10); ctx.strokeText(ch.sub, cx, y0 + 14); ctx.fillStyle = '#d6dcf0'; ctx.fillText(ch.sub, cx, y0 + 14); }
       if (ch.bar != null) {
         const bw = 180;
-        ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(w / 2 - bw / 2, y0 + (ch.sub ? 20 : 6), bw, 6);
-        ctx.fillStyle = ch.color || '#e2b0ff'; ctx.fillRect(w / 2 - bw / 2, y0 + (ch.sub ? 20 : 6), bw * G.U.clamp(ch.bar, 0, 1), 6);
+        ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(cx - bw / 2, y0 + (ch.sub ? 20 : 6), bw, 6);
+        ctx.fillStyle = ch.color || '#e2b0ff'; ctx.fillRect(cx - bw / 2, y0 + (ch.sub ? 20 : 6), bw * G.U.clamp(ch.bar, 0, 1), 6);
       }
-      G.Relics.drawHud(ctx, w / 2, y0 + (ch.sub ? 22 : 8));        // reliquias de la torre
+      G.Relics.drawHud(ctx, cx, y0 + (ch.sub ? 22 : 8));        // reliquias de la torre
     }
 
     // Eventos: cuenta atrás, flecha al Pokémon perdido / a la marca y a los duendes.
@@ -438,8 +512,11 @@ G.HUD = (() => {
     const n = Math.max(1, pl.slots.length, pl.maxMoves || 0);
     const totalW = n * S + (n - 1) * GAP;
     let sx = (w - totalW) / 2;
+    // Táctil: que los objetos (a la izquierda de los movimientos) no queden bajo la muesca.
+    if (touch) sx = Math.max(sx, SL + 8 + G.Player.MAX_ITEMS * (S + 12) + 6);
+    barRight = sx + totalW + (pl.bonds > 0 ? 12 + 24 + (pl.bonds > 1 ? 24 : 0) : 0);
     // Por encima de la barra de inicio del iPhone (allí los toques a veces no llegan).
-    const sy = h - S - 18 - (touch ? Math.min(28, G.Touch.safeArea().bottom) : 0);
+    const sy = h - S - 18 - SB;
     const BOND = '#ff8ad8';
     const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdK), 0, 1);
 
@@ -527,11 +604,11 @@ G.HUD = (() => {
         // Apoyo (curar/defender) se marca aparte: también funciona solo.
         const sup = g.every(gm => gm.kind === 'support');
         const lbl = G.T(sup ? 'APOYO' : 'PASIVO');
-        const lw = ctx.measureText(lbl).width + 8;
-        roundRect(ctx, x + (S - lw) / 2, y - 7, lw, 12, 5);
+        const lw = ctx.measureText(lbl).width + 8, ph = touch ? 15 : 12;
+        roundRect(ctx, x + (S - lw) / 2, y - 7 - (ph - 12) / 2, lw, ph, 5);
         ctx.fillStyle = sup ? '#7fe0ff' : '#5fe08a'; ctx.fill();
         ctx.fillStyle = '#0a1a10';
-        ctx.fillText(lbl, x + S / 2, y + 2);
+        ctx.fillText(lbl, x + S / 2, y + (touch ? 3.5 : 2));
         ctx.textAlign = 'left';
       } else ctx.fillText(String(i + 1), x + 3, y + 10);
 
@@ -539,15 +616,17 @@ G.HUD = (() => {
       if (on) {
         // Sobre una pastilla oscura y con el color del tipo aclarado: el morado de Fantasma
         // o el azul de Dragón no se leían encima del mapa.
-        ctx.font = F(800, 11);
+        // (Táctil: letra ×K, hasta 14 px.)
+        const fs = touch ? Math.min(14, Math.round(11 * K)) : 11, lh = fs + 5;
+        ctx.font = F(800, fs);
         ctx.textAlign = 'center';
         const label = G.T(fused ? m.name + ' +' + (g.length - 1) : m.name);
         const lw = ctx.measureText(label).width + 12;
-        roundRect(ctx, x + S / 2 - lw / 2, y - 21, lw, 16, 7);
+        roundRect(ctx, x + S / 2 - lw / 2, y - 5 - lh, lw, lh, 7);
         ctx.fillStyle = 'rgba(8,12,24,.85)'; ctx.fill();
         ctx.lineWidth = 1.5; ctx.strokeStyle = fused ? BOND : col; ctx.stroke();
         ctx.fillStyle = fused ? '#ffd0f0' : lighten(col);
-        ctx.fillText(label, x + S / 2, y - 9);
+        ctx.fillText(label, x + S / 2, y - 5 - Math.round(lh * 0.28));
       }
     }
 
@@ -588,10 +667,12 @@ G.HUD = (() => {
         G.Icons.draw(ctx, id, ix + (S - 36) / 2, iy + (S - 36) / 2, 36);
         if (art) G.Icons.twinkle(ctx, ix + S - 9, iy + 9, (performance.now() / 1400 + k * 0.5) % 1, 2);
         // Nombre encima (el corto si es un artefacto), que no pise el hueco de al lado.
-        const nm = G.T(it.short || it.name);
-        let fs = 9;
+        let nm = G.T(it.short || it.name);
+        let fs = touch ? Math.min(12, Math.round(9 * K)) : 9;
         ctx.font = F(700, fs);
         while (fs > 7 && ctx.measureText(nm).width > S + 10) ctx.font = F(700, --fs);
+        // (Con la letra mínima del táctil puede seguir sin caber: se corta con «…».)
+        while (nm.length > 2 && ctx.measureText(nm).width > S + 10) nm = nm.slice(0, -2) + '…';
         ctx.textAlign = 'center';
         ctx.fillStyle = art ? '#ff9ef0' : G.Items.TIER_COLOR[G.Items.tier(id)];
         ctx.fillText(nm, ix + S / 2, iy - 6);
@@ -662,7 +743,7 @@ G.HUD = (() => {
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(180,200,230,.55)';
       ctx.fillText(touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
-                         : 'WASD moverse  ·  1-5 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa' + (G.Coop.active ? '  ·  T mensajes' : ''), w / 2, h - 4);
+                         : 'WASD moverse  ·  1-5 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa' + (G.Coop.active ? '  ·  T mensajes' : ''), w / 2, h - 4 - SB);
     }
 
     ctx.restore();
@@ -677,6 +758,8 @@ G.HUD = (() => {
   const BUFF_NAME = { atk: 'Ataque', spd: 'Velocidad', def: 'Defensa', regen: 'Regeneración' };
   let tip = null;                    // { key, rect, dir, info, until }
   function tapInfo(x, y, w, h, key, info, dir = 'down') {
+    // (Dentro del bloque escalado: a coordenadas de pantalla.)
+    x = zx + x * zk; y = zy + y * zk; w *= zk; h *= zk;
     if (tip && tip.key === key) { tip.rect = [x, y, w, h]; tip.info = info; }
     G.Touch.addButton(x, y, w, h, () => {
       if (G.Game.state !== 'playing') return;
@@ -697,7 +780,7 @@ G.HUD = (() => {
     for (const t of d.lines || []) if (t) for (const l of wrap(ctx, t, W - P * 2)) lines.push([l, '#dfe8ff', false]);
     const H = P * 2 + lines.length * LH;
     const [rx, ry, rw, rh] = tip.rect;
-    const x0 = G.U.clamp(rx + rw / 2 - W / 2, 12, w - W - 12);
+    const x0 = G.U.clamp(rx + rw / 2 - W / 2, 12 + SL, w - W - 12 - SR);
     const y0 = tip.dir === 'up' ? Math.max(8, ry - H - 8) : Math.min(h - H - 8, ry + rh + 6);
     ctx.save();
     roundRect(ctx, x0, y0, W, H, 10);
@@ -743,7 +826,7 @@ G.HUD = (() => {
       for (const l of wrap(ctx, t, W - P * 2)) lines.push([l, col, bold]);
     }
     const H = P * 2 + lines.length * LH;
-    const x0 = G.U.clamp(cx - W / 2, 12, w - W - 12), y0 = Math.max(70, bottom - H);
+    const x0 = G.U.clamp(cx - W / 2, 12 + SL, w - W - 12 - SR), y0 = Math.max(70, bottom - H);
     ctx.save();
     roundRect(ctx, x0, y0, W, H, 10);
     ctx.fillStyle = 'rgba(8,12,24,.92)'; ctx.fill();
@@ -878,7 +961,7 @@ G.HUD = (() => {
   function drawMinimap(ctx, w, pl, touch, h) {
     // Móvil en horizontal (poca altura): algo más pequeño y la lista más corta.
     const short = touch && h < 450;
-    const S = touch ? (short ? 104 : 124) : 172, x0 = w - S - 14, y0 = touch ? 62 : 48;
+    const S = touch ? (short ? 104 : 124) : 172, x0 = w - S - 14 - SR, y0 = touch ? 62 : 48;
     const cx = x0 + S / 2, cy = y0 + S / 2, k = (S / 2) / MM_R;
     const now = performance.now() / 1000;
     if (now - mmT > 0.5 || !mmAt) {
@@ -956,7 +1039,7 @@ G.HUD = (() => {
     ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.restore();
     const rowsH = drawMinimapList(ctx, w, pl, x0 + S, y0 + S + 8, short ? 3 : 6, short) || 0;
-    mmZone = { x: Math.min(x0, w - 230), bottom: y0 + S + 8 + rowsH };
+    mmZone = { x: Math.min(x0, w - 230 - SR), bottom: y0 + S + 8 + rowsH };
   }
 
   /**
@@ -967,19 +1050,38 @@ G.HUD = (() => {
   const ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
   let arrowSpots = [], mmZone = null, goalZone = null;     // (goalZone: cajita de los retos de la run)     // flechas ya puestas este fotograma · hueco del minimapa y su lista
   /** Flecha que late en el borde de la pantalla hacia algo que no se ve, con su nombre y los metros. */
+  /**
+   * Flecha de borde: ni encima del minimapa y su lista (columna de la derecha: se aparta a su
+   * izquierda) ni del bloque de la izquierda (vida, grupo, retos de la run: por debajo; si ahí
+   * ya no cabe, móvil en horizontal con poca altura, a su derecha).
+   */
+  // La última flecha se apartó: a la derecha del bloque de la izquierda (su texto, a la derecha) o
+  // a la izquierda del minimapa (en el táctil, el texto encima: si no, llegaba a los retos).
+  let pushedRight = false, pushedLeft = false;
+  function avoidZones(ex, ey, maxY) {
+    pushedRight = pushedLeft = false;
+    if (mmZone && ex > mmZone.x - 30 && ey < mmZone.bottom + 20) { ex = mmZone.x - 50; pushedLeft = G.Touch.active; }
+    if (goalZone && ex < goalZone.right + 30 && ey < goalZone.bottom + 40) {
+      if (goalZone.bottom + 40 <= maxY) ey = goalZone.bottom + 40;
+      // (y por debajo de lo del centro de arriba: barra del jefe, piso...)
+      else { ex = goalZone.right + 40; ey = Math.max(ey, 140); pushedRight = true; }
+    }
+    return [ex, ey];
+  }
   function edgeArrow(ctx, w, h, pl, wx, wy, col, flash, dark, txtCol, name) {
     const cam = G.Camera;
     const bsx = (wx - cam.left()) * cam.scale, bsy = (wy - cam.top()) * cam.scale;
     if (bsx >= 0 && bsx <= w && bsy >= 0 && bsy <= h) return;
     const M = 46;
-    let ex = G.U.clamp(bsx, M, w - M), ey = G.U.clamp(bsy, M + 70, h - M - 90);
-    // No encima del minimapa ni de su lista (columna de la derecha): se aparta a su izquierda.
-    if (mmZone && ex > mmZone.x - 30 && ey < mmZone.bottom + 20) ex = mmZone.x - 50;
-    // Ni encima de la cajita de los retos (arriba a la izquierda): por debajo de ella.
-    if (goalZone && ex < goalZone.right + 30 && ey < goalZone.bottom + 40) ey = goalZone.bottom + 40;
+    let ex = edgeX(bsx, M, w), ey = G.U.clamp(bsy, M + 70, h - M - 90);
+    [ex, ey] = avoidZones(ex, ey, h - M - 90);
+    const toRight = pushedRight, above = pushedLeft && !pushedRight;
     // Varias flechas en el mismo sitio: se reparten a lo largo del borde.
     for (let k = 0; k < 6 && arrowSpots.some(([x, y]) => Math.abs(x - ex) < 60 && Math.abs(y - ey) < 44); k++) {
-      if (ex <= M + 1 || ex >= w - M - 1 || mmZone && ex === mmZone.x - 50) ey = Math.min(h - M - 90, ey + 46); else ex += ex < w / 2 ? 130 : -130;
+      if (ex <= M + SL + 1 || ex >= w - M - SR - 1 || mmZone && ex === mmZone.x - 50) ey = Math.min(h - M - 90, ey + 46);
+      // (Apartada a la derecha del bloque de la izquierda: nunca hacia él; si a la derecha no cabe su texto, más abajo.)
+      else if (toRight) { if (ex + 130 < (mmZone ? mmZone.x : w) - 170) ex += 130; else ey = Math.min(h - M - 90, ey + 46); }
+      else ex += ex < w / 2 ? 130 : -130;
     }
     arrowSpots.push([ex, ey]);
     const a = Math.atan2(bsy - ey, bsx - ex), ca = Math.cos(a), sa = Math.sin(a);
@@ -998,8 +1100,8 @@ G.HUD = (() => {
     ctx.lineWidth = 3; ctx.strokeStyle = dark; ctx.stroke();
     const label = G.T(name) + ' · ' + Math.round(G.U.dist(pl.x, pl.y, wx, wy) / 32) + ' m';
     ctx.font = F(800, 12);
-    ctx.textAlign = ca > 0.3 ? 'right' : ca < -0.3 ? 'left' : 'center';
-    const lx = -ca * 28, ly = -sa * 26 + 4;
+    ctx.textAlign = toRight ? 'left' : above ? 'center' : ca > 0.3 ? 'right' : ca < -0.3 ? 'left' : 'center';
+    const lx = toRight ? 30 : above ? 0 : -ca * 28, ly = toRight ? 4 : above ? -34 : -sa * 26 + 4;
     ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(label, lx, ly);
     ctx.fillStyle = txtCol; ctx.fillText(label, lx, ly);
     ctx.restore();
@@ -1072,10 +1174,12 @@ G.HUD = (() => {
    *   y a cuántos metros están (roja y parpadeando si está caído).
    * - Si has caído tú: aviso y barra de "te están levantando".
    */
-  function drawCoop(ctx, w, h, pl, px, top) {
-    const cam = G.Camera;
+  /** Vida de cada compañero (en el bloque de la izquierda). Devuelve cuántos y hasta dónde llega. */
+  function drawCoopRows(ctx, pl, px, top, touch) {
     const t = performance.now() / 1000;
-    let y = top;
+    let y = top, n = 0, right = px;
+    // Táctil: más estrecho (el bloque va escalado y si no llegaba al centro).
+    const NW = touch ? 66 : 78, BW = touch ? 76 : 110;
     ctx.textAlign = 'left';
     for (const m of G.Coop.mates) {
       if (!m.connected) continue;
@@ -1083,26 +1187,38 @@ G.HUD = (() => {
       ctx.font = F(800, 10);
       ctx.fillStyle = m.color;
       ctx.fillText(m.name, px, y + 9);
-      const lx = px + 78;
-      bar(ctx, lx, y + 1, 110, 8, o.dead ? 0 : o.hp / o.maxHp, o.dead ? '#ff5f6d' : '#5fe08a');
+      const lx = px + NW;
+      bar(ctx, lx, y + 1, BW, 8, o.dead ? 0 : o.hp / o.maxHp, o.dead ? '#ff5f6d' : '#5fe08a');
+      let ex = lx + BW;
       if (o.dead) {
         ctx.font = F(800, 9);
         ctx.fillStyle = Math.sin(t * 8) > 0 ? '#ff8a96' : '#ffd0d5';
-        ctx.fillText('CAÍDO', lx + 116, y + 9);
+        ctx.fillText('CAÍDO', lx + BW + 6, y + 9);
+        ex = lx + BW + 6 + ctx.measureText('CAÍDO').width;
       }
-      // Conexión (2026-10-16): punto de color y "Directo 45 ms" / "Relé 300 ms".
+      // Conexión (2026-10-16): punto de color y "Directo 45 ms" / "Relé 300 ms" (táctil: sólo "45 ms").
       const ni = G.Coop.netInfo(m.uid);
       if (ni) {
-        const nx = lx + 116 + (o.dead ? 44 : 0);
+        const nx = lx + BW + 6 + (o.dead ? 44 : 0);
         const nc = ni.ms < 100 ? '#5fe08a' : ni.ms < 200 ? '#ffd23f' : '#ff5f6d';
         ctx.fillStyle = nc;
         ctx.beginPath(); ctx.arc(nx + 3, y + 5, 3, 0, 6.2832); ctx.fill();
         ctx.font = F(700, 9);
         ctx.fillStyle = 'rgba(220,230,255,.8)';
-        ctx.fillText(G.I18n.f(ni.direct ? 'Directo {x} ms' : 'Relé {x} ms', ni.ms), nx + 9, y + 9);
+        const nt = touch ? ni.ms + ' ms' : G.I18n.f(ni.direct ? 'Directo {x} ms' : 'Relé {x} ms', ni.ms);
+        ctx.fillText(nt, nx + 9, y + 9);
+        ex = nx + 9 + ctx.measureText(nt).width;
       }
-      y += 15;
+      right = Math.max(right, ex);
+      y += 15; n++;
     }
+    return { n, right };
+  }
+
+  /** Flechas hacia los compañeros que no se ven y, si has caído tú, el aviso. */
+  function drawCoop(ctx, w, h, pl) {
+    const cam = G.Camera, touch = G.Touch.active;
+    const t = performance.now() / 1000;
 
     // Flechas hacia los compañeros fuera de la vista.
     for (const m of G.Coop.mates) {
@@ -1111,7 +1227,8 @@ G.HUD = (() => {
       const sx = (o.x - cam.left()) * cam.scale, sy = (o.y - o.bodyH * 0.5 - cam.top()) * cam.scale;
       if (sx > 0 && sx < w && sy > 0 && sy < h) continue;
       const M = 42;
-      const ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 80);
+      let ex = edgeX(sx, M, w), ey = G.U.clamp(sy, M + 70, h - M - 80);
+      if (touch) [ex, ey] = avoidZones(ex, ey, h - M - 80);
       const a = Math.atan2(sy - ey, sx - ex);
       const metres = Math.round(G.U.dist(pl.x, pl.y, o.x, o.y) / 32);
       const col = o.dead ? (Math.sin(t * 8) > 0 ? '#ff5f6d' : '#ffd0d5') : m.color;
@@ -1162,5 +1279,11 @@ G.HUD = (() => {
     }
   }
 
-  return { draw, roundRect, bar, tapInfo };
+  return { draw, roundRect, bar, tapInfo, laneX, edgeX,
+           /** Escala del HUD (táctil) y márgenes de la muesca, en px. */
+           get K() { return K; }, get SL() { return SL; }, get SR() { return SR; }, get SB() { return SB; },
+           /** Pantalla: dónde acaba la lista del grupo (pvp.js pone ahí debajo sus avisos). */
+           get leftBottom() { return leftBottom; },
+           /** Borde derecho de la barra de movimientos (floors.js: botón del combinado). */
+           get barRight() { return barRight; } };
 })();

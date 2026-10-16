@@ -314,9 +314,10 @@ G.Events = (() => {
       ctx.save();
       ctx.font = F(800, 12); ctx.textAlign = 'center';
       ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.8)';
-      ctx.strokeText(txt, w / 2, 112);
+      const cx = G.HUD.laneX(ctx.measureText(txt).width, w);
+      ctx.strokeText(txt, cx, 112);
       ctx.fillStyle = cur.id === 'gold' ? '#ffd23f' : G.U.TYPE_COLOR[cur.type] || '#fff';
-      ctx.fillText(txt, w / 2, 112);
+      ctx.fillText(txt, cx, 112);
       ctx.restore();
     }
   }
@@ -324,7 +325,7 @@ G.Events = (() => {
   function edgeArrow(ctx, w, h, cam, x, y, col, label, F) {
     const sx = (x - cam.left()) * cam.scale, sy = (y - cam.top()) * cam.scale;
     if (sx > 0 && sx < w && sy > 0 && sy < h) return;
-    const M = 44, ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 80);
+    const M = 44, ex = G.HUD.edgeX(sx, M, w), ey = G.U.clamp(sy, M + 70, h - M - 80);
     const a = Math.atan2(sy - ey, sx - ex), ca = Math.cos(a), sa = Math.sin(a);
     const pulse = 0.65 + Math.sin(performance.now() / 160) * 0.35;
     ctx.save();

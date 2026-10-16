@@ -580,12 +580,14 @@ G.PvP = (() => {
     ctx.save();
     // A la izquierda, bajo las barras del grupo (a la derecha está el minimapa y su lista).
     ctx.textAlign = 'left'; ctx.font = F(13);
-    const top = 84 + G.Coop.puppets().length * 18;
+    // (Móvil: debajo de donde acaba de verdad la lista del grupo, que va escalada, y fuera de la muesca.)
+    const touch = G.Touch.active, sl = touch ? G.HUD.SL : 0;
+    const top = touch ? G.HUD.leftBottom + 22 : 84 + G.Coop.puppets().length * 18;
     feed.forEach((f, i) => {
       const y = top + i * 24, tw = ctx.measureText(f.text).width;
       ctx.globalAlpha = Math.min(1, f.t);
-      ctx.fillStyle = 'rgba(10,14,32,.78)'; ctx.fillRect(12, y - 15, tw + 16, 21);
-      ctx.fillStyle = f.mine ? '#ffd23f' : '#ffffff'; ctx.fillText(f.text, 20, y);
+      ctx.fillStyle = 'rgba(10,14,32,.78)'; ctx.fillRect(12 + sl, y - 15, tw + 16, 21);
+      ctx.fillStyle = f.mine ? '#ffd23f' : '#ffffff'; ctx.fillText(f.text, 20 + sl, y);
     });
     ctx.globalAlpha = 1;
     const pl = G.Game.player, t = G.Game.st.time;
