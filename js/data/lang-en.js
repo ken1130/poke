@@ -1250,6 +1250,8 @@ G.I18n.add({
   'Bonus de experiencia': 'XP bonus',
   'Bonus de monedas': 'Coin bonus',
   'Mi equipo': 'My team',
+  // Revisión móvil (2026-10-16): aviso del objeto pendiente sin «pulsa I»
+  '{x}: toca el icono que brilla para cambiarlo': '{x}: tap the glowing icon to swap it',
   // Extras del PK (pvp-extra.js, 2026-10-16)
   '{x} ha caído en una trampa': '{x} fell into a trap',
   'Revancha: elige {x} de {x} nuevos o quédate con los tuyos · quedan {x} s': 'Rematch: pick {x} of {x} new moves or keep yours · {x} s left',
