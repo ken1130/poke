@@ -181,10 +181,14 @@ G.Funny = (() => {
     ctx.restore();
   }
 
+  /** Snorlax, ordenado por Y con los Pokémon (2026-10-16: iba encima de todo y tapaba a quien estaba delante). */
+  function drawables() {
+    if (!snorlax || !G.Camera.sees(snorlax.x, snorlax.y, 80)) return [];
+    const s = snorlax;
+    return [{ y: s.y, draw: ctx => { G.Sprites.drawShadow(ctx, 143, s.x, s.y, 1.3); s.anim.draw(ctx, s.x, s.y, {}); } }];
+  }
   function drawAir(ctx) {
     if (snorlax && G.Camera.sees(snorlax.x, snorlax.y, 80)) {
-      G.Sprites.drawShadow(ctx, 143, snorlax.x, snorlax.y, 1.3);
-      snorlax.anim.draw(ctx, snorlax.x, snorlax.y, {});
       // Qué hacer con él: bocadillo de ayuda y barra de "despertando".
       const pl = G.Game.player, w = snorlax.wake || 0;
       if (w > 0) {
@@ -198,5 +202,5 @@ G.Funny = (() => {
     for (const q of quips) bubble(ctx, q.e.x, q.e.y - q.e.bodyH - 10, G.T(q.text));
   }
 
-  return { reset, tick, update, drawAir, onNet, onDeath, bubble, get snorlax() { return snorlax; } };
+  return { reset, tick, update, drawAir, drawables, onNet, onDeath, bubble, get snorlax() { return snorlax; } };
 })();

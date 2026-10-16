@@ -1036,12 +1036,16 @@ G.Dungeon = (() => {
       }
       return out;
     }
-    if (room.kind !== 'shop') return [];
     const r = room, ts = r.ts, s = byId(r.siteId), out = [];
     const put = (type, v, x, y, k = 2, extra) => {
       const h = G.Tiles.propSprite(G.World.biome, type, v).height * k;
       out.push({ y: y + h / 2, draw: ctx => { sprite(ctx, type, v, x, y, k); if (extra) extra(ctx); } });
     };
+    if (r.kind !== 'shop') {
+      // Sala del tesoro: los cofres grandes, también ordenados.
+      if (r.ev === 'treasure') for (let i = 0; i < 3; i++) { const [x, y] = chestP(i); put('bigchest', r.chests[i] ? 1 : 0, x, y); }
+      return out;
+    }
     for (let i = -3; i <= 3; i++) if (i) put('shelf', (i + 3) % 3, r.cx + i * ts * 2.2, r.cy - (r.rh - 1.4) * ts);
     const [px, py] = petP();
     put('shelf', 1, px, py, 2, ctx => { sprite(ctx, 'egg', 0, px - 12, py - 30, 1.5); sprite(ctx, 'egg', 0, px + 12, py - 26, 1.5); });
@@ -1092,7 +1096,6 @@ G.Dungeon = (() => {
       label(ctx, t, r.cx, r.cy - (r.rh - 0.2) * ts, r.ev === 'house' ? '#ff8a95' : '#d9a6ff');
       if (r.ev === 'treasure') for (let i = 0; i < 3; i++) {
         const [x, y] = chestP(i);
-        sprite(ctx, 'bigchest', r.chests[i] ? 1 : 0, x, y);
         if (!r.chests[i]) label(ctx, G.T('¡Ábreme!'), x, y - 30, '#ffd23f', 11);
       }
     }
