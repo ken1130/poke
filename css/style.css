@@ -1013,3 +1013,17 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .daily-mon { overflow: hidden; } .daily-mon canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 .daily-rule { margin-top: 3px; padding: 2px 7px; border-left: 3px solid #ff9a3d; background: rgba(255,154,61,.08); border-radius: 0 5px 5px 0; font-size: 13px; }
 @media (max-width: 420px) { .daily-mon { width: 56px; height: 56px; } }
+/* Aspecto de los logros (2026-10-16, cosmetic.js): tarjetas de aura y de color de nombre. */
+.cos-label { margin: 8px 0 4px; font-weight: 800; color: var(--muted); font-size: 13px; }
+.cos-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.cos-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 6px; border-radius: 10px; cursor: pointer;
+  background: rgba(0,0,0,.25); border: 2px solid rgba(160,190,255,.22); color: inherit; font: inherit; text-align: center; }
+.cos-card b { font-size: 13px; } .cos-card small { font-size: 11px; color: var(--muted); line-height: 1.25; }
+.cos-card.on { border-color: #ffd23f; box-shadow: 0 0 0 1px #ffd23f66, 0 0 10px #ffd23f44; }
+.cos-card.locked { opacity: .55; cursor: not-allowed; }
+.cos-card .bar { width: 90%; height: 6px; background: rgba(0,0,0,.4); border-radius: 6px; overflow: hidden; margin: 2px 0; }
+.cos-card .bar i { display: block; height: 100%; background: linear-gradient(90deg, #5fc283, #9fe0b0); }
+.cos-prev { width: 96px; height: 75px; image-rendering: pixelated; }
+.cos-name { display: flex; align-items: center; justify-content: center; height: 56px; font-weight: 800; font-size: 15px; color: #eaf2ff;
+  text-shadow: 0 0 0 #000, 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.cos-name.rainbow { background: linear-gradient(90deg, #ff6b5a, #ffd23f, #5fe08a, #5fd4ff, #c47bff); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
