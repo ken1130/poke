@@ -274,6 +274,13 @@ G.Icons = (() => {
     w_pstone: { pal: { g: '#5fe08a', d: '#2f9a52', w: '#c8ffd8', y: '#ffd23f' }, rows: [
       '.....kk.....', '....kwgk....', '...kwgggk...', '...kwgygk...', '..kwggyggk..', '..kggyyygdk.',
       '.kgggyygddk.', '.kggggygddk.', '..kgggddddk.', '...kggddk...', '....kddk....', '.....kk.....'] },
+    // ---------- 2026-10-16: fusión de objetos (tienda) ----------
+    fuse_q: { pal: { p: '#c47bff', q: '#7a3fb0', w: '#f4e8ff', y: '#ffd23f' }, rows: [
+      '....kkkk....', '..kkppppkk..', '.kpwwkkwppk.', '.kpwk..kwqk.', 'kppkk..kwpqk', 'kppp..kkwpqk',
+      'kppp.kkwppqk', 'kpppkwwppqqk', '.kpp.kkpqqk.', '.kqpkyykqqk.', '..kkqqqqkk..', '....kkkk....'] },
+    fuse_arrow: { pal: { y: '#ffd23f', o: '#e08a1e', w: '#fff3b0' }, rows: [
+      '............', '......kk....', '......kwk...', '......kywk..', 'kkkkkkkyywk.', 'kwwwwwwyyywk',
+      'kyyyyyyyyyok', 'koooooooyok.', 'kkkkkkkook..', '......kok...', '......kk....', '............'] },
     // ---------- medallas de logros (bronce, plata, oro) ----------
     medal1: { pal: { r: '#ff5f6d', q: '#b8283a', m: '#d08a4a', n: '#8a5226', w: '#ffd0a0', s: '#ffe8c8' }, rows: MEDAL },
     medal2: { pal: { r: '#4fb4ff', q: '#2a6fb0', m: '#c9d2de', n: '#7d8899', w: '#ffffff', s: '#ffffff' }, rows: MEDAL },

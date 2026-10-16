@@ -74,6 +74,7 @@ G.Dungeon = (() => {
       Object.assign(s, { type: ev[3], x: ev[4], y: ev[5], state: ev[6], wares: ev[7], until: ev[8], spins: ev[9] == null ? 3 : ev[9] });
     } else if (k === 'gone') sites = sites.filter(s => s.id !== ev[2]);
     else if (k === 'got') applyWare(G.Game.player, ev[2]);
+    else if (k === 'fused') doFuse(G.Game.player, ev[2]);
     else if (k === 'bless') startBlessing(ev[2], ev[3]);
     else if (k === 'say') G.Spawner.say(G.T(ev[2]), ev[3] || 3, true);
     else if (k === 'ach') G.Progress.event(ev[2]);
@@ -86,11 +87,12 @@ G.Dungeon = (() => {
     else if (k === 'exit') endRoom();
     else if (k === 'rlock') { if (room) room.locked = !!ev[2]; }
     else if (k === 'rep') kRep = { buys: ev[2] | 0, robbed: !!ev[3], stole: !!ev[4] };
-    else if (k === 'poor') G.Spawner.say(G.I18n.f('¡No tienes bastantes monedas! (cuesta {x})', ev[2]), 2, true);
+    else if (k === 'poor') { fuseBusy = false; shopKey = ''; G.Spawner.say(G.I18n.f('¡No tienes bastantes monedas! (cuesta {x})', ev[2]), 2, true); }
   }
   /** Anfitrión: un invitado pide comprar (o se lleva sin pagar) el artículo `idx`. */
   function onClient(from, ev) {
     if (ev[1] === 'buy') tryBuy(byId(ev[2]), ev[3], from, !!ev[4]);
+    else if (ev[1] === 'fuse') tryFuse(byId(ev[2]), from, ev[3] | 0);
     else if (ev[1] === 'out') { if (room) room.out.add(from); }
     else if (ev[1] === 'spin') {
       const s = byId(ev[2]), r = G.Roulette.hostSpin(s, ev[3], from);
@@ -260,7 +262,7 @@ G.Dungeon = (() => {
     const s = openShop, pl = G.Game.player;
     if (!s || G.Roulette.busy) return;
     const coins = Math.floor(pl.coins || 0), free = s.state === 'free', left = s.spins == null ? 3 : s.spins;
-    const key = s.state + ':' + coins + ':' + left + ':' + shopTab + ':' + (pl.petGear || []).length + ':' + (pl.buddy ? pl.buddy.lvl + '' + pl.buddy.dex : pl.egg ? 'e' : '') + ':' + s.wares.map(w => w.sold ? 1 : 0).join('');
+    const key = s.state + ':' + coins + ':' + left + ':' + shopTab + ':' + (pl.petGear || []).length + ':' + (pl.buddy ? pl.buddy.lvl + '' + pl.buddy.dex : pl.egg ? 'e' : '') + ':' + s.wares.map(w => w.sold ? 1 : 0).join('') + ':' + pl.items.join(',') + ':' + (fuseBusy ? 1 : 0);
     if (key === shopKey) return;
     shopKey = key;
     document.getElementById('shop-sub').textContent = free ? G.T('¡Has vencido a Kecleon! Todo es GRATIS') : G.I18n.f('Monedas de esta run: {x}', coins)
@@ -269,8 +271,9 @@ G.Dungeon = (() => {
     const tabs = document.getElementById('shop-tabs');
     const inSec = sec => s.wares.filter(w => (w.sec || 'gen') === sec);
     const left2 = sec => inSec(sec).filter(w => !w.sold).length;
-    tabs.innerHTML = [['gen', 'Artículos', 'bag'], ['pet', 'Mascotas', 'egg']].map(([k, label]) =>
-      `<button class="shop-tab${shopTab === k ? ' on' : ''}" data-tab="${k}">${G.T(label)} <small>${left2(k)}</small></button>`).join('');
+    const fz = fuseCheck(pl);
+    tabs.innerHTML = [['gen', 'Artículos'], ['pet', 'Mascotas'], ['fuse', 'Fusión']].map(([k, label]) =>
+      `<button class="shop-tab${shopTab === k ? ' on' : ''}" data-tab="${k}">${G.T(label)} <small>${k === 'fuse' ? (fz.ok ? '!' : '–') : left2(k)}</small></button>`).join('');
     tabs.querySelectorAll('[data-tab]').forEach(b => { b.onclick = () => { shopTab = b.dataset.tab; shopKey = ''; G.Audio.sfx('select'); refreshShop(); }; });
     const box = document.getElementById('shop-list');
     box.innerHTML = '';
@@ -286,6 +289,7 @@ G.Dungeon = (() => {
         `<div class="gear">${gearIc || `<small>${G.T('Sin equipo')}</small>`}</div>`;
       box.appendChild(head);
     }
+    if (shopTab === 'fuse') box.appendChild(fuseCard(s, pl, fz, free, coins));
     s.wares.forEach((w, i) => {
       if ((w.sec || 'gen') !== shopTab) return;
       const row = document.createElement('div');
@@ -320,6 +324,90 @@ G.Dungeon = (() => {
     rb.textContent = G.T('Ruleta de Kecleon') + ' (' + left + ')';
     rb.disabled = left <= 0;
   }
+  /*
+   * ---- Fusión (2026-10-16) ----
+   * Dos objetos normales del MISMO rango que llevas puestos → uno al azar del rango siguiente:
+   * Común + Común → Raro · Raro + Raro → Épico. Épico + Épico no se funde y un artefacto nunca
+   * sale ni sirve de material (sólo los cofres con candado los dan). Se paga con las monedas de
+   * la run, que en grupo son del anfitrión (como al comprar): el invitado pide ['dg','fuse'] y
+   * sólo si el anfitrión cobra le contesta ['dg','fused'] y la fusión se hace en SU ordenador
+   * (los objetos son de cada uno, como lo comprado en applyWare).
+   */
+  const FUSE_BASE = { 1: 45, 2: 90 };
+  let fuseBusy = false;                 // invitado: esperando la respuesta del anfitrión
+  function fusePrice(tier) {
+    const k = 1 + T() / 900, mul = (kRep.robbed ? 1.5 : 1) * (loyal() ? 0.8 : 1);
+    return Math.round(FUSE_BASE[tier] * k * mul);
+  }
+  /** ¿Se pueden fundir los dos que llevas? → { ok, tier, reason } */
+  function fuseCheck(pl) {
+    const it = pl.items;
+    if (it.length < 2) return { ok: false, reason: 'Necesitas llevar dos objetos del mismo rango.' };
+    if (it.some(G.Items.isArt)) return { ok: false, reason: 'Los artefactos no se pueden fundir.' };
+    const a = G.Items.tier(it[0]), b = G.Items.tier(it[1]);
+    if (a !== b) return { ok: false, reason: 'Necesitas llevar dos objetos del mismo rango.' };
+    if (a >= 3) return { ok: false, tier: a, reason: 'Dos épicos ya no se pueden fundir.' };
+    return { ok: true, tier: a };
+  }
+  function fuseCard(s, pl, fz, free, coins) {
+    const el = document.createElement('div');
+    el.className = 'shop-fuse';
+    const mat = id => id
+      ? `<div class="mat t${G.Items.tier(id)}">${G.Icons.html(id, 36)}<span class="tier-chip t${G.Items.tier(id)}">${G.T(G.Items.TIER_NAME[G.Items.tier(id)])}</span><small>${G.T(G.Items.BY[id].name)}</small></div>`
+      : `<div class="mat empty">${G.Icons.html('fuse_q', 36)}<small>${G.T('Hueco vacío')}</small></div>`;
+    const to = fz.ok ? fz.tier + 1 : 0, price = fz.ok ? fusePrice(fz.tier) : 0;
+    const can = fz.ok && !fuseBusy && (free || coins >= price);
+    el.innerHTML = `<div class="fuse-row">${mat(pl.items[0])}<span class="plus">+</span>${mat(pl.items[1])}` +
+      `<span class="arrow">${G.Icons.html('fuse_arrow', 24)}</span>` +
+      `<div class="mat res${to ? ' t' + to : ''}">${G.Icons.html('fuse_q', 36)}` +
+      (to ? `<span class="tier-chip t${to}">${G.T(G.Items.TIER_NAME[to])}</span><small>${G.I18n.f('Un objeto {x} al azar', G.T(G.Items.TIER_NAME[to]))}</small>` : `<small>?</small>`) + `</div></div>` +
+      `<p class="fuse-note">${fz.ok ? G.T('Los dos objetos desaparecen y recibes uno nuevo de rango superior (nunca un artefacto).') : G.T(fz.reason)}</p>` +
+      `<div class="fuse-act">` + (fz.ok ? `<span class="price ${can || free ? '' : 'poor'}">${free ? G.T('Gratis') : G.Icons.html('coin', 14) + ' ' + price}</span>` : '') +
+      `<button class="btn gold" id="shop-fuse" ${can ? '' : 'disabled'}>${G.T(fuseBusy ? 'Fundiendo…' : 'Fundir')}</button></div>` +
+      `<small class="fuse-help">${G.T('Común + Común → Raro · Raro + Raro → Épico')}</small>`;
+    el.querySelector('#shop-fuse').onclick = () => { if (!choosing()) requestFuse(s, fz.tier); };
+    return el;
+  }
+  function requestFuse(s, tier) {
+    const pl = G.Game.player, fz = fuseCheck(pl);
+    if (!fz.ok || fz.tier !== tier || fuseBusy) return;
+    if (authority()) tryFuse(s, null, tier);
+    else { fuseBusy = true; shopKey = ''; G.Coop.request(['dg', 'fuse', s.id, tier]); setTimeout(() => { fuseBusy = false; shopKey = ''; }, 4000); }
+  }
+  /** Anfitrión: cobra la fusión (de `from`, o la suya si es null). */
+  function tryFuse(s, from, tier) {
+    if (!s || s.type !== 'shop' || !FUSE_BASE[tier]) return;
+    if (s.state !== 'open' && s.state !== 'free') return;
+    const host = G.Game.player, price = fusePrice(tier);
+    if (s.state !== 'free') {
+      if ((host.coins || 0) < price) { if (from) G.Coop.sendTo(from, ['dg', 'poor', price]); else G.Spawner.say(G.I18n.f('¡No tienes bastantes monedas! (cuesta {x})', price), 2, true); return; }
+      host.coins -= price;
+    }
+    G.Audio.sfx('coin');
+    if (from) G.Coop.sendTo(from, ['dg', 'fused', tier]);
+    else doFuse(host, tier);
+  }
+  /** En el ordenador del dueño de los objetos: los dos se van y llega uno del rango siguiente. */
+  function doFuse(pl, tier) {
+    fuseBusy = false; shopKey = '';
+    const fz = fuseCheck(pl);
+    if (!fz.ok || fz.tier !== tier) return;
+    const old = pl.items.slice();
+    for (const id of old) G.Items.BY[id].off(pl);
+    pl.items = [];
+    const pool = G.Items.LIST.filter(i => i.tier === tier + 1 && !old.includes(i.id));
+    const id = G.U.pick(pool).id;
+    pl.equip(id);
+    const col = G.Items.TIER_COLOR[tier + 1];
+    G.FX.ring(pl.x, pl.y, 6, 110, col, 0.7, 5);
+    G.FX.ring(pl.x, pl.y, 40, 6, '#ffffff', 0.45, 3);
+    G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, col, 34, 230);
+    G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffffff', 14, 140);
+    G.Audio.sfx(tier + 1 >= 3 ? 'legend' : 'shiny');
+    G.Spawner.say(G.I18n.f('¡Fusión! {x} + {x} → {x}', G.T(G.Items.BY[old[0]].name), G.T(G.Items.BY[old[1]].name), G.T(G.Items.BY[id].name)), 3, true);
+    G.Progress.event('item', { id });
+  }
+
   /** Al salir de un interior: onda que aparta a los enemigos cercanos y 3 s sin recibir daño. */
   function farewell(pl, msg) {
     pl.invuln = Math.max(pl.invuln || 0, 3);
