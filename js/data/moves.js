@@ -189,34 +189,46 @@
     ],
     // ---- 2026-10-16: exclusivos de los personajes originales (data/custom.js) ----
     foampunch: [
-      { t: '+8 de daño y salpicadura más grande',                           m: {} },
-      { t: '+8 de daño; golpea a 2 enemigos',                               m: {} },
-      { t: '+10 de daño y salpicadura más grande',                          m: {} },
-      { t: '+10 de daño; golpea a 3 enemigos',                              m: {} }
+      { t: '+12 de daño y salpicadura más grande', m: {} },
+      { t: '+14 de daño; golpea a 2 enemigos', m: {} },
+      { t: '+16 de daño y salpicadura más grande', m: {} },
+      { t: '+18 de daño; golpea a 3 enemigos', m: {} }
     ],
     scare: [
-      { t: '+6 de daño y más empuje',                                       m: {} },
-      { t: '+1 de daño por cada enemigo cerca (hasta 12) y más radio',      m: {} },
-      { t: '+8 de daño y -0,2 s de recarga',                                m: {} },
-      { t: '+1 de daño por enemigo cerca (hasta 14) y más radio',           m: {} }
+      { t: '+12 de daño, +1 por enemigo cerca y -0,1 s de recarga',          m: {} },
+      { t: '+8 de daño, +1 por enemigo (hasta 14) y más radio',             m: {} },
+      { t: '+12 de daño, +1 por enemigo y -0,1 s de recarga',                m: {} },
+      { t: '+12 de daño, +1 por enemigo (hasta 16) y más radio',            m: {} }
     ],
     afterimage: [
-      { t: '+4 de daño y las sombras duran más',                            m: {} },
-      { t: '+4 de daño y +5% de velocidad',                                 m: {} },
-      { t: '+5 de daño y sombras más grandes',                              m: {} },
-      { t: '+5 de daño y +5% de velocidad',                                 m: {} }
+      { t: '+2 de daño, sombras más duraderas y +2% de velocidad',           m: {} },
+      { t: '+3 de daño, sombras más grandes y +3% de velocidad',             m: {} },
+      { t: '+3 de daño, sombras más grandes y +3% de velocidad',             m: {} },
+      { t: '+4 de daño, sombras más duraderas y +2% de velocidad',           m: {} }
     ],
     pounce: [
-      { t: '+4 de daño por zarpazo',                                        m: {} },
-      { t: '+3 de daño; si lo derriba, salta a otro enemigo',               m: {} },
-      { t: '+4 de daño y +1 zarpazo',                                       m: {} },
-      { t: '+4 de daño y salta a 2 enemigos',                               m: {} }
+      { t: '+4 de daño por zarpazo; si lo derriba, salta a otro enemigo', m: {} },
+      { t: '+4 de daño y más alcance', m: {} },
+      { t: '+6 de daño, +1 zarpazo y salta a 2 enemigos', m: {} },
+      { t: '+8 de daño y más alcance', m: {} }
     ],
     whip: [
-      { t: '+6 de daño',                                                    m: {} },
-      { t: '+6 de daño, lengua más larga y +1 de veneno',                   m: {} },
-      { t: '+8 de daño',                                                    m: {} },
-      { t: '+8 de daño, lengua más larga y gruesa y +1 de veneno',          m: {} }
+      { t: '+10 de daño, lengua más larga y +1 de veneno', m: {} },
+      { t: '+14 de daño', m: {} },
+      { t: '+16 de daño, lengua más larga y gruesa y +1 de veneno', m: {} },
+      { t: '+10 de daño', m: {} }
+    ],
+    question: [
+      { t: '+15 de daño y pregunta a 3 enemigos',                           m: {} },
+      { t: '+15 de daño, más alcance y se quedan pensando más rato',        m: {} },
+      { t: '+18 de daño y pregunta a 4 enemigos',                           m: {} },
+      { t: '+22 de daño, 5 enemigos y más rato pensando',                   m: {} }
+    ],
+    roll: [
+      { t: '+4 de daño y +1 bola', m: {} },
+      { t: '+8 de daño, bolas más grandes que atraviesan 5', m: {} },
+      { t: '+10 de daño y +1 bola', m: {} },
+      { t: '+14 de daño, bolas más grandes que atraviesan 8', m: {} }
     ],
     // ---- 2026-10-16 ----
     hearts: [
@@ -579,19 +591,25 @@
     // `only`: sólo lo aprende ese personaje (es su movimiento inicial); no sale en las cartas de los demás.
     { id: 'foam-punch', name: 'Puño Espuma', type: 'water', kind: 'foampunch', only: 10003,
       desc: 'EXCLUSIVO de Didi: un puñetazo al enemigo más cercano que estalla en espuma y moja a los de alrededor.',
-      cd: 0.7, dmg: 20, radius: 160 },
+      cd: 0.7, dmg: 36, radius: 160 },
     { id: 'scaredy-burst', name: 'Pelos de Punta', type: 'normal', kind: 'scare', only: 10004,
       desc: 'EXCLUSIVO de Héroe: se asusta tanto que se le eriza todo y aparta a los que tiene cerca. Cuantos más enemigos, más daño.',
-      cd: 2.2, dmg: 14, radius: 96 },
+      cd: 1.4, dmg: 28, radius: 102 },
     { id: 'turbo-dash', name: 'Turbo Fantasma', type: 'ghost', kind: 'afterimage', only: 10005,
-      desc: 'EXCLUSIVO de la Turbo Abuela: va tan rápida que deja sombras de sí misma que dañan a quien las toca. Más velocidad.',
-      cd: 0.3, dmg: 8, radius: 40 },
+      desc: 'EXCLUSIVO de la Turbo Abuela: va tan rápida que deja sombras de sí misma que dañan a quien las toca (y a todo lo que hay entre una y otra). Parada, suelta ondas fantasma. Más velocidad.',
+      cd: 0.3, dmg: 14, radius: 51 },
     { id: 'cat-pounce', name: 'Caza Ratones', type: 'dark', kind: 'pounce', only: 10006,
       desc: 'EXCLUSIVO de Tom: zarpazos seguidos al enemigo más cercano.',
-      cd: 0.9, dmg: 10, radius: 160 },
+      cd: 0.8, dmg: 14, radius: 176 },
     { id: 'tongue-lash', name: 'Lengüetazo Látigo', type: 'poison', kind: 'whip', only: 10007,
       desc: 'EXCLUSIVO de Lika: la lengua sale como un látigo hasta un enemigo y envenena a todos los que toca por el camino.',
-      cd: 1.0, dmg: 16, radius: 192 },
+      cd: 0.9, dmg: 30, radius: 208 },
+    { id: 'curious-question', name: 'Pregunta Curiosa', type: 'normal', kind: 'question', only: 10001,
+      desc: 'EXCLUSIVO del Panda: lanza preguntas a los enemigos cercanos; los que reciben una se quedan pensando un momento (inmóviles).',
+      cd: 1.0, dmg: 26, radius: 192 },
+    { id: 'potato-roll', name: 'Boniato Rodante', type: 'electric', kind: 'roll', only: 10002,
+      desc: 'EXCLUSIVO del Boniato: rueda bolas de boniato electrizadas que atraviesan a los enemigos.',
+      cd: 1.0, dmg: 22, radius: 256 },
     // ---------------- apoyo (2026-10-15): curar y defender ----------------
     { id: 'recover', name: 'Recuperación', type: 'psychic', kind: 'support', cd: 12, dmg: 0, radius: 0,
       desc: 'APOYO: cada pocos segundos recuperas parte de tu vida máxima.',
@@ -795,42 +813,58 @@
     // al acertar); evolucionado: dps (rayo continuo, cada cd s), slow, hole (prob. de agujero negro
     // al matar), holeR (casillas que atrae), holeDmg (explosión a los 4 s)
     // ---- 2026-10-16: exclusivos de los personajes originales ----
+    // (2026-10-16, el dueño: «son flojos») Subidos para quedar cerca de Puño Lee en la prueba fija
+    // (6 s, minuto 7: ~250 a Nv.1, ~1200 a Nv.5, ~3000 evolucionado).
     // Didi: dmg del puñetazo, sdmg salpicadura, sr (casillas) de salpicadura, r alcance, n enemigos; evo: knock, slow
     'foam-punch': [
-      { dmg: 20, sdmg: 8, sr: 2, r: 5, n: 1 },    { dmg: 28, sdmg: 12, sr: 2.5, r: 5, n: 1 },
-      { dmg: 36, sdmg: 14, sr: 2.5, r: 5.5, n: 2 }, { dmg: 46, sdmg: 20, sr: 3, r: 5.5, n: 2 },
-      { dmg: 56, sdmg: 26, sr: 3, r: 6, n: 3 },
-      { dmg: 64, sdmg: 40, sr: 4, r: 7, n: 3, knock: 120, slow: 0.4, cd: 0.55 }
+      { dmg: 50, sdmg: 16, sr: 2.2, r: 5, n: 1 },   { dmg: 62, sdmg: 20, sr: 2.6, r: 5, n: 1 },
+      { dmg: 76, sdmg: 24, sr: 2.6, r: 5.5, n: 2 }, { dmg: 92, sdmg: 28, sr: 3, r: 5.5, n: 2 },
+      { dmg: 110, sdmg: 34, sr: 3, r: 6, n: 3 },
+      { dmg: 140, sdmg: 52, sr: 4.2, r: 7, n: 3, knock: 120, slow: 0.4, cd: 0.55 }
     ],
     // Héroe: dmg base, per (daño extra por enemigo cerca), cap (hasta cuántos cuenta), r (casillas), knock;
     // evo: root (inmoviliza s a los normales) e inv (s invulnerable)
     'scaredy-burst': [
-      { dmg: 14, per: 2, cap: 10, r: 3, knock: 140 },   { dmg: 20, per: 2, cap: 10, r: 3, knock: 170 },
-      { dmg: 20, per: 3, cap: 12, r: 3.5, knock: 170 }, { dmg: 28, per: 3, cap: 12, r: 3.5, knock: 170, cd: 2.0 },
-      { dmg: 28, per: 4, cap: 14, r: 4, knock: 190, cd: 2.0 },
-      { dmg: 40, per: 5, cap: 16, r: 4.5, knock: 230, root: 0.7, inv: 0.6, cd: 1.6 }
+      { dmg: 28, per: 4, cap: 12, r: 3.2, knock: 140, cd: 1.4 }, { dmg: 40, per: 5, cap: 12, r: 3.4, knock: 160, cd: 1.3 },
+      { dmg: 48, per: 6, cap: 14, r: 3.6, knock: 170, cd: 1.2 }, { dmg: 60, per: 7, cap: 14, r: 3.8, knock: 180, cd: 1.1 },
+      { dmg: 72, per: 8, cap: 16, r: 4, knock: 190, cd: 1.0 },
+      { dmg: 110, per: 12, cap: 18, r: 4.6, knock: 230, root: 0.7, inv: 0.5, cd: 0.8 }
     ],
-    // Turbo Abuela: dmg por toque de sombra (cada 0,3 s), life (s), ir (casillas), haste (velocidad extra);
-    // evo: boom (al desaparecer, cada sombra estalla con ese daño)
+    // Turbo Abuela: dmg (sombra cada 0,3 s, y el tramo recorrido de una sombra a la siguiente), life (s), ir (casillas),
+    // haste (velocidad extra); quieta, una onda alrededor (×0,6); evo: boom (cada sombra estalla al desaparecer)
     'turbo-dash': [
-      { dmg: 8, life: 0.8, ir: 1.1, haste: 0.10 },  { dmg: 12, life: 1.1, ir: 1.1, haste: 0.10 },
-      { dmg: 16, life: 1.1, ir: 1.1, haste: 0.15 }, { dmg: 21, life: 1.1, ir: 1.4, haste: 0.15 },
-      { dmg: 26, life: 1.1, ir: 1.4, haste: 0.20 },
-      { dmg: 30, life: 1.6, ir: 1.7, haste: 0.25, boom: 36 }
+      { dmg: 6, life: 0.9, ir: 1.6, haste: 0.12 },  { dmg: 8, life: 1.1, ir: 1.7, haste: 0.14 },
+      { dmg: 11, life: 1.2, ir: 1.8, haste: 0.17 }, { dmg: 14, life: 1.3, ir: 2.0, haste: 0.20 },
+      { dmg: 18, life: 1.4, ir: 2.1, haste: 0.22 },
+      { dmg: 24, life: 1.8, ir: 2.5, haste: 0.28, boom: 50 }
     ],
     // Tom: dmg por zarpazo, n zarpazos, r alcance, chain (saltos al derribar); evo: bleed (sangrado/s)
     'cat-pounce': [
-      { dmg: 10, n: 3, r: 5, chain: 0 },  { dmg: 14, n: 3, r: 5, chain: 0 },
-      { dmg: 17, n: 3, r: 5.5, chain: 1 }, { dmg: 21, n: 4, r: 5.5, chain: 1 },
-      { dmg: 25, n: 4, r: 6, chain: 2 },
-      { dmg: 30, n: 5, r: 7, chain: 4, bleed: 8, cd: 0.75 }
+      { dmg: 24, n: 3, r: 5.5, chain: 0 }, { dmg: 28, n: 3, r: 5.5, chain: 1 },
+      { dmg: 32, n: 3, r: 6, chain: 1 },   { dmg: 38, n: 4, r: 6, chain: 2 },
+      { dmg: 46, n: 4, r: 6.5, chain: 2 },
+      { dmg: 58, n: 5, r: 7.5, chain: 4, bleed: 14, cd: 0.65 }
     ],
     // Lika: dmg, r alcance (casillas), w ancho, poison (acumulaciones); evo: n lenguas, pull (atrae hacia ti)
     'tongue-lash': [
-      { dmg: 16, r: 6, w: 18, poison: 1, n: 1 },  { dmg: 22, r: 6, w: 18, poison: 1, n: 1 },
-      { dmg: 28, r: 7, w: 20, poison: 2, n: 1 },  { dmg: 36, r: 7, w: 20, poison: 2, n: 1 },
-      { dmg: 44, r: 8, w: 26, poison: 3, n: 1 },
-      { dmg: 50, r: 9, w: 30, poison: 4, n: 2, pull: 150, cd: 0.85 }
+      { dmg: 40, r: 6.5, w: 22, poison: 1, n: 1 }, { dmg: 50, r: 7, w: 22, poison: 2, n: 1 },
+      { dmg: 64, r: 7, w: 22, poison: 2, n: 1 },   { dmg: 80, r: 8, w: 26, poison: 3, n: 1 },
+      { dmg: 90, r: 8, w: 26, poison: 3, n: 1 },
+      { dmg: 125, r: 9.5, w: 34, poison: 4, n: 3, pull: 120, cd: 0.7 }
+    ],
+    // Panda: dmg por pregunta, n enemigos, r alcance, stun (s que se quedan pensando); evo: all (todos los del radio)
+    'curious-question': [
+      { dmg: 40, n: 2, r: 6, stun: 0.35 }, { dmg: 55, n: 3, r: 6, stun: 0.35 },
+      { dmg: 70, n: 3, r: 6.5, stun: 0.45 }, { dmg: 88, n: 4, r: 6.5, stun: 0.45 },
+      { dmg: 110, n: 5, r: 7, stun: 0.55 },
+      { dmg: 120, n: 99, r: 7.5, stun: 0.8, all: true, cd: 1.0 }
+    ],
+    // Boniato: dmg por bola, n bolas, pierce (atraviesa), size, r alcance; evo: zap (descarga a los de alrededor al golpear)
+    'potato-roll': [
+      { dmg: 40, n: 1, pierce: 3, size: 1.2, r: 8 }, { dmg: 44, n: 2, pierce: 3, size: 1.2, r: 8 },
+      { dmg: 52, n: 2, pierce: 5, size: 1.4, r: 8.5 }, { dmg: 62, n: 3, pierce: 5, size: 1.4, r: 8.5 },
+      { dmg: 76, n: 3, pierce: 8, size: 1.6, r: 9 },
+      { dmg: 110, n: 5, pierce: 99, size: 2, r: 10, zap: 40, cd: 0.8 }
     ],
     'destruction-beam': [
       { dmg: 24, n: 1, w: 30, r: 10 },   { dmg: 30, n: 1, w: 44, r: 10 },   { dmg: 42, n: 2, w: 44, r: 10 },
@@ -1019,6 +1053,7 @@
     'foam-punch': ['Gran Ola Esponjosa', 'atk'], 'scaredy-burst': ['Valor de Héroe', 'def'],
     'turbo-dash': ['Turbo Máximo', 'spd'],       'cat-pounce': ['Gato Implacable', 'atk'],
     'tongue-lash': ['Lengua Mortal', 'cd'],
+    'curious-question': ['Cien Mil Porqués', 'cd'], 'potato-roll': ['Estampida de Boniatos', 'atk'],
     // apoyo (2026-10-15)
     'recover': ['Luz Lunar', 'rgn'],         'light-screen': ['Velo Aurora', 'def'],
     'protect': ['Escudo Real', 'def'],       'wish': ['Deseo Milenario', 'hp'],
@@ -1065,10 +1100,12 @@
     tornado:     { t: 'Daño continuo mientras están en el aire, +2 s en el aire y al caer una mano azul les da una bofetada de 70', m: {} },
     bladestorm:  { t: 'La tormenta empuja y hace sangrar (+1 casilla); cuchillas en 8 direcciones que se parten en dos a ±90° al atravesar al primero', m: {} },
     foampunch:   { t: 'Gran ola: +2 casillas de salpicadura que empuja y frena; más daño y menos recarga', m: {} },
-    scare:       { t: 'Inmoviliza 0,7 s a los normales y te vuelves invulnerable 0,6 s; +5 por enemigo (hasta 16)', m: {} },
-    afterimage:  { t: 'Sombras más grandes y duraderas que estallan (36) al desaparecer; +25% de velocidad', m: {} },
-    pounce:      { t: '5 zarpazos que hacen sangrar; si lo derriba, salta hasta a 4 enemigos', m: {} },
-    whip:        { t: 'Dos lenguas a la vez que atraen a los enemigos hacia ti y envenenan ×4', m: {} },
+    scare:       { t: 'Inmoviliza 0,7 s a los normales y te vuelves invulnerable 0,5 s; +12 por enemigo (hasta 18), cada 0,8 s', m: {} },
+    afterimage:  { t: 'Sombras más grandes y duraderas que estallan (50) al desaparecer; +28% de velocidad', m: {} },
+    pounce:      { t: '5 zarpazos que hacen sangrar (14/s); si lo derriba, salta hasta a 4 enemigos', m: {} },
+    whip:        { t: 'Tres lenguas a la vez que atraen a los enemigos hacia ti y envenenan ×4; mucho más daño', m: {} },
+    question:    { t: 'Pregunta a TODOS los enemigos del radio a la vez y se quedan pensando 0,8 s', m: {} },
+    roll:        { t: '5 bolas enormes que lo atraviesan todo y electrocutan (40) a los de alrededor al golpear', m: {} },
     dbeam:       { t: 'Rayo púrpura continuo mientras haya enemigos: daña y frena; al matar, 15% de dejar un agujero negro que atrae (7 casillas) 4 s y estalla (80)', m: {} },
     support:     { t: 'Más fuerte y más a menudo', m: {} }       // (el texto de verdad: def.evoText)
   };

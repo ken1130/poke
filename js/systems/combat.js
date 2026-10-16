@@ -71,7 +71,8 @@ G.Combat = (() => {
     // Los pasivos no hacen animación ni se mandan a los demás (sólo cuenta su efecto).
     if (!G.Moves.isPassive(m)) {
       G.Arts.onAttack(pl, m);           // Varita de Saúco: cada ataque, un poco menos de recarga
-      pl.cast(m);
+      // Turbo Fantasma sale cada 0,3 s: sin animación de ataque (parecía que no paraba de atacar; las sombras ya se ven).
+      if (m.kind !== 'afterimage') pl.cast(m);
       if (G.Coop.active) G.Coop.cast(pl, m);
     }
     // Vínculo: su icono destella en el HUD al lanzarse (uno que explota pegado al
@@ -88,7 +89,7 @@ G.Combat = (() => {
    * ese objeto con su daño.
    */
   const ENEMY_ONLY = new Set(['flameshield', 'lightning', 'drain', 'psyarrow', 'acidrain', 'fist', 'spear', 'treefall', 'hearts',
-                              'tornado', 'bladestorm', 'dbeam', 'foampunch', 'scare', 'afterimage', 'pounce', 'whip']);
+                              'tornado', 'bladestorm', 'dbeam', 'foampunch', 'scare', 'afterimage', 'pounce', 'whip', 'question']);
   /** El objeto rompible más cercano a su alcance si no hay enemigos (cofres y rocas antes que la hierba). */
   function propNear(pl, m) {
     const R = reach(m);
@@ -147,6 +148,8 @@ G.Combat = (() => {
       case 'afterimage': afterimage(pl, m); break;
       case 'pounce':     pounce(pl, m); break;
       case 'whip':       whips(pl, m); break;
+      case 'question':   questions(pl, m); break;
+      case 'roll':       potatoRoll(pl, m); break;
     }
     if (!ghost && (m.boostCh || m.recoil || m.confuseEvery)) afterCast(pl, m);
   }
@@ -888,7 +891,7 @@ G.Combat = (() => {
   }
 
   const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone', 'lightning', 'drain', 'psyarrow',
-                    'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam', 'foampunch', 'pounce', 'whip'];
+                    'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam', 'foampunch', 'pounce', 'whip', 'question', 'roll'];
   function needsTarget(m) { return TARGETED.includes(m.kind); }
   function reach(m) {
     if (m.kind === 'melee') return m.radius + 30;
@@ -898,7 +901,7 @@ G.Combat = (() => {
     if (m.kind === 'meteor') return 340;
     if (m.kind === 'dash') return m.radius + 60;
     if (['lightning', 'drain', 'psyarrow', 'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam',
-         'foampunch', 'scare', 'pounce', 'whip'].includes(m.kind)) return G.Moves.stat(m).r * 32;
+         'foampunch', 'scare', 'pounce', 'whip', 'question', 'roll'].includes(m.kind)) return G.Moves.stat(m).r * 32;
     if (m.kind === 'cone') return m.speed * m.life + 30;
     return 520;
   }
@@ -1272,16 +1275,38 @@ G.Combat = (() => {
     G.Camera.kick(0.08);
   }
 
-  /** Turbo Abuela · Turbo Fantasma: deja una sombra suya donde está; más velocidad mientras lo lleva. */
+  /**
+   * Turbo Abuela · Turbo Fantasma: deja una sombra suya donde está y golpea todo lo que hay en el
+   * tramo desde la sombra anterior (va tan rápida que lo atraviesa). Parada, suelta una onda
+   * fantasma alrededor (×0,6). Más velocidad mientras lo lleva.
+   * (2026-10-16, «el de la abuela es flojo»: antes sólo dañaban las sombras, y quieta casi nada.)
+   */
   function afterimage(pl, m) {
-    const row = G.Moves.stat(m);
+    const row = G.Moves.stat(m), R = row.ir * TILE;
     pl.hasteT = Math.max(pl.hasteT || 0, 0.5); pl.hasteK = Math.max(pl.hasteK || 0, row.haste);
-    // Parada no deja sombras (sólo corriendo), salvo una de vez en cuando.
-    const moved = pl._aiX == null || G.U.dist2(pl._aiX, pl._aiY, pl.x, pl.y) > 14 * 14;
-    if (!moved && Math.random() < 0.7) return;
+    const px = pl._aiX == null ? pl.x : pl._aiX, py = pl._aiY == null ? pl.y : pl._aiY;
+    const moved = G.U.dist2(px, py, pl.x, pl.y) > 14 * 14;
     pl._aiX = pl.x; pl._aiY = pl.y;
+    if (!moved) {
+      // Onda fantasma alrededor.
+      G.FX.ring(pl.x, pl.y, 6, R * 1.3, '#9e8aea', 0.25, 3);
+      if (!ghost) for (const e of enemiesIn(pl.x, pl.y, R * 1.3)) if (!e.dead) hit(pl, e, row.dmg * 0.6 * pl.atk, G.U.TYPE_COLOR.ghost, e.x - pl.x, e.y - pl.y, 30, m);
+      return;
+    }
+    // El tramo recorrido: un rastro violeta y daño a lo que pilla.
+    if (G.Camera.sees(pl.x, pl.y, 200)) for (let k = 1; k <= 4; k++) {
+      const t = k / 5;
+      G.FX.px(px + (pl.x - px) * t + G.U.rand(-4, 4), py + (pl.y - py) * t - 12 + G.U.rand(-6, 6), Math.random() < 0.5 ? '#c8b8ff' : '#9e8aea', { life: 0.3 });
+    }
+    if (!ghost) {
+      const mx = (px + pl.x) / 2, my = (py + pl.y) / 2, half = Math.hypot(pl.x - px, pl.y - py) / 2;
+      for (const e of enemiesIn(mx, my, half + R)) {
+        if (e.dead || segDist2(px, py, pl.x, pl.y, e.x, e.y) > (R * 0.7 + e.r) ** 2) continue;
+        hit(pl, e, row.dmg * 0.6 * pl.atk, G.U.TYPE_COLOR.ghost, e.x - pl.x, e.y - pl.y, 20, m);   // el tramo, a ×0,6
+      }
+    }
     fields.push({ kind: 'shade', owner: pl, ghost, m, row, x: pl.x, y: pl.y, t: 0, life: row.life, tick: 0,
-                  dir: pl.anim ? pl.anim.dir : 0, r: row.ir * TILE });
+                  dir: pl.anim ? pl.anim.dir : 0, r: R });
   }
   function shadeStep(f, dt) {
     if ((f.tick -= dt) > 0) return;
@@ -1347,6 +1372,48 @@ G.Combat = (() => {
       }
     }
     if (G.Camera.sees(pl.x, pl.y, R)) G.Audio.sfx('hit');
+  }
+
+  /** Panda · Pregunta Curiosa: «?» a los `n` más cercanos (evolucionado: a todos los del radio); se quedan pensando `stun` s. */
+  function questions(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE;
+    const list = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl)).slice(0, row.all ? 999 : row.n);
+    if (!list.length) return;
+    if (row.all) G.FX.ring(pl.x, pl.y, 8, R, '#ece6dc', 0.35, 3);
+    for (const e of list) {
+      const ex = e.x, ey = e.y - e.bodyH - 6;
+      if (G.Camera.sees(ex, ey, 20)) {
+        G.FX.dmgText(ex, ey - 6, '?', '#fff36a', true);
+        G.FX.sp('note', 'normal', (pl.x + ex) / 2, (pl.y + ey) / 2 - 10, { vx: (ex - pl.x) * 3, vy: (ey - pl.y) * 3, life: 0.2, scale: 1.3 });
+      }
+      if (ghost) continue;
+      hit(pl, e, row.dmg * pl.atk, G.U.TYPE_COLOR.normal, e.x - pl.x, e.y - pl.y, 0, m);
+      if (!e.dead && !isFoe(e)) { if (e.boss) e.applySlow(0.5, row.stun * 2); else e.applyRoot(row.stun); }
+    }
+  }
+
+  /** Boniato · Boniato Rodante: bolas electrizadas que ruedan y atraviesan (evolucionado: descargan a los de alrededor). */
+  function potatoRoll(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE, sp = 280;
+    const tg = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl))[0];
+    const a0 = tg ? Math.atan2(tg.y - pl.y, tg.x - pl.x) : pl.aim || 0;
+    for (let i = 0; i < row.n; i++) {
+      const a = a0 + (i - (row.n - 1) / 2) * 0.32;
+      G.Projectiles.spawn(Object.assign({
+        x: pl.x + Math.cos(a) * 8, y: pl.y + Math.sin(a) * 8, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        dmg: row.dmg * pl.atk, r: 7 * row.size, life: R / sp + 0.2, pierce: row.pierce, color: G.U.TYPE_COLOR.electric,
+        hits: new Set(), vis: G.VFX.forType('electric'), ghost, owner: pl, zap: row.zap || 0
+      }, payload(m)));
+    }
+  }
+  /** Descarga del Boniato evolucionado: a los de alrededor del golpeado. */
+  function zapAround(p, e, pl) {
+    G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#fff36a', 6, 120);
+    for (const o of enemiesIn(e.x, e.y, 70)) {
+      if (o === e || o.dead) continue;
+      G.FX.spark(o.x, o.y - o.bodyH * 0.5, '#fff36a', 0, -1, 3);
+      hit(pl, o, p.zap * pl.atk, G.U.TYPE_COLOR.electric, o.x - e.x, o.y - e.y, 0, { type: 'electric' });
+    }
   }
 
   function updateFields(dt) {
@@ -1958,6 +2025,7 @@ G.Combat = (() => {
           if (p.slow) e.applySlow(p.slow);
           if (p.rootCh || p.weakCh) extraFx(e, p.rootCh, p.rootT, p.weakCh);
           G.Arts.onHit(pl, e);
+          if (p.zap && !p.ghost) zapAround(p, e, pl);          // Boniato evolucionado
         }
 
         if (!p.orb) {
