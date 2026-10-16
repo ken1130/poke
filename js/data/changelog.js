@@ -20,8 +20,8 @@ G.CHANGELOG = [
     ['Nuevo truco levelup30: +30 niveles desde el que tengas (en partida), eligiendo las cartas.',
      'New cheat levelup30: +30 levels from your current one (while playing), picking your cards.']
   ], chg: [
-    ['Tienda de Kecleon: precios ×2,5; en grupo, +35 % por cada jugador más (las monedas son de todos).',
-     'Kecleon shop: prices ×2.5; in a group, +35% per extra player (coins are shared).'],
+    ['Tienda de Kecleon: precios ×2; en grupo, +35 % por cada jugador más (las monedas son de todos).',
+     'Kecleon shop: prices ×2; in a group, +35% per extra player (coins are shared).'],
     ['La primera tienda sale a los 4:00 (antes 4:30).',
      'The first shop appears at 4:00 (was 4:30).'],
     ['Mascotas siempre vende huevos: uno por jugador, cada uno puede comprar sólo uno (y no si ya tiene compañero o huevo). La sección normal ya no los vende.',

@@ -351,8 +351,8 @@ G.Dungeon = (() => {
    */
   const FUSE_BASE = { 1: 45, 2: 90 };
   let fuseBusy = false;                 // invitado: esperando la respuesta del anfitrión
-  /** Precios ×2,5 y +35 % por cada jugador más (rollWares, fusePrice). */
-  const priceK = () => 2.5 * (1 + 0.35 * Math.max(0, G.Game.everyone().length - 1));
+  /** Precios ×2 y +35 % por cada jugador más (rollWares, fusePrice). */
+  const priceK = () => 2 * (1 + 0.35 * Math.max(0, G.Game.everyone().length - 1));
   function fusePrice(tier) {
     const k = 1 + T() / 900, mul = (kRep.robbed ? 1.5 : 1) * (loyal() ? 0.8 : 1) * priceK();
     return Math.round(FUSE_BASE[tier] * k * mul);
@@ -727,7 +727,7 @@ G.Dungeon = (() => {
   const N_GEN = 5, N_PET = 4;
   function rollWares(t) {
     const k = 1 + t / 900;
-    // ×2,5 (2026-10-16: a los 4 min ya se llevaban 800 monedas y todo salía regalado) y, en grupo,
+    // ×2 (2026-10-16: a los 4 min ya se llevaban 800 monedas y todo salía regalado) y, en grupo,
     // +35 % por cada jugador más (las monedas son de todos y se juntan antes).
     const PRICE_K = priceK();
     const mul = (kRep.robbed ? 1.5 : 1) * (loyal() ? 0.8 : 1) * PRICE_K;

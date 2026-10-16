@@ -40,7 +40,7 @@ G.MODNEWS = [
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }
     ],
     chg: [
-      { zh: '卡克隆商店的商品全部漲價 2.5 倍；組隊時每多 1 人再 +35%（金幣是大家共用的）', en: 'Kecleon shop prices ×2.5; in co-op +35% per extra player (coins are shared)' },
+      { zh: '卡克隆商店的商品全部漲價 2 倍；組隊時每多 1 人再 +35%（金幣是大家共用的）', en: 'Kecleon shop prices ×2; in co-op +35% per extra player (coins are shared)' },
       { zh: '第一間商店提早到 4:00 出現', en: 'The first shop now appears at 4:00' },
       { zh: '寵物專區固定賣寵物蛋：有幾個玩家就有幾顆，每人只能買一顆，已經有夥伴或蛋的人不能買；一般商品不再賣蛋', en: 'The Pets tab always sells eggs: one per player, each person can buy only one, and not if they already have a partner or egg; the general tab no longer sells eggs' },
       { zh: '打倒過一次卡克隆之後，之後的商店櫃檯兩邊會站兩個保鑣（怪力）；再偷東西時保鑣會跟卡克隆一起出手', en: 'After you beat Kecleon once, later shops have two bodyguards (Machamp) by the counter; steal again and they fight alongside Kecleon' },
