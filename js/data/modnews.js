@@ -14,6 +14,7 @@ G.MODNEWS = [
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }
     ],
     chg: [
+      { zh: '減傷上限從 80% 提高到 90%；神器「輪班工程師的肝」減傷 35% 改成 40%', en: 'Damage reduction cap raised from 80% to 90%; artifact “Shift Engineer’s Liver” now gives 40% damage reduction (was 35%)' },
       { zh: '神器「64 坦克」最大生命 +200 改成 +500', en: 'Artifact “Tank 64”: max HP +200 → +500' },
       { zh: '組隊連線優化：無法直連、要走中繼伺服器的玩家，同步頻率從每秒 4 次提高到 12 次，不會再一頓一頓的', en: 'Co-op netcode: players who can’t connect directly and go through the relay now sync 12 times per second instead of 4, so movement is no longer choppy' },
       { zh: '招式與頭目攻擊的特效全部改成像素風：腐蝕酸雨有毒雲、雨滴、水花與冒泡的毒池；李家拳是飛出去的拳套和暴擊星爆、流血會滴；幽冥矛是帶鬼火的長矛；大自然的洗禮是真的像素樹倒下來、木樁從地裡冒出、藤蔓纏繞；俠客歐尼爾的力場是旋轉的金色像素光環；頭目的旋轉刀刃、荊棘、火車衝撞（速度線、塵土、蒸氣）和所有地面警示也改成像素點線', en: 'All move and boss-attack effects redone in pixel art: Acid Rain has toxic clouds, raindrops, splashes and bubbling puddles; Lee Fist throws a pixel glove with a crit starburst and dripping bleed; Ghost Spear is a spear with ghost flames; Nature Tree drops a real pixel tree, wooden stakes burst from the ground and vines grow; the Shaq field is a spinning golden pixel ring; boss spinning blades, thorns, the train charge (speed lines, dust, steam) and all ground warnings now use pixel dots and lines' }

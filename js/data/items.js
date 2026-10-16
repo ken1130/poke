@@ -58,7 +58,7 @@ G.Items = (() => {
   const ART = { quicksilver: { spd: 1.5, stepDmg: 14, stepEvery: 0.5, stepLife: 1, cap: 10 },
                 arsenal: { atk: 1.3, crit: 0.15, critMul: 1.5, cap: 15 },
                 elderwand: { per: 0.05, max: 0.6 },
-                liver: { red: 0.35, cap: 10 },
+                liver: { red: 0.40, cap: 10 },   // (主人 2026-10-16：35% → 40%)
                 dice: { win: 0.9, mul: 2 },
                 climber: { stacks: 6 },
                 tank64: { hp: 500 } };   // (主人 2026-10-16：200 → 500)
@@ -83,7 +83,7 @@ G.Items = (() => {
       desc: 'Cada ataque baja un 5% más la recarga (se acumula, hasta -60%). Si te mueves, vuelve a 0.',
       on: p => { p.wandN = 0; }, off: p => { p.wandN = 0; } },
     { id: 'liver', art: true, name: 'El Hígado del Ingeniero de Guardia', short: 'Hígado del Ingeniero',
-      desc: '+35% de reducción de daño. Con Fortaleza, la defensa se acumula hasta Nv. 10. Inmune a todos los proyectiles (no a cuerpo a cuerpo ni rayos).',
+      desc: '+40% de reducción de daño. Con Fortaleza, la defensa se acumula hasta Nv. 10. Inmune a todos los proyectiles (no a cuerpo a cuerpo ni rayos).',
       on: p => { p.dmgReduce += ART.liver.red; }, off: p => { p.dmgReduce -= ART.liver.red; } },
     { id: 'dice', art: true, name: 'Los Dados del Doble o Nada', short: 'Dados Doble o Nada',
       desc: 'Cada golpe: 90% de hacer el doble de daño y 10% de no hacer nada.',

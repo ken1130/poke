@@ -106,7 +106,8 @@ G.Player = class Player {
   get cdK() { return this.cdMul * (this.wandN ? 1 - Math.min(G.Items.ART.elderwand.max, this.wandN * G.Items.ART.elderwand.per) : 1); }
   // bulkRed: Peso Pesado (combat.js), que también da bulkArmor contra los choques.
   // + Paz Mental y Velo Sagrado evolucionado (apoyo)
-  get reduction() { return Math.min(0.8, this.dmgReduce + (this.bulkRed || 0) + (this.potionRed || 0) + this.buffs.def.n * this.buffs.def.amount + (this.calmN || 0) * (this.calmAmt || 0) + (this.supRed || 0)); }
+  // (主人 2026-10-16：減傷上限 80% → 90%)
+  get reduction() { return Math.max(0, Math.min(0.9, this.dmgReduce + (this.bulkRed || 0) + (this.potionRed || 0) + this.buffs.def.n * this.buffs.def.amount + (this.calmN || 0) * (this.calmAmt || 0) + (this.supRed || 0))); }
   get regen() { return this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount; }
 
   // ---------------- movimientos ----------------

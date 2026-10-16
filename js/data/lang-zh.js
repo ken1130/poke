@@ -2266,7 +2266,7 @@ G.I18n.add({
   'Cada ataque baja un 5% más la recarga (se acumula, hasta -60%). Si te mueves, vuelve a 0.': '每次攻擊冷卻再 -5%（可疊加，最多 -60%）。一移動就歸零。',
   'Varita de Saúco': '接骨木魔杖',
   'El Hígado del Ingeniero de Guardia': '輪班工程師的肝',
-  '+35% de reducción de daño. Con Fortaleza, la defensa se acumula hasta Nv. 10. Inmune a todos los proyectiles (no a cuerpo a cuerpo ni rayos).': '受到傷害 -35%。有變硬時，防禦可疊到 Lv.10。免疫所有飛行道具（子彈）傷害（近戰與光束不算）。',
+  '+40% de reducción de daño. Con Fortaleza, la defensa se acumula hasta Nv. 10. Inmune a todos los proyectiles (no a cuerpo a cuerpo ni rayos).': '受到傷害 -40%。有變硬時，防禦可疊到 Lv.10。免疫所有飛行道具（子彈）傷害（近戰與光束不算）。',
   'Hígado del Ingeniero': '工程師的肝',
   'Los Dados del Doble o Nada': '倍倍賭博骰子',
   'Cada golpe: 90% de hacer el doble de daño y 10% de no hacer nada.': '每次命中：90% 造成 2 倍傷害，10% 沒有傷害。',

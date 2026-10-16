@@ -1266,7 +1266,7 @@ G.I18n.add({
   'Cada ataque baja un 5% más la recarga (se acumula, hasta -60%). Si te mueves, vuelve a 0.': 'Each attack lowers cooldowns 5% more (stacks, up to −60%). Moving resets it to 0.',
   'Varita de Saúco': 'Half Elder Wand',
   'El Hígado del Ingeniero de Guardia': 'The On-Call Engineer’s Liver',
-  '+35% de reducción de daño. Con Fortaleza, la defensa se acumula hasta Nv. 10. Inmune a todos los proyectiles (no a cuerpo a cuerpo ni rayos).': '−35% damage taken. With Harden, defense stacks up to Lv. 10. Immune to all projectile damage (not melee or beams).',
+  '+40% de reducción de daño. Con Fortaleza, la defensa se acumula hasta Nv. 10. Inmune a todos los proyectiles (no a cuerpo a cuerpo ni rayos).': '−40% damage taken. With Harden, defense stacks up to Lv. 10. Immune to all projectile damage (not melee or beams).',
   'Hígado del Ingeniero': 'Engineer’s Liver',
   'Los Dados del Doble o Nada': 'Double-or-Nothing Dice',
   'Cada golpe: 90% de hacer el doble de daño y 10% de no hacer nada.': 'Every hit: 90% to deal double damage, 10% to deal nothing.',
