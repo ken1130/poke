@@ -53,6 +53,15 @@
 | 樓梯獎勵 | 到新樓層回 30% 血＋不佔額度的樓層光碟（pickup 種類 `fbox`）；扭蛋券掉率 ×(1+0.25×層)、精英掉道具 ×(1+0.2×層)；結算顯示最深樓層 |
 | 寶可夢蛋／夥伴 | 一場一顆（第 6 分鐘）；孵化池＝所有初始型態、有圖、稀有度 1～4（權重 8/5/3/1）；夥伴每 25 擊倒 +1 級（+8% 傷害），Lv.10/20 進化（每次 +25%） |
 | 卡克隆商店 | 12 種商品，每間隨機 4 個；蛋只在有人沒夥伴時出現；扭蛋券用掉落物給（全隊共用） |
+| 原創角色專屬招式（2026-10-16） | `moves.js` 的 `only: dex`（不進 POOL，別人抽不到）；kind `foampunch`／`scare`／`afterimage`／`pounce`／`whip` 在 `combat.js`（殘影 `shade`、舌頭 `tongue` 是 fields）；數值在 TABLE；custom.js 的 `start` 指向它 |
+| 進化演出（2026-10-16） | `evo.js`：`pl.evoAnim` 2.6 秒、白色剪影交替（player.draw）、期間無敵，結束才 `evolveTo`；隊友看到的仍是結束時直接換 |
+| 地形快取（2026-10-16） | `world.js`：每種地形各留一份 chunk 快取（`caches`，最多 4 份、舊的留 20 塊），`drawGround` 每格最多畫 6 ms（`PAINT_MS`），沒畫好的先用地板色 |
+| 道具合成（2026-10-16） | `dungeon.js` 的 `fuseCheck/tryFuse/doFuse`：兩個同級一般道具合成高一級（史詩以上、神器不可）；價格 `FUSE_BASE {1:45, 2:90}` × 時間／熟客／偷竊倍率；組隊時客人送 `dg fuse` 給房主扣錢，房主回 `dg fused` 後在客人電腦合成。客人自動賣道具送 `dg sell` |
+| 休息站／寶藏層（2026-10-16） | `reststop.js`（G.Rest，視窗 `scr-rest`，floors.js 下樓後 `restPending` → `openChoice`）；寶藏層 `floors.js` 的 `enterTreasure`／`treasureTick`（12%、前往 B2F～B4F、一局一次，事件 `'ftr'`，空白期一直維持，60 秒後發 `'fl'`） |
+| 精英詞綴（2026-10-16） | `enemy.js` 的 `Enemy.ELITE`（7 種）＋ `Enemy.AFX`（數值）；`affixes` 陣列、`has()`；`rollAffixes(t)` 第二詞綴 4%＋7%/層＋時間，最高 40%；爆炸用 `G.Hazards` 的 `zone`；組隊：`ne` 送 `a+b`＋縮小旗標、狀態位元 8＝狂暴、`ee`＝出生後才變精英 |
+| 每日挑戰（2026-10-16） | `modes.js`：`today()` 用 UTC+8；`daily()` 每天固定角色（非傳說、種族值 300～560）＋從 `DAILY_RULES` 抽 1～2 條（不加獎勵）；單人強制用今日角色、不帶強化（`game.js` 的 `dailyMon`）；成績 `better()` 先比時間再比擊倒；排行抓 50 筆排序顯示 20；資料庫結構沒變 |
+| 寵物進階（2026-10-16） | `save.petPick` 指定蛋孵出的寵物（原創角色可）；Lv.15 依第一屬性 6 組技能（`SKILLS`，每 6 秒），Lv.25 撿取 ×1.25；商店寵物專區顯示 `skillInfo` |
+| 成就外觀（2026-10-16） | `cosmetic.js`：AURAS 6／NAMES 5，存 `save.profile.aura／nameCol`；組隊 myState **[22]**（[21] 是寵物技能次數）= 光環 + 16×顏色，0 = 無 |
 | 自動選取升級卡（2026-10-16） | `run-ui.js` 的 `autoChoice`：存檔 `save.autoPick` = off／stats／all；能力順序 `STAT_ORDER`（攻擊>冷卻>血量>減傷>經驗>速度>回復>磁力，血 <35% 先回血）；綠框標示 0.7 秒後才拿（`planAuto`），可以取消 |
 | 道具等級（2026-10-16） | `items.js` 的 `TIER`：1 普通／2 稀有／3 史詩、神器＝4 傳說；掉落權重 4/3/2。兩格滿時只能換同級或更低（`game.js offerItem`），全部比較高級就直接賣 `6+6×等級` 金幣、不跳視窗；HUD 框線＝等級色 |
 | 寵物裝備（2026-10-16） | `companion.js` 的 `GEAR`（8 件，每件一局一次，存在 `pl.petGear`，蛋的時候也能買）；只有商店「寵物專區」賣；夥伴糖果 +3 級、進化石到下次進化等級（蛋的時候存在 `pl.petLv`）。效果只在擁有者的電腦算（跟夥伴傷害一樣） |

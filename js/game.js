@@ -626,7 +626,8 @@ G.Game = (() => {
     const T = G.Items.tier(id);
     if (!pl.items.some(o => G.Items.tier(o) <= T && (!G.Items.isArt(o) || G.Items.isArt(id)))) {
       const v = G.Items.sellValue(id);
-      pl.coins = (pl.coins || 0) + v;
+      // (en grupo, las monedas de la run las lleva el anfitrión: el invitado se las pide, como al fusionar)
+      if (G.Coop.active && !G.Coop.isHost) G.Coop.request(['dg', 'sell', v]); else pl.coins = (pl.coins || 0) + v;
       G.Spawner.say(G.I18n.f('Lo que llevas es mejor: {x} se vende por {x} monedas', G.T(G.Items.BY[id].name), v), 2.6, true);
       G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '+' + v, '#ffd23f');
       return;

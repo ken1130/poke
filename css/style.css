@@ -1027,3 +1027,4 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .cos-name { display: flex; align-items: center; justify-content: center; height: 56px; font-weight: 800; font-size: 15px; color: #eaf2ff;
   text-shadow: 0 0 0 #000, 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .cos-name.rainbow { background: linear-gradient(90deg, #ff6b5a, #ffd23f, #5fe08a, #5fd4ff, #c47bff); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
+.shop-pet .pet-skill { color: #c8ffd8; display: block; margin-top: 2px; }

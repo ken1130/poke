@@ -93,6 +93,8 @@ G.Dungeon = (() => {
   function onClient(from, ev) {
     if (ev[1] === 'buy') tryBuy(byId(ev[2]), ev[3], from, !!ev[4]);
     else if (ev[1] === 'fuse') tryFuse(byId(ev[2]), from, ev[3] | 0);
+    // Objeto vendido solo por un invitado (game.js offerItem): las monedas de la run son del anfitrión.
+    else if (ev[1] === 'sell') G.Game.player.coins = (G.Game.player.coins || 0) + G.U.clamp(ev[2] | 0, 0, 30);
     else if (ev[1] === 'out') { if (room) room.out.add(from); }
     else if (ev[1] === 'spin') {
       const s = byId(ev[2]), r = G.Roulette.hostSpin(s, ev[3], from);
@@ -285,7 +287,11 @@ G.Dungeon = (() => {
       head.className = 'shop-pet';
       head.innerHTML = `<div class="txt"><b>${mon ? G.I18n.f('Tu compañero: {x}', G.T(mon.name)) + ' · Lv.' + (b.lvl || 1)
           : pl.egg ? G.T('Tu compañero aún es un huevo') : G.T('Aún no tienes compañero')}</b>` +
-        `<small>${mon ? G.T('El equipo es para toda la run y sólo se vende aquí.') : G.T('Lo que compres se lo pondrá en cuanto salga del huevo.')}</small></div>` +
+        `<small>${mon ? G.T('El equipo es para toda la run y sólo se vende aquí.') : G.T('Lo que compres se lo pondrá en cuanto salga del huevo.')}</small>` +
+        // Habilidad del compañero (companion.js, Nv. 15) y su imán (Nv. 25).
+        (() => { const k = G.Companion.skillInfo && G.Companion.skillInfo(pl); if (!k) return '';
+          return `<small class="pet-skill">${G.Icons.html(k.icon, 12)} ${G.T(k.name)}: ${k.unlocked ? G.T(k.desc) : G.I18n.f('se desbloquea en Nv. {x}', k.unlockLv)}` +
+            (k.magnet ? ' · ' + G.T(k.magnetDesc) : '') + '</small>'; })() + `</div>` +
         `<div class="gear">${gearIc || `<small>${G.T('Sin equipo')}</small>`}</div>`;
       box.appendChild(head);
     }
