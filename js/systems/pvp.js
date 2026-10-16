@@ -328,6 +328,7 @@ G.PvP = (() => {
     for (const h of hitDirs) h.t -= dt;
     hitDirs = hitDirs.filter(h => h.t > 0);
     const t = G.Game.st.time;
+    if (t >= ZONE_FROM && t - dt < ZONE_FROM) { G.Spawner.say(G.T('¡La zona empieza a cerrarse! Ve hacia el centro'), 3.5, true); G.Audio.sfx('boss'); }
     for (const f of feed) f.t -= dt;
     feed = feed.filter(f => f.t > 0);
     if (hitMark > 0) hitMark -= dt;
@@ -451,17 +452,26 @@ G.PvP = (() => {
   function drawWorld(ctx) {
     if (!on || !G.Coop.active) return;
     const cam = G.Camera, pl = G.Game.player;
-    if (G.Game.st.time > ZONE_FROM - 10) {
-      const R = zoneR();
+    // Zona segura (2026-10-16: antes sólo se dibujaba 10 s antes de cerrarse y, como al principio
+    // es más grande que la pantalla, no se sabía dónde estaba): el borde siempre, el exterior en
+    // rojo desde 10 s antes y, mientras no ha acabado de cerrarse, el círculo final en blanco.
+    {
+      const t = G.Game.st.time, R = zoneR();
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(cam.left() - 80, cam.top() - 80, cam.w + 160, cam.h + 160);
-      ctx.arc(0, 0, R, 0, 6.2832, true);
-      ctx.fillStyle = 'rgba(150,20,50,0.28)';
-      ctx.fill('evenodd');
+      if (t > ZONE_FROM - 10) {
+        ctx.beginPath();
+        ctx.rect(cam.left() - 80, cam.top() - 80, cam.w + 160, cam.h + 160);
+        ctx.arc(0, 0, R, 0, 6.2832, true);
+        ctx.fillStyle = 'rgba(150,20,50,0.28)';
+        ctx.fill('evenodd');
+      }
       ctx.setLineDash([14, 10]);
-      ctx.lineWidth = 4; ctx.strokeStyle = '#ff5f6d';
+      ctx.lineWidth = 4; ctx.strokeStyle = t > ZONE_FROM - 10 ? '#ff5f6d' : 'rgba(255,95,109,.55)';
       ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.2832); ctx.stroke();
+      if (t < ZONE_TO) {
+        ctx.setLineDash([6, 8]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,.7)';
+        ctx.beginPath(); ctx.arc(0, 0, ZONE_R1, 0, 6.2832); ctx.stroke();
+      }
       ctx.restore();
     }
     // Vida de los rivales encima de su cabeza (antes había que mirar la lista de arriba).
@@ -532,8 +542,18 @@ G.PvP = (() => {
     const pl = G.Game.player, t = G.Game.st.time;
     if (pl && !pl.dead) {
       let msg = null, col = '#ffd23f';
-      if (t > ZONE_FROM && Math.hypot(pl.x, pl.y) > zoneR(t)) { msg = G.T('¡Estás fuera de la zona! Vuelve al centro'); col = '#ff5f6d'; }
-      else if (t > ZONE_FROM - 10 && t < ZONE_TO) msg = t < ZONE_FROM ? G.I18n.f('La zona se cierra en {x} s', Math.ceil(ZONE_FROM - t)) : G.T('La zona se está cerrando…');
+      const out = t > ZONE_FROM && Math.hypot(pl.x, pl.y) > zoneR(t);
+      if (out) {
+        // Fuera: borde de la pantalla en rojo, latiendo, y cuánto falta para volver.
+        const beat = 0.5 + Math.sin(performance.now() / 160) * 0.5;
+        const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.7);
+        g.addColorStop(0, 'rgba(255,40,60,0)'); g.addColorStop(1, `rgba(255,40,60,${0.25 + beat * 0.25})`);
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+        const m = Math.max(1, Math.ceil((Math.hypot(pl.x, pl.y) - zoneR(t)) / 32));
+        msg = G.I18n.f('¡Fuera de la zona! Pierdes un 8 % de vida por segundo: vuelve {x} m hacia la flecha', m); col = '#ff5f6d';
+      }
+      else if (t > ZONE_FROM - 30 && t < ZONE_FROM) msg = G.I18n.f('La zona se cierra en {x} s: la línea blanca es hasta dónde', Math.ceil(ZONE_FROM - t));
+      else if (t >= ZONE_FROM && t < ZONE_TO) msg = G.T('La zona se está cerrando: quédate dentro de la línea roja');
       if (msg) {
         ctx.textAlign = 'center'; ctx.font = F(15);
         ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.strokeText(msg, w / 2, 96);
@@ -546,6 +566,8 @@ G.PvP = (() => {
   return { foesIn, foeNear, meFor, deal, touchesMe, TEAM_NAMES, TEAM_COLORS, teamWinner, get teams() { return on && teams && G.Coop.active; },
            begin, tick, foe, wonByMe, circle, arc, seg, projectile, orb, setWinner, afterRun, K, GRACE,
            onNet, timeScale, manualAim, arenaTick, arenaStart, pickTick, pickKey, drawWorld, drawHud, zoneR,
+           /** Zona segura para el minimapa y la flecha (hud.js); null si no hay PK. */
+           zoneInfo() { return on && G.Coop.active ? { R: zoneR(), R1: ZONE_R1, from: ZONE_FROM, to: ZONE_TO, t: G.Game.st.time } : null; },
            get aiming() { return aiming(); }, get arena() { return on && arena && G.Coop.active; },
            _roll: rollOffers,   // pruebas
            get _dbg() { return { hitMark, feed, chosen, offers, picked }; },   // pruebas

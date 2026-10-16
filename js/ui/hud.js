@@ -354,6 +354,9 @@ G.HUD = (() => {
     }
     // Si no se ven: flecha en el borde con los metros (tu disco, la tienda, la sala "?" y las escaleras).
     arrowSpots = [];
+    // PK: hacia el centro de la zona segura si estás fuera o cerca del borde (2026-10-16).
+    const zi = G.PvP.zoneInfo && G.PvP.zoneInfo();
+    if (zi && zi.t > zi.from - 30 && Math.hypot(pl.x, pl.y) > zi.R - 140) edgeArrow(ctx, w, h, pl, 0, 0, '#ff5f6d', '#ffd0d4', '#3a0a10', '#ffb0b8', 'Zona segura');
     const box = !G.Dungeon.inRoom && G.Pickups.all().find(p => (p.kind === 'sbox' || p.kind === 'fbox') && G.Loot.visible(p));      // (dentro de una sala, no)
     if (box) edgeArrow(ctx, w, h, pl, box.x, box.y - 20, '#7fe0ff', '#e6fbff', '#0a2a3a', '#bff3ff', 'DISCO DE MOVIMIENTOS');
     if (!G.Dungeon.inRoom && !G.PvP.arena) {
@@ -890,6 +893,16 @@ G.HUD = (() => {
     const icon = (name, x, y, edge, arg) => { const q = at(x, y, edge && !inside); if (q) MM_ICON[name](ctx, q[0], q[1], arg); };
     const blink = Math.sin(now * 6) > 0;
     for (const p of mmProps) icon(MM_ICON[p.type] ? p.type : 'chest', p.x, p.y, false);
+    // PK: la zona segura (rojo) y hasta dónde se cerrará (blanco a trazos).
+    const zn = G.PvP.zoneInfo && G.PvP.zoneInfo();
+    if (zn) {
+      const zx = cx + (0 - pl.x) * k, zy = cy + (0 - pl.y) * k;
+      ctx.save();
+      ctx.lineWidth = 2; ctx.strokeStyle = '#ff5f6d';
+      ctx.beginPath(); ctx.arc(zx, zy, zn.R * k, 0, 6.2832); ctx.stroke();
+      if (zn.t < zn.to) { ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.arc(zx, zy, zn.R1 * k, 0, 6.2832); ctx.stroke(); }
+      ctx.restore();
+    }
     for (const p of G.Pickups.all()) {
       if ((p.kind === 'sbox' || p.kind === 'fbox' || p.kind === 'potion' || p.kind === 'egg') && !G.Loot.visible(p)) continue;
       if (p.kind === 'sbox' || p.kind === 'fbox') icon('sbox', p.x, p.y, true, blink);

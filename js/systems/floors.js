@@ -554,8 +554,14 @@ G.Floors = (() => {
     const pl = G.Game.player;
     if (!G.Coop.active || G.PvP.on || !pl || pl.dead) return;
     const m = nearestMate(pl);
+    const was = combo >= 1;
     if (m && m.d < COMBO_R) combo = Math.min(1, combo + dt / COMBO_FILL);
     else combo = Math.max(0, combo - dt / 60);
+    // Recién lleno: aviso claro de cómo se usa (2026-10-16: el dueño no sabía que era la F).
+    if (combo >= 1 && !was) {
+      G.Spawner.say(G.T(G.Touch.active ? '¡Ataque combinado listo! Toca el botón para lanzarlo' : '¡Ataque combinado listo! Pulsa F para lanzarlo'), 3.5, true);
+      G.Audio.sfx('surge');
+    }
     if (combo >= 1 && G.Input.tap('keyf')) fireCombo();
   }
 
@@ -648,6 +654,16 @@ G.Floors = (() => {
   function drawAir(ctx) {
     const now = performance.now() / 1000;
     const pls = G.Coop.active ? G.Coop.players() : [G.Game.player];
+    // Ataque combinado listo: recordatorio encima de tu Pokémon hasta que lo lances.
+    const me = G.Game.player;
+    if (combo >= 1 && G.Coop.active && !G.PvP.on && me && !me.dead) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.font = F(800, 13);
+      ctx.globalAlpha = 0.65 + Math.sin(now * 8) * 0.35;
+      outlined(ctx, G.T(G.Touch.active ? '¡Toca Combo!' : '¡Pulsa F: Combo!'), me.x, me.y - me.bodyH - 30, '#ffe14d');
+      ctx.restore();
+    }
     stairs.forEach((s, i) => {
       if (!G.Camera.sees(s.x, s.y, 160)) return;
       const danger = s.route === 'danger', th0 = THEMES[s.theme];
