@@ -1233,3 +1233,30 @@ body { background: #120f1a; }
   #scr-news, #scr-goals, #scr-dex, #scr-upgrades, #scr-gacha, #scr-friends, #scr-rank, #scr-lobby, #scr-profile { padding-top: 104px; align-items: flex-start; }
 }
 @media (max-height: 520px) { #scr-news { padding-top: 50px; } }
+
+/* ===== (2026-10-16 revisión UI) ===== */
+/* Rejillas de dos columnas: la columna puede encoger (antes un contenido sin cortes —el cartel del gacha, los
+   botones de tirar— ensanchaba «1fr» hasta 542 px y en el móvil vertical se salía por la derecha). */
+.split > * { min-width: 0; }
+@media (max-width: 760px) { .split { grid-template-columns: minmax(0, 1fr); } }
+/* Pokédex en el móvil horizontal: «Elegir de mascota» ya no va pegado abajo como «Elegir de compañero»
+   (los dos sticky en el mismo sitio se pisaban: «這設為寵物伴»). */
+@media (max-height: 520px) {
+  #dex-detail #dex-pet { position: static; box-shadow: none; order: 10; margin-top: 6px; }
+  /* Ventanas con la tira de arriba a la vista: empiezan debajo de ella. */
+  #scr-dex, #scr-upgrades, #scr-gacha, #scr-goals, #scr-friends, #scr-rank, #scr-lobby, #scr-profile { padding-top: 60px; }
+}
+/* Gacha en el móvil vertical: los tres botones de tirar en tres columnas iguales; el coste en la segunda línea. */
+@media (max-width: 600px) {
+  #pull-1, #pull-10, #pull-10b { flex: 1 1 0; min-width: 0; padding: 8px 4px; font-size: 14px; white-space: nowrap; line-height: 1.25; }
+  #cost-1, #cost-10, #cost-10b { display: block; }
+  #pull-1 + #pull-10, #pull-10 + #pull-10b { margin-left: 0; }
+}
+/* Aviso de logro: no se come los toques (tapaba la tercera opción del descanso o los botones del resultado
+   durante unos segundos); en el móvil horizontal, en la esquina de abajo a la derecha, lejos de las tarjetas. */
+.ach-pop { pointer-events: none; }
+@media (max-height: 520px) {
+  .ach-pop { left: auto; right: 8px; bottom: 8px; transform: none; max-width: 44vw; padding: 6px 10px; }
+}
+/* Mejoras en el móvil vertical: el selector de Pokémon tenía 220 px mínimos y se salía de la caja. */
+@media (max-width: 600px) { .upg-head .grow { min-width: 0; } #upg-mon { min-width: 0 !important; width: 100% !important; } }
