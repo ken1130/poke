@@ -312,7 +312,7 @@ G.Modes = (() => {
         <p class="sub" style="margin:6px 0 0">Sólo cambian «Jugar» (la run normal) y las partidas en grupo normales que crees tú. La aventura y los desafíos llevan sus propias reglas y no usan estas.</p>
 
         <div class="set-row" style="margin-top:10px"><div class="grow"><b>Sala de entrenamiento</b><small>Muñecos Pikachu que nunca caen: prueba cualquier movimiento y mira tu daño por segundo. Sin premios ni récords.</small></div>
-          <button class="btn small gold" data-train ${G.Social.room ? 'disabled' : ''}>Entrar</button></div>
+          <button class="btn small gold" data-train ${G.Social.room ? 'disabled' : ''}>Entrar a la sala</button></div>
 
         <h3 class="set-h" style="margin-top:14px">Modos</h3>
         ${TOGGLES.map(([k, name, desc]) => `

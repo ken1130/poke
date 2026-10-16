@@ -2207,6 +2207,7 @@ G.I18n.add({
   'Bonus de experiencia': '經驗加成',
   'Bonus de monedas': '金幣加成',
   'Mi equipo': '我的戰隊',
+  'Entrar a la sala': '進入',
   'Guardaespaldas': '保鑣',
   'GUARDAESPALDAS': '保鑣',
   'Sólo puedes comprar un huevo': '每人只能買一顆蛋',

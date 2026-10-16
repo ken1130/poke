@@ -1207,6 +1207,7 @@ G.I18n.add({
   'Bonus de experiencia': 'XP bonus',
   'Bonus de monedas': 'Coin bonus',
   'Mi equipo': 'My team',
+  'Entrar a la sala': 'Enter',
   'Guardaespaldas': 'Bodyguard',
   'GUARDAESPALDAS': 'BODYGUARDS',
   'Sólo puedes comprar un huevo': 'You can only buy one egg',
