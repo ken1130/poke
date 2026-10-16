@@ -870,7 +870,8 @@
       { dmg: 24, n: 1, w: 30, r: 10 },   { dmg: 30, n: 1, w: 44, r: 10 },   { dmg: 42, n: 2, w: 44, r: 10 },
       { dmg: 50, n: 2, w: 44, r: 11.5, crit: 0.15 },
       { dmg: 60, n: 3, w: 44, r: 11.5, crit: 0.15, back: true },
-      { dps: 140, n: 3, w: 48, r: 11.5, crit: 0.15, back: true, slow: 0.45, hole: 0.15, holeR: 7, holeDmg: 80, cd: 0.2 }
+      // (2026-10-16, feedback: el rayo púrpura era demasiado largo: 11,5 → 6,9 casillas, el 60 %)
+      { dps: 140, n: 3, w: 48, r: 6.9, crit: 0.15, back: true, slow: 0.45, hole: 0.15, holeR: 7, holeDmg: 80, cd: 0.2 }
     ],
     // ---- apoyo (2026-10-15): cd en s; heal = fracción de la vida máxima ----
     'recover': [
@@ -946,8 +947,12 @@
   }
 
   /** Movimientos que este Pokémon puede aprender (sus tipos + normal). */
+  // Movimientos normales creados para esta versión: sólo para Pokémon de tipo normal (2026-10-16,
+  // feedback). Los normales de siempre (Danza Espada, Fortaleza, Agilidad...) siguen para todos.
+  const NORMAL_OWN = new Set(['heavyweight', 'destruction-beam']);
   function poolFor(mon) {
-    const ids = new Set(POOL.normal);
+    const isNormal = mon.types.includes('normal');
+    const ids = new Set(POOL.normal.filter(id => isNormal || !NORMAL_OWN.has(id)));
     for (const t of mon.types) for (const id of (POOL[t] || [])) ids.add(id);
     return [...ids];
   }
@@ -1098,7 +1103,7 @@
     treefall:    { t: 'Un árbol por cada enemigo cercano (hasta 12), pinchos de +40 e inmoviliza 2 s', m: {} },
     hearts:      { t: 'Inmune a los rayos de los enemigos; +2 corazones, +2 casillas, +2 rebotes y el rebote hace ×3', m: {} },
     tornado:     { t: 'Daño continuo mientras están en el aire, +2 s en el aire y al caer una mano azul les da una bofetada de 70', m: {} },
-    bladestorm:  { t: 'La tormenta empuja y hace sangrar (+1 casilla); cuchillas en 8 direcciones que se parten en dos a ±90° al atravesar al primero', m: {} },
+    bladestorm:  { t: 'La tormenta empuja y hace sangrar (+1 casilla); cuchillas en 8 direcciones que se parten en dos a ±90° al atravesar al primero (y esas dos, otra vez)', m: {} },
     foampunch:   { t: 'Gran ola: +2 casillas de salpicadura que empuja y frena; más daño y menos recarga', m: {} },
     scare:       { t: 'Inmoviliza 0,7 s a los normales y te vuelves invulnerable 0,5 s; +12 por enemigo (hasta 18), cada 0,8 s', m: {} },
     afterimage:  { t: 'Sombras más grandes y duraderas que estallan (50) al desaparecer; +28% de velocidad', m: {} },

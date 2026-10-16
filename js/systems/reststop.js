@@ -81,7 +81,7 @@ G.Rest = (() => {
         apply: () => { pl.heal(pl.maxHp); pl.invuln = Math.max(pl.invuln || 0, 3); G.FX.ring(pl.x, pl.y, 6, 110, '#5fe08a', 0.7, 5); G.Spawner.say(G.T('¡Vida al máximo!'), 2.4, true); } },
       { icon: itemId, col: G.Items.TIER_COLOR[it.tier], name: 'Mercader errante',
         desc: G.Items.tierChip(itemId) + '<b>' + G.T(it.name) + '</b>: ' + G.T(it.desc),
-        then: () => G.Game.offerItem(itemId) },
+        then: () => G.Game.offerItem(itemId, true) },
       { icon: 'rest_train', col: '#ffd23f', name: 'Entrenamiento', desc: tp.text, gold: true,
         apply: () => { const got = train(pl); G.Spawner.say(G.T('Entrenamiento') + ': ' + got.join(' · '), 3, true); G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffe14d', 30, 220); } }
     ];

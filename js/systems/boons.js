@@ -83,7 +83,7 @@ G.Boons = (() => {
     banner = { n, until: performance.now() + 4000 };
     if (!pl || pl.dead) return;
     if (n === 1) setTimeout(() => G.Game.offerBox(), 400);
-    if (n === 2) setTimeout(() => G.Game.offerItem(G.Items.roll()), 400);
+    if (n === 2) setTimeout(() => G.Game.offerItem(G.Items.roll(), true), 400);
   }
 
   // ---------------- ventana de la bendición ----------------
@@ -112,7 +112,7 @@ G.Boons = (() => {
         G.Spawner.say(G.T(b.name) + '!', 2.4, true);
         done();
         if (b.then === 'disc') setTimeout(() => G.Game.offerBox(), 60);
-        if (b.then === 'item') setTimeout(() => G.Game.offerItem(G.Items.roll()), 60);
+        if (b.then === 'item') setTimeout(() => G.Game.offerItem(G.Items.roll(), true), 60);
       };
       box.appendChild(el);
     });

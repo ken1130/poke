@@ -269,7 +269,9 @@ G.VFX = (() => {
       P.outline();
     } },
     // Cuchilla (espada sin dueño): empuñadura a la izquierda, filo con brillo, punta a la derecha.
-    blade: { w: 19, h: 7, dir: true, gen(P) {
+    // (2026-10-16: se llamaba 'blade' como la cuchilla de jefe de más abajo, que la pisaba: la
+    // Tormenta de Cuchillas lanzaba la cuchilla gigante y parecía que golpeaba en vez de disparar.)
+    sword: { w: 19, h: 7, dir: true, gen(P) {
       for (let x = 1; x <= 3; x++) P.set(x, 3, 'd');                // empuñadura
       P.set(0, 3, 'm');
       for (let y = 1; y <= 5; y++) P.set(4, y, 'd');                // guarda
@@ -668,7 +670,7 @@ G.VFX = (() => {
     // 2026-10-16
     'formless-art':  { proj: 'heart' },
     'raging-tornado': { proj: 'tornado' },
-    'blade-storm':   { proj: 'blade' },
+    'blade-storm':   { proj: 'sword' },
     'destruction-beam': { beam: 'star', pal: 'hyper' }
   };
 

@@ -905,6 +905,16 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 /* Ruleta de Kecleon (2026-10-15). */
 #scr-roul > .box { width: min(440px, 100%); }
 #roul-wheel { width: 240px; height: 240px; display: block; margin: 6px auto; }
+/* Objeto esperando (game.js pendingUI): sobre la barra de movimientos; clic o tecla I para elegir. */
+#item-pending { position: fixed; left: 50%; bottom: 104px; transform: translateX(-50%); z-index: 17; display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 6px; border-radius: 12px; border: 1px solid #ffd23f; background: rgba(12,14,24,.88); color: #fff3c8;
+  font: 800 13px Pixelify, "Segoe UI", system-ui, sans-serif; cursor: pointer; animation: itemPend 1.4s ease-in-out infinite; }
+#item-pending.hidden { display: none; }
+#item-pending.art { border-color: #ff8ad8; }
+#item-pending .n { background: #ffd23f; color: #3a2410; border-radius: 8px; padding: 0 5px; font-size: 11px; }
+#item-pending kbd { font-size: 10px; opacity: .75; border: 1px solid rgba(255,255,255,.35); border-radius: 4px; padding: 0 4px; }
+@keyframes itemPend { 0%, 100% { box-shadow: 0 0 0 rgba(255,210,63,0); } 50% { box-shadow: 0 0 14px rgba(255,210,63,.55); } }
+@media (pointer: coarse) { #item-pending kbd { display: none; } #item-pending { bottom: 120px; } }
 /* La ruleta que ven los demás mientras alguien gira (roulette.js watch): arriba, sin tapar nada. */
 #roul-watch { position: fixed; top: 54px; left: 50%; transform: translateX(-50%); z-index: 18; pointer-events: none;
   background: rgba(10,16,14,.86); border: 1px solid #c9a54e; border-radius: 14px; padding: 8px 14px 6px; text-align: center;

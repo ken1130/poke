@@ -109,6 +109,7 @@ G.SettingsUI = (() => {
         + `<ul class="credits">
              <li><b>${G.T('Creador principal:')}</b> <span translate="no">ken</span></li>
              <li><b>${G.T('Colaboradores:')}</b> <span translate="no">peter · readyplayer1996 · bebe · didi</span></li>
+             <li><b>${G.T('Revisores de fallos:')}</b> <span translate="no">readyplayer1996 · peter</span></li>
              <li><b>Sprites:</b> PMD SpriteCollab y sus artistas (CC BY-NC 4.0).</li>
              <li><b>Datos de los Pokémon:</b> PokéAPI.</li>
              <li><b>Música y sonidos:</b> originales, generados por el propio juego.</li>

@@ -7,6 +7,8 @@
  */
 G.CHANGELOG = [
   { d: '2026-10-16', title: ['Subir de nivel te hace más fuerte', 'Levelling up makes you stronger'], new: [
+    ['Al coger un objeto ya no sale una ventana que para el juego: aparece un icono que brilla sobre los movimientos y lo cambias cuando quieras (tócalo o pulsa I). Esperan hasta 3; si llega otro, se vende el de menos rango. Lo comprado en la tienda o regalado por una bendición abre la ventana al momento.',
+     'Picking up an item no longer pauses the game with a window: a glowing icon appears above your moves and you swap it whenever you like (tap it or press I). Up to 3 can wait; another one sells the lowest tier. Items bought in the shop or given by a boon open the window right away.'],
     ['Ruleta de Kecleon: cuando alguien gira, los demás ven la misma ruleta girando arriba de la pantalla, con quién gira y el resultado (sin tapar nada).',
      'Kecleon roulette: when someone spins, everyone else sees the same wheel spinning at the top of the screen, with who spins and the result (without blocking anything).'],
     ['Cada nivel: +2 % de vida máxima (y te cura eso) y +1 % de ataque, hasta el nivel 50 (en PK no).',
@@ -14,6 +16,14 @@ G.CHANGELOG = [
     ['Nuevo truco levelup30: +30 niveles desde el que tengas (en partida), eligiendo las cartas.',
      'New cheat levelup30: +30 levels from your current one (while playing), picking your cards.']
   ], chg: [
+    ['Poder Púrpura (Rayo Destructor evolucionado): el rayo mide un 60 % de lo que medía (11,5 → 6,9 casillas).',
+     'Purple Power (evolved Destruction Beam): the beam is 60% as long as before (11.5 → 6.9 tiles).'],
+    ['Rayo Destructor y Peso Pesado (movimientos normales de esta versión) sólo salen a Pokémon de tipo normal; Danza Espada, Fortaleza, Agilidad y los demás de siempre siguen para todos.',
+     'Destruction Beam and Heavyweight (this version\'s own Normal moves) only appear for Normal-type Pokémon; Swords Dance, Harden, Agility and the other originals stay for everyone.'],
+    ['Cruzada: las dos cuchillas que salen al partirse se vuelven a partir una vez.',
+     'Crusade: the two blades from the split split once more.'],
+    ['Colmillo Vampiro: un mordisco en cada enemigo en vez de una línea.',
+     'Vampire Fang: a bite on each enemy instead of a line.'],
     ['Nuevo aspecto de la ruleta de Kecleon: verde oscuro y oro, como una mesa de casino, sin tantos colores.',
      'New look for the Kecleon roulette: dark green and gold, like a casino table, without so many colours.'],
     ['Kecleon (al robar) se hace más fuerte con vuestro nivel y con cuántos sois: +5 % de vida y +2 % de daño por nivel y +25 % de vida por cada jugador más.',
@@ -25,6 +35,8 @@ G.CHANGELOG = [
     ['En grupo, la dificultad va según cuántos sois (solo, igual que siempre): por cada jugador más, +60 % de enemigos, +30 % de vida (+40 % en Aventura, retos, torre y desafío legendario), +10 % de daño y +30 % de enemigos a la vez. En la mazmorra con 3, a los 9 minutos ya todo era élite y no se acababa nunca.',
      'In a group, difficulty depends on how many you are (solo is unchanged): per extra player, +60% enemies, +30% HP (+40% in Adventure, challenges, tower and legend rush), +10% damage and +30% enemies at once. In the dungeon with 3, after 9 minutes everything was elite and it never ended.']
   ], fix: [
+    ['La Tormenta de Cuchillas lanzaba la cuchilla gigante de los jefes (dos dibujos con el mismo nombre) y parecía un golpe; ahora dispara una espada pequeña en línea recta.',
+     'Blade Storm fired the giant boss cleaver (two drawings shared a name) and looked like a slam; it now shoots a small sword in a straight line.'],
     ['En la tienda de Kecleon se podía atravesar el mostrador, las estanterías y la ruleta corriendo o con un acelerón.',
      'In Kecleon\'s shop you could pass through the counter, shelves and roulette when running or dashing.'],
     ['La sala misteriosa, la tienda, la estatua y las escaleras vuelven a aparecer cerca si todos os alejáis más de 100 m (en el minimapa salían a miles de metros).',

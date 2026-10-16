@@ -111,7 +111,7 @@ G.Game = (() => {
 
   /** @param coop  { seed, host, members } para una partida en grupo */
   function startRun(coop = null) {
-    offerQ.length = 0; orphanT = 0; clearWin = false;
+    offerQ.length = 0; orphanT = 0; pendingItems = []; pendingUI(true); clearWin = false;
     holdBy = []; holdPaused = []; awayBy = null; coopPause = false;
     const save = G.DB.save;
     // PK con personaje al azar: el Pokémon que le ha tocado a cada uno (cfg.members), sin mejoras.
@@ -609,7 +609,59 @@ G.Game = (() => {
    * Has cogido un objeto: se pueden llevar 2 (2026-10-15). Con hueco, te lo pones; con los
    * dos ocupados, eliges cuál cambias (o te quedas como estás) entre los de su rango o peor.
    */
-  function offerItem(id) {
+  /** Se vende `id` por monedas de la run, con aviso (`msg`: '{x}' nombre y '{x}' monedas). */
+  function sellItem(id, msg) {
+    const v = G.Items.sellValue(id);
+    // (en grupo, las monedas de la run las lleva el anfitrión: el invitado se las pide, como al fusionar)
+    if (G.Coop.active && !G.Coop.isHost) G.Coop.request(['dg', 'sell', v]); else pl.coins = (pl.coins || 0) + v;
+    G.Spawner.say(G.I18n.f(msg, G.T(G.Items.BY[id].name), v), 2.6, true);
+    G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '+' + v, '#ffd23f');
+  }
+
+  // ---------------- objetos pendientes (icono flotante) ----------------
+  const PENDING_MAX = 3;
+  let pendingItems = [];
+  function stashItem(id) {
+    if (pendingItems.includes(id)) { G.Spawner.say(G.I18n.f('Ya tienes {x} esperando', G.T(G.Items.BY[id].name)), 2, true); return; }
+    pendingItems.push(id);
+    // Más de 3: se vende el de menos rango (nunca un artefacto si hay otro que vender).
+    if (pendingItems.length > PENDING_MAX) {
+      const worst = pendingItems.slice().sort((a, b) => (G.Items.isArt(a) - G.Items.isArt(b)) || G.Items.tier(a) - G.Items.tier(b))[0];
+      pendingItems = pendingItems.filter(x => x !== worst);
+      sellItem(worst, 'Demasiados objetos esperando: {x} se vende por {x} monedas');
+    }
+    G.Audio.sfx('select');
+    G.Spawner.say(G.I18n.f('{x}: toca el icono (o pulsa I) para cambiarlo', G.T(G.Items.BY[id].name)), 2.8, true);
+    pendingUI(true);
+  }
+  /** Abre la elección del primer objeto pendiente (si ahora se puede). */
+  function openPending() {
+    if (!pl || pl.dead || !pendingItems.length || busyChoosing() || (state !== 'playing' && state !== 'held')) return;
+    offerItem(pendingItems.shift(), true);
+    pendingUI(true);
+  }
+  let pendingKey = '';
+  /** El icono: sobre la barra de movimientos, sólo jugando y con algo pendiente. */
+  function pendingUI(force) {
+    let el = document.getElementById('item-pending');
+    const show = pl && !pl.dead && pendingItems.length && (state === 'playing' || state === 'held' || state === 'choice');
+    const key = show ? pendingItems.join(',') : '';
+    if (!force && key === pendingKey) return;
+    pendingKey = key;
+    if (!show) { if (el) el.classList.add('hidden'); return; }
+    if (!el) {
+      el = document.createElement('button');
+      el.id = 'item-pending'; el.type = 'button'; el.dataset.sfx = 'click';
+      el.onclick = openPending;
+      document.body.appendChild(el);
+    }
+    const id = pendingItems[0], it = G.Items.BY[id];
+    el.className = G.Items.isArt(id) ? 'art' : '';
+    el.innerHTML = `${G.Icons.html(id, 28)}<span class="nm">${G.Items.tierChip ? G.Items.tierChip(id) : ''}${G.T(it.name)}</span>` +
+      (pendingItems.length > 1 ? `<span class="n">+${pendingItems.length - 1}</span>` : '') + `<kbd>I</kbd>`;
+  }
+
+  function offerItem(id, now = false) {
     if (!pl || !G.Items.BY[id]) return;
     let mine = false;            // esta elección es la que ha parado el juego
     const take = replace => {    // replace: el que se quita (undefined = hay hueco, null = no lo coges)
@@ -633,14 +685,13 @@ G.Game = (() => {
     // puede quitar), ni se pregunta: se vende solo y te quedas como estás.
     const T = G.Items.tier(id);
     if (!pl.items.some(o => G.Items.tier(o) <= T && (!G.Items.isArt(o) || G.Items.isArt(id)))) {
-      const v = G.Items.sellValue(id);
-      // (en grupo, las monedas de la run las lleva el anfitrión: el invitado se las pide, como al fusionar)
-      if (G.Coop.active && !G.Coop.isHost) G.Coop.request(['dg', 'sell', v]); else pl.coins = (pl.coins || 0) + v;
-      G.Spawner.say(G.I18n.f('Lo que llevas es mejor: {x} se vende por {x} monedas', G.T(G.Items.BY[id].name), v), 2.6, true);
-      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '+' + v, '#ffd23f');
+      sellItem(id, 'Lo que llevas es mejor: {x} se vende por {x} monedas');
       return;
     }
-    if (queued(() => offerItem(id))) return;
+    // Sin ventana (2026-10-16, feedback): se guarda y sale un icono flotante sobre los
+    // movimientos; lo abres cuando quieras (clic o tecla I). El juego no se para.
+    if (!now) { stashItem(id); return; }
+    if (queued(() => offerItem(id, true))) return;
     // Se para el juego mientras eliges; en grupo, para todos (como con las
     // fusiones). Antes en grupo seguía y te pegaban mientras elegías.
     if (state === 'playing' || state === 'held') {
@@ -787,6 +838,7 @@ G.Game = (() => {
     for (let i = 0; i < 5; i++) {
       if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setActive(i);
     }
+    if (G.Input.tap('keyi')) openPending();
     if (G.Input.tap('keyq')) pl.cycle(-1);
     if (G.Input.tap('keye') || G.Input.tap('tab')) pl.cycle(1);
   }
@@ -847,6 +899,7 @@ G.Game = (() => {
         if (G.Coop.active) { coopCards = []; doneChoosing(); } else state = 'playing';
       }
     } else orphanT = 0;
+    pendingUI(false);
     // Lo que esperaba en cola (o cartas de nivel del grupo que se quedaron sin abrir), cuando no hay nada abierto.
     if (pl && !pl.dead && (state === 'playing' || state === 'held') && !busyChoosing()) {
       if (offerQ.length) offerQ.shift()();

@@ -273,13 +273,17 @@ G.Combat = (() => {
    * y te cura `heal` en total (no por cada uno).
    */
   function drain(pl, m) {
-    const row = G.Moves.stat(m), R = row.r * TILE, vis = G.VFX.forMove(m), col = '#c47bff';
+    const row = G.Moves.stat(m), R = row.r * TILE, col = '#c47bff';
     const list = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead)
       .sort((a, b) => G.U.dist2(a.x, a.y, pl.x, pl.y) - G.U.dist2(b.x, b.y, pl.x, pl.y)).slice(0, row.n);
     if (!list.length) return;
     for (const e of list) {
-      const a = Math.atan2(pl.y - e.y, pl.x - e.x), d = Math.hypot(pl.x - e.x, pl.y - e.y);
-      if (G.Camera.sees(e.x, e.y, 20)) G.FX.beam(e.x, e.y - e.bodyH * 0.5, a, d, 3, col, vis);
+      // Un mordisco en cada uno (2026-10-16, feedback: antes era una línea hasta ti).
+      if (G.Camera.sees(e.x, e.y, 20)) {
+        const y = e.y - e.bodyH * 0.55;
+        G.FX.sp('jaws', 'poison', e.x, y, { life: 0.28, scale: 1.6, frameRate: 9, fade: false });
+        G.FX.burst(e.x, y + 4, '#e0303a', 3, 70);
+      }
       if (!ghost) hit(pl, e, row.dmg * pl.atk, col, 0, 0, 0, m);
     }
     if (!ghost) pl.heal(row.heal);
@@ -649,7 +653,7 @@ G.Combat = (() => {
     pl.bsNext = now + row.bcd * (pl.cdK || pl.cdMul || 1) - 0.05;   // (cdK: también el Bastón de Saúco)
     const vis = G.VFX.forMove(m);
     const o = { dmg: row.bdmg * pl.atk, r: 8 * row.bsize, scale: row.bsize, life: row.r * TILE / BLADE_SPEED,
-                pierce: row.bpierce, vis, ghost, split90: row.split ? 1 : 0 };
+                pierce: row.bpierce, vis, ghost, split90: row.split ? 2 : 0 };     // 2: la cuchilla y sus dos hijas se parten
     if (row.radial) {
       // Una de las 8 apunta al enemigo más cercano (las demás, cada 45°).
       const e = enemiesIn(pl.x, pl.y, row.r * TILE).filter(q => !q.dead).sort(byDist(pl))[0];
@@ -670,12 +674,15 @@ G.Combat = (() => {
       color: G.U.TYPE_COLOR.steel, mtype: 'steel', owner: pl, hits: new Set()
     }, o));
   }
-  /** Cruzada: la cuchilla que atraviesa a su primer enemigo suelta dos más a ±90° (que ya no se parten). */
-  function splitBlade(p, e) {
+  /**
+   * Cruzada: la cuchilla que atraviesa a su primer enemigo suelta dos más a ±90°; esas dos se
+   * vuelven a partir una vez (2026-10-16, feedback) y las nietas ya no. `left` = las que quedan.
+   */
+  function splitBlade(p, e, left = 0) {
     const a = Math.atan2(p.vy, p.vx);
     for (const s of [-Math.PI / 2, Math.PI / 2]) {
       bladeProj(p.owner, e.x, e.y, a + s, { dmg: p.dmg, r: p.r, scale: p.scale, life: p.life * 0.6, pierce: 1, vis: p.vis,
-                                            ghost: p.ghost, split90: 0, hits: new Set([e.id]) });
+                                            ghost: p.ghost, split90: left, hits: new Set([e.id]) });
     }
     G.FX.sp('impact', 'steel', e.x, e.y - e.bodyH * 0.5, { life: 0.16, scale: 1.8 });
   }
@@ -1993,7 +2000,7 @@ G.Combat = (() => {
         if (p.ghost) {
           G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
           if (p.split && p.pierce > 0) splitSpear(p, e);
-          if (p.split90) { p.split90 = 0; splitBlade(p, e); }
+          if (p.split90) { const left = p.split90 - 1; p.split90 = 0; splitBlade(p, e, left); }
           if (p.pierce > 0) { p.pierce--; continue; }
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 5, 80);
           projectiles.splice(i, 1);
@@ -2030,7 +2037,7 @@ G.Combat = (() => {
 
         if (!p.orb) {
           if (p.split && p.pierce > 0) splitSpear(p, e);   // Lanza Sombría: se parte al perforar
-          if (p.split90) { p.split90 = 0; splitBlade(p, e); }   // Cruzada: se parte a ±90° en el primero
+          if (p.split90) { const left = p.split90 - 1; p.split90 = 0; splitBlade(p, e, left); }   // Cruzada: se parte a ±90° en el primero
           if (p.pierce > 0) { p.pierce--; }
           else {
             G.FX.burst(p.x, p.y - G.LIFT, p.color, 5, 80);

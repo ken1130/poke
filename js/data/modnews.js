@@ -5,6 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-16', title: { zh: '升等變強、組隊難度依人數調整、迷宮設施不再跑到幾千公尺外', en: 'Level-ups make you stronger, co-op difficulty by player count, dungeon spots stay nearby' },
     new: [
+      { zh: '撿到道具不再跳視窗暫停：技能列上方會出現發光的道具圖示，想換的時候再點一下（電腦按 I）；最多暫存 3 個，多的會把最低等級的賣掉。商店買的、祝福卡給的道具照樣直接開視窗', en: 'Picking up an item no longer pauses with a popup: a glowing item icon appears above the move bar, tap it (or press I) when you want to swap; up to 3 wait there, extra ones sell the lowest tier. Items bought in the shop or given by boons still open the window right away' },
+      { zh: '製作名單加入 BUG 審查員：readyplayer1996、peter', en: 'Credits now list the bug reviewers: readyplayer1996 and peter' },
       { zh: '一般模式有終點了：迷宮共 5 層（B1F～B5F）。每一層會出現「層主」（B1F 在 4:00，之後每層抵達 3 分 30 秒後），打倒才會出現樓梯；B5F 的層主是傳說級的「迷宮之主」，打倒就「迷宮制霸」：+300 金幣、扭蛋券 ×10、新成就與稱號，並可選「凱旋結算」（以通關結束，結算顯示通關）或「繼續挑戰（無盡）」往 B6F 以下前進。組隊時由房主決定，全隊都拿得到獎勵', en: 'Normal mode now has a finish line: a 5-floor dungeon (B1F–B5F). Each floor has a Floor Boss (B1F at 4:00, then 3:30 after arriving) and the stairs only appear once it is beaten; on B5F it is the legendary Dungeon Lord. Beat it to clear the dungeon: +300 coins, a ×10 ticket, a new achievement and title, and a choice to “Claim victory” (the run ends as a win) or “Keep going (endless)” to B6F and beyond. In co-op the host decides and everyone gets the reward' },
       { zh: '分岔樓梯：打倒層主後出現兩座樓梯——安全路線（標準／寧靜／豐收）和危險路線（烈焰／濃霧／黃金／大軍／精英，更難但獎勵更好，抵達時每人再拿一張扭蛋券和一瓶藥水）。全隊站上同一座 2 秒才會下樓，樓梯上方會顯示路線、主題和還差誰；小地圖、清單和畫面邊緣箭頭都會標出兩座', en: 'Branching stairs: after the floor boss two staircases appear — a safe route (Standard / Calm / Harvest) and a danger route (Blaze / Thick fog / Golden / Horde / Elite: harder but better rewards, plus a ticket and a potion for each player on arrival). The whole group must stand on the same one for 2 s; each shows its route, theme and who is missing, and both appear on the minimap, its list and the edge arrows' },
       { zh: '樓層主題：寧靜（怪 −25%）、豐收（回復樹果 ×3、金幣 ×1.3）、烈焰（火屬性為主、火山地形、敵人傷害 +15%、金幣 ×1.5）、濃霧（整層濃霧看不遠、經驗 ×2）、黃金（金幣 ×2、敵人速度 +10%）、大軍（怪 +40%、經驗 ×1.5）、精英（精英怪 ×4、一定掉道具）。主題顯示在下樓的 B2F 畫面和時鐘下方（點一下看說明）', en: 'Floor themes: Calm (−25% enemies), Harvest (healing berries ×3, coins ×1.3), Blaze (mostly Fire-types, volcano terrain, enemies +15% damage, coins ×1.5), Thick fog (fog all floor, XP ×2), Golden (coins ×2, enemies +10% speed), Horde (+40% enemies, XP ×1.5), Elite (elites ×4, always drop an item). Shown on the floor card and under the clock (tap for details)' },
@@ -36,6 +38,10 @@ G.MODNEWS = [
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }
     ],
     chg: [
+      { zh: '紫色恐怖力量（毀滅射線進化）的射線長度縮短到原本的 60%（11.5 → 6.9 格）', en: 'Purple Power (evolved Destruction Beam) beam length cut to 60% (11.5 → 6.9 tiles)' },
+      { zh: '自創的一般屬性招式（毀滅射線、歐美肥佬）只有一般屬性的寶可夢會出現；劍舞、變硬、高速移動等原作招式照舊', en: 'Our own Normal-type moves (Destruction Beam, Heavyweight) now only appear for Normal-type Pokémon; Swords Dance, Harden, Agility and other originals stay for everyone' },
+      { zh: '十字軍出征：分裂出來的兩支刀刃碰到敵人會再分裂一次', en: 'Crusade: the two split blades split once more when they hit an enemy' },
+      { zh: '吸血鬼之牙改成在敵人身上「咬一口」的特效，不再是一條線', en: 'Vampire Fang now shows a bite on each enemy instead of a line' },
       { zh: '介面全面改版成我們自己的「營火石窟」風格：石板視窗與按鈕、火炬琥珀色主色；主選單標題兩側有像素火炬、角色站在石龕裡的石台上、「開始遊戲」改成發光的大按鈕；上方金幣與按鈕收成一條石板帶；手機直式與橫式都重新排版', en: 'Brand-new “Campfire Grotto” look: stone windows and buttons with torch-amber accents; the main menu has pixel torches by the title, your character on a pedestal in a stone niche and a glowing Play button; coins and buttons sit in one stone strip at the top; reworked layouts for phones in portrait and landscape' },
       { zh: '落雷改成像素風：粗的鋸齒閃電從天而降（深色外框、黃色光暈、白色核心，還會分岔），落地有星狀火花和焦痕；進化後的連鎖電流也改成會閃動的像素電弧', en: 'Thunder Strike now uses pixel-art lightning: thick jagged bolts with branches, star sparks and a scorch mark; the evolved chain current is a crackling pixel arc' },
 
@@ -50,6 +56,7 @@ G.MODNEWS = [
       { zh: '身上已有 2 個道具時撿到新道具，每個「換成」選項會同時顯示失去的道具效果和新道具的效果（原本只看得到新的）', en: 'When you pick up an item while already carrying two, each swap option now shows the effect you lose and the one you gain (before, only the new one)' }
     ],
     fix: [
+      { zh: '修正劍刃風暴射出去的是頭目的大刀（兩個圖案同名，後面的蓋掉前面的），看起來像砸過去；現在是一支小劍筆直射出', en: 'Fixed Blade Storm firing the boss cleaver (two shapes shared a name and one overwrote the other), so it looked like a slam; it now fires a small sword in a straight line' },
       { zh: '修正組隊時客人不會進入寶藏層（會留在舊地圖被舊的怪包圍）', en: 'Fixed co-op guests not entering the Treasure floor (they stayed on the old map with the old enemies)' },
       { zh: '修正離開裂縫後，地圖上的競技場沒有清掉', en: 'Fixed the rift arena staying on the map after leaving the rift' },
       { zh: '修正一局結束時剛好在自動選升級卡，結束後還會多選一張卡、並跳出開場祝福疊在結算畫面上', en: 'Fixed a level-up card still being auto-picked after the run ended, which also popped the opening blessing over the results screen' },

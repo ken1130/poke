@@ -808,7 +808,7 @@ G.Dungeon = (() => {
     G.FX.ring(pl.x, pl.y, 6, 70, '#7dffb0', 0.5, 3);
     switch (w.kind) {
       case 'potion': G.Loot.drink(pl, G.Loot.rollPotion()); break;
-      case 'item': G.Game.offerItem(w.item); break;
+      case 'item': G.Game.offerItem(w.item, true); break;      // (comprado: la ventana ya, no el icono)
       case 'heal': pl.heal(pl.maxHp * 0.6); G.Spawner.say(G.T('¡Te has curado!'), 2, true); break;
       case 'rerolls': pl.rerollBonus = (pl.rerollBonus || 0) + 3; G.Spawner.say(G.T('+3 cambios de cartas de nivel'), 2.4, true); break;
       case 'disc': G.Game.offerBox(); break;
