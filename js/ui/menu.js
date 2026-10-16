@@ -144,6 +144,14 @@ G.MenuUI = (() => {
       b.onclick = () => { dexGen = g; openDex(); };
       tabs.appendChild(b);
     });
+    // «Otros» (2026-10-16): personajes originales (data/custom.js). No cuentan para el total.
+    {
+      const b = document.createElement('button');
+      b.className = 'gen-tab gen-other' + (dexGen === OTHER ? ' on' : '');
+      b.innerHTML = `<b>${G.T('Otros')}</b><small>${(G.CUSTOM || []).length}</small>`;
+      b.onclick = () => { dexGen = OTHER; openDex(); };
+      tabs.appendChild(b);
+    }
 
     const F = [['all', 'Todos'], ['team', 'Mi equipo'], ['own', 'Tengo'], ['miss', 'Me faltan'], ['shiny', 'Shiny'],
                ['5', 5], ['4', 4], ['3', 3], ['2', 2], ['1', 1]];
@@ -177,7 +185,11 @@ G.MenuUI = (() => {
     search.oninput = () => { dexQuery = search.value; tabs.classList.toggle('dim', !!dexQuery.trim()); renderGrid(); };
     tabs.classList.toggle('dim', !!dexQuery.trim() || !!dexType || dexFilter === 'team');
     renderGrid();
-    showDetail(dexSel);
+    if (dexGen === OTHER && !dexQuery.trim() && !dexType && dexFilter !== 'team') {
+      const list = G.CUSTOM || [];
+      if (list.length) showCustom(list[0]);
+      else $('dex-detail').innerHTML = `<div class="center"><h3 class="gold">${G.T('Otros')}</h3><p class="sub">${G.T('Aquí aparecerán los personajes originales del juego. No cuentan para el Pokédex.')}</p></div>`;
+    } else showDetail(dexSel);
   }
 
   /** ¿Coincide el Pokémon con lo buscado? Nombre (como se ve o el original) o número. */
@@ -189,11 +201,37 @@ G.MenuUI = (() => {
     return p.name.toLowerCase().includes(q) || G.T(p.name).toLowerCase().includes(q);
   }
 
+  const OTHER = 'other';
+  /** Pestaña «Otros»: personajes originales, aparte del Pokédex. */
+  function renderOther(grid) {
+    const list = G.CUSTOM || [];
+    if (!list.length) {
+      grid.innerHTML = `<p class="sub" style="grid-column:1/-1">${G.T('Aquí aparecerán los personajes originales del juego. No cuentan para el Pokédex.')}</p>`;
+      return;
+    }
+    for (const c of list) {
+      const cell = document.createElement('div');
+      cell.className = 'cell custom';
+      cell.innerHTML = `<span class="no">${G.T('Original')}</span><div class="custom-pic">?</div><b>${G.T(c.name)}</b>`;
+      cell.onclick = () => showCustom(c);
+      grid.appendChild(cell);
+    }
+  }
+  function showCustom(c) {
+    const box = $('dex-detail');
+    if (!box) return;
+    box.innerHTML = `<div class="center"><h3 class="gold">${G.T(c.name)}</h3>
+      <p class="sub">${G.T('Personaje original · no cuenta para el Pokédex')}</p>
+      <div class="row" style="justify-content:center;gap:6px">${(c.types || []).map(t => `<span class="tag-chip" style="background:${G.U.TYPE_COLOR[t]}">${G.T(G.U.TYPE_NAME[t])}</span>`).join('')}</div>
+      ${c.desc ? `<p>${G.T(c.desc)}</p>` : ''}</div>`;
+  }
+
   function renderGrid() {
     const s = G.DB.save;
     const grid = $('dex-grid');
     grid.innerHTML = '';
     const q = dexQuery.trim().toLowerCase();
+    if (dexGen === OTHER && !q && !dexType && dexFilter !== 'team') { renderOther(grid); return; }
     for (const p of G.DEX) {
       // «Mi equipo» (2026-10-15): los marcados, de todas las regiones.
       if (q ? !matches(p, q) : !dexType && dexFilter !== 'team' && p.gen !== dexGen) continue;

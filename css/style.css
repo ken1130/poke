@@ -933,3 +933,7 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   #scr-pause .box { max-height: calc(100vh - 12px); overflow-y: auto; padding-top: 10px; padding-bottom: 10px; }
   #scr-pause h2 { margin: 0 0 2px; }
 }
+
+/* Pokédex: pestaña «Otros» (personajes originales, data/custom.js) */
+.gen-tab.gen-other { border-style: dashed; }
+.cell.custom .custom-pic { width: 92px; height: 80px; display: grid; place-items: center; font: 800 30px Pixelify, sans-serif; color: rgba(255,255,255,.35); }

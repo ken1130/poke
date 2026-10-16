@@ -2214,4 +2214,10 @@ G.I18n.add({
   '{x} está en Mi equipo': '{x} 已加入我的戰隊',
   '{x} ya no está en Mi equipo': '{x} 已移出我的戰隊',
   'Aún no hay nadie en Mi equipo: elige un Pokémon y pulsa «Añadir a Mi equipo».': '我的戰隊還是空的：選一隻寶可夢，按「加入我的戰隊」。',
+  'Otros': '其他',
+  'Original': '原創',
+  'Aquí aparecerán los personajes originales del juego. No cuentan para el Pokédex.': '這裡會放遊戲的原創角色，不列入圖鑑數量計算。',
+  'Personaje original · no cuenta para el Pokédex': '原創角色 · 不列入圖鑑計算',
+  'Creador principal:': '主要創作者：',
+  'Colaboradores:': '協作者：',
 }, 'zh');

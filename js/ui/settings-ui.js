@@ -107,6 +107,8 @@ G.SettingsUI = (() => {
         + `<p class="sub">Juego de fans <b>gratuito y sin ánimo de lucro</b>: sin anuncios ni compras. Pokémon y sus personajes son propiedad de Nintendo, Creatures y GAME FREAK; este proyecto no está afiliado a ellos.</p>`
         + section('Créditos')
         + `<ul class="credits">
+             <li><b>${G.T('Creador principal:')}</b> <span translate="no">ken</span></li>
+             <li><b>${G.T('Colaboradores:')}</b> <span translate="no">peter · readyplayer · bebe · didi</span></li>
              <li><b>Sprites:</b> PMD SpriteCollab y sus artistas (CC BY-NC 4.0).</li>
              <li><b>Datos de los Pokémon:</b> PokéAPI.</li>
              <li><b>Música y sonidos:</b> originales, generados por el propio juego.</li>

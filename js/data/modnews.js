@@ -5,6 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-16', title: { zh: '升等變強、組隊難度依人數調整、迷宮設施不再跑到幾千公尺外', en: 'Level-ups make you stronger, co-op difficulty by player count, dungeon spots stay nearby' },
     new: [
+      { zh: '圖鑑新增「其他」分頁：之後放遊戲的原創角色，不列入圖鑑數量計算', en: 'New “Other” tab in the Pokédex for the game’s original characters (not counted in the Pokédex total)' },
+      { zh: '設定 →「關於」的製作名單加入主要創作者 ken 與協作者 peter、readyplayer、bebe、didi', en: 'Settings → About credits now list lead creator ken and contributors peter, readyplayer, bebe and didi' },
       { zh: '卡克隆輪盤：有人在轉的時候，其他人畫面上方也會出現同一個輪盤一起轉，顯示誰在轉和結果（不會擋住操作）', en: 'Kecleon roulette: when someone spins, everyone else sees the same wheel spinning at the top of the screen, with who spins and the result (it does not block anything)' },
       { zh: '每升 1 級：最大生命 +2%（並補回這些血）、攻擊 +1%，算到 50 級（PK 不算）', en: 'Each level: +2% max HP (healed too) and +1% attack, up to level 50 (not in PvP)' },
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }

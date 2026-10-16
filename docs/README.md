@@ -30,6 +30,11 @@
 
 手機請橫向持握，手指拖曳即可移動。
 
+## 製作團隊
+
+- **主要創作者**：ken
+- **協作者**：peter、readyplayer、bebe、didi
+
 ## 授權與聲明
 
 - **原作程式碼**：MIT License，著作權屬原作者 JPTER78，授權條款見 [`LICENSE`](../LICENSE)。本修改版保留原授權與著作權聲明。

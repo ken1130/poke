@@ -1214,4 +1214,10 @@ G.I18n.add({
   '{x} está en Mi equipo': '{x} is now in My team',
   '{x} ya no está en Mi equipo': '{x} is no longer in My team',
   'Aún no hay nadie en Mi equipo: elige un Pokémon y pulsa «Añadir a Mi equipo».': 'My team is empty: pick a Pokémon and press “Add to My team”.',
+  'Otros': 'Other',
+  'Original': 'Original',
+  'Aquí aparecerán los personajes originales del juego. No cuentan para el Pokédex.': 'Original characters of this game will appear here. They don’t count toward the Pokédex.',
+  'Personaje original · no cuenta para el Pokédex': 'Original character · not counted in the Pokédex',
+  'Creador principal:': 'Lead creator:',
+  'Colaboradores:': 'Contributors:',
 }, 'en');
