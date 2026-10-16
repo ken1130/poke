@@ -31,10 +31,12 @@ G.PvP = (() => {
     on = !!(cfg && cfg.pvp); saidGo = false; winner = undefined; teams = !!(on && cfg.teams); myTeam = null;
     arena = !!(on && cfg.arena);
     feed = []; hitMark = 0; stopT = 0; slowT = 0; berryT = GRACE + 5; zoneT = 0; picked = false;
+    G.PvPX.begin(cfg, on);            // extras del PK (pvp-extra.js): rondas, tesoro, trampas, fantasmas...
     if (on) G.Spawner.say(arena ? '¡PK en la arena! Elige tus movimientos: tenéis 15 s…' : '¡PK! Gana el último en pie. Tenéis 15 s para prepararos…', 4, true);
   }
 
-  const armed = () => on && G.Game.st.time >= GRACE;
+  // (Entre rondas, pvp-extra.js, nadie hace daño a nadie.)
+  const armed = () => on && G.Game.st.time >= GRACE && !G.PvPX.inBreak;
   /** Tu Pokémon, si se le puede golpear ahora. (Ya no se usa para el daño: lo decide quien ataca, ver deal.) */
   function mine(owner) {
     const pl = G.Coop.local;
@@ -59,7 +61,7 @@ G.PvP = (() => {
     pl.invuln = Math.min(pl.invuln, 0.1);
     const d = before - pl.hp;
     if (d <= 0) return true;
-    if (owner) hitDirs.push({ a: Math.atan2(owner.y - pl.y, owner.x - pl.x), t: 0.9 });   // de dónde vino (drawWorld)
+    if (owner && !G.PvPX.hidden(owner)) hitDirs.push({ a: Math.atan2(owner.y - pl.y, owner.x - pl.x), t: 0.9 });   // de dónde vino (drawWorld)
     // Lo que notas al recibir (2026-10-15, a petición del dueño): sin destellos de pantalla (le
     // dolían los ojos), sin sacudidas (mareaban) y sin parones (con golpes seguidos eran como un
     // aturdimiento). Queda: tu Pokémon destella (Player.hurt), un empujón corto, el sonido y el número.
@@ -99,6 +101,9 @@ G.PvP = (() => {
     const out = [];
     for (const p of G.Coop.puppets()) {
       if (p.dead || (teams && p.team === me.team)) continue;
+      // Invisible (tesoro, pvp-extra.js): los círculos grandes son "buscar a quién apuntar" y no
+      // lo encuentran; los pequeños (explosión, aura, golpe de un proyectil) sí le dan.
+      if (r >= G.PvPX.SEEK_R && G.PvPX.hidden(p)) continue;
       if (G.U.dist2(x, y, p.x, p.y) > (r + p.r) ** 2) continue;
       if (p.id == null) p.id = 'pv:' + p.uid;
       if (!p.applySlow) { p.applySlow = (k, t) => status(p, t || 1); p.applyRoot = t => status(p, t || 0.6); p.applyBurn = () => {}; p.applyPoison = () => {}; }
@@ -128,6 +133,7 @@ G.PvP = (() => {
   const pending = new Map();      // uid del rival -> golpes de los últimos 70 ms (se mandan sumados)
   function deal(attacker, foe, dmg, type, crit, kind) {
     if (attacker !== G.Coop.local || !foe || foe.dead || !armed()) return;
+    dmg *= G.PvPX.atkK();                // tesoro: ataque ×2
     if (kind === 'melee' || kind === 'dash' || kind === 'fist') dmg *= MELEE_K;
     // Lo que ves tú al acertar (al momento): marca de impacto, destello del rival, chispas y golpe.
     // El número sale cuando él confirma cuánto le ha quitado (['pv','h']), así nunca miente.
@@ -195,7 +201,7 @@ G.PvP = (() => {
     if (!armed() || !G.Coop.active) return null;
     let best = null, bd = range * range;
     for (const p of G.Coop.puppets()) {
-      if (p.dead || (teams && p.team === pl.team)) continue;
+      if (p.dead || (teams && p.team === pl.team) || G.PvPX.hidden(p)) continue;     // (invisible: no se le apunta)
       const d = G.U.dist2(pl.x, pl.y, p.x, p.y);
       if (d < bd) { bd = d; best = p; }
     }
@@ -223,6 +229,8 @@ G.PvP = (() => {
     if (!on && winner === undefined) return;
     const box = document.getElementById('over-stats');
     if (box && winner !== undefined) {
+      const sc = G.PvPX.scoreLine();      // al mejor de 3: el marcador final
+      if (sc) box.insertAdjacentHTML('afterbegin', `<div style="grid-column:1/-1;text-align:center" class="panel"><span translate="no">${sc.replace(/[&<>"']/g, '')}</span></div>`);
       const me = G.Social.me && G.Social.me.name;
       const mine = teams ? wonByMe() : winner === me;
       const txt = winner == null ? G.T('¡Empate!') : mine ? G.T(teams ? '¡Tu equipo ha ganado!' : '¡Has ganado el PK!') : G.I18n.f('¡{x} ha ganado el PK!', teams ? G.T(TEAM_NAMES[+String(winner).slice(1)] || '') : winner);
@@ -232,6 +240,7 @@ G.PvP = (() => {
       box.insertAdjacentHTML('afterbegin', `<div style="grid-column:1/-1;text-align:center" class="panel"><b class="gold" style="font-size:22px">🏆 ${txt}</b></div>`);
     }
     on = false; winner = undefined; teams = false; myTeam = null; arena = false;
+    G.PvPX.reset();
   }
 
   // ================= golpes que se notan =================
@@ -245,6 +254,7 @@ G.PvP = (() => {
   /** Todos: alguien ha recibido un golpe de otro jugador. ['pv','h', víctima, atacante, daño, ko] */
   function onNet(ev) {
     const me = G.Net.uid;
+    if (G.PvPX.onNet(ev)) return;       // rondas, tesoro, trampas, piedritas, duelo final (pvp-extra.js)
     // ['pv','d', víctima, atacante, daño, tipo, crítico]: te han dado en SU pantalla.
     if (ev[1] === 'd') {
       if (ev[2] !== me) return;
@@ -277,21 +287,23 @@ G.PvP = (() => {
       return;
     }
     if (ev[1] !== 'h') return;
-    const [, , vic, atk, d, ko] = ev;
+    const [, , vic, atk, d, ko, why] = ev;
     // Tu golpe confirmado: el número que de verdad le has quitado.
     if (atk && atk === me && vic !== me) {
       const v = G.Coop.mate(vic), p = v && v.pl;
       if (p) G.FX.dmgText(p.x + G.U.rand(-8, 8), p.y - p.bodyH - 6, String(d), ko ? '#ff5f6d' : '#ffe14d', true);
     }
     if (ko) {
-      feed.unshift({ text: atk ? G.I18n.f('{x} ha tumbado a {x}', nameOf(atk), nameOf(vic)) : G.I18n.f('{x} ha quedado fuera de la zona', nameOf(vic)), t: 5, mine: atk === me || vic === me });
+      feed.unshift({ text: atk ? G.I18n.f('{x} ha tumbado a {x}', nameOf(atk), nameOf(vic)) : why === 't' ? G.I18n.f('{x} ha caído en una trampa', nameOf(vic)) : G.I18n.f('{x} ha quedado fuera de la zona', nameOf(vic)), t: 5, mine: atk === me || vic === me });
       feed = feed.slice(0, 4);
       if (atk === me) { G.FX.dmgText(G.Game.player.x, G.Game.player.y - 70, G.T('¡K.O.!'), '#ffd23f', true); G.Audio.sfx('bossDown'); }
       else G.Audio.sfx('faint');
+      G.PvPX.onKo(atk, vic);             // rachas de K.O.
     }
   }
   /** game.js: el reloj del juego va más despacio un instante (parón al golpear, cámara lenta al tumbar). */
-  function timeScale() { return 1; }      // (sin parones ni cámara lenta: quitaban el control)
+  // (sin parones ni cámara lenta al golpear: quitaban el control; sólo 0,6 s al empezar el duelo final)
+  function timeScale() { return G.PvPX.timeScale(); }
 
   // ================= apuntar =================
   const aiming = () => on && G.Coop.active && G.Game.state === 'playing';
@@ -318,9 +330,14 @@ G.PvP = (() => {
   let ZONE_FROM = 90, ZONE_TO = 150, ZONE_R0 = 820, ZONE_R1 = 240;
   let berryT = 0, zoneT = 0, picked = false;
   function zoneR(t = G.Game.st.time) {
-    if (t <= ZONE_FROM) return ZONE_R0;
-    return ZONE_R0 + (ZONE_R1 - ZONE_R0) * Math.min(1, (t - ZONE_FROM) / (ZONE_TO - ZONE_FROM));
+    const base = t <= ZONE_FROM ? ZONE_R0 : ZONE_R0 + (ZONE_R1 - ZONE_R0) * Math.min(1, (t - ZONE_FROM) / (ZONE_TO - ZONE_FROM));
+    const cap = G.PvPX.zoneCap(t);         // duelo final: se cierra deprisa hasta 260
+    return cap == null ? base : Math.min(base, cap);
   }
+  /** Hasta dónde se cerrará (la línea blanca): en el duelo final, 260. */
+  const finalR = () => G.PvPX.zoneCap(G.Game.st.time) != null ? Math.min(ZONE_R1, G.PvPX.DUEL_R) : ZONE_R1;
+  /** ¿Ya hace daño estar fuera? (desde que empieza a cerrarse, o en el duelo final) */
+  const zoneLive = t => (t > ZONE_FROM || G.PvPX.zoneCap(t) != null) && !G.PvPX.inBreak;
   /** Cada fotograma (todos): zona segura y bayas (anfitrión). */
   function arenaTick(dt, pl) {
     if (!on || !G.Coop.active) return;
@@ -333,7 +350,7 @@ G.PvP = (() => {
     feed = feed.filter(f => f.t > 0);
     if (hitMark > 0) hitMark -= dt;
     // Fuera de la zona: se pierde vida.
-    if (pl && !pl.dead && t > ZONE_FROM && Math.hypot(pl.x, pl.y) > zoneR(t)) {
+    if (pl && !pl.dead && zoneLive(t) && Math.hypot(pl.x, pl.y) > zoneR(t)) {
       zoneT -= dt;
       if (zoneT <= 0) {
         zoneT = 0.5; pl.invuln = 0; const sh = G.Camera.shake; pl.hurt(pl.maxHp * 0.04); G.Camera.shake = sh;
@@ -382,9 +399,36 @@ G.PvP = (() => {
   function arenaStart(pl) {
     if (!arena || !on || !pl) return;
     pl.maxHp = pl.hp = Math.round(pl.maxHp * 1.5);
-    offers = rollOffers(pl); chosen = []; rerolls = 1; pickTimer = GRACE - 1.5; picked = false;
+    offers = rollOffers(pl); chosen = []; rerolls = 1; pickTimer = GRACE - 1.5; picked = false; rerollMode = false;
     renderPick();
     G.UI.show('scr-pkpick');
+  }
+  /**
+   * Al mejor de 3 (pvp-extra.js): el que ha perdido la ronda puede cambiar sus movimientos una vez
+   * (3 de 5 nuevos, sin "Cambiar opciones"). Es opcional: "Quedarme con los míos" o dejar pasar el
+   * tiempo sin elegir 3 deja los que tenía. La vida no cambia (arenaStart ya la subió al empezar).
+   */
+  let rerollMode = false;
+  function reroll(secs) {
+    const pl = G.Game.player;
+    if (!arena || !on || !pl) return;
+    offers = rollOffers(pl); chosen = []; rerolls = 0; pickTimer = secs; picked = false; rerollMode = true;
+    renderPick();
+    G.UI.show('scr-pkpick');
+  }
+  function keepMine() {
+    if (picked) return;
+    picked = true; rerollMode = false;
+    G.UI.hide('scr-pkpick');
+    G.Audio.sfx('confirm');
+  }
+  const pickSub = () => rerollMode
+    ? G.I18n.f('Revancha: elige {x} de {x} nuevos o quédate con los tuyos · quedan {x} s', PICK_N, OFFER_N, Math.max(0, Math.ceil(pickTimer)))
+    : G.I18n.f('Elige {x} de {x} · quedan {x} s', PICK_N, OFFER_N, Math.max(0, Math.ceil(pickTimer)));
+  /** Nueva ronda (pvp-extra.js): la preparación, las bayas y la zona vuelven a empezar. */
+  function roundReset(t0) {
+    saidGo = false; berryT = t0 + 5; zoneT = 0; hitDirs = []; hitMark = 0; stopT = 0; slowT = 0;
+    pending.clear();
   }
   function renderPick() {
     const box = document.getElementById('pk-cards');
@@ -401,12 +445,13 @@ G.PvP = (() => {
       el.onclick = () => toggle(i);
       box.appendChild(el);
     });
-    document.getElementById('pk-sub').textContent = G.I18n.f('Elige {x} de {x} · quedan {x} s', PICK_N, OFFER_N, Math.max(0, Math.ceil(pickTimer)));
+    document.getElementById('pk-sub').textContent = pickSub();
     const ok = document.getElementById('pk-ok');
     ok.disabled = chosen.length !== PICK_N;
     ok.textContent = G.I18n.f('¡A luchar! ({x}/{x})', chosen.length, PICK_N);
     ok.onclick = confirmPick;
     const rr = document.getElementById('pk-reroll');
+    if (rerollMode) { rr.disabled = false; rr.textContent = G.T('Quedarme con mis movimientos'); rr.onclick = keepMine; return; }
     rr.disabled = rerolls <= 0;
     rr.textContent = G.I18n.f('Cambiar opciones ({x})', rerolls);
     rr.onclick = () => { if (rerolls > 0) { rerolls--; offers = rollOffers(G.Game.player); chosen = []; G.Audio.sfx('select'); renderPick(); } };
@@ -435,14 +480,16 @@ G.PvP = (() => {
     pl.setActive(0);
     G.Audio.sfx('confirm');
     G.Spawner.say(G.T('¡Listo! Cambia de movimiento con 1-3 (o tocando su icono)'), 3, true);
+    rerollMode = false;
   }
   /** Cada fotograma: cuenta atrás de la elección. */
   function pickTick(dt) {
     if (!arena || picked || !G.UI.isOpen('scr-pkpick')) return;
     const before = Math.ceil(pickTimer);
     pickTimer -= dt;
-    if (pickTimer <= 0) confirmPick();
-    else if (Math.ceil(pickTimer) !== before) document.getElementById('pk-sub').textContent = G.I18n.f('Elige {x} de {x} · quedan {x} s', PICK_N, OFFER_N, Math.max(0, Math.ceil(pickTimer)));   // sólo el texto: rehacer las cartas se comía clics
+    // (Revancha: si no ha elegido 3, se queda con los suyos.)
+    if (pickTimer <= 0) { if (rerollMode && chosen.length < PICK_N) keepMine(); else confirmPick(); }
+    else if (Math.ceil(pickTimer) !== before) document.getElementById('pk-sub').textContent = pickSub();   // sólo el texto: rehacer las cartas se comía clics
   }
   /** Teclas 1-5 mientras se elige (game.js). */
   function pickKey(n) { if (arena && !picked && G.UI.isOpen('scr-pkpick')) { if (n >= 1 && n <= OFFER_N) toggle(n - 1); return true; } return false; }
@@ -456,9 +503,9 @@ G.PvP = (() => {
     // es más grande que la pantalla, no se sabía dónde estaba): el borde siempre, el exterior en
     // rojo desde 10 s antes y, mientras no ha acabado de cerrarse, el círculo final en blanco.
     {
-      const t = G.Game.st.time, R = zoneR();
+      const t = G.Game.st.time, R = zoneR(), live = t > ZONE_FROM - 10 || zoneLive(t);
       ctx.save();
-      if (t > ZONE_FROM - 10) {
+      if (live) {
         ctx.beginPath();
         ctx.rect(cam.left() - 80, cam.top() - 80, cam.w + 160, cam.h + 160);
         ctx.arc(0, 0, R, 0, 6.2832, true);
@@ -466,18 +513,20 @@ G.PvP = (() => {
         ctx.fill('evenodd');
       }
       ctx.setLineDash([14, 10]);
-      ctx.lineWidth = 4; ctx.strokeStyle = t > ZONE_FROM - 10 ? '#ff5f6d' : 'rgba(255,95,109,.55)';
+      ctx.lineWidth = 4; ctx.strokeStyle = live ? '#ff5f6d' : 'rgba(255,95,109,.55)';
       ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.2832); ctx.stroke();
-      if (t < ZONE_TO) {
+      const R1 = finalR();
+      if (t < ZONE_TO || R > R1 + 1) {
         ctx.setLineDash([6, 8]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,.7)';
-        ctx.beginPath(); ctx.arc(0, 0, ZONE_R1, 0, 6.2832); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, R1, 0, 6.2832); ctx.stroke();
       }
       ctx.restore();
     }
+    G.PvPX.drawWorld(ctx);             // piedritas de los fantasmas
     // Vida de los rivales encima de su cabeza (antes había que mirar la lista de arriba).
     const me = G.Coop.local;
     for (const p of G.Coop.puppets()) {
-      if (p.dead || (teams && me && p.team === me.team) || !G.Camera.sees(p.x, p.y, 40)) continue;
+      if (p.dead || (teams && me && p.team === me.team) || !G.Camera.sees(p.x, p.y, 40) || G.PvPX.hidden(p)) continue;
       const f = Math.max(0, Math.min(1, p.hp / (p.maxHp || 1))), bw = 40, bx = Math.round(p.x - bw / 2), by = Math.round(p.y - p.bodyH - 30);
       ctx.fillStyle = 'rgba(10,12,24,.85)'; ctx.fillRect(bx - 1, by - 1, bw + 2, 7);
       ctx.fillStyle = f > 0.5 ? '#5fe08a' : f > 0.25 ? '#ffd23f' : '#ff5f6d'; ctx.fillRect(bx, by, Math.round(bw * f), 5);
@@ -542,7 +591,7 @@ G.PvP = (() => {
     const pl = G.Game.player, t = G.Game.st.time;
     if (pl && !pl.dead) {
       let msg = null, col = '#ffd23f';
-      const out = t > ZONE_FROM && Math.hypot(pl.x, pl.y) > zoneR(t);
+      const out = zoneLive(t) && Math.hypot(pl.x, pl.y) > zoneR(t);
       if (out) {
         // Fuera: borde de la pantalla en rojo, latiendo, y cuánto falta para volver.
         const beat = 0.5 + Math.sin(performance.now() / 160) * 0.5;
@@ -552,6 +601,7 @@ G.PvP = (() => {
         const m = Math.max(1, Math.ceil((Math.hypot(pl.x, pl.y) - zoneR(t)) / 32));
         msg = G.I18n.f('¡Fuera de la zona! Pierdes un 8 % de vida por segundo: vuelve {x} m hacia la flecha', m); col = '#ff5f6d';
       }
+      else if (G.PvPX.inBreak) msg = null;
       else if (t > ZONE_FROM - 30 && t < ZONE_FROM) msg = G.I18n.f('La zona se cierra en {x} s: la línea blanca es hasta dónde', Math.ceil(ZONE_FROM - t));
       else if (t >= ZONE_FROM && t < ZONE_TO) msg = G.T('La zona se está cerrando: quédate dentro de la línea roja');
       if (msg) {
@@ -561,15 +611,17 @@ G.PvP = (() => {
       }
     }
     ctx.restore();
+    G.PvPX.drawHud(ctx, w, h);
   }
 
   return { foesIn, foeNear, meFor, deal, touchesMe, TEAM_NAMES, TEAM_COLORS, teamWinner, get teams() { return on && teams && G.Coop.active; },
            begin, tick, foe, wonByMe, circle, arc, seg, projectile, orb, setWinner, afterRun, K, GRACE,
            onNet, timeScale, manualAim, arenaTick, arenaStart, pickTick, pickKey, drawWorld, drawHud, zoneR,
            /** Zona segura para el minimapa y la flecha (hud.js); null si no hay PK. */
-           zoneInfo() { return on && G.Coop.active ? { R: zoneR(), R1: ZONE_R1, from: ZONE_FROM, to: ZONE_TO, t: G.Game.st.time } : null; },
+           zoneInfo() { return on && G.Coop.active ? { R: zoneR(), R1: finalR(), from: ZONE_FROM, to: G.PvPX.zoneCap(G.Game.st.time) != null ? Infinity : ZONE_TO, t: G.Game.st.time } : null; },
+           reroll, roundReset, mouseWorld, get grace() { return GRACE; },
            get aiming() { return aiming(); }, get arena() { return on && arena && G.Coop.active; },
            _roll: rollOffers,   // pruebas
-           get _dbg() { return { hitMark, feed, chosen, offers, picked }; },   // pruebas
+           get _dbg() { return { hitMark, feed, chosen, offers, picked, hitDirs }; },   // pruebas
            get on() { return on && G.Coop.active; } };
 })();

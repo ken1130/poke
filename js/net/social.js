@@ -383,7 +383,10 @@ G.Social = (() => {
     // PK en la arena (sin salvajes; lo elige el anfitrión; por defecto sí).
     const aref = fb.rtdb.ref('rooms/' + id + '/arena');
     aref.on('value', s => { if (room && room.id === id) { room.arena = s.val() !== false; emit('room'); } }, () => {});
-    roomRefs = [mref, href, oref, dref, rref, sref, xref, tref, aref];
+    // Extras del PK (pvp-extra.js): { bo3, treasure, traps, reroll, ghosts, streak, duel }; lo que falta = sí.
+    const pref = fb.rtdb.ref('rooms/' + id + '/pkx');
+    pref.on('value', s => { if (room && room.id === id) { room.pkx = s.val() || {}; emit('room'); } }, () => {});
+    roomRefs = [mref, href, oref, dref, rref, sref, xref, tref, aref, pref];
     writeStatus();
     emit('room');
   }
@@ -455,6 +458,14 @@ G.Social = (() => {
   /** El anfitrión elige el mapa del PK: arena (sin salvajes) o campo abierto. */
   function setArena(on) {
     if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/arena').set(!!on).catch(() => {});
+  }
+
+  /** Los extras del PK que se pueden quitar (pvp-extra.js). Por defecto, todos sí. */
+  const PKX = ['bo3', 'treasure', 'traps', 'reroll', 'ghosts', 'streak', 'duel'];
+  function pkxOf(r) { const x = (r && r.pkx) || {}, o = {}; for (const k of PKX) o[k] = x[k] !== false; return o; }
+  /** El anfitrión cambia los extras del PK. */
+  function setPkx(o) {
+    if (room && room.isHost) { const v = {}; for (const k of PKX) v[k] = o[k] !== false; fb.rtdb.ref('rooms/' + room.id + '/pkx').set(v).catch(() => {}); }
   }
 
   /** El anfitrión activa o quita "personaje al azar" para el PK. */
@@ -586,6 +597,7 @@ G.Social = (() => {
   return {
     start, startLite, joinByCode, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
     createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setArena, setScene, setMods, setTeams, setTeam, teamOf, refreshMember, setPlaying, refreshPresence,
+    setPkx, pkxOf,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

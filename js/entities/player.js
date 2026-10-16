@@ -96,7 +96,8 @@ G.Player = class Player {
   get atk() { return this.baseAtk * this.atkMul * (1 + (this.lvGrown || 0) * Player.LV.atk) * (1 + this.buffs.atk.n * this.buffs.atk.amount) * (1 + (this.calmN || 0) * (this.calmAmt || 0)); }
   get spd() {
     // hasteT/hasteK: Arte Sin Forma (combat.js) acelera un rato al acertar.
-    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1) * (this.hasteT > 0 ? 1 + (this.hasteK || 0) : 1);
+    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1) * (this.hasteT > 0 ? 1 + (this.hasteK || 0) : 1)
+      * (this.pkSpdT > 0 ? 1.4 : 1) * (this.pebbleT > 0 ? 0.65 : 1);     // PK (pvp-extra.js): tesoro de velocidad / piedrita de un fantasma
     const w = G.Weather.speedFor(this.mon.types);
     // Pies de Mercurio (artefacto): el agua no te frena, seas del tipo que seas.
     const slow = this.inLiquid && !this.hasItem('quicksilver') ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;

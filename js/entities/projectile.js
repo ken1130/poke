@@ -109,9 +109,12 @@ G.Projectiles = (() => {
 
   function draw(ctx) {
     const L = G.LIFT;
+    // PK (pvp-extra.js): las órbitas de un rival invisible tampoco se ven (delatarían dónde está).
+    const hid = p => p.orb && G.PvPX.hidden(p.owner);
     // Sombras primero, todas juntas.
     ctx.fillStyle = 'rgba(0,0,0,.25)';
     for (const p of list) {
+      if (hid(p)) continue;
       ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r * 0.9, p.r * 0.38, 0, 0, 6.2832); ctx.fill();
     }
     // Los disparos enemigos llevan un aro rojo en el suelo: "esto te hace daño".
@@ -121,6 +124,7 @@ G.Projectiles = (() => {
       ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r * 1.5, p.r * 0.6, 0, 0, 6.2832); ctx.fill();
     }
     for (const p of list) {
+      if (hid(p)) continue;
       const v = p.vis || G.VFX.forType('normal');
       const shape = v.proj;
       const a = p.orb ? 1 : Math.min(1, (p.life - p.t) * 4);

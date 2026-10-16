@@ -1028,6 +1028,7 @@ G.Game = (() => {
     G.Relics.tick(dt, pl);                                       // reliquias de la torre
     G.Floors.update(dt, all);                                    // escaleras y ataque combinado
     G.PvP.arenaTick(dt, pl); G.PvP.pickTick(dt);                 // arena de PK: zona, bayas, elección
+    G.PvPX.update(dt, pl);                                       // extras del PK: rondas, tesoro, trampas, fantasmas (pvp-extra.js)
     G.Boons.update(dt, pl);                                      // bendición inicial (modo normal)
     if (!coop || G.Coop.isHost) G.Boons.tick(time, all);         // hitos de 10/20/30 min
     if (!coop || G.Coop.isHost) G.Companion.tick(dt, time, all); // huevo Pokémon
@@ -1096,6 +1097,7 @@ G.Game = (() => {
   let specI = 0;
   function spectating() {
     if (!pl || !pl.dead || !G.PvP.on || !G.Coop.active || state !== 'playing') return null;
+    if (G.PvPX.isGhost(pl)) return null;          // fantasma (pvp-extra.js): la cámara te sigue a ti
     const alive = G.Coop.puppets().filter(p => !p.dead);
     return alive.length ? alive[specI % alive.length] : null;
   }
@@ -1156,6 +1158,8 @@ G.Game = (() => {
   /** Anfitrión: si caéis todos, se acaba (tras ver caer al último). */
   function checkAllDown(dt) {
     if (G.PvP.on) {
+      // Entre rondas (al mejor de 3, pvp-extra.js) no se mira nada.
+      if (G.PvPX.inBreak) { deathT = 0; pvpLast = null; return; }
       // PK: se acaba cuando queda uno en pie (o ninguno).
       const ps = G.Coop.players(), alive = ps.filter(p => !p.dead);
       if (G.PvP.teams) {
@@ -1165,6 +1169,7 @@ G.Game = (() => {
         deathT += dt;
         if (deathT > 1.6) {
           deathT = 0;
+          if (G.PvPX.hostRoundOver(tw)) return;      // al mejor de 3: otra ronda
           G.PvP.setWinner(tw);
           const sm = summary(); lastTeam = sm.team;
           G.Coop.over(Object.assign(sm, { pvpWin: tw }));
@@ -1179,6 +1184,7 @@ G.Game = (() => {
       if (deathT > 1.6) {
         deathT = 0;
         const w = pvpLast; pvpLast = null;
+        if (G.PvPX.hostRoundOver(w ? w.uid || G.Net.uid : null)) return;      // al mejor de 3: otra ronda
         const name = !w ? null : w === pl ? (G.Social.me ? G.Social.me.name : G.DB.user) : w.tag;
         G.PvP.setWinner(name);
         const sm = summary(); lastTeam = sm.team;
@@ -1208,6 +1214,7 @@ G.Game = (() => {
     G.Arts.draw(ctx);
     G.Dungeon.drawGround(ctx);
     G.Pickups.draw(ctx);
+    G.PvPX.drawGround(ctx);              // PK: trampas y tesoro (pvp-extra.js)
 
     // Todo lo que tiene "pies" se ordena por Y: objetos, enemigos, jugador.
     const items = [];
@@ -1229,6 +1236,7 @@ G.Game = (() => {
     items.sort((a, b) => a.y - b.y);
     for (const it of items) {
       if (it.prop) G.World.drawProp(ctx, it.prop, t);
+      else if (it.ent instanceof G.Player && G.PvPX.active) G.PvPX.drawPlayer(ctx, it.ent);    // PK: invisible, fantasma, racha
       else it.ent.draw(ctx);
     }
   }
@@ -1381,6 +1389,8 @@ G.Game = (() => {
     init, startRun, everyone, levelXp, flash, offerBond, offerItem, offerBox, openChoice, offerBoon,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { time = t; },
+    /** PK al mejor de 3 (pvp-extra.js): el reloj vuelve atrás al empezar cada ronda. */
+    setRoundTime(t) { time = t; deathT = 0; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
     debugSpeed(k) { speedK = k; },
     togglePause, spectating, nextSpec,

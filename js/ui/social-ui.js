@@ -276,6 +276,7 @@
       rb.classList.toggle('gold', !!room.rand);
       rb.disabled = !room.isHost;
       rb.onclick = () => { if (room.isHost) G.Social.setRand(!room.rand); };
+      renderPkx(room, ms.length);
       $('lobby-mode-desc').textContent = G.T(room.mode === 'pvp'
         ? 'PK: os podéis atacar entre vosotros. Gana el último en pie.'
         : 'Equipo: jugáis juntos contra los Pokémon salvajes.');
@@ -352,6 +353,31 @@
      * Aventura (la fase se elige en su mapa, con las estrellas), retos en grupo o legendarios.
      * Debajo, una ficha con lo elegido (objetivo y estrellas de la fase, regla de la semana...).
      */
+    /**
+     * PK: extras (pvp-extra.js). Rondas para todos; lo demás según cuántos sois al empezar
+     * (2: tesoro, trampas, revancha; 3 o más: fantasmas, tesoro, rachas, duelo final).
+     * El anfitrión los cambia; los demás los ven.
+     */
+    function renderPkx(room, n) {
+      const box = $('lobby-pkx');
+      box.classList.toggle('hidden', room.mode !== 'pvp');
+      if (room.mode !== 'pvp') return;
+      const o = G.Social.pkxOf(room), host = room.isHost;
+      const sw = (k, label, yes = 'Sí', no = 'No') => `<span style="white-space:nowrap"><span>${G.T(label)}</span> <button class="btn small switch${o[k] ? ' gold' : ''}" data-pkx="${k}"${host ? '' : ' disabled'}>${G.T(o[k] ? yes : no)}</button></span>`;
+      const row = (title, items, note) => `<div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">${title ? `<b>${G.T(title)}</b>` : ''}${items.join('')}${note ? `<span class="sub" style="margin:0;flex-basis:100%;text-align:center">${G.T(note)}</span>` : ''}</div>`;
+      const h = row('', [sw('bo3', 'Rondas', 'Al mejor de 3', 'Una ronda')], o.bo3 ? 'Gana quien gane 2 rondas; entre rondas, todos vuelven con la vida llena.' : 'Una sola ronda: el último en pie gana.')
+        + row('Si sois 2:', [sw('treasure', 'Tesoro central'), sw('traps', 'Suelo trampa'), sw('reroll', 'Revancha del perdedor')],
+              n === 2 ? 'Ahora sois 2: se usan éstos.' : '')
+        + row('Si sois 3 o más:', [sw('ghosts', 'Fantasmas traviesos'), sw('treasure', 'Tesoro central'), sw('streak', 'Rachas de K.O.'), sw('duel', 'Duelo final')],
+              n >= 3 ? 'Ahora sois 3 o más: se usan éstos.' : '');
+      if (box.dataset.html !== h) {
+        box.innerHTML = h; box.dataset.html = h;
+        box.querySelectorAll('[data-pkx]').forEach(b => {
+          b.onclick = () => { const r = G.Social.room; if (r && r.isHost) { const c = G.Social.pkxOf(r); c[b.dataset.pkx] = !c[b.dataset.pkx]; G.Social.setPkx(c); } };
+        });
+      }
+    }
+
     function renderPlay(room, md, cur) {
       const PLAYS = [['n', 'Partida normal'], ['stage', 'Aventura'], ['daily', 'Reto diario'], ['weekly', 'Reto semanal'],
                      ['tower', 'Torre sin fin'], ['legend', 'Desafío legendario']];
@@ -406,6 +432,7 @@
           stage: Number.isInteger((room.mods || {}).stage) ? room.mods.stage : null, ch: (room.mods || {}).ch || null },
         teams: room.mode === 'pvp' && !!room.teams,
         arena: room.mode === 'pvp' && room.arena !== false,
+        pkx: room.mode === 'pvp' ? G.Social.pkxOf(room) : null,      // extras del PK (pvp-extra.js)
         members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny, team: G.Social.teamOf(m, i) }))
       };
       G.Social.setOpen(false);

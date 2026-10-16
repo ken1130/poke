@@ -421,6 +421,8 @@
       <button class="btn small switch" id="lobby-rand-btn">No</button>
       <span class="sub" style="margin:0">Cada uno juega con un Pokémon al azar, sin mejoras.</span>
     </div>
+    <!-- Extras del PK (pvp-extra.js): rondas y lo que sale según cuántos sois (los rellena social-ui.js) -->
+    <div class="hidden" id="lobby-pkx" style="display:flex;flex-direction:column;gap:6px;align-items:center"></div>
       </div>
     </div>
     <h3 id="lobby-inv-title" style="margin:14px 0 6px">Invitar amigos</h3>
@@ -780,6 +782,7 @@
 <script defer src="js/systems/dexquests.js"></script>
 <script defer src="js/systems/stages.js"></script>
 <script defer src="js/systems/pvp.js"></script>
+<script defer src="js/systems/pvp-extra.js"></script>
 <script defer src="js/systems/cheat.js"></script>
 <!-- red: amigos, salas, cooperativo y ranking -->
 <script defer src="js/net/social.js"></script>

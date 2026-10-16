@@ -256,7 +256,7 @@ G.HUD = (() => {
     // ---------- mensajes rápidos encima de cada jugador ----------
     if (G.Coop.active) {
       for (const p of [pl, ...G.Coop.puppets()]) {
-        if (!p.chat) continue;
+        if (!p.chat || G.PvPX.hidden(p)) continue;
         G.Chat.draw(ctx, p, (p.x - cam.left()) * cam.scale, (p.y - cam.top()) * cam.scale, cam.scale, F);
       }
     }
@@ -920,7 +920,9 @@ G.HUD = (() => {
     for (const st of G.Floors.stairsAll) icon(st.route === 'danger' ? 'stairsD' : 'stairs', st.x, st.y, true);
     for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) icon('boss', e.x, e.y, true);
     for (const e of G.EnemyMgr.all()) if (e.elite && !e.boss && !e.dead) icon('elite', e.x, e.y, false, blink);
-    if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl) icon('mate', o.x, o.y, true, o.dead);
+    if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl && !G.PvPX.hidden(o)) icon('mate', o.x, o.y, true, o.dead);   // (PK: el invisible no sale)
+    // PK: el tesoro del centro (pvp-extra.js), punto dorado que late.
+    if (G.PvPX.treasure) { const q = at(0, 0, true); if (q) { ctx.fillStyle = blink ? '#ffd23f' : '#fff3b0'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(q[0], q[1], 4, 0, 6.2832); ctx.fill(); ctx.stroke(); } }
     // Tú: flecha blanca hacia donde miras.
     const a = pl.moveAngle || 0;
     ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
@@ -1081,7 +1083,7 @@ G.HUD = (() => {
 
     // Flechas hacia los compañeros fuera de la vista.
     for (const m of G.Coop.mates) {
-      if (!m.connected) continue;
+      if (!m.connected || G.PvPX.hidden(m.pl)) continue;       // (PK: invisible, sin flecha)
       const o = m.pl;
       const sx = (o.x - cam.left()) * cam.scale, sy = (o.y - o.bodyH * 0.5 - cam.top()) * cam.scale;
       if (sx > 0 && sx < w && sy > 0 && sy < h) continue;
@@ -1125,7 +1127,8 @@ G.HUD = (() => {
       ctx.font = F(800, 20);
       ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.75)';
       const mates = G.Coop.puppets().filter(p => !p.dead && (!G.PvP.on || (G.PvP.teams && p.team === pl.team)));
-      const msg = G.PvP.on && !G.PvP.teams ? 'Has caído: estás fuera del PK'
+      const msg = G.PvPX.isGhost(pl) ? 'Eres un fantasma: te mueves libre y cada 2 s tiras una piedrita que frena a los vivos'
+        : G.PvP.on && !G.PvP.teams ? 'Has caído: estás fuera del PK'
         : !mates.length ? (G.PvP.on ? 'Tu equipo ha caído…' : 'Habéis caído todos…') : 'Has caído: un compañero puede levantarte';
       ctx.strokeText(msg, w / 2, h * 0.62);
       ctx.fillStyle = '#ffb0b8';
