@@ -20,6 +20,14 @@
  * vuelven a dejar cerca). Cada piso: enemigos con +8 % de vida y +20 % de experiencia y
  * monedas (acumulativo), 30 % de vida y un disco de regalo.
  *
+ * Descanso (2026-10-16, reststop.js): al llegar a B2F y siguientes, cada uno elige hoguera,
+ * mercader u entrenamiento (G.Game.openChoice: en grupo todos parados hasta que eligen).
+ *
+ * Piso del tesoro (2026-10-16): al bajar (hacia B2F–B4F), un 12 % de las veces (una por run,
+ * nunca después de superar la mazmorra) se pasa antes por un piso lleno de monedas y algún
+ * ticket, sin enemigos ni jefe. A los 60 s el grupo baja solo al piso que tocaba (el número de
+ * piso no cambia). Lo decide el anfitrión: ['ftr', semilla, piso, tema, peligrosa, semillaDespués].
+ *
  * Ataque combinado (sólo en grupo): la barra se llena mientras estás cerca de un
  * compañero (~20 s); llena, con F (o el botón en móvil) estalla una gran explosión
  * entre los dos.
@@ -74,12 +82,16 @@ G.Floors = (() => {
   const FAR = 3200;          // 100 m (32 px = 1 m): más lejos, las escaleras se acercan
   let farT = 1;
   let combo = 0, comboFlash = 0;
+  // Piso del tesoro y descanso (2026-10-16).
+  const TREASURE_P = 0.12, TREASURE_TIME = 60;
+  let treasure = null, treasureT = 0, treasureUsed = false, treasureBanner = 0, treasureWarn = false, restPending = false;
 
   function reset() {
     floor = 0; stairs = []; standT = [0, 0]; fadeT = 0; graceT = 0; combo = 0; comboFlash = 0;
     theme = 'std'; route = null; arriveT = 0; bossAt = FIRST_BOSS; bossState = 'wait'; bossId = 0; bossDex = 0; warned = false; bossLord = false;
     stairsAt = null; remindT = 0; farmTold = 0; promptT = 0; bossBanner = null; clearBanner = 0;
     cleared = false; endless = false; clearPending = false; clearT = 0; dangerRuns = 0; fireDefs = null;
+    treasure = null; treasureT = 0; treasureUsed = false; treasureBanner = 0; treasureWarn = false; restPending = false;
     const el = document.getElementById('scr-fclear');
     if (el) el.classList.add('hidden');
   }
@@ -252,6 +264,13 @@ G.Floors = (() => {
     comboTick(dt, players);
     for (const s of stairs) s.t += dt;
     if (normal() && stairs.length && !(G.Dungeon && G.Dungeon.inRoom) && !G.Rift.inArena) remindTick(dt);
+    // Descanso: cuando ya casi se ha ido el cartel del piso nuevo (cada uno el suyo).
+    const me = G.Game.player;
+    if (restPending && fadeT < 1.4 && me && !me.dead && (G.Game.state === 'playing' || G.Game.state === 'held')) {
+      restPending = false;
+      G.Game.openChoice(G.Rest.show);
+    }
+    if (treasure) { treasureTick(dt); return; }
     if (!authority()) return;
     if (clearPending && G.Game.player && !G.Game.player.dead && (G.Game.state === 'playing' || G.Game.state === 'held')) {
       clearPending = false;
@@ -283,6 +302,13 @@ G.Floors = (() => {
         standT[i] += dt;
         if (standT[i] >= STAND) {
           const seed = Math.floor(Math.random() * 1e6) + 1, next = floor + 1, danger = s.route === 'danger' ? 1 : 0;
+          // Piso del tesoro: antes de B2F–B4F, una vez por run.
+          if (!treasureUsed && !cleared && next < LAST && Math.random() < TREASURE_P) {
+            const tseed = Math.floor(Math.random() * 1e6) + 1;
+            if (G.Coop.active) G.Coop.broadcast(['ftr', tseed, next, s.theme, danger, seed]);
+            enterTreasure(tseed, next, s.theme, danger, seed);
+            return;
+          }
           if (G.Coop.active) G.Coop.broadcast(['fl', seed, next, s.theme, danger]);
           descend(seed, next, s.theme, danger);
         }
@@ -306,6 +332,8 @@ G.Floors = (() => {
     // Discos y pociones de cada uno: se vuelven a dejar cerca en el piso nuevo.
     const keep = host ? G.Pickups.all().filter(p => p.kind === 'sbox' || p.kind === 'fbox' || p.kind === 'potion' || p.kind === 'egg').map(p => [p.kind, p.value]) : [];
     const was = theme;
+    treasure = null; treasureT = 0;
+    if (normal() && n >= 1) restPending = true;          // descanso (reststop.js) al llegar
     floor = n; stairs = []; standT = [0, 0];
     theme = THEMES[th0] ? th0 : 'std'; route = danger ? 'danger' : 'safe';
     arriveT = T(); bossAt = arriveT + NEXT_BOSS; bossState = 'wait'; bossId = 0; bossDex = 0; warned = false; bossLord = false;
@@ -361,6 +389,63 @@ G.Floors = (() => {
     graceT = GRACE;
     fadeT = 2.6;                       // el cartel "B2F" del fundido (drawFade)
     G.Audio.sfx('biome');
+  }
+
+  // ---------------- piso del tesoro (2026-10-16) ----------------
+
+  /** Todos: viaje al piso del tesoro (luego se baja al piso `next` con la semilla `seed2`). */
+  function enterTreasure(tseed, next, th0, danger, seed2) {
+    const host = authority();
+    const keep = host ? G.Pickups.all().filter(p => p.kind === 'sbox' || p.kind === 'fbox' || p.kind === 'potion' || p.kind === 'egg').map(p => [p.kind, p.value]) : [];
+    const wasFog = th().fog;
+    treasure = { next, th: th0, danger, seed: seed2 }; treasureUsed = true;
+    treasureT = TREASURE_TIME; treasureBanner = performance.now() + 4200; treasureWarn = false;
+    stairs = []; standT = [0, 0]; theme = 'std';
+    bossState = 'treasure'; bossId = 0; bossDex = 0; warned = false; bossLord = false;
+    stairsAt = null; promptT = 0; bossBanner = null; fireDefs = null;
+    G.World.reset(tseed);
+    if (!G.Game.fixedScene) G.World.setBiome(Math.floor(T() / 240) + floor, true);
+    G.EnemyMgr.clear(); G.Projectiles.clear(); G.Combat.clearFields(); G.Pickups.clear(); G.FX.clear();
+    G.Path.clear(); G.Hazards.clear(); G.Rift.reset(); G.Dungeon.clearSites();
+    if (G.Raid.clear && host) G.Raid.clear();
+    if (wasFog) G.Weather.onEvent(['wx']);
+    const pl = G.Game.player;
+    if (pl) {
+      const i = G.Coop.active ? Math.max(0, G.Coop.players().indexOf(pl)) : 0;
+      pl.x = (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 40; pl.y = 0;
+      G.Camera.x = pl.x; G.Camera.y = pl.y;
+      pl.invuln = Math.max(pl.invuln || 0, 2);
+    }
+    if (host) {
+      // El tesoro: monedas por todas partes, tickets (uno por cabeza y dos más) y alguna baya.
+      const n = G.Game.everyone().length;
+      const spot = (r0, r1, fn) => {
+        for (let k = 0; k < 30; k++) {
+          const a = Math.random() * 6.2832, d = G.U.rand(r0, r1), x = Math.cos(a) * d, y = Math.sin(a) * d;
+          if (G.World.isFree(x, y, 14)) { fn(x, y); return; }
+        }
+      };
+      for (let i = 0; i < 50 + 10 * n; i++) spot(110, 900, (x, y) => G.Pickups.drop('coin', x, y, 4));
+      for (let i = 0; i < 2 + n; i++) spot(200, 700, (x, y) => G.Pickups.drop('ticket', x, y, 1));
+      if (Math.random() < 0.2) spot(300, 700, (x, y) => G.Pickups.drop('ticket10', x, y, 1));
+      for (let i = 0; i < 3; i++) spot(200, 600, (x, y) => G.Pickups.drop('heal', x, y, 0));
+      for (const [kind, owner] of keep) spot(260, 480, (x, y) => G.Pickups.drop(kind, x, y, owner));
+    }
+    graceT = GRACE;
+    fadeT = 2.6;
+    G.Audio.sfx('shiny');
+  }
+
+  /** Cada fotograma en el piso del tesoro: nada sale; a los 60 s, al piso que tocaba. */
+  function treasureTick(dt) {
+    graceT = GRACE;                                      // tregua todo el rato: ni enemigos ni jefes
+    if (G.Rift.inArena || (G.Dungeon && G.Dungeon.inRoom)) return;      // (por si acaso: el reloj espera)
+    treasureT -= dt;
+    if (!treasureWarn && treasureT <= 10) { treasureWarn = true; G.Spawner.say(G.T('¡10 s para dejar el piso del tesoro!'), 2.6, true); G.Audio.sfx('error'); }
+    if (treasureT > 0 || !authority()) return;
+    const t = treasure;
+    if (G.Coop.active) G.Coop.broadcast(['fl', t.seed, t.next, t.th, t.danger]);
+    descend(t.seed, t.next, t.th, t.danger);
   }
 
   /** Bioma de un piso (game.js también lo usa): «en llamas» siempre en el volcán. */
@@ -516,6 +601,7 @@ G.Floors = (() => {
       case 'st': setStairs(ev[1], ev[2], ev[1] + 200, ev[2], 'std', 'fog'); break;     // (formato viejo)
       case 'st2': setStairs(ev[1], ev[2], ev[3], ev[4], ev[5], ev[6], !!ev[7]); break;
       case 'fl': descend(ev[1], ev[2], ev[3], ev[4]); break;
+      case 'ftr': enterTreasure(ev[1], ev[2], ev[3], ev[4], ev[5]); break;
       case 'fbs': floor = ev[2]; announceBoss(ev[1], !!ev[3]); break;
       case 'fclr': onClear(ev[1]); break;
       case 'fcn': endless = true; G.Spawner.say(G.T('¡Sigue la aventura! Modo sin fin: los pisos se endurecen'), 3.4, true); break;
@@ -606,7 +692,22 @@ G.Floors = (() => {
   function drawHud(ctx, w, h, pl, Fh, roundRect) {
     ctx.save();
     const boss = G.EnemyMgr.bossAlive();
-    if (allowed()) {
+    if (allowed() && treasure) {
+      // Piso del tesoro: «Piso del tesoro · 0:42» en dorado (rojo los últimos 10 s).
+      const txt = G.T('Piso del tesoro'), st = G.I18n.f('Siguiente piso en {x}', G.U.mmss(Math.max(0, Math.ceil(treasureT))));
+      ctx.font = Fh(800, 12); const w1 = ctx.measureText(txt).width;
+      ctx.font = Fh(700, 11); const w2 = ctx.measureText(st).width + 10;
+      const tw = w1 + w2 + 16, x0 = Math.round(w / 2 - tw / 2), y0 = boss ? 87 : 64;
+      roundRect(ctx, x0, y0, tw, 19, 9);
+      ctx.fillStyle = 'rgba(40,28,4,.85)'; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = '#ffd23f'; ctx.stroke();
+      ctx.textAlign = 'left';
+      ctx.font = Fh(800, 12); ctx.fillStyle = '#ffd23f'; ctx.fillText(txt, x0 + 8, y0 + 14);
+      ctx.font = Fh(700, 11); ctx.fillStyle = treasureT <= 10 ? '#ff8a96' : '#fff3c8'; ctx.fillText(st, x0 + 8 + w1 + 10, y0 + 14);
+      G.HUD.tapInfo(x0, y0, tw, 19, 'floor', () => ({ title: G.T('Piso del tesoro'), color: '#ffd23f',
+        lines: [G.T('Un piso escondido lleno de monedas y tickets, sin Pokémon salvajes ni jefe.'),
+                G.I18n.f('A los 60 s todo el grupo baja solo a B{x}F.', treasure.next + 1)] }));
+    } else if (allowed()) {
       // Pastilla «B2F · Niebla · Jefe del piso en 1:20» debajo del reloj (tocar = qué hace el tema).
       const t0 = th(), txt = 'B' + (floor + 1) + 'F · ' + G.T(t0.name) + (endless ? ' ∞' : '');
       const age = stairsAge(), fm = farmMul();
@@ -673,7 +774,10 @@ G.Floors = (() => {
       ctx.globalAlpha = 1;
     };
     const yb = Math.max(boss ? 150 : 140, h * 0.3 - 46);      // (encima del aviso del spawner, h·0,3)
-    if (clearBanner && performance.now() < clearBanner) {
+    if (treasureBanner && performance.now() < treasureBanner && treasure) {
+      const left = (treasureBanner - performance.now()) / 1000;
+      big(G.T('¡PISO DEL TESORO!'), G.T('¡Coge todas las monedas y tickets que puedas en 60 s!'), '#ffe14d', '#fff3c8', Math.min(1, left, (4.2 - left) * 3), yb);
+    } else if (clearBanner && performance.now() < clearBanner) {
       const left = (clearBanner - performance.now()) / 1000;
       big(G.T('¡MAZMORRA SUPERADA!'), G.I18n.f('Tiempo: {x} · +300 monedas · ticket ×10', G.U.mmss(clearT)), '#ffe14d', '#fff3c8', Math.min(1, left, (6 - left) * 3), yb);
       if (G.Coop.active && !G.Coop.isHost) { ctx.font = Fh(700, 11); outlined(ctx, G.T('El anfitrión decide: terminar o seguir'), w / 2, yb + 40, '#cfe4ff', 3); }
@@ -698,9 +802,12 @@ G.Floors = (() => {
       ctx.globalAlpha = a;
       ctx.fillStyle = '#05060a'; ctx.fillRect(0, 0, w, h);
       ctx.textAlign = 'center';
-      ctx.font = Fh(800, 40); ctx.fillStyle = '#cfe4ff';
-      ctx.fillText('B' + (floor + 1) + 'F', w / 2, h / 2 - 8);
-      if (normal()) {
+      ctx.font = Fh(800, 40); ctx.fillStyle = treasure ? '#ffd23f' : '#cfe4ff';
+      ctx.fillText(treasure ? G.T('Piso del tesoro') : 'B' + (floor + 1) + 'F', w / 2, h / 2 - 8);
+      if (treasure) {
+        ctx.font = Fh(700, 14); ctx.fillStyle = '#fff3c8';
+        ctx.fillText(G.T('Monedas y tickets por todas partes · sin enemigos · 60 s'), w / 2, h / 2 + 24);
+      } else if (normal()) {
         ctx.font = Fh(800, 18); ctx.fillStyle = t0.color;
         ctx.fillText((route ? G.T(route === 'danger' ? 'Ruta peligrosa' : 'Ruta segura') + '・' : '') + G.T(t0.name), w / 2, h / 2 + 20);
         ctx.font = Fh(700, 12); ctx.fillStyle = '#9fc8ff';
@@ -726,5 +833,6 @@ G.Floors = (() => {
            get eliteItem() { return !!k('eliteItem', false); }, get healMul() { return k('heal'); }, get thickFog() { return !!k('fog', false); },
            get farmMul() { return normal() ? farmMul() : 1; }, get stairsAge() { return stairsAge(); },
            get bossState() { return bossState; }, get bossAt() { return bossAt; },
+           get treasure() { return !!treasure; }, get treasureLeft() { return treasure ? treasureT : 0; },
            get combo() { return combo; }, set combo(v) { combo = v; } };
 })();
