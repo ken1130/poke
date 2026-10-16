@@ -92,6 +92,8 @@ G.AchDefs = (() => {
     { id: 'kecleon1', cat: 'mazmorra', tier: 3, name: 'Gran golpe', desc: 'Roba en la tienda y vence a Kecleon furioso.', value: st('kecleonWins'), goal: 1, reward: { t10: 1 }, title: 'Ladrón de guante blanco' },
     { id: 'floor3', cat: 'mazmorra', tier: 1, name: 'Hacia abajo', desc: 'Llega al piso B3F.', value: st('maxFloor'), goal: 3, reward: { t1: 2 } },
     { id: 'floor5', cat: 'mazmorra', tier: 2, name: 'Explorador', desc: 'Llega al piso B5F.', value: st('maxFloor'), goal: 5, reward: { t10: 1 }, title: 'Explorador' },
+    { id: 'clear1', cat: 'mazmorra', tier: 3, name: '¡Mazmorra superada!', desc: 'Vence al Señor del Laberinto en B5F.', value: st('clears'), goal: 1, reward: { t10: 2 }, title: 'Conquistador del laberinto' },
+    { id: 'clear5', cat: 'mazmorra', tier: 3, name: 'Rey del laberinto', desc: 'Supera la mazmorra 5 veces.', value: st('clears'), goal: 5, reward: { t10: 3 } },
     { id: 'floor10', cat: 'mazmorra', tier: 3, name: 'Fondo de la mazmorra', desc: 'Llega al piso B10F.', value: st('maxFloor'), goal: 10, reward: { t10: 3 }, title: 'Señor de la mazmorra' },
     { id: 'hatch1', cat: 'mazmorra', tier: 1, name: '¡Ha nacido!', desc: 'Haz eclosionar un huevo Pokémon.', value: st('hatches'), goal: 1, reward: { t1: 2 } },
     { id: 'hatchShiny', cat: 'mazmorra', tier: 3, name: 'Un huevo especial', desc: 'Haz eclosionar un compañero shiny.', value: st('shinyHatches'), goal: 1, reward: { t10: 2 }, title: 'Criador' },

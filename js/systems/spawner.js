@@ -100,7 +100,8 @@ G.Spawner = (() => {
   }
 
   function spawnOne(pl, t, angle, at) {
-    const def = G.U.pick(G.Enemies.bagAt(t));
+    // Piso «en llamas» (floors.js): casi todos de tipo Fuego.
+    const def = (!at && G.Floors.pickDef()) || G.U.pick(G.Enemies.bagAt(t));
     const pt = at || freePoint(pl, angle == null ? Math.random() * 6.2832 : angle, isFlyer(def));
     if (!pt) return null;
     const shiny = rollShiny(def.dex);
@@ -119,7 +120,7 @@ G.Spawner = (() => {
     if (G.Events.golden) e.makeGolden();
     G.Floors.scaleEnemy(e);
     // Élite (2026-10-15): desde el minuto 2, un 3 % sale con un afijo (enemy.js makeElite).
-    if (t >= 120 && Math.random() < 0.03 * (G.Modes.rule('eliteK') || 1) && e.behavior !== 'thief') e.makeElite(G.U.pick(Object.keys(G.Enemy.ELITE)));
+    if (t >= 120 && Math.random() < 0.03 * (G.Modes.rule('eliteK') || 1) * G.Floors.eliteMul && e.behavior !== 'thief') e.makeElite(G.U.pick(Object.keys(G.Enemy.ELITE)));
     G.EnemyMgr.add(e);
     if (shiny && !shinyMode) {
       say('¡Un ' + e.name + ' shiny anda cerca!', 3.4);
@@ -128,7 +129,8 @@ G.Spawner = (() => {
     return e;
   }
 
-  function spawnBoss(pl, t, b) {
+  /** @param tweak  (opcional) se le aplica al jefe antes de añadirlo (floors.js: jefe del piso) */
+  function spawnBoss(pl, t, b, tweak) {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
     const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1)), true);
     e.dmg *= G.Coop.scaleDmg(players.length);
@@ -138,6 +140,7 @@ G.Spawner = (() => {
       if (e.maxHp < floor) e.maxHp = e.hp = floor;
     }
     if (rollShiny(b.dex)) e.makeShiny(!G.Modes.on('shiny'));
+    if (tweak) tweak(e);
     G.Floors.scaleEnemy(e);
     G.EnemyMgr.add(e);
     say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' salvaje apareció!', 3.2);
@@ -147,8 +150,11 @@ G.Spawner = (() => {
   }
 
   /** @param who  el jugador o la lista de jugadores (cooperativo) */
-  function update(dt, who, t) {
+  function update(dt, who, tReal) {
     players = Array.isArray(who) ? who : [who];
+    // Reloj de la dificultad (2026-10-16): con las escaleras del piso ya fuera, los enemigos
+    // dejan de endurecerse (floors.js diffTime). El de los jefes, los avisos y la calma: el real.
+    const t = G.Floors.diffTime(tReal);
     if (announceT > 0) announceT -= dt;
     // En la arena de la grieta no sale nada más (y el reloj de jefes espera).
     // En el Desafío legendario, nunca: todo pasa en la arena.
@@ -162,27 +168,32 @@ G.Spawner = (() => {
     // Aviso al empezar el tiempo extra (los enemigos se endurecen cada vez más
     // deprisa, ver data/enemies.js).
     const lf = G.Enemies.LATE_FROM * 60;
-    if (t >= lf && t - dt < lf) { say('¡Los Pokémon salvajes se vuelven cada vez más fuertes!', 3.6); G.Audio.sfx('boss'); }
+    if (tReal >= lf && tReal - dt < lf) { say('¡Los Pokémon salvajes se vuelven cada vez más fuertes!', 3.6); G.Audio.sfx('boss'); }
 
-    if (G.Modes.on('boss')) { bossModeUpdate(dt, t); return; }
+    if (G.Modes.on('boss')) { bossModeUpdate(dt, tReal); return; }
 
     // --- jefes ---
     const b = G.Modes.run === 'stage' ? null : G.Enemies.BOSSES[bossIdx];     // aventura: los jefes los pone la fase
     const grace = G.Floors.graceMul();     // piso recién estrenado: tregua (floors.js)
-    if (b && t >= b.at && !G.Floors.inGrace) { spawnBoss(anchor(), t, b); bossIdx++; }
+    // (Partida normal: con el jefe del piso vivo, las escaleras fuera o el jefe del piso a punto
+    // de salir, el de siempre se aplaza 30 s; floors.js holdBoss.)
+    if (b && tReal >= b.at && !G.Floors.inGrace) {
+      if (G.Floors.holdBoss(tReal)) b.at = tReal + 30;
+      else { spawnBoss(anchor(), tReal, b); bossIdx++; }
+    }
 
     // Combate de jefe: las oleadas bajan al 25% y no hay mareas, para que el
     // jefe sea un momento propio y se le pueda apuntar entre la multitud.
     const bossFight = G.EnemyMgr.bossAlive();
 
     // --- goteo normal ---
-    const calm = calmAt(t);
+    const calm = calmAt(tReal);
     if (calm && !wasCalm) { say('Momento de calma: menos Pokémon salvajes durante 20 s', 3); G.Audio.sfx('heal'); }
     else if (!calm && wasCalm) say('¡Vuelven los Pokémon salvajes!', 2.4);
     wasCalm = calm;
-    const cap = Math.round((grace < 1 ? capNow() * (0.15 + 0.85 * grace) : capNow()) * (calm ? 0.5 : 1));
+    const cap = Math.round((grace < 1 ? capNow() * (0.15 + 0.85 * grace) : capNow()) * (calm ? 0.5 : 1) * G.Floors.capMul);
     if (G.EnemyMgr.count < cap) {
-      acc += rate(t) * G.Modes.countMul() * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * (G.PvP.on ? 0.5 : 1) * grace * (calm ? 0.25 : 1) * dt;
+      acc += rate(t) * G.Modes.countMul() * G.Coop.scaleRate(players.length) * (bossFight ? 0.25 : 1) * (G.PvP.on ? 0.5 : 1) * grace * (calm ? 0.25 : 1) * G.Floors.spawnMul * dt;
       let n = Math.floor(acc);
       acc -= n;
       while (n-- > 0 && G.EnemyMgr.count < cap) spawnOne(anchor(), t);
@@ -215,11 +226,11 @@ G.Spawner = (() => {
   }
 
   /** Un jefe ya (torre sin fin, aventura). @param def  definición del jefe (por defecto, uno al azar para `t`) */
-  function spawnBossNow(pl, t, def) {
+  function spawnBossNow(pl, t, def, tweak) {
     if (!players.length && pl) players = [pl];
     def = def || G.Enemies.bossAt(t);
     G.Sprites.preload([def.dex]);
-    return spawnBoss(pl || anchor(), t, def);
+    return spawnBoss(pl || anchor(), t, def, tweak);
   }
 
   /** Unos cuantos de golpe desde un lado (al empezar una horda). */

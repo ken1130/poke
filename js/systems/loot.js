@@ -254,9 +254,11 @@ G.Loot = (() => {
   }
 
   /** Te bebes la poción `id` (la que tuvieras antes se acaba). */
-  function drink(pl, id) {
+  /** @param auto  la bebe la bendición «Alquimista» (no cuenta para el reto «sin pociones») */
+  function drink(pl, id, auto = false) {
     const def = POTIONS[id];
     if (!def || !pl) return;
+    if (!auto && pl === G.Game.player && G.RunGoals) G.RunGoals.onEvent('potion');
     pl.drinkPotion(id, def);
     G.Spawner.say(G.T(def.name) + ' ' + G.T(def.desc), 3, true);
     G.FX.ring(pl.x, pl.y, 6, 90, def.color, 0.5, 4);

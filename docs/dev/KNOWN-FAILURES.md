@@ -97,3 +97,14 @@
   - 無頭瀏覽器的畫格不穩，`setTimeout` 的真實秒數跟遊戲時間（`G.Game.st.time`）不一樣。
   - 隨便抓一隻野怪當木樁：每隻屬性不同（屬性相剋倍率不同），玩家也會改打更近的別隻；燃燒的每跳傷害也被算進「命中」。
 - **以後怎麼避免**：用 `G.Spawner.spawnAt` 生一隻固定的木樁（血量設很高、`rootT` 定住），其他怪移到很遠；比較「有／沒有」時用**同一隻**；時間用遊戲時間算；要算命中就包住要量的函式（例如 `G.Arts.diceK`），不要數 `hurt` 的次數。
+
+## 13. 無頭測試：自動點卡片不會關掉技能光碟（2026-10-16）
+
+- **症狀**：跳時間測樓層時卡在 `state === 'choice'`，層主一直不出現（`inGrace` 也不會倒數）。
+- **原因**：技能光碟視窗（`#sbox-cards`）裡的卡片只是展示，要按 `#sbox-ok` 才會關；自動點擊先點到卡片就 `return`，永遠按不到確定。遊戲在選擇中時間不走，換層緩衝也不會結束。另外單人升級卡在 `#cards`，不是 `#lvl-cards`。
+- **以後怎麼避免**：測試的自動點擊先按 `#sbox-ok`，再點 `#boon-cards`／`#cards`／`#lvl-cards`／`#item-cards` 的卡片；跳時間前確認 `G.Game.state === 'playing'`。
+
+## 14. 組隊雙分頁測試不用 Firebase（2026-10-16）
+
+- 用 `page.addInitScript` 先建立 `window.G`，在 `G.Net` 被設定時（`Object.defineProperty` 的 setter）包住 `on()` 記下處理函式，並把 `send`／`sendFast`／`toHost` 換成 `exposeFunction` 的轉送、`uid` 換成固定值；另一頁收到就呼叫記下的處理函式。兩頁 `G.Game.startRun({seed, host:'H', members:[…]})` 就能測事件同步（範例見 2026-10-16 樓層功能的測試）。
+- 注意：遊戲中途改了怪物血量（例如 `spawnBossNow` 之後才改 `maxHp`），隊友收到的 `'ne'` 是舊的血量 → 要在加入前改（`spawnBossNow(pl, t, def, tweak)` 的 `tweak`）。

@@ -1,63 +1,204 @@
-/* ============ floors.js — pisos del dungeon y ataque combinado (2026-10-15) ============
+/* ============ floors.js — pisos del dungeon y ataque combinado (2026-10-15, 2026-10-16) ============
  *
- * Escaleras (sólo en la partida normal): desde el minuto 5, cada 5 min aparecen unas
- * escaleras lejos de vosotros. Cuando TODOS los que siguen en pie están encima 2 s,
- * se baja al siguiente piso: mapa nuevo (otra semilla) y el bioma siguiente; fuera
- * enemigos, disparos y objetos del suelo (los discos y pociones de cada uno se
- * vuelven a dejar cerca). Cada piso: enemigos con +8 % de vida y +20 % de
- * experiencia y monedas (acumulativo).
+ * Partida normal (2026-10-16, "el modo normal no tiene meta"): la mazmorra tiene 5 pisos.
+ *
+ *   Jefe del piso  B1F a los 4:00; en los demás, 3:30 después de llegar. Sale cerca del
+ *                  grupo (nunca con el grupo dentro de una tienda/sala ni en la grieta: espera).
+ *                  Las escaleras sólo aparecen al vencerlo. En B5F es el Señor del Laberinto
+ *                  (un legendario): vencerlo = MAZMORRA SUPERADA (premio grande y una ventana:
+ *                  «凱旋結算» acaba la run como victoria; «繼續挑戰» sigue sin fin en B6F, B7F...).
+ *   Dos escaleras  ruta segura (tema suave) y ruta peligrosa (tema duro con más premio y un
+ *                  regalo al llegar). Todo el grupo encima de LA MISMA 2 s para bajar.
+ *   Temas de piso  THEMES: cambian generación, daño, velocidad, monedas, experiencia, élites,
+ *                  clima (niebla) y el tipo de los salvajes (fuego).
+ *   Dificultad     con las escaleras ya fuera, la dificultad del piso deja de subir
+ *                  (diffTime: el reloj de los enemigos se queda donde salieron) y si el grupo
+ *                  se queda más de 3 min, la experiencia y las monedas bajan (×0,5; a los 5 min ×0,25).
+ *
+ * Al bajar: mapa nuevo (otra semilla), el bioma siguiente (o el volcán si es «en llamas»),
+ * fuera enemigos, disparos y objetos del suelo (los discos y pociones de cada uno se
+ * vuelven a dejar cerca). Cada piso: enemigos con +8 % de vida y +20 % de experiencia y
+ * monedas (acumulativo), 30 % de vida y un disco de regalo.
  *
  * Ataque combinado (sólo en grupo): la barra se llena mientras estás cerca de un
  * compañero (~20 s); llena, con F (o el botón en móvil) estalla una gran explosión
  * entre los dos.
  *
- * Cooperativo: las escaleras y la bajada las decide el anfitrión (['st', x, y] y
- * ['fl', semilla, piso]); el ataque combinado lo hace cada uno (su daño va al
- * anfitrión como cualquier golpe) y los demás sólo ven el efecto (['cb', ...]).
+ * Cooperativo: todo lo decide el anfitrión:
+ *   ['fbs', id, piso, señor]                 ha salido el jefe del piso
+ *   ['st2', x1, y1, x2, y2, temaA, temaB]    escaleras (A segura, B peligrosa)
+ *   ['fl', semilla, piso, tema, peligrosa]   bajada
+ *   ['fclr', t]                              mazmorra superada (premio para todos)
+ *   ['fcn']                                  el anfitrión sigue jugando (sin fin)
+ * El ataque combinado lo hace cada uno (su daño va al anfitrión como cualquier golpe) y
+ * los demás sólo ven el efecto (['cb', ...]).
  */
 G.Floors = (() => {
   const T = () => G.Game.st.time;
   const authority = () => !G.Coop.active || G.Coop.isHost;
-  const FIRST = 300, EVERY = 300, STAND = 2, STAIRS_R = 50;
+  const STAND = 2, STAIRS_R = 50;
+  const FIRST_BOSS = 240, NEXT_BOSS = 210, WARN = 10;   // jefe del piso: B1F 4:00, luego 3:30 tras llegar
+  const LAST = 4;                                        // B5F (índice 4): el Señor del Laberinto
+  const REMIND = 60;                                     // recordatorio de las escaleras
+  const FARM_A = 180, FARM_B = 300;                      // quedarse: ×0,5 y ×0,25 de experiencia y monedas
+  // Señor del Laberinto: legendarios grandes (el primero con sprite).
+  const LORDS = [150, 384, 487, 483, 484, 249, 250, 382, 383, 644, 643, 716, 717, 800, 890];
+
+  /*
+   * Temas de piso. safe: ruta segura. Multiplicadores (1 si no está):
+   *   spawn/cap  generación y tope · dmg/spd  enemigos · coin/xp  premios · elite  probabilidad
+   *   heal  bayas curativas · fire  parte de los salvajes que son de tipo Fuego · fog  niebla
+   */
+  const THEMES = {
+    std:     { name: 'Piso estándar', safe: true, color: '#cfe4ff', desc: 'Sin cambios.' },
+    calm:    { name: 'Piso sereno', safe: true, color: '#9fe0b0', desc: '−25 % de Pokémon salvajes.', spawn: 0.75, cap: 0.85 },
+    harvest: { name: 'Piso de cosecha', safe: true, color: '#ffe08a', desc: 'Bayas curativas ×3 y monedas ×1,3.', coin: 1.3, heal: 3 },
+    fire:    { name: 'Piso en llamas', color: '#ff7a3d', desc: 'Casi todos los salvajes son de tipo Fuego; enemigos +15 % de daño; monedas ×1,5.', dmg: 1.15, coin: 1.5, fire: 0.75 },
+    fog:     { name: 'Piso de niebla', color: '#c9cfdc', desc: 'Niebla densa: ves mucho menos; experiencia ×2.', xp: 2, fog: true },
+    gold:    { name: 'Piso dorado', color: '#ffd23f', desc: 'Monedas ×2; enemigos +10 % de velocidad.', coin: 2, spd: 1.1 },
+    horde:   { name: 'Piso del ejército', color: '#ff8a96', desc: '+40 % de Pokémon salvajes; experiencia ×1,5.', spawn: 1.4, cap: 1.25, xp: 1.5 },
+    elite:   { name: 'Piso de élite', color: '#ffb84d', desc: 'Élites ×4 y siempre sueltan un objeto.', elite: 4, eliteItem: true }
+  };
+  const SAFE = ['std', 'calm', 'harvest'], DANGER = ['fire', 'fog', 'gold', 'horde', 'elite'];
+  const th = () => THEMES[theme] || THEMES.std;
+  const k = (key, def = 1) => { const v = normal() ? th()[key] : null; return v == null ? def : v; };
 
   // Tregua al bajar (2026-10-15): 6 s sin enemigos y luego van saliendo poco a poco
   // (hasta 30 s, y con un tope que también va subiendo), sin mareas ni jefes.
   const GRACE = 30, GRACE_EMPTY = 6;
-  let floor = 0, stairs = null, nextAt = FIRST, standT = 0, fadeT = 0, graceT = 0;
+  let floor = 0, stairs = [], standT = [0, 0], fadeT = 0, graceT = 0;
+  let theme = 'std', route = null, arriveT = 0, bossAt = FIRST_BOSS, bossState = 'wait', bossId = 0, bossDex = 0, warned = false;
+  let bossLord = false;
+  let stairsAt = null, remindT = 0, farmTold = 0, promptT = 0, bossBanner = null, clearBanner = 0;
+  let cleared = false, endless = false, clearPending = false, clearT = 0, dangerRuns = 0, fireDefs = null;
   const FAR = 3200;          // 100 m (32 px = 1 m): más lejos, las escaleras se acercan
   let farT = 1;
   let combo = 0, comboFlash = 0;
 
-  function reset() { floor = 0; stairs = null; nextAt = FIRST; standT = 0; fadeT = 0; graceT = 0; combo = 0; comboFlash = 0; }
+  function reset() {
+    floor = 0; stairs = []; standT = [0, 0]; fadeT = 0; graceT = 0; combo = 0; comboFlash = 0;
+    theme = 'std'; route = null; arriveT = 0; bossAt = FIRST_BOSS; bossState = 'wait'; bossId = 0; bossDex = 0; warned = false; bossLord = false;
+    stairsAt = null; remindT = 0; farmTold = 0; promptT = 0; bossBanner = null; clearBanner = 0;
+    cleared = false; endless = false; clearPending = false; clearT = 0; dangerRuns = 0; fireDefs = null;
+    const el = document.getElementById('scr-fclear');
+    if (el) el.classList.add('hidden');
+  }
   /** Spawner: 0 = no sale nada, 1 = normal (la tregua del piso nuevo). */
   const graceMul = () => graceT <= 0 ? 1 : graceT > GRACE - GRACE_EMPTY ? 0 : Math.pow(1 - graceT / (GRACE - GRACE_EMPTY), 2);
-  const allowed = () => G.Modes.run === 'normal' && !G.PvP.on && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom);
+  const normal = () => G.Modes.run === 'normal' && !G.PvP.on;
+  const allowed = () => normal() && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom);
+
+  /** Reloj de la dificultad (spawner): con las escaleras fuera, se queda parado. */
+  const diffTime = t => stairsAt != null && normal() ? Math.min(t, stairsAt) : t;
+  /** Segundos desde que salieron las escaleras (o -1). */
+  const stairsAge = () => stairsAt == null ? -1 : Math.max(0, T() - stairsAt);
+  /** Quedarse en un piso ya superado: la experiencia y las monedas bajan. */
+  const farmMul = () => { const a = stairsAge(); return a >= FARM_B ? 0.25 : a >= FARM_A ? 0.5 : 1; };
+
+  // ---------------- jefe del piso ----------------
+
+  /** Anfitrión: elige quién será el jefe del piso (para precargar su sprite). */
+  function pickBossDex() {
+    const lord = floor === LAST && !cleared;
+    if (lord) {
+      const ok = LORDS.filter(d => G.SPRITE_META[d] && G.DEX_BY[d]);
+      return ok.length ? G.U.pick(ok) : 150;
+    }
+    const slot = G.Enemies.BOSS_SLOTS[Math.min(G.Enemies.BOSS_SLOTS.length - 1, floor)];
+    const used = new Set(G.Enemies.BOSSES.map(b => b.dex));
+    let pool = G.DEX.filter(p => !p.leg && p.rarity < 5 && G.SPRITE_META[p.dex] && !used.has(p.dex) && p.bst >= slot.bst[0] && p.bst <= slot.bst[1]);
+    if (!pool.length) pool = G.DEX.filter(p => !p.leg && G.SPRITE_META[p.dex] && p.bst >= 500);
+    return G.U.pick(pool).dex;
+  }
+
+  function spawnFloorBoss(live) {
+    const t = T(), lord = floor === LAST && !cleared;
+    const slots = G.Enemies.BOSS_SLOTS, slot = slots[Math.min(slots.length - 1, floor)];
+    // Más duro que un jefe normal de su hueco (×1,3); el Señor ×1,2 del último hueco más su
+    // suelo de vida (×2,5 del de jefe); sin fin (B6F+): +10 % por piso.
+    const hpMul = lord ? 1.2 : floor > LAST ? 1.3 * (1 + 0.1 * (floor - LAST)) : 1.3;
+    const def = G.Enemies.bossFor(bossDex || pickBossDex(), slot, hpMul);
+    const n = G.Game.everyone().length;
+    const near = live.slice().sort((a, b) => G.U.dist2(a.x, a.y, cx(live), cy(live)) - G.U.dist2(b.x, b.y, cx(live), cy(live)))[0];
+    const e = G.Spawner.spawnBossNow(near, t, def, e => {
+      const minHp = Math.round(G.Enemies.bossFloor(t) * (lord ? 2.5 : 1.6) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1));
+      if (e.maxHp < minHp) e.maxHp = e.hp = minHp;
+      e.dmg *= lord ? 1.3 : 1.15;
+      e.floorBoss = floor + 1; e.lord = lord;
+    });
+    if (!e) return;
+    bossId = e.id; bossState = 'alive';
+    if (G.Coop.active) G.Coop.broadcast(['fbs', e.id, floor, lord ? 1 : 0]);
+    announceBoss(e.id, lord);
+  }
+  const cx = l => l.reduce((s, p) => s + p.x, 0) / l.length;
+  const cy = l => l.reduce((s, p) => s + p.y, 0) / l.length;
+
+  /** Todos: el cartel grande del jefe del piso. */
+  function announceBoss(id, lord) {
+    bossId = id; bossState = 'alive'; bossLord = !!lord;
+    const e = G.EnemyMgr.get(id);
+    bossBanner = { lord, name: e ? e.name : '', until: performance.now() + 3600 };
+    G.Spawner.say('', 0, true);          // (el cartel grande ya lo dice; que no se pisen)
+    G.Audio.sfx('boss');
+    G.Camera.kick(1.2);
+  }
+
+  /** Anfitrión: el jefe del piso ha caído → escaleras (y, en B5F, mazmorra superada). */
+  function bossDown(live) {
+    bossState = 'dead';
+    if (floor === LAST && !cleared) {
+      cleared = true;
+      const t = Math.floor(T());
+      if (G.Coop.active) G.Coop.broadcast(['fclr', t]);
+      onClear(t);
+      clearPending = true;
+    }
+    const [a, b] = rollThemes();
+    spawnStairs(live, a, b);
+  }
+
+  /** Temas de las dos rutas del piso siguiente (desde B6F, las dos son «peligrosas»). */
+  function rollThemes() {
+    if (floor + 1 > LAST) { const two = G.U.pickN(DANGER, 2); return two; }
+    return [G.U.pick(SAFE), G.U.pick(DANGER)];
+  }
 
   // ---------------- escaleras ----------------
 
-  function spawnStairs(live, quiet = false) {
-    const p = G.U.pick(live);
+  /** Anfitrión: dos escaleras, cerca del grupo y en sentidos opuestos (las dos accesibles a pie). */
+  function spawnStairs(live, ta, tb, quiet = false) {
+    const mx = cx(live), my = cy(live);
+    const p = live.slice().sort((a, b) => G.U.dist2(a.x, a.y, mx, my) - G.U.dist2(b.x, b.y, mx, my))[0];
     const reach = reachable(p);
-    for (let k = 0; k < 60; k++) {
-      const a = Math.random() * 6.2832, d = G.U.rand(700, 1000);
-      const x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
+    const spot = (ang, k) => {
+      const d = G.U.rand(300, 450) + (k > 40 ? 200 : 0);
+      const x = p.x + Math.cos(ang) * d, y = p.y + Math.sin(ang) * d;
       let ok = G.World.isFree(x, y, 30);
       for (let j = 0; ok && j < 8; j++) ok = G.World.isFree(x + Math.cos(j * 0.785) * 44, y + Math.sin(j * 0.785) * 32, 10);
-      // Que se pueda llegar andando (2026-10-15: a veces salían en un hueco rodeado de paredes
-      // y ya no se podía bajar de piso en toda la run). Los 20 últimos intentos, sin exigirlo.
-      if (ok && k < 40 && !reach(x, y)) ok = false;
-      if (!ok) continue;
-      setStairs(Math.round(x), Math.round(y));
-      if (G.Coop.active) G.Coop.broadcast(['st', stairs.x, stairs.y]);
-      if (quiet) return;
-      G.Spawner.say(G.T('¡Han aparecido escaleras al siguiente piso! Míralas en el minimapa'), 3.5, true);
-      G.Audio.sfx('surge');
-      return;
+      // Que se pueda llegar andando (2026-10-15: a veces salían en un hueco rodeado de paredes).
+      if (ok && k < 50 && !reach(x, y)) ok = false;
+      return ok ? [Math.round(x), Math.round(y)] : null;
+    };
+    for (let k = 0; k < 70; k++) {
+      const a = Math.random() * 6.2832;
+      const A = spot(a + G.U.rand(-0.4, 0.4), k);
+      if (!A) continue;
+      let B = null;
+      for (let j = 0; j < 12 && !B; j++) B = spot(a + Math.PI + G.U.rand(-0.7, 0.7), k);
+      if (!B) continue;
+      setStairs(A[0], A[1], B[0], B[1], ta, tb, quiet);
+      if (G.Coop.active) G.Coop.broadcast(['st2', A[0], A[1], B[0], B[1], ta, tb, quiet ? 1 : 0]);
+      return true;
     }
+    // Sin sitio (rarísimo): encima del grupo.
+    setStairs(Math.round(p.x - 120), Math.round(p.y), Math.round(p.x + 120), Math.round(p.y), ta, tb, quiet);
+    if (G.Coop.active) G.Coop.broadcast(['st2', stairs[0].x, stairs[0].y, stairs[1].x, stairs[1].y, ta, tb, quiet ? 1 : 0]);
+    return false;
   }
   /**
    * Casillas a las que se llega andando desde `p` (BFS por G.World.walkable, 36 casillas
-   * alrededor: las escaleras salen a 700-1000 px = 22-31 casillas). Devuelve reach(x, y).
+   * alrededor). Devuelve reach(x, y).
    */
   function reachable(p) {
     const TS = G.World.TS, R = 36, N = R * 2 + 1;
@@ -66,9 +207,9 @@ G.Floors = (() => {
     let head = 0, tail = 0;
     seen[R * N + R] = 1; q[tail++] = R * N + R;
     while (head < tail) {
-      const c = q[head++], cx = c % N, cy = (c - cx) / N;
+      const c = q[head++], cx0 = c % N, cy0 = (c - cx0) / N;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const nx = cx + dx, ny = cy + dy;
+        const nx = cx0 + dx, ny = cy0 + dy;
         if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
         const n = ny * N + nx;
         if (seen[n] || !G.World.walkable(ox + nx, oy + ny)) continue;
@@ -80,13 +221,26 @@ G.Floors = (() => {
       return i >= 0 && j >= 0 && i < N && j < N && seen[j * N + i] === 1;
     };
   }
-  function setStairs(x, y) { stairs = x == null ? null : { x, y, t: 0 }; standT = 0; }
 
-  /** Quién está encima de las escaleras (de los que siguen en pie). */
-  function onStairs(players) {
+  /** Todos: ponen las dos escaleras (quiet = sólo se han recolocado). */
+  function setStairs(x1, y1, x2, y2, ta, tb, quiet) {
+    const first = !stairs.length;
+    stairs = [{ x: x1, y: y1, t: 0, route: floor + 1 > LAST ? 'danger' : 'safe', theme: THEMES[ta] ? ta : 'std' },
+              { x: x2, y: y2, t: 0, route: 'danger', theme: THEMES[tb] ? tb : 'fog' }];
+    standT = [0, 0];
+    if (quiet || !first) return;
+    bossState = 'dead'; bossBanner = null;
+    stairsAt = T(); remindT = REMIND; farmTold = 0;
+    promptT = 5;
+    G.Audio.sfx('surge');
+    if (G.RunGoals) G.RunGoals.onEvent('floorBoss');
+  }
+
+  /** Quién está encima de una escalera (de los que siguen en pie). */
+  function onStairs(players, s) {
     const live = players.filter(p => !p.dead);
-    const on = live.filter(p => G.U.dist2(p.x, p.y, stairs.x, stairs.y) < STAIRS_R * STAIRS_R).length;
-    return [on, live.length];
+    const on = live.filter(p => G.U.dist2(p.x, p.y, s.x, s.y) < STAIRS_R * STAIRS_R);
+    return [on.length, live.length, live.filter(p => !on.includes(p))];
   }
 
   /** Cada fotograma de juego, en todos los ordenadores. */
@@ -94,44 +248,84 @@ G.Floors = (() => {
     if (fadeT > 0) fadeT -= dt;
     if (graceT > 0) graceT -= dt;
     if (comboFlash > 0) comboFlash -= dt;
+    if (promptT > 0) promptT -= dt;
     comboTick(dt, players);
-    if (!authority()) { if (stairs) stairs.t += dt; return; }
+    for (const s of stairs) s.t += dt;
+    if (normal() && stairs.length && !(G.Dungeon && G.Dungeon.inRoom) && !G.Rift.inArena) remindTick(dt);
+    if (!authority()) return;
+    if (clearPending && G.Game.player && !G.Game.player.dead && (G.Game.state === 'playing' || G.Game.state === 'held')) {
+      clearPending = false;
+      G.Game.openChoice(showClear);
+    }
     if (!allowed()) return;
     const live = players.filter(p => !p.dead);
     if (!live.length) return;
-    if (!stairs && T() >= nextAt) { nextAt = T() + EVERY; spawnStairs(live); }
-    if (!stairs) return;
-    stairs.t += dt;
+    // --- jefe del piso ---
+    if (bossState === 'wait') {
+      if (!bossDex && T() >= bossAt - 25) { bossDex = pickBossDex(); G.Sprites.preload([bossDex]); }
+      if (!warned && T() >= bossAt - WARN) { warned = true; G.Spawner.say(G.T(floor === LAST && !cleared ? '¡El Señor del Laberinto se acerca! (10 s)' : '¡El jefe del piso llega en 10 s!'), 3); }
+      if (T() >= bossAt && graceT <= 0) spawnFloorBoss(live);
+    } else if (bossState === 'alive') {
+      const e = G.EnemyMgr.get(bossId);
+      if (!e || e.dead) bossDown(live);
+    }
+    if (!stairs.length) return;
     // A más de 100 m de todos (te has ido lejos): se vuelven a poner cerca (2026-10-16:
     // en el minimapa salían a miles de metros).
     farT -= dt;
     if (farT <= 0) {
       farT = 1;
-      if (live.every(p => G.U.dist2(p.x, p.y, stairs.x, stairs.y) > FAR * FAR)) { const old = stairs; spawnStairs(live, true); if (stairs !== old) standT = 0; }
+      if (live.every(p => stairs.every(s => G.U.dist2(p.x, p.y, s.x, s.y) > FAR * FAR))) spawnStairs(live, stairs[0].theme, stairs[1].theme, true);
     }
-    const [on, n] = onStairs(players);
-    if (on >= n && n > 0) {
-      standT += dt;
-      if (standT >= STAND) {
-        const seed = Math.floor(Math.random() * 1e6) + 1, next = floor + 1;
-        if (G.Coop.active) G.Coop.broadcast(['fl', seed, next]);
-        descend(seed, next);
-      }
-    } else standT = Math.max(0, standT - dt * 2);
+    stairs.forEach((s, i) => {
+      const [on, n] = onStairs(players, s);
+      if (on >= n && n > 0) {
+        standT[i] += dt;
+        if (standT[i] >= STAND) {
+          const seed = Math.floor(Math.random() * 1e6) + 1, next = floor + 1, danger = s.route === 'danger' ? 1 : 0;
+          if (G.Coop.active) G.Coop.broadcast(['fl', seed, next, s.theme, danger]);
+          descend(seed, next, s.theme, danger);
+        }
+      } else standT[i] = Math.max(0, standT[i] - dt * 2);
+    });
+  }
+
+  /** Todos: recordatorio cada minuto y aviso de que el piso ya no da tanto. */
+  function remindTick(dt) {
+    remindT -= dt;
+    const age = stairsAge();
+    if (farmTold < 1 && age >= FARM_A - 30) { farmTold = 1; G.Spawner.say(G.T('En 30 s este piso dará la mitad de experiencia y monedas: ¡baja ya!'), 3.4, true); G.Audio.sfx('error'); remindT = REMIND; return; }
+    if (farmTold < 2 && age >= FARM_A) { farmTold = 2; G.Spawner.say(G.T('Lleváis mucho en este piso: experiencia y monedas ×0,5'), 3.4, true); remindT = REMIND; return; }
+    if (farmTold < 3 && age >= FARM_B) { farmTold = 3; G.Spawner.say(G.T('Experiencia y monedas ×0,25: ¡bajad al siguiente piso!'), 3.4, true); remindT = REMIND; return; }
+    if (remindT <= 0) { remindT = REMIND; G.Spawner.say(G.T('¡Las escaleras al siguiente piso ya están abiertas!'), 3, true); G.Audio.sfx('confirm'); }
   }
 
   /** Bajar al piso n (todos lo hacen igual; el anfitrión además recoloca discos y pociones). */
-  function descend(seed, n) {
+  function descend(seed, n, th0 = 'std', danger = 0) {
     const host = authority();
     // Discos y pociones de cada uno: se vuelven a dejar cerca en el piso nuevo.
     const keep = host ? G.Pickups.all().filter(p => p.kind === 'sbox' || p.kind === 'fbox' || p.kind === 'potion' || p.kind === 'egg').map(p => [p.kind, p.value]) : [];
-    floor = n; stairs = null; standT = 0; nextAt = T() + EVERY;
+    const was = theme;
+    floor = n; stairs = []; standT = [0, 0];
+    theme = THEMES[th0] ? th0 : 'std'; route = danger ? 'danger' : 'safe';
+    arriveT = T(); bossAt = arriveT + NEXT_BOSS; bossState = 'wait'; bossId = 0; bossDex = 0; warned = false; bossLord = false;
+    stairsAt = null; promptT = 0; bossBanner = null; fireDefs = null;
+    if (danger) dangerRuns++;
     G.Progress.event('floor', { n: n + 1 });             // B2F = 2
+    if (G.RunGoals) G.RunGoals.onEvent('route', { danger: !!danger, n });
     G.World.reset(seed);
-    if (!G.Game.fixedScene) G.World.setBiome(Math.floor(T() / 240) + floor, true);
+    if (!G.Game.fixedScene) G.World.setBiome(biomeAt(Math.floor(T() / 240) + floor), true);
     G.EnemyMgr.clear(); G.Projectiles.clear(); G.Combat.clearFields(); G.Pickups.clear(); G.FX.clear();
     G.Path.clear(); G.Hazards.clear(); G.Rift.reset(); G.Dungeon.clearSites();
     if (G.Raid.clear && host) G.Raid.clear();
+    // Niebla densa todo el piso (cada uno la suya: no hace falta mandarla).
+    if (th().fog) G.Weather.force('fog', 99999);
+    else if (THEMES[was] && THEMES[was].fog) G.Weather.onEvent(['wx']);
+    // En llamas: los salvajes de tipo Fuego del tramo de ahora.
+    if (host && th().fire) {
+      fireDefs = G.Enemies.hordeDefs('fire', T());
+      if (fireDefs.length) G.Sprites.preload(fireDefs.map(d => d.dex)); else fireDefs = null;
+    }
     // Todos al centro del piso nuevo (cada uno el suyo, un poco separados).
     const pl = G.Game.player;
     if (pl) {
@@ -143,11 +337,19 @@ G.Floors = (() => {
       if (!pl.dead) { pl.heal(pl.maxHp * 0.3); G.FX.ring(pl.x, pl.y, 6, 80, '#5fe08a', 0.6, 4); }
     }
     // ...y cada uno tiene un disco de movimientos de regalo cerca (no cuenta para los 3 por run).
+    // Ruta peligrosa: además un ticket y una poción para cada uno.
     if (host) for (const p of G.Game.everyone()) {
       if (p.dead) continue;
-      for (let k = 0; k < 30; k++) {
-        const a = Math.random() * 6.2832, d = G.U.rand(120, 220), x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
-        if (G.World.isFree(x, y, 16)) { G.Pickups.drop('fbox', x, y, G.Loot.ownerKey(p)); break; }
+      const near = (r0, r1, fn) => {
+        for (let k = 0; k < 30; k++) {
+          const a = Math.random() * 6.2832, d = G.U.rand(r0, r1), x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
+          if (G.World.isFree(x, y, 16)) { fn(x, y); return; }
+        }
+      };
+      near(120, 220, (x, y) => G.Pickups.drop('fbox', x, y, G.Loot.ownerKey(p)));
+      if (danger) {
+        near(60, 120, (x, y) => G.Pickups.drop('ticket', x, y, 1));
+        near(60, 140, (x, y) => G.Pickups.drop('potion', x, y, G.Loot.ownerKey(p)));
       }
     }
     if (host) for (const [kind, owner] of keep) {
@@ -157,18 +359,98 @@ G.Floors = (() => {
       }
     }
     graceT = GRACE;
-    fadeT = 2.2;                       // el cartel "B2F" del fundido (drawHud)
+    fadeT = 2.6;                       // el cartel "B2F" del fundido (drawFade)
     G.Audio.sfx('biome');
   }
 
+  /** Bioma de un piso (game.js también lo usa): «en llamas» siempre en el volcán. */
+  function biomeAt(b) { return normal() && th().fire ? 2 : b; }
+
+  // ---------------- mazmorra superada ----------------
+
+  /** Todos: premio y celebración (el premio del grupo lo pone el anfitrión). */
+  function onClear(t) {
+    cleared = true; clearT = t; clearBanner = performance.now() + 6000;
+    G.Progress.event('clear', { t });
+    const pl = G.Game.player;
+    if (authority() && pl) {
+      // Monedas de la run y un ticket ×10 (los dos son del grupo: cada uno se los lleva).
+      pl.coins = (pl.coins || 0) + 300;
+      pl.t10 = (pl.t10 || 0) + 1;
+    }
+    if (pl) {
+      for (const col of ['#ffd23f', '#ff8ad8', '#7fe0ff', '#5fe08a']) G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, col, 26, 300);
+      G.FX.ring(pl.x, pl.y, 8, 260, '#ffd23f', 0.9, 8);
+      G.Camera.kick(1.4);
+    }
+    G.Audio.sfx('legend');
+    G.Spawner.say('', 0, true);
+  }
+
+  /** Anfitrión / solitario: la ventana de «mazmorra superada». */
+  function showClear(done) {
+    const box = document.getElementById('fclear-cards'), scr = document.getElementById('scr-fclear');
+    const sub = document.getElementById('fclear-sub');
+    if (!box || !scr) { done(); return; }
+    sub.textContent = G.I18n.f('Has vencido al Señor del Laberinto en {x}. Premio: +300 monedas y un ticket ×10.', G.U.mmss(clearT));
+    box.innerHTML = '';
+    let chosen = false;
+    const opts = [
+      { icon: 'crown', name: 'Celebrar la victoria', desc: 'Termina la run ahora como victoria y ve el resumen.', fin: true },
+      { icon: 'up', name: 'Seguir (modo sin fin)', desc: 'Bajas a B6F y sigues: pisos cada vez más duros, sin otra victoria.', fin: false }
+    ];
+    opts.forEach((o, i) => {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `<div class="ico" style="background:#ffd23f22">${G.Icons.html(o.icon, 32)}</div>
+        <div class="txt"><div class="nm">${G.T(o.name)}</div><div class="ds">${G.T(o.desc)}</div></div>
+        <div class="key">${i + 1}</div>`;
+      el.dataset.sfx = 'none';
+      el.onclick = () => {
+        if (chosen) return;
+        chosen = true;
+        scr.classList.add('hidden');
+        G.Audio.sfx('confirm');
+        done();
+        if (o.fin) setTimeout(() => G.Game.victory(), 0);
+        else {
+          endless = true;
+          if (G.Coop.active) G.Coop.broadcast(['fcn']);
+          G.Spawner.say(G.T('¡Sigue la aventura! Modo sin fin: los pisos se endurecen'), 3.4, true);
+        }
+      };
+      box.appendChild(el);
+    });
+    scr.classList.remove('hidden');
+  }
+  /** Teclas 1-2 y elección automática del grupo (game.js). */
+  function pickClear(i) { const c = document.querySelectorAll('#fclear-cards .card')[i]; if (c) c.click(); }
+
+  // ---------------- efectos de los temas (hooks) ----------------
+
   /** Spawner: un enemigo recién creado en este piso. */
   function scaleEnemy(e) {
-    if (!floor || !e) return;
-    const k = 1 + 0.08 * floor;       // 2026-10-15: antes +15 % por piso (se disparaba)
-    e.maxHp = e.hp = Math.round(e.maxHp * k);
-    e.xp = Math.round(e.xp * (1 + 0.2 * floor));
+    if (!e) return;
+    if (floor) {
+      const kf = 1 + 0.08 * floor;       // 2026-10-15: antes +15 % por piso (se disparaba)
+      e.maxHp = e.hp = Math.round(e.maxHp * kf);
+      e.xp = Math.round(e.xp * (1 + 0.2 * floor));
+    }
+    if (!normal()) return;
+    e.dmg *= k('dmg'); e.spd *= k('spd');
+    e.xp = Math.round(e.xp * k('xp'));
   }
-  const coinMul = () => 1 + 0.2 * floor;
+  const coinMul = () => (1 + 0.2 * floor) * k('coin') * (normal() ? farmMul() : 1);
+  /** Spawner, «en llamas»: un salvaje de tipo Fuego (o null = el de siempre). */
+  function pickDef() { return fireDefs && Math.random() < k('fire', 0) ? G.U.pick(fireDefs) : null; }
+  /**
+   * Spawner: ¿se aplaza el jefe de siempre? (con el jefe del piso vivo, escaleras fuera o el
+   * jefe del piso a menos de 60 s, se aplaza para que no se junten).
+   */
+  function holdBoss(t) {
+    if (!normal()) return false;
+    return bossState === 'alive' || stairs.length > 0 || (bossState === 'wait' && bossAt - t < 60);
+  }
 
   // ---------------- ataque combinado ----------------
 
@@ -230,64 +512,132 @@ G.Floors = (() => {
   // ---------------- red ----------------
 
   function onNet(ev) {
-    if (ev[0] === 'st') setStairs(ev[1], ev[2]);
-    else if (ev[0] === 'fl') descend(ev[1], ev[2]);
-    else if (ev[0] === 'cb') comboFx(ev[1], ev[2], ev[3], ev[4]);
+    switch (ev[0]) {
+      case 'st': setStairs(ev[1], ev[2], ev[1] + 200, ev[2], 'std', 'fog'); break;     // (formato viejo)
+      case 'st2': setStairs(ev[1], ev[2], ev[3], ev[4], ev[5], ev[6], !!ev[7]); break;
+      case 'fl': descend(ev[1], ev[2], ev[3], ev[4]); break;
+      case 'fbs': floor = ev[2]; announceBoss(ev[1], !!ev[3]); break;
+      case 'fclr': onClear(ev[1]); break;
+      case 'fcn': endless = true; G.Spawner.say(G.T('¡Sigue la aventura! Modo sin fin: los pisos se endurecen'), 3.4, true); break;
+      case 'cb': comboFx(ev[1], ev[2], ev[3], ev[4]); break;
+    }
   }
 
   // ---------------- dibujo ----------------
 
-  /** Las escaleras, para ordenarlas con lo demás del suelo (game.js drawScene). */
-  function drawable() {
-    if (!stairs) return null;
-    return { y: stairs.y - 4000, draw: drawStairs };   // planas: debajo de todo
-  }
-  function drawStairs(ctx) {
-    const s = stairs;
-    if (!s || !G.Camera.sees(s.x, s.y, 120)) return;
-    const now = performance.now() / 1000;
-    const img = G.Tiles.propSprite(G.World.biome, 'stairs', 0), k = 2;
-    ctx.save();
-    // Halo azul que late para que se vean desde lejos.
-    ctx.globalAlpha = 0.18 + Math.sin(now * 3) * 0.08;
-    ctx.fillStyle = '#7fb8ff';
-    ctx.beginPath(); ctx.ellipse(s.x, s.y, 58, 40, 0, 0, 6.2832); ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(img, Math.round(s.x - img.width * k / 2), Math.round(s.y - img.height * k / 2), img.width * k, img.height * k);
-    if (Math.random() < 0.06) G.FX.twinkle(s.x + G.U.rand(-30, 30), s.y + G.U.rand(-24, 20));
-    // Cartel y, si alguien espera encima, cuántos faltan.
-    const pls = G.Coop.active ? G.Coop.players() : [G.Game.player];
-    const [on, n] = onStairs(pls);
-    ctx.font = '800 12px Pixelify,"Segoe UI",system-ui,sans-serif';
-    ctx.textAlign = 'center';
-    const lbl = on > 0 && n > 1 ? G.I18n.f('Todos a las escaleras: {x}/{x}', on, n) : G.T('BAJAR AL SIGUIENTE PISO');
-    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.85)';
-    const ly = s.y - 44 - Math.abs(Math.sin(now * 2.5)) * 4;
-    ctx.strokeText(lbl, s.x, ly);
-    ctx.fillStyle = '#cfe4ff'; ctx.fillText(lbl, s.x, ly);
-    if (on > 0 && on >= n) {
-      const f = Math.min(1, standT / STAND);
-      ctx.strokeStyle = '#7fb8ff'; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.arc(s.x, s.y, 46, -Math.PI / 2, -Math.PI / 2 + 6.2832 * (authority() ? f : (now % 1))); ctx.stroke();
-    }
-    ctx.restore();
+  const F = (wt, s) => `${wt} ${s}px Pixelify,"Segoe UI",system-ui,sans-serif`;
+  const routeName = s => G.T(s.route === 'danger' ? 'Ruta peligrosa' : 'Ruta segura');
+  const stairsLabel = s => routeName(s) + '・' + G.T(THEMES[s.theme].name);
+  /** Texto con contorno oscuro (se lee sobre cualquier suelo). */
+  function outlined(ctx, txt, x, y, col, lw = 4) {
+    ctx.lineWidth = lw; ctx.strokeStyle = 'rgba(0,0,0,.88)'; ctx.lineJoin = 'round';
+    ctx.strokeText(txt, x, y); ctx.fillStyle = col; ctx.fillText(txt, x, y);
   }
 
-  /** HUD (coordenadas de pantalla): piso, barra del combinado y fundido al bajar. */
-  function drawHud(ctx, w, h, pl, F, roundRect) {
-    ctx.save();
-    if (floor > 0 || (allowed() && T() > FIRST - 1)) {
+  /** Las escaleras, para ordenarlas con lo demás del suelo (game.js drawScene). */
+  function drawable() {
+    if (!stairs.length) return null;
+    return { y: Math.min(...stairs.map(s => s.y)) - 4000, draw: drawStairs };   // planas: debajo de todo
+  }
+  function drawStairs(ctx) {
+    const now = performance.now() / 1000;
+    for (const s of stairs) {
+      if (!G.Camera.sees(s.x, s.y, 120)) continue;
+      const danger = s.route === 'danger';
+      const img = G.Tiles.propSprite(G.World.biome, 'stairs', danger ? 1 : 0), kk = 2;
+      ctx.save();
+      // Halo que late para que se vean desde lejos (azul la segura, rojo la peligrosa).
+      ctx.globalAlpha = 0.18 + Math.sin(now * 3) * 0.08;
+      ctx.fillStyle = danger ? '#ff5a3d' : '#7fb8ff';
+      ctx.beginPath(); ctx.ellipse(s.x, s.y, 58, 40, 0, 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, Math.round(s.x - img.width * kk / 2), Math.round(s.y - img.height * kk / 2), img.width * kk, img.height * kk);
+      if (Math.random() < 0.06) G.FX.twinkle(s.x + G.U.rand(-30, 30), s.y + G.U.rand(-24, 20));
+      ctx.restore();
+    }
+  }
+
+  /** Encima de todo (game.js render): carteles de las escaleras y la corona del jefe del piso. */
+  function drawAir(ctx) {
+    const now = performance.now() / 1000;
+    const pls = G.Coop.active ? G.Coop.players() : [G.Game.player];
+    stairs.forEach((s, i) => {
+      if (!G.Camera.sees(s.x, s.y, 160)) return;
+      const danger = s.route === 'danger', th0 = THEMES[s.theme];
+      const [on, n, missing] = onStairs(pls, s);
+      ctx.save();
       ctx.textAlign = 'center';
-      ctx.font = F(800, 12);
-      ctx.fillStyle = '#9fc8ff';
-      ctx.fillText('B' + (floor + 1) + 'F', w / 2 - 62, 42);
+      const ly = s.y - 52 - Math.abs(Math.sin(now * 2.5 + i)) * 4;
+      ctx.font = F(800, 13);
+      outlined(ctx, stairsLabel(s), s.x, ly, danger ? '#ffb08a' : '#cfe4ff');
+      ctx.font = F(700, 10);
+      const sub = on > 0 && n > 1 ? G.I18n.f('Todos a las escaleras: {x}/{x}', on, n) + (missing.length ? ' · ' + G.T('Faltan') + ': ' + missing.map(p => p.tag || G.T('Tú')).join('、') : '')
+        : danger ? G.T('Más difícil · regalo al llegar') : G.T('BAJAR AL SIGUIENTE PISO');
+      outlined(ctx, sub, s.x, ly + 14, on > 0 ? '#ffe9a0' : th0.color, 3);
+      if (on > 0 && on >= n) {
+        const f = Math.min(1, standT[i] / STAND);
+        ctx.strokeStyle = danger ? '#ff7a5a' : '#7fb8ff'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(s.x, s.y, 46, -Math.PI / 2, -Math.PI / 2 + 6.2832 * (authority() ? f : (now % 1))); ctx.stroke();
+      }
+      ctx.restore();
+    });
+    // Corona sobre el jefe del piso.
+    const e = floorBoss();
+    if (e && G.Camera.sees(e.x, e.y, 120)) {
+      const img = G.Tiles.propSprite(0, 'crown', bossLord ? 1 : 0), kk = 2;
+      const y = e.y - e.bodyH - 18 - Math.abs(Math.sin(now * 3)) * 3;
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, Math.round(e.x - img.width * kk / 2), Math.round(y - img.height * kk), img.width * kk, img.height * kk);
+      ctx.textAlign = 'center'; ctx.font = F(800, 11);
+      outlined(ctx, G.T(bossLord ? 'Señor del Laberinto' : 'Jefe del piso'), e.x, y - img.height * kk - 4, bossLord ? '#ffb0ff' : '#ffd23f', 3);
+      ctx.restore();
+    }
+  }
+  /** El jefe del piso vivo (también la copia del invitado). */
+  function floorBoss() {
+    if (bossState !== 'alive' || !bossId) return null;
+    const e = G.EnemyMgr.get(bossId);
+    return e && !e.dead ? e : null;
+  }
+
+  /** HUD (coordenadas de pantalla): piso y tema, barra del combinado, avisos grandes. */
+  function drawHud(ctx, w, h, pl, Fh, roundRect) {
+    ctx.save();
+    const boss = G.EnemyMgr.bossAlive();
+    if (allowed()) {
+      // Pastilla «B2F · Niebla · Jefe del piso en 1:20» debajo del reloj (tocar = qué hace el tema).
+      const t0 = th(), txt = 'B' + (floor + 1) + 'F · ' + G.T(t0.name) + (endless ? ' ∞' : '');
+      const age = stairsAge(), fm = farmMul();
+      let st = null, col = '#cfd8ea';
+      if (fm < 1) { st = G.I18n.f('Exp. y monedas ×{x}', fm === 0.5 ? '0.5' : '0.25'); col = '#ff8a96'; }
+      else if (stairs.length) { st = G.T('Escaleras abiertas'); col = '#9fc8ff'; }
+      else if (bossState === 'alive') { st = G.T(bossLord ? 'Señor del Laberinto: ¡véncelo!' : 'Jefe del piso: ¡véncelo!'); col = '#ffd23f'; }
+      else if (bossState === 'wait' && T() < bossAt) st = G.I18n.f('Jefe del piso en {x}', G.U.mmss(Math.max(0, bossAt - T())));
+      ctx.font = Fh(800, 12);
+      const w1 = ctx.measureText(txt).width;
+      ctx.font = Fh(700, 11);
+      const w2 = st ? ctx.measureText(st).width + 10 : 0;
+      const tw = w1 + w2 + 16, x0 = Math.round(w / 2 - tw / 2), y0 = boss ? 87 : 64;
+      roundRect(ctx, x0, y0, tw, 19, 9);
+      ctx.fillStyle = 'rgba(8,12,24,.78)'; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = t0.color; ctx.stroke();
+      ctx.textAlign = 'left';
+      ctx.font = Fh(800, 12); ctx.fillStyle = t0.color; ctx.fillText(txt, x0 + 8, y0 + 14);
+      if (st) { ctx.font = Fh(700, 11); ctx.fillStyle = col; ctx.fillText(st, x0 + 8 + w1 + 10, y0 + 14); }
+      G.HUD.tapInfo(x0, y0, tw, 19, 'floor', () => ({ title: 'B' + (floor + 1) + 'F · ' + G.T(t0.name), color: t0.color,
+        lines: [G.T(t0.desc),
+                route ? G.T(route === 'danger' ? 'Llegaste por la ruta peligrosa.' : 'Llegaste por la ruta segura.') : '',
+                G.T('Mazmorra de 5 pisos: vence al jefe de cada piso para abrir dos escaleras (ruta segura o peligrosa). En B5F espera el Señor del Laberinto.'),
+                G.T('Con las escaleras abiertas el piso deja de endurecerse; si os quedáis más de 3 min, experiencia y monedas ×0,5 (5 min: ×0,25).'),
+                age >= 0 ? G.I18n.f('Escaleras abiertas hace {x}', G.U.mmss(age)) : ''] }));
     }
     if (G.Coop.active && !G.PvP.on && pl && !pl.dead) {
       // A la derecha de las monedas de la run (hud.js), no encima (2026-10-15: se tapaban).
       const x = (G.HUD.coinEnd || 16 + 48 + 168 + 8) + 12, y = 37, bw = 74;
       ctx.textAlign = 'left';
-      ctx.font = F(800, 9);
+      ctx.font = Fh(800, 9);
       ctx.fillStyle = combo >= 1 ? '#ffe14d' : '#cfd8ea';
       const touch = G.Touch.active;
       ctx.fillText(G.T('Combo') + (combo >= 1 ? (touch ? '!' : ' [F]') : ''), x, y - 3);
@@ -308,33 +658,73 @@ G.Floors = (() => {
         ctx.fillStyle = Math.sin(performance.now() / 120) > 0 ? '#ffd23f' : '#ff8ad8'; ctx.fill();
         ctx.lineWidth = 3; ctx.strokeStyle = '#2a1a08'; ctx.stroke();
         ctx.globalAlpha = 1;
-        ctx.textAlign = 'center'; ctx.font = F(800, 13); ctx.fillStyle = '#1a1208';
+        ctx.textAlign = 'center'; ctx.font = Fh(800, 13); ctx.fillStyle = '#1a1208';
         ctx.fillText(G.T('Combo'), bx + S / 2, by + S / 2 + 5);
         G.Touch.addButton(bx, by, S, S, fireCombo, 8);
       }
+    }
+    // Carteles grandes: escaleras abiertas, jefe del piso, mazmorra superada.
+    ctx.textAlign = 'center';
+    const big = (t1, t2, c1, c2, a, y) => {
+      ctx.globalAlpha = a;
+      ctx.font = Fh(800, Math.min(30, w / 22));
+      outlined(ctx, t1, w / 2, y, c1, 6);
+      if (t2) { ctx.font = Fh(800, Math.min(13, w / 50)); outlined(ctx, t2, w / 2, y + 22, c2, 4); }
+      ctx.globalAlpha = 1;
+    };
+    const yb = Math.max(boss ? 150 : 140, h * 0.3 - 46);      // (encima del aviso del spawner, h·0,3)
+    if (clearBanner && performance.now() < clearBanner) {
+      const left = (clearBanner - performance.now()) / 1000;
+      big(G.T('¡MAZMORRA SUPERADA!'), G.I18n.f('Tiempo: {x} · +300 monedas · ticket ×10', G.U.mmss(clearT)), '#ffe14d', '#fff3c8', Math.min(1, left, (6 - left) * 3), yb);
+      if (G.Coop.active && !G.Coop.isHost) { ctx.font = Fh(700, 11); outlined(ctx, G.T('El anfitrión decide: terminar o seguir'), w / 2, yb + 40, '#cfe4ff', 3); }
+    } else if (bossBanner && performance.now() < bossBanner.until) {
+      const left = (bossBanner.until - performance.now()) / 1000;
+      big(G.T(bossBanner.lord ? '¡SEÑOR DEL LABERINTO!' : '¡JEFE DEL PISO!'), G.T(bossBanner.name) + ' · ' + G.T('Véncelo para abrir las escaleras'),
+          bossBanner.lord ? '#ffb0ff' : '#ffd23f', '#ffe9c8', Math.min(1, left, (3.6 - left) * 3), yb);
+    } else if (promptT > 0 && stairs.length) {
+      big(G.T('¡Las escaleras al siguiente piso ya están abiertas!'),
+          stairsLabel(stairs[0]) + '  /  ' + stairsLabel(stairs[1]) + ' — ' + G.T('todo el grupo sobre la misma 2 s'),
+          '#cfe4ff', '#ffe9c8', Math.min(1, promptT, (5 - promptT) * 3), yb);
     }
     ctx.restore();
   }
 
   /** Fundido al bajar: lo último que se dibuja (encima del HUD y el minimapa; game.js render). */
-  function drawFade(ctx, w, h, F) {
+  function drawFade(ctx, w, h, Fh) {
     ctx.save();
     if (fadeT > 0) {
       // Fundido a negro al bajar, con el piso nuevo en grande (como en Mundo Misterioso).
-      const a = Math.min(1, fadeT / 0.8);
+      const a = Math.min(1, fadeT / 0.8), t0 = th();
       ctx.globalAlpha = a;
       ctx.fillStyle = '#05060a'; ctx.fillRect(0, 0, w, h);
       ctx.textAlign = 'center';
-      ctx.font = F(800, 40); ctx.fillStyle = '#cfe4ff';
-      ctx.fillText('B' + (floor + 1) + 'F', w / 2, h / 2);
-      ctx.font = F(700, 14); ctx.fillStyle = '#9fc8ff';
-      ctx.fillText(G.T('Enemigos más fuertes, más premios'), w / 2, h / 2 + 30);
+      ctx.font = Fh(800, 40); ctx.fillStyle = '#cfe4ff';
+      ctx.fillText('B' + (floor + 1) + 'F', w / 2, h / 2 - 8);
+      if (normal()) {
+        ctx.font = Fh(800, 18); ctx.fillStyle = t0.color;
+        ctx.fillText((route ? G.T(route === 'danger' ? 'Ruta peligrosa' : 'Ruta segura') + '・' : '') + G.T(t0.name), w / 2, h / 2 + 20);
+        ctx.font = Fh(700, 12); ctx.fillStyle = '#9fc8ff';
+        ctx.fillText(G.T(t0.desc), w / 2, h / 2 + 42);
+        if (route === 'danger') { ctx.fillStyle = '#ffd23f'; ctx.fillText(G.T('Regalo de la ruta peligrosa: un ticket y una poción para cada uno'), w / 2, h / 2 + 60); }
+      } else {
+        ctx.font = Fh(700, 14); ctx.fillStyle = '#9fc8ff';
+        ctx.fillText(G.T('Enemigos más fuertes, más premios'), w / 2, h / 2 + 30);
+      }
       ctx.globalAlpha = 1;
     }
     ctx.restore();
   }
 
-  return { reset, update, onNet, scaleEnemy, graceMul, get inGrace() { return graceT > 0; }, drawable, drawHud, drawFade, fireCombo, comboFx, descend,
-           get floor() { return floor; }, get stairs() { return stairs; }, get coinMul() { return coinMul(); },
+  return { reset, update, onNet, scaleEnemy, graceMul, get inGrace() { return graceT > 0; }, drawable, drawAir, drawHud, drawFade, fireCombo, comboFx, descend,
+           diffTime, holdBoss, pickDef, biomeAt, pickClear, floorBoss, THEMES, LAST,
+           get floor() { return floor; }, get coinMul() { return coinMul(); },
+           /** Compatibilidad: la primera escalera (tips.js). Todas: stairsAll. */
+           get stairs() { return stairs[0] || null; }, get stairsAll() { return stairs; },
+           get theme() { return theme; }, get route() { return route; }, get cleared() { return cleared; }, get endless() { return endless; },
+           get clearTime() { return clearT; }, get dangerRuns() { return dangerRuns; },
+           get spawnMul() { return k('spawn'); }, get capMul() { return k('cap'); }, get eliteMul() { return k('elite'); },
+           get eliteItem() { return !!k('eliteItem', false); }, get healMul() { return k('heal'); }, get thickFog() { return !!k('fog', false); },
+           get farmMul() { return normal() ? farmMul() : 1; }, get stairsAge() { return stairsAge(); },
+           get bossState() { return bossState; }, get bossAt() { return bossAt; },
            get combo() { return combo; }, set combo(v) { combo = v; } };
 })();

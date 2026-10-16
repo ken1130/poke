@@ -47,7 +47,7 @@ G.Boons = (() => {
       if (pl.potionBoon <= 0) {
         pl.potionBoon = 120;
         const good = Object.keys(G.Loot.POTIONS).filter(k => k !== 'toxic' && k !== 'heavy');
-        G.Loot.drink(pl, G.U.pick(good));
+        G.Loot.drink(pl, G.U.pick(good), true);
       }
     }
   }

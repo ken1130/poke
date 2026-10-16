@@ -710,10 +710,13 @@ G.Tiles = (() => {
      * Escaleras al siguiente piso (floors.js), como las de Mundo Misterioso: marco de
      * piedra y peldaños que bajan hacia la oscuridad. Planas.
      */
-    stairs(B) {
+    stairs(B, variant) {
       const P = Pix(36, 30);
-      const R = B.rock.map(h => pack(h));
-      const moss = pack(B.grass ? B.grass[1] : '#4c9a3f');
+      // Variante 1 (2026-10-16): la ruta peligrosa: piedra volcánica con grietas de lava y
+      // peldaños que brillan en rojo por el fondo.
+      const danger = variant === 1;
+      const R = danger ? ['#2a1416', '#4a2226', '#6a3034'].map(h => pack(h)) : B.rock.map(h => pack(h));
+      const moss = pack(danger ? '#ff6a2a' : B.grass ? B.grass[1] : '#4c9a3f');
       // Marco de piedra (bloques irregulares).
       for (let y = 0; y < 30; y++) for (let x = 0; x < 36; x++) {
         const edge = x < 4 || x > 31 || y < 4 || y > 25;
@@ -725,13 +728,14 @@ G.Tiles = (() => {
         P.set(x, y, c);
       }
       // Peldaños: cada uno más hondo y más oscuro, con el borde de arriba iluminado.
-      const STEP = ['#9aa2ae', '#7a828e', '#5c636e', '#40464f', '#272b32', '#14161b'];
+      const STEP = danger ? ['#8a4a40', '#6a3430', '#4e2224', '#3a1618', '#5a1a10', '#b8300a']
+                          : ['#9aa2ae', '#7a828e', '#5c636e', '#40464f', '#272b32', '#14161b'];
       for (let k = 0; k < 6; k++) {
         const y0 = 4 + k * 3.6, inset = k;
         for (let y = Math.round(y0); y < Math.round(y0 + 3.6) && y < 26; y++)
           for (let x = 4 + inset; x < 32 - inset; x++) {
             const top = y === Math.round(y0);
-            P.set(x, y, pack(top && k < 5 ? '#c8cfd8' : STEP[k]));
+            P.set(x, y, pack(top && k < 5 ? (danger ? '#d88a6a' : '#c8cfd8') : danger && k === 5 && (x + y) % 3 === 0 ? '#ffb22e' : STEP[k]));
           }
         // Sombra de los lados (paredes del hueco).
         for (let y = Math.round(y0); y < Math.round(y0 + 3.6) && y < 26; y++)
@@ -739,7 +743,28 @@ G.Tiles = (() => {
       }
       // Musgo en el marco.
       [[1, 26], [2, 27], [5, 28], [30, 27], [33, 26], [34, 2], [1, 3], [17, 1], [18, 1]].forEach(([x, y]) => P.set(x, y, moss));
+      // Peligrosa: grietas de lava en el marco.
+      if (danger) {
+        const lava = pack('#ff6a1f'), hot = pack('#ffd46a');
+        [[2, 6], [2, 7], [3, 8], [2, 12], [1, 13], [2, 14], [33, 9], [34, 10], [33, 11], [33, 18], [34, 19], [10, 1], [11, 2], [12, 2],
+         [24, 1], [25, 2], [8, 27], [9, 28], [10, 27], [26, 27], [27, 28]].forEach(([x, y], i) => P.set(x, y, i % 4 ? lava : hot));
+      }
       outline(P, pack('#0c0d10'));
+      return P.canvas();
+    },
+
+    /** Corona encima del jefe del piso (floors.js). Variante 1: la del Señor del Laberinto (con gemas moradas). */
+    crown(B, variant) {
+      const P = Pix(15, 10);
+      const g0 = pack('#8a5a10'), g1 = pack('#d8a020'), g2 = pack('#ffd23f'), g3 = pack('#fff3b0');
+      const gem = pack(variant ? '#c47bff' : '#ff4d5e'), gemL = pack(variant ? '#f0d8ff' : '#ffc0c6');
+      for (let y = 5; y < 10; y++) for (let x = 1; x < 14; x++) P.set(x, y, y === 9 ? g0 : y === 5 ? g2 : g1);
+      // Puntas.
+      for (const [px, h] of [[1, 4], [4, 3], [7, 5], [10, 3], [13, 4]])
+        for (let y = 5 - h; y < 5; y++) { P.set(px, y, y === 5 - h ? g3 : g2); if (h > 3) P.set(px + (px < 7 ? 1 : -1), y + 1, g1); }
+      for (const x of [3, 7, 11]) { P.set(x, 7, gem); P.set(x, 6, gemL); }
+      P.set(7, 0, gem);
+      outline(P, pack('#1a1004'));
       return P.canvas();
     },
 
