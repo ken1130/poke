@@ -1,0 +1,65 @@
+{
+ "id": 10004,
+ "mode": "smooth",
+ "height": 38,
+ "colors": 16,
+ "src": "tools/custom_sprites/src/hero",
+ "out": "assets/pokemon/10004",
+ "erode": 2,
+ "margin": 6,
+ "faint_rotate": false,
+ "poses": {
+  "idle": "idle",
+  "blink": "blink",
+  "walk1": "walk1",
+  "walk2": "walk2",
+  "attack": "attack",
+  "shoot": "shoot",
+  "charge": "charge",
+  "hurt": "hurt",
+  "faint": "faint"
+ },
+ "alpha": 150,
+ "back": false,
+ "thicken": 3,
+ "heights": {
+  "attack": 35,
+  "charge": 42,
+  "faint": 34,
+  "walk1": 40,
+  "walk2": 40
+ },
+ "outline": 0.3,
+ "anims": {
+  "Walk": [
+   [
+    "walk1",
+    0,
+    1,
+    6
+   ],
+   [
+    "walk2",
+    0,
+    0,
+    6
+   ],
+   [
+    "walk1",
+    0,
+    1,
+    6
+   ],
+   [
+    "walk2",
+    0,
+    0,
+    6
+   ]
+  ]
+ },
+ "thickens": {
+  "walk1": 1,
+  "walk2": 1
+ }
+}

@@ -1,0 +1,36 @@
+{
+ "id": 10003,
+ "mode": "smooth",
+ "height": 34,
+ "colors": 12,
+ "src": "tools/custom_sprites/src/didi",
+ "out": "assets/pokemon/10003",
+ "erode": 2,
+ "margin": 6,
+ "faint_rotate": false,
+ "poses": {
+  "idle": "idle",
+  "blink": "blink",
+  "walk1": "walk1",
+  "walk2": "walk2",
+  "attack": "attack",
+  "shoot": "shoot",
+  "charge": "charge",
+  "hurt": "hurt",
+  "faint": "faint"
+ },
+ "alpha": 150,
+ "back": false,
+ "thicken": 1,
+ "heights": {
+  "attack": 31,
+  "charge": 38,
+  "faint": 28
+ },
+ "boost": [
+  1.25,
+  1.6,
+  1.08
+ ],
+ "outline": 0.35
+}

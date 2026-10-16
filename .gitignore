@@ -21,3 +21,7 @@ docs/CONTACTOS_CREADORES.md
 
 # Caché local de wrangler (Cloudflare)
 .wrangler/
+
+# 原創角色的原始素材（有版權，不進 git）與產生器預覽圖
+tools/custom_sprites/src/
+assets/pokemon/*/preview.png

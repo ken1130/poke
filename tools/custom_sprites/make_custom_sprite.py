@@ -1,7 +1,7 @@
 """把貼圖做成遊戲（SpriteCollab 格式）的動畫表：8 列方向 × N 影格，外加 meta。"""
 import sys, os, json, time
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageEnhance
 from scipy import ndimage
 
 DIRS = [(0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]   # Down, DownRight, Right, UpRight, Up, UpLeft, Left, DownLeft
@@ -37,7 +37,7 @@ def load_pixel(path, grid, keep_all=False):
     if not keep_all: out = keep_main(out)
     return crop_alpha(out)
 
-def load_smooth(path, height, colors, athr=127, thick=1):
+def load_smooth(path, height, colors, athr=127, thick=1, boost=None, outline=0):
     im = np.array(Image.open(path).convert('RGBA'))
     mask = im[..., 3] > 40
     lab, n = ndimage.label(mask, structure=np.ones((3, 3)))
@@ -58,9 +58,26 @@ def load_smooth(path, height, colors, athr=127, thick=1):
     alpha = np.where(small[..., 3] > athr, 255, 0).astype(np.uint8)
     # 顏色減到少數幾色，邊緣變硬，比較像像素畫
     rgbimg = Image.fromarray(rgb.astype(np.uint8), 'RGB')
+    if boost:   # 照片顏色偏灰：[對比, 飽和, 亮度]
+        rgbimg = ImageEnhance.Contrast(rgbimg).enhance(boost[0])
+        rgbimg = ImageEnhance.Color(rgbimg).enhance(boost[1])
+        rgbimg = ImageEnhance.Brightness(rgbimg).enhance(boost[2])
     q = rgbimg.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert('RGB')
     out = np.dstack([np.array(q), alpha]); out[alpha == 0] = 0
+    if outline: out = add_outline(out, outline)
     return crop_alpha(out)
+
+def add_outline(img, k):
+    """外面加 1 像素深色外框（取相鄰像素顏色 × k），像原作的像素寶可夢。"""
+    img = np.pad(img, ((1, 1), (1, 1), (0, 0)))
+    m = img[..., 3] > 0
+    ring = ndimage.binary_dilation(m, structure=np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])) & ~m
+    out = img.copy()
+    for y, x in zip(*np.where(ring)):
+        nb = img[max(0, y - 1):y + 2, max(0, x - 1):x + 2].reshape(-1, 4)
+        nb = nb[nb[:, 3] > 0][:, :3].astype(float)
+        out[y, x, :3] = (nb.min(axis=0) * k).astype(np.uint8); out[y, x, 3] = 255
+    return out
 
 def make_back(img, erode):
     """背面：輪廓留著，內部填成身體的主色（把臉蓋掉）。"""
@@ -99,7 +116,7 @@ def main(cfg_path):
     poses = {}
     for key, fname in cfg['poses'].items():
         p = os.path.join(cfg['src'], fname + '.png')
-        img = load_pixel(p, cfg['grid'], key in cfg.get('keep_all', [])) if cfg['mode'] == 'pixel' else load_smooth(p, cfg['height'], cfg.get('colors', 10), cfg.get('alpha', 127), cfg.get('thicken', 1))
+        img = load_pixel(p, cfg['grid'], key in cfg.get('keep_all', [])) if cfg['mode'] == 'pixel' else load_smooth(p, cfg.get('heights', {}).get(key, cfg['height']), cfg.get('colors', 10), cfg.get('alpha', 127), cfg.get('thickens', {}).get(key, cfg.get('thicken', 1)), cfg.get('boost'), cfg.get('outline', 0))
         for col in cfg.get('strip', {}).get(key, []):
             near = (np.abs(img[..., :3].astype(int) - np.array(col)).max(axis=2) < 40) & (img[..., 3] > 0)
             img[near] = 0; img = crop_alpha(keep_main(img))
@@ -122,6 +139,7 @@ def main(cfg_path):
     previews = []
     anims = dict(ANIMS)
     if 'blink' not in poses: anims['Idle'] = [('idle', 0, 0, 60), ('idle', 0, 1, 12)]
+    for k, fr in cfg.get('anims', {}).items(): anims[k] = [tuple(f) for f in fr]   # 設定檔自訂某個動畫的影格
     for anim, frames in anims.items():
         n = len(frames)
         sheet = np.zeros((8 * fh, n * fw, 4), np.uint8)
