@@ -116,9 +116,11 @@ G.Game = (() => {
     const save = G.DB.save;
     // PK con personaje al azar: el Pokémon que le ha tocado a cada uno (cfg.members), sin mejoras.
     const randomMe = coop && coop.rand ? (coop.members.find(m => m.uid === G.Net.uid) || {}).dex : null;
-    const mon = G.DEX_BY[randomMe || save.partner] || G.DEX_BY[G.STARTERS[0].dex];
+    // Reto diario en solitario (2026-10-16): todos con el Pokémon del día y sin mejoras.
+    const dailyMon = !coop && G.Modes.run === 'daily' ? G.Modes.daily().dex : null;
+    const mon = G.DEX_BY[randomMe || dailyMon || save.partner] || G.DEX_BY[G.STARTERS[0].dex];
     // Arena de PK: todos sin las mejoras de la tienda (igualdad).
-    const flat = !!(coop && coop.pvp && coop.arena);
+    const flat = !!(coop && coop.pvp && coop.arena) || !!dailyMon;
     const perks = G.Upgrades.perks(randomMe || flat ? {} : G.DB.upgradesOf(mon.dex));
 
     G.UI.hideAll();
@@ -159,7 +161,8 @@ G.Game = (() => {
     biome = 0;
     time = 0; pendingLevels = 0; coopCards = [];
 
-    pl = new G.Player(mon, perks, !randomMe && !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    pl = new G.Player(mon, perks, !randomMe && !dailyMon && !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    pl.dailyMon = !!dailyMon;
     pl.startDex = mon.dex;      // retos del Pokédex: cuenta para el que elegiste aunque evolucione
     // Modo extremo: más premio (XP y monedas).
     pl.xpMul *= G.Modes.rewardMul(); pl.coinMul *= G.Modes.rewardMul();
@@ -168,10 +171,10 @@ G.Game = (() => {
     caught = [];
     // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
     // antes de aprender nada: addMove ya los coloca.
-    (save.pbind && save.pbind[mon.dex] || []).forEach((id, i) => { if (id) pl.bind[id] = i; });
+    if (!dailyMon) (save.pbind && save.pbind[mon.dex] || []).forEach((id, i) => { if (id) pl.bind[id] = i; });
     pl.addMove(G.startMoveOf(mon.dex));
     // Mejora "Veto": movimientos que no quieres que te salgan.
-    pl.banned = new Set((save.pban && save.pban[mon.dex] || []).slice(0, perks.bans));
+    pl.banned = new Set(dailyMon ? [] : (save.pban && save.pban[mon.dex] || []).slice(0, perks.bans));
     // Mejora "Repertorio": un segundo movimiento de ataque al azar.
     if (perks.startMoves >= 2) {
       const pool = G.Moves.poolFor(mon).filter(id => !pl.hasMove(id) && !pl.banned.has(id) && G.Moves.BY_ID[id].kind !== 'buff');
@@ -472,7 +475,8 @@ G.Game = (() => {
     G.Challenges.afterRun(rr);
     // En grupo los derribos son del equipo: a tu Pokémon le cuenta tu parte.
     const share = coop ? Math.max(1, team.length) : 1;
-    G.DexQuests.afterRun(pl.startDex || pl.dex, { time, kills: Math.round(pl.kills / share), bosses: Math.floor(pl.bosses / share) });
+    // (El Pokémon del reto diario no es tuyo: no suma a sus retos del Pokédex.)
+    if (!pl.dailyMon || G.DB.owns(pl.startDex)) G.DexQuests.afterRun(pl.startDex || pl.dex, { time, kills: Math.round(pl.kills / share), bosses: Math.floor(pl.bosses / share) });
     G.Modes.afterRun(rr);
     G.PvP.afterRun();
     if (lastTeam) { showTeam(lastTeam); lastTeam = null; }
