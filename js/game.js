@@ -417,7 +417,8 @@ G.Game = (() => {
     keepAwake(false);
     G.Chat.close();
     G.Tips.reset();
-    if (coopCards.length || G.UI.isOpen('scr-levelup')) { coopCards = []; G.RunUI.closeLevelUp(); }
+    // (2026-10-16: siempre; la pausa oculta la ventana de nivel pero su elección automática seguía en marcha)
+    coopCards = []; G.RunUI.closeLevelUp();
     G.Audio.music(null);
     G.Audio.sfx(clearWin ? 'legend' : dead ? 'gameover' : 'back');
     const save = G.DB.save;
@@ -504,6 +505,9 @@ G.Game = (() => {
     state = 'levelup';
     G.Audio.sfx('levelup');
     G.RunUI.showLevelUp(pl.level, G.LevelUp.offer(pl), card => {
+      // (2026-10-16) Si la run ya ha acabado (la elección automática llegó tarde), no se vuelve a «playing»:
+      // con el modo ya reiniciado a «normal», salía la bendición inicial encima del resumen y del menú.
+      if (state !== 'levelup' || !pl) return;
       G.Audio.sfx('confirm');
       card.apply(pl);
       state = 'playing';
