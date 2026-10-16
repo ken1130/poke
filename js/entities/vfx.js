@@ -31,7 +31,11 @@ G.VFX = (() => {
     steel:    ['#232d38', '#56667a', '#8c9caf', '#cad6e2', '#ffffff'],
     fairy:    ['#6a2050', '#b04a8a', '#ff8acb', '#ffc4e6', '#ffffff'],
     normal:   ['#3e3834', '#7a7068', '#c4bcb0', '#ece6dc', '#ffffff'],
-    aura:     ['#0c2460', '#1c4cb0', '#3a7cff', '#90d2ff', '#ffffff']
+    aura:     ['#0c2460', '#1c4cb0', '#3a7cff', '#90d2ff', '#ffffff'],
+    // 2026-10-16: Rayo Destructor (naranja de hiperrayo) y su evolución (púrpura); agujero negro.
+    hyper:    ['#5a2200', '#b8520e', '#ff8f2e', '#ffd27a', '#fff6dc'],
+    void:     ['#14042a', '#43127a', '#8a3ce0', '#c890ff', '#f4e8ff'],
+    hole:     ['#000000', '#120424', '#3a0f6e', '#8a3ce0', '#e0c4ff']
   };
   const IDX = { o: 0, d: 1, m: 2, l: 3, w: 4 };
   const H = (a, b, c) => G.U.hash(a, b, c);
@@ -248,6 +252,54 @@ G.VFX = (() => {
       P.set(5, 5, 'w');
       P.outline();
     } },
+    // ---- 2026-10-16 ----
+    // Tornado de agua: embudo que se ensancha hacia arriba, con franjas que giran.
+    tornado: { w: 15, h: 19, frames: 4, gen(P, f) {
+      for (let y = 1; y < 18; y++) {
+        const k = 1 - y / 18;                                       // 1 arriba, 0 abajo
+        const hw = 1 + k * k * 6.2 + k * 0.6;
+        const cx = 7 + Math.sin(y * 0.55 + f * 1.6) * (0.6 + k * 1.2) * 0.8;
+        for (let x = Math.round(cx - hw); x <= Math.round(cx + hw); x++) {
+          const u = (x - (cx - hw)) / (2 * hw);                     // 0..1 a lo ancho
+          const band = ((y * 0.9 + u * 5 - f * 1.25) % 2 + 2) % 2;   // franjas en diagonal que suben
+          P.set(x, y, u < 0.18 ? 'd' : u > 0.82 ? 'm' : band < 0.55 ? 'w' : band < 1.1 ? 'l' : 'm');
+        }
+      }
+      for (let i = 0; i < 3; i++) P.set(7 + Math.round(Math.sin(f + i * 2) * 5), 2 + i * 2, 'w');   // gotas que salen
+      P.outline();
+    } },
+    // Cuchilla (espada sin dueño): empuñadura a la izquierda, filo con brillo, punta a la derecha.
+    blade: { w: 19, h: 7, dir: true, gen(P) {
+      for (let x = 1; x <= 3; x++) P.set(x, 3, 'd');                // empuñadura
+      P.set(0, 3, 'm');
+      for (let y = 1; y <= 5; y++) P.set(4, y, 'd');                // guarda
+      for (let x = 5; x <= 15; x++) { P.set(x, 2, 'w'); P.set(x, 3, 'l'); P.set(x, 4, 'm'); }
+      P.set(16, 3, 'l'); P.set(16, 2, 'w'); P.set(17, 3, 'w');      // punta
+      P.outline();
+    } },
+    // Esquirla de metal (la tormenta).
+    mshard: { w: 7, h: 6, spin: true, gen(P) {
+      ['..w...', '.wl...', '.llm..', 'lllmm.', '.mmd..'].forEach((r, y) => [...r].forEach((c, x) => { if (c !== '.') P.set(x, y, c); }));
+      P.outline();
+    } },
+    // Mano azul (bofetada de Perro Loco): palma abierta con cuatro dedos y el pulgar.
+    hand: { w: 13, h: 14, gen(P) {
+      ['..l.l.l.....', '.lwlwlwl....', '.lwlwlwl.l..', '.lwlwlwl.lw.', '.lllllllllw.', '.lwllllllll.',
+       '.lllllllllm.', '.llllllllm..', '..mllllllm..', '..mmlllmm...', '...mmmmm....', '...dddd.....']
+        .forEach((r, y) => [...r].forEach((c, x) => { if (c !== '.') P.set(x, y + 1, c); }));
+      P.outline();
+    } },
+    // Agujero negro: centro negro, aro púrpura y brazos en espiral.
+    hole: { w: 17, h: 17, frames: 4, gen(P, f) {
+      for (let k = 0; k < 3; k++) {
+        for (let i = 0; i < 26; i++) {
+          const t = i / 26, a = k * 2.094 + f * 0.4 + t * 3.4, r = 2.6 + t * 5.4;
+          P.set(8 + Math.cos(a) * r, 8 + Math.sin(a) * r, t < 0.5 ? 'l' : 'm');
+        }
+      }
+      P.fill((x, y) => { const d = Math.hypot(x - 8, y - 8); return d < 2.6 ? 'o' : d < 3.6 ? 'w' : null; });
+      P.outline();
+    } },
     heart: { w: 9, h: 8, gen(P) {
       ['.ll...ll.', 'lwll.llll', 'lllllllll', 'lllllllll', '.lllllll.', '..lllll..', '...lll...', '....l....']
         .forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') P.set(x, y, c === 'w' ? 'w' : 'l'); }));
@@ -400,7 +452,12 @@ G.VFX = (() => {
     'bullet-punch':  { proj: 'streak', pal: 'steel' },
     'steel-wing':    { proj: 'crescent', pal: 'steel' },
     'night-slash':   { proj: 'crescent', pal: 'dark' },
-    'snarl':         { proj: 'note', pal: 'dark' }
+    'snarl':         { proj: 'note', pal: 'dark' },
+    // 2026-10-16
+    'formless-art':  { proj: 'heart' },
+    'raging-tornado': { proj: 'tornado' },
+    'blade-storm':   { proj: 'blade' },
+    'destruction-beam': { beam: 'star', pal: 'hyper' }
   };
 
   const TYPE_SHAPE = {

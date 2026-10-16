@@ -95,7 +95,8 @@ G.Player = class Player {
   // calmN/calmAmt: Paz Mental (apoyo, combat.js)
   get atk() { return this.baseAtk * this.atkMul * (1 + (this.lvGrown || 0) * Player.LV.atk) * (1 + this.buffs.atk.n * this.buffs.atk.amount) * (1 + (this.calmN || 0) * (this.calmAmt || 0)); }
   get spd() {
-    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
+    // hasteT/hasteK: Arte Sin Forma (combat.js) acelera un rato al acertar.
+    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1) * (this.hasteT > 0 ? 1 + (this.hasteK || 0) : 1);
     const w = G.Weather.speedFor(this.mon.types);
     const slow = this.inLiquid ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
     return s * slow * w;
@@ -233,13 +234,21 @@ G.Player = class Player {
                    aura: 'Charge', buff: 'Charge', orbit: 'Charge', boomerang: 'Shoot', chain: 'Shoot',
                    mine: 'Charge', meteor: 'Charge', turret: 'Charge', dash: 'Attack', trail: 'Walk', cone: 'Shoot',
                    lightning: 'Charge', drain: 'Attack', psyarrow: 'Shoot',
-                   acidrain: 'Charge', fist: 'Attack', spear: 'Shoot', treefall: 'Charge' }[m.kind] || 'Attack';
+                   acidrain: 'Charge', fist: 'Attack', spear: 'Shoot', treefall: 'Charge',
+                   hearts: 'Shoot', tornado: 'Charge', bladestorm: 'Attack', dbeam: 'Shoot' }[m.kind] || 'Attack';
     // Las familias nuevas suenan como la parecida de las de siempre.
     const SND = { boomerang: 'projectile', chain: 'beam', mine: 'nova', meteor: 'nova', turret: 'buff', dash: 'melee', trail: 'aura', cone: 'projectile',
                   lightning: 'beam', drain: 'melee', flameshield: 'aura', psyarrow: 'projectile',
-                  acidrain: 'aura', fist: 'melee', spear: 'projectile', treefall: 'nova' };
-    // El rastro no suena a cada charco (sería un zumbido constante).
-    if (m.kind !== 'trail') G.Audio.sfx('shot', { kind: SND[m.kind] || m.kind, type: m.type });
+                  acidrain: 'aura', fist: 'melee', spear: 'projectile', treefall: 'nova',
+                  hearts: 'projectile', tornado: 'aura', bladestorm: 'melee', dbeam: 'beam' };
+    // El rastro no suena a cada charco (sería un zumbido constante); los que salen muy a menudo
+    // (rayo púrpura continuo cada 0,2 s, tormenta de cuchillas cada 0,5 s), como mucho cada 0,6 s.
+    const often = (m.kind === 'dbeam' && m.evolved) || m.kind === 'bladestorm';
+    const nowS = performance.now() / 1000;
+    if (m.kind !== 'trail' && (!often || nowS - (this._oftenSnd || 0) > 0.6)) {
+      if (often) this._oftenSnd = nowS;
+      G.Audio.sfx('shot', { kind: SND[m.kind] || m.kind, type: m.type });
+    }
     if (m.kind === 'trail') return;
     // No reinicies una animación que va por la mitad: se vería a tirones.
     if (this.anim.busy() && this.anim.progress() < 0.65) return;
@@ -442,6 +451,7 @@ G.Player = class Player {
       if (this.potion.t <= 0) this.endPotion();
     }
     if (this.invuln > 0) this.invuln -= dt;
+    if (this.hasteT > 0) this.hasteT -= dt;
     if (this.flash > 0) this.flash -= dt;
     if (this.attackFace > 0) this.attackFace -= dt;
     if (this.hasItem('airballoon') && !this.balloon && this.balloonT > 0 && (this.balloonT -= dt) <= 0) {

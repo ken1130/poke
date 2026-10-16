@@ -28,6 +28,11 @@
  *   bulk        PASIVO: defensa según el tamaño de tu Pokémon (evolucionado: campo de fuerza)
  *   spear       lanzas al enemigo que perforan (evolucionado: 8 direcciones y se parten)
  *   treefall    árboles que caen en diagonal sobre enemigos (aplastan en un círculo)
+ *   ---- 2026-10-16 (también con TABLE) ----
+ *   hearts      corazones que buscan enemigos, los frenan y te dan velocidad; rebotan
+ *   tornado     tornados de agua hacia los enemigos; atraviesan y lanzan por los aires
+ *   bladestorm  tormenta de esquirlas a tu alrededor (daño/s) + cuchillas a un enemigo
+ *   dbeam       rayos de ti a los enemigos (evolucionado: rayo continuo y agujeros negros)
  *   ---- apoyo (2026-10-15, también con TABLE) ----
  *   support     movimientos de apoyo (curar, defender): funcionan solos con su recarga,
  *               como los pasivos (no se eligen como ataque). Cada uno en combat.js support().
@@ -181,6 +186,31 @@
       { t: '+6 de daño y +1 árbol',                                   m: {} },
       { t: '+8 de daño; donde cae deja una zona que frena',           m: {} },
       { t: '+10 de daño y +1 árbol',                                  m: {} }
+    ],
+    // ---- 2026-10-16 ----
+    hearts: [
+      { t: '+8 de daño y +2 casillas de alcance',                           m: {} },
+      { t: '+10 de daño y +1 corazón',                                      m: {} },
+      { t: '+12 de daño; los corazones rebotan 1 vez',                      m: {} },
+      { t: '+10 de daño y +1 corazón; el rebote hace ×2 (una vez)',          m: {} }
+    ],
+    tornado: [
+      { t: '+8 de daño, +1 tornado y atraviesan',                           m: {} },
+      { t: '+10 de daño y +1 tornado',                                      m: {} },
+      { t: '+10 de daño y tornados más grandes',                            m: {} },
+      { t: '+12 de daño; lanzan por los aires a los enemigos (1 s sin moverse)', m: {} }
+    ],
+    bladestorm: [
+      { t: 'Tormenta +2 de daño/s y +1 casilla; cuchilla +8 de daño y más grande', m: {} },
+      { t: 'Tormenta +2 de daño/s; cuchilla +8 de daño y +1 cuchilla',      m: {} },
+      { t: 'Tormenta +2 de daño/s y +1 casilla; cuchilla +12 de daño y atraviesa', m: {} },
+      { t: 'Tormenta +2 de daño/s; cuchilla +10 de daño y +1 cuchilla',     m: {} }
+    ],
+    dbeam: [
+      { t: '+6 de daño y rayo más ancho',                                   m: {} },
+      { t: '+12 de daño y +1 rayo',                                         m: {} },
+      { t: '+8 de daño, 15% de crítico y +1,5 casillas',                    m: {} },
+      { t: '+10 de daño y +1 rayo; al acertar sale otro rayo hacia atrás',  m: {} }
     ],
     // Apoyo: el texto de cada nivel va en el propio movimiento (def.upTexts), porque cada
     // uno mejora cosas distintas; esta escalera sólo da la longitud (4 mejoras).
@@ -501,6 +531,19 @@
     { id: 'nature-tree', name: 'Bautismo Natural', type: 'grass', kind: 'treefall',
       desc: 'Un árbol cae en diagonal del cielo y aplasta a los enemigos donde cae.',
       cd: 1.5, dmg: 30, radius: 384 },
+    // ---------------- 2026-10-16 (números en TABLE) ----------------
+    { id: 'formless-art', name: 'Arte Sin Forma', type: 'fairy', kind: 'hearts',
+      desc: 'Corazones rosas que buscan a los enemigos a 10 casillas: los frenan y a ti te dan velocidad.',
+      cd: 0.9, dmg: 16, radius: 320 },
+    { id: 'raging-tornado', name: 'Tornado Furioso', type: 'water', kind: 'tornado',
+      desc: 'Tornados de agua que van a por los enemigos a 10 casillas.',
+      cd: 1.3, dmg: 14, radius: 320 },
+    { id: 'blade-storm', name: 'Tormenta de Cuchillas', type: 'steel', kind: 'bladestorm',
+      desc: 'Tormenta de esquirlas de metal a tu alrededor que daña cada segundo, y una cuchilla contra un enemigo a 9 casillas.',
+      cd: 0.5, dmg: 8, radius: 288 },
+    { id: 'destruction-beam', name: 'Rayo Destructor', type: 'normal', kind: 'dbeam',
+      desc: 'Un rayo desde ti hasta un enemigo a 10 casillas que daña a todo lo que toca.',
+      cd: 1.1, dmg: 24, radius: 320 },
     // ---------------- apoyo (2026-10-15): curar y defender ----------------
     { id: 'recover', name: 'Recuperación', type: 'psychic', kind: 'support', cd: 12, dmg: 0, radius: 0,
       desc: 'APOYO: cada pocos segundos recuperas parte de tu vida máxima.',
@@ -672,6 +715,42 @@
       { dmg: 46, n: 2, size: 1.25, r: 12 },    { dmg: 54, n: 2, size: 1.25, r: 12, zone: true },
       { dmg: 64, n: 3, size: 1.25, r: 12, zone: true },
       { dmg: 80, n: 12, size: 1.25, r: 15, zone: true, spikes: 40, root: 2, cd: 2.6 }
+    ],
+    // ---- 2026-10-16 (tabla del dueño ×2, como los de 2026-10-15) ----
+    // dmg por corazón, n corazones, r (casillas), bounce (rebotes a otro enemigo a 6 casillas),
+    // bmul (multiplicador del PRIMER rebote); evolucionado: immune (inmune a los rayos de los enemigos)
+    'formless-art': [
+      { dmg: 16, n: 1, r: 10, bounce: 0, bmul: 1 },  { dmg: 24, n: 1, r: 12, bounce: 0, bmul: 1 },
+      { dmg: 34, n: 2, r: 12, bounce: 0, bmul: 1 },  { dmg: 46, n: 2, r: 12, bounce: 1, bmul: 1 },
+      { dmg: 56, n: 3, r: 12, bounce: 1, bmul: 2 },
+      { dmg: 56, n: 5, r: 14, bounce: 3, bmul: 3, immune: true, cd: 1.0 }
+    ],
+    // dmg, n tornados, pierce (atraviesan), size, r; launch (s en el aire, inmovilizado);
+    // evolucionado: dot (daño/s mientras está en el aire), slap (bofetada de la mano azul al caer)
+    'raging-tornado': [
+      { dmg: 14, n: 1, pierce: false, size: 1, r: 10 },   { dmg: 22, n: 2, pierce: true, size: 1, r: 10 },
+      { dmg: 32, n: 3, pierce: true, size: 1, r: 10 },    { dmg: 42, n: 3, pierce: true, size: 1.4, r: 10 },
+      { dmg: 54, n: 3, pierce: true, size: 1.4, r: 10, launch: 1 },
+      { dmg: 54, n: 3, pierce: true, size: 1.4, r: 10, launch: 3, dot: 40, slap: 70 }
+    ],
+    // Tormenta: sdps (daño/s), sr (casillas). Cuchilla: bdmg, bn, bsize, bpierce, r (casillas), bcd (s);
+    // evolucionado: knock + bleed (sangrado/s durante 3 s), radial (8 direcciones), split (se parte a ±90°)
+    'blade-storm': [
+      { sdps: 8,  sr: 3, bdmg: 18, bn: 1, bsize: 1,   bpierce: 0, r: 9, bcd: 1 },
+      { sdps: 10, sr: 4, bdmg: 26, bn: 1, bsize: 1.3, bpierce: 0, r: 9, bcd: 1 },
+      { sdps: 12, sr: 4, bdmg: 34, bn: 2, bsize: 1.3, bpierce: 0, r: 9, bcd: 1 },
+      { sdps: 14, sr: 5, bdmg: 46, bn: 2, bsize: 1.3, bpierce: 3, r: 9, bcd: 1 },
+      { sdps: 16, sr: 5, bdmg: 56, bn: 3, bsize: 1.3, bpierce: 3, r: 9, bcd: 1 },
+      { sdps: 16, sr: 6, bdmg: 56, bn: 8, bsize: 1.3, bpierce: 3, r: 9, bcd: 1.2, knock: 60, bleed: 8, radial: true, split: true }
+    ],
+    // dmg por rayo, n rayos, w (ancho), r (casillas), crit (se suma al tuyo), back (rayo hacia atrás
+    // al acertar); evolucionado: dps (rayo continuo, cada cd s), slow, hole (prob. de agujero negro
+    // al matar), holeR (casillas que atrae), holeDmg (explosión a los 4 s)
+    'destruction-beam': [
+      { dmg: 24, n: 1, w: 30, r: 10 },   { dmg: 30, n: 1, w: 44, r: 10 },   { dmg: 42, n: 2, w: 44, r: 10 },
+      { dmg: 50, n: 2, w: 44, r: 11.5, crit: 0.15 },
+      { dmg: 60, n: 3, w: 44, r: 11.5, crit: 0.15, back: true },
+      { dps: 100, n: 3, w: 48, r: 11.5, crit: 0.15, back: true, slow: 0.45, hole: 0.15, holeR: 7, holeDmg: 80, cd: 0.2 }
     ],
     // ---- apoyo (2026-10-15): cd en s; heal = fracción de la vida máxima ----
     'recover': [
@@ -848,6 +927,9 @@
     'acid-rain': ['Nanolluvia', 'rgn'],      'lee-fist': ['Puño Furioso', 'atk'],
     'heavyweight': ['Shaq', 'hp'],           'ghost-spear': ['Lanza Sombría', 'cd'],
     'nature-tree': ['¡Árbol Va!', 'mag'],
+    // 2026-10-16
+    'formless-art': ['Vuelo Celestial', 'spd'],  'raging-tornado': ['Perro Loco', 'atk'],
+    'blade-storm': ['Cruzada', 'def'],           'destruction-beam': ['Poder Púrpura', 'atk'],
     // apoyo (2026-10-15)
     'recover': ['Luz Lunar', 'rgn'],         'light-screen': ['Velo Aurora', 'def'],
     'protect': ['Escudo Real', 'def'],       'wish': ['Deseo Milenario', 'hp'],
@@ -890,6 +972,10 @@
     bulk:        { t: 'Campo de fuerza: los enemigos normales no pueden tocarte; armadura 70%, reducción 45% y +80 de vida', m: {} },
     spear:       { t: '8 lanzas en todas direcciones que perforan 4; cada vez que perforan salen 2 más', m: {} },
     treefall:    { t: 'Un árbol por cada enemigo cercano (hasta 12), pinchos de +40 e inmoviliza 2 s', m: {} },
+    hearts:      { t: 'Inmune a los rayos de los enemigos; +2 corazones, +2 casillas, +2 rebotes y el rebote hace ×3', m: {} },
+    tornado:     { t: 'Daño continuo mientras están en el aire, +2 s en el aire y al caer una mano azul les da una bofetada de 70', m: {} },
+    bladestorm:  { t: 'La tormenta empuja y hace sangrar (+1 casilla); cuchillas en 8 direcciones que se parten en dos a ±90° al atravesar al primero', m: {} },
+    dbeam:       { t: 'Rayo púrpura continuo mientras haya enemigos: daña y frena; al matar, 15% de dejar un agujero negro que atrae (7 casillas) 4 s y estalla (80)', m: {} },
     support:     { t: 'Más fuerte y más a menudo', m: {} }       // (el texto de verdad: def.evoText)
   };
 
