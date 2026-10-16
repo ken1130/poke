@@ -339,6 +339,15 @@ G.VFX = (() => {
     } },
     spear: spear(25, 9, 15, 3),                                // lanza espectral (y la pequeña al partirse)
     spearS: spear(17, 7, 10, 2),
+    // Sartén de Jerry (2026-10-16): mango a la izquierda, sartén redonda con brillo a la derecha.
+    pan: { w: 16, h: 10, gen(P) {
+      for (let x = 0; x <= 5; x++) { P.set(x, 4, 'm'); P.set(x, 5, 'd'); }
+      for (let y = 0; y < 10; y++) for (let x = 6; x < 16; x++) {
+        const d = Math.hypot(x - 10.5, (y - 4.5) * 1.05);
+        if (d <= 4.9) P.set(x, y, d > 3.9 ? 'd' : d < 1.6 && x < 10 && y < 4 ? 'w' : x + y < 13 ? 'l' : 'm');
+      }
+      P.outline();
+    } },
     fist: { w: 14, h: 12, dir: true, gen(P) {                 // guante del Puño Lee
       rows(P, ['....dmmmmm....', '...dmllllmm...', '..dmlwlwllmm..', '.lldmmdmmdmm..', '.lwdmllllllm..',
                '.lwdmmmmmmmd..', '.lldmmdddmmd..', '....ddmmmmd...', '.....dddddd...'], 0, 1);

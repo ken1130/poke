@@ -55,7 +55,7 @@ G.Dungeon = (() => {
   function reset() {
     kRep = { buys: 0, robbed: false, stole: false };
     sites = []; nextId = 1; blessing = null; buyT = 0; buyKey = ''; room = null; lastExit = -99; shopSkip = null;
-    houseT = 150; shopT = 270; statueT = 200;
+    houseT = 150; shopT = 240; statueT = 200;      // (2026-10-16: la primera tienda a los 4:00, antes 4:30)
     G.Funny.reset(); timed = false;
   }
   const allowed = () => !G.PvP.on && !G.Rift.inArena && !room && G.Modes.run !== 'legend';
@@ -134,6 +134,12 @@ G.Dungeon = (() => {
   function setState(s, state) { s.state = state; send(pack(s)); }
   function remove(s) { sites = sites.filter(o => o !== s); send(['dg', 'gone', s.id]); }
 
+  /**
+   * ¿Está tocando la caseta de la tienda? (2026-10-16: sólo contaba la puerta, y llegando por un
+   * lado o por detrás se atravesaba la caseta antes de entrar.) Caseta: 88×80 dibujada en s.y - 36.
+   */
+  const onShopHut = (p, s) => Math.abs(p.x - s.x) < 44 + p.r * 0.5 && p.y > s.y - 70 && p.y < s.y + 12;
+
   // ---------------- cada fotograma ----------------
 
   /** Anfitrión o solitario: programa lo que sale y lo que pasa. */
@@ -158,7 +164,7 @@ G.Dungeon = (() => {
     if (!G.PvP.on && !G.Rift.inArena && t - lastExit > 2.5) {
       for (const s of sites) {
         const open = (s.type === 'shop' && (s.state === 'open' || s.state === 'free')) || (s.type === 'mhouse' && s.state === 'idle');
-        if (open && live.some(p => G.U.dist2(p.x, p.y, s.x, s.y + 6) < 40 * 40)) { enterRoom(s, live); return; }
+        if (open && live.some(p => G.U.dist2(p.x, p.y, s.x, s.y + 6) < 40 * 40 || (s.type === 'shop' && onShopHut(p, s)))) { enterRoom(s, live); return; }
       }
     }
     // Sitios a más de 100 m de todos (2026-10-16: te alejabas y en el minimapa salían a miles
@@ -219,6 +225,10 @@ G.Dungeon = (() => {
     room.atPet = nearP;
     if (nearP && openShop) { refreshShop(); return; }
     const atCounter = G.U.dist2(pl.x, pl.y, room.cx, counterY()) < 110 * 110;
+    // Volver al mostrador: otra vez la pestaña de artículos normales (2026-10-16: se quedaba en
+    // la de mascotas; ir a la estantería de mascotas sí cambiaba).
+    if (atCounter && !room.atCnt && openShop && shopTab !== 'gen') { shopTab = 'gen'; shopKey = ''; }
+    room.atCnt = atCounter;
     if (!atCounter) room.wasAway = true;
     if (shopSkip === shop.id && atCounter && !openShop && room.wasAway) shopSkip = null;
     if (!openShop) { if (shopSkip !== shop.id) { room.wasAway = false; showShop(shop); } }
@@ -341,8 +351,10 @@ G.Dungeon = (() => {
    */
   const FUSE_BASE = { 1: 45, 2: 90 };
   let fuseBusy = false;                 // invitado: esperando la respuesta del anfitrión
+  /** Precios ×2,5 y +35 % por cada jugador más (rollWares, fusePrice). */
+  const priceK = () => 2.5 * (1 + 0.35 * Math.max(0, G.Game.everyone().length - 1));
   function fusePrice(tier) {
-    const k = 1 + T() / 900, mul = (kRep.robbed ? 1.5 : 1) * (loyal() ? 0.8 : 1);
+    const k = 1 + T() / 900, mul = (kRep.robbed ? 1.5 : 1) * (loyal() ? 0.8 : 1) * priceK();
     return Math.round(FUSE_BASE[tier] * k * mul);
   }
   /** ¿Se pueden fundir los dos que llevas? → { ok, tier, reason } */
@@ -715,19 +727,22 @@ G.Dungeon = (() => {
   const N_GEN = 5, N_PET = 4;
   function rollWares(t) {
     const k = 1 + t / 900;
-    // El huevo sólo si a alguien del grupo le falta compañero.
-    const needEgg = G.Game.everyone().some(p => !p.buddy && !p.egg && !(p.net && p.net.bd));
-    const mul = (kRep.robbed ? 1.5 : 1) * (loyal() ? 0.8 : 1);
+    // ×2,5 (2026-10-16: a los 4 min ya se llevaban 800 monedas y todo salía regalado) y, en grupo,
+    // +35 % por cada jugador más (las monedas son de todos y se juntan antes).
+    const PRICE_K = priceK();
+    const mul = (kRep.robbed ? 1.5 : 1) * (loyal() ? 0.8 : 1) * PRICE_K;
     const price = b => Math.round(b * k * mul);
     const gen = G.U.pickN(Object.keys(WARES), N_GEN).map(kind => ({ kind, sec: 'gen', price: price(WARES[kind]), item: kind === 'item' ? G.Items.roll() : null }));
     // Cliente fiel: uno de los cinco pasa a ser un artículo especial (un objeto o un ticket ×10), a buen precio.
-    if (loyal()) gen[N_GEN - 1] = Math.random() < 0.7 ? { kind: 'item', sec: 'gen', price: Math.round(WARES.item * k * 0.9), item: G.Items.roll(), feat: true }
-                                                     : { kind: 'ticket10', sec: 'gen', price: Math.round(150 * k * 0.8), item: null, feat: true };
+    if (loyal()) gen[N_GEN - 1] = Math.random() < 0.7 ? { kind: 'item', sec: 'gen', price: Math.round(WARES.item * k * 0.9 * PRICE_K), item: G.Items.roll(), feat: true }
+                                                     : { kind: 'ticket10', sec: 'gen', price: Math.round(150 * k * 0.8 * PRICE_K), item: null, feat: true };
     const petPool = Object.keys(G.Companion.GEAR).map(g => ({ kind: 'pgear', gear: g }))
-      .concat(Object.keys(PET_WARES).filter(w => w !== 'egg' || needEgg).map(kind => ({ kind })));
+      .concat(Object.keys(PET_WARES).filter(w => w !== 'egg').map(kind => ({ kind })));
     const pet = G.U.pickN(petPool, N_PET).map(o => ({ kind: o.kind, sec: 'pet', gear: o.gear || null, item: null,
       price: price(o.kind === 'pgear' ? G.Companion.GEAR[o.gear].price : PET_WARES[o.kind]) }));
-    return gen.concat(pet);
+    // Huevos (2026-10-16): siempre en Mascotas, uno por jugador; cada uno sólo puede comprar uno (tryBuy).
+    const eggs = G.Game.everyone().map(() => ({ kind: 'egg', sec: 'pet', gear: null, item: null, price: price(PET_WARES.egg) }));
+    return gen.concat(pet, eggs);
   }
 
   function shopTick(s, live) {
@@ -755,6 +770,17 @@ G.Dungeon = (() => {
     const free = s.state === 'free';
     if (!free && s.state !== 'open' && s.state !== 'angry') return;
     if (s.state === 'angry' && !free) return;               // con Kecleon furioso no se vende nada
+    // Huevos: uno por persona y tienda, y nada si ya tienes compañero o huevo.
+    const who = from || 'host';
+    if (w.kind === 'egg') {
+      const b = from ? G.Game.everyone().find(p => p.uid === from) : host;
+      const has = b && (b.buddy || b.egg || (b.net && b.net.bd));
+      if ((s.eggBy || []).includes(who) || has) {
+        const msg = has ? 'Ya tienes compañero (o un huevo)' : 'Sólo puedes comprar un huevo';
+        if (from) G.Coop.sendTo(from, ['dg', 'say', msg, 2.4]); else G.Spawner.say(G.T(msg), 2.4, true);
+        return;
+      }
+    }
     if (!free && !steal) {
       if ((host.coins || 0) < w.price) { if (from) G.Coop.sendTo(from, ['dg', 'poor', w.price]); return; }
       host.coins -= w.price;
@@ -763,6 +789,7 @@ G.Dungeon = (() => {
       sendRep();
     }
     if (steal && !free) { kRep.stole = true; sendRep(); }
+    if (w.kind === 'egg') (s.eggBy = s.eggBy || []).push(who);
     w.sold = true;
     send(pack(s));
     const buyer = from ? G.Game.everyone().find(p => p.uid === from) : host;
@@ -773,6 +800,10 @@ G.Dungeon = (() => {
     if (steal && !free) kecleonRage(s);
     else if (!free && s.wares.every(o => o.sold) && !(room && room.siteId === s.id)) { say('¡Gracias por tu compra! Kecleon se va contento', 2.6); remove(s); }
   }
+
+  // Guardaespaldas de Kecleon: Machamp, a cada lado del mostrador (drawables, kecleonRage).
+  const GUARD_DEX = 68, GUARD_DX = 96;
+  const guardAnim = {};       // lado (-1 / 1) -> animador
 
   /** Kecleon se enfada: sale como jefe donde está la tienda. */
   function kecleonRage(s) {
@@ -795,6 +826,18 @@ G.Dungeon = (() => {
       e.hp = e.maxHp; e.dmg *= 1.5 * (1 + lvl * 0.02); e.spd *= 1.25;
       // Ya le habíais vencido antes en esta run: viene con ganas de revancha.
       if (kRep.robbed) { e.maxHp = e.hp = Math.round(e.maxHp * 1.4); e.dmg *= 1.2; }
+    }
+    // Y con sus dos guardaespaldas (2026-10-16: tras vencerle una vez ya no está solo).
+    if (e && kRep.robbed) {
+      for (const side of [-1, 1]) {
+        const gd = G.Enemies.bossFor(GUARD_DEX, slot, 1.2 * (1 + lvl * 0.05));
+        gd.behavior = 'charger';
+        const g = G.Spawner.spawnBossNow(pl, t, gd);
+        if (!g) continue;
+        g.maxHp = g.hp = Math.round(e.maxHp * 0.4); g.dmg = e.dmg * 0.6;
+        g.x = room ? room.cx + side * GUARD_DX : s.x + side * 60; g.y = room ? counterY() + room.ts : s.y;
+        g.name = G.T('Guardaespaldas');
+      }
     }
     // Dentro de la tienda: sale de detrás del mostrador (y la puerta se cierra hasta vencerlo).
     if (e) { e.x = room ? room.cx : s.x; e.y = room ? counterY() + room.ts : s.y; e.name = 'Kecleon'; s.bossId = e.id; }
@@ -957,15 +1000,11 @@ G.Dungeon = (() => {
         label(ctx, '?', s.x, s.y - 14 - Math.abs(Math.sin(now * 2.5)) * 8, '#e2c6ff', 34);
         label(ctx, G.T('SALA MISTERIOSA · entra'), s.x, s.y + 40, '#d9a6ff', 11);
       } else if (s.type === 'statue') {
-        // Estatua de Unown en pixel art (tiles.js); el ojo va cambiando de color.
-        ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(s.x, s.y, 24, 8, 0, 0, 6.2832); ctx.fill();
-        sprite(ctx, 'statue', Math.floor(now * 1.5) % 6, s.x, s.y - 34);
+        // (La estatua se dibuja ordenada con los Pokémon: drawables.)
         if (Math.random() < 0.08) G.FX.twinkle(s.x + G.U.rand(-12, 12), s.y - 58 + G.U.rand(-10, 10));
         label(ctx, G.T('ESTATUA MISTERIOSA'), s.x, s.y - 80, '#e8eef8', 11);
       } else if (s.type === 'shop' && s.wares) {
-        // La tienda en el mapa: un puesto con toldo; se entra por la puerta.
-        ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(s.x, s.y + 4, 46, 12, 0, 0, 6.2832); ctx.fill();
-        sprite(ctx, 'shopdoor', 0, s.x, s.y - 36);
+        // (La caseta se dibuja ordenada con los Pokémon: drawables.)
         const title = s.state === 'free' ? G.T('¡TODO GRATIS!') : s.state === 'angry' ? G.T('¡KECLEON FURIOSO!') : G.T('TIENDA DE KECLEON');
         label(ctx, title + (s.state === 'open' ? ' · ' + Math.max(0, Math.ceil(s.until - T())) + 's' : ''), s.x, s.y - 86, s.state === 'angry' ? '#ff5f6d' : '#9fe0b0');
         if (s.state === 'open' || s.state === 'free') label(ctx, G.T('Entra por la puerta: dentro no hay enemigos'), s.x, s.y + 24, '#7dffb0', 11);
@@ -974,33 +1013,77 @@ G.Dungeon = (() => {
     }
   }
 
-  /** Lo alto del interior: estanterías, Kecleon tras el mostrador, carteles. */
+  /**
+   * Muebles de la tienda (y Kecleon tras el mostrador) para dibujarlos ordenados por Y con los
+   * Pokémon (game.js drawScene). 2026-10-16: antes iban encima de todo y un Pokémon alto delante
+   * del mostrador quedaba con la cabeza tapada, como si estuviera dentro.
+   */
+  function drawables() {
+    if (!room) {
+      // En el mapa: la caseta de la tienda y la estatua (antes encima de todo: quien estaba
+      // delante de la puerta quedaba tapado, como metido dentro).
+      const out = [], now = performance.now() / 1000;
+      for (const s of sites) {
+        if (!G.Camera.sees(s.x, s.y, 320)) continue;
+        if (s.type === 'statue') out.push({ y: s.y, draw: ctx => {
+          ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(s.x, s.y, 24, 8, 0, 0, 6.2832); ctx.fill(); ctx.restore();
+          sprite(ctx, 'statue', Math.floor(now * 1.5) % 6, s.x, s.y - 34);
+        } });
+        else if (s.type === 'shop' && s.wares) out.push({ y: s.y + 4, draw: ctx => {
+          ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(s.x, s.y + 4, 46, 12, 0, 0, 6.2832); ctx.fill(); ctx.restore();
+          sprite(ctx, 'shopdoor', 0, s.x, s.y - 36);
+        } });
+      }
+      return out;
+    }
+    if (room.kind !== 'shop') return [];
+    const r = room, ts = r.ts, s = byId(r.siteId), out = [];
+    const put = (type, v, x, y, k = 2, extra) => {
+      const h = G.Tiles.propSprite(G.World.biome, type, v).height * k;
+      out.push({ y: y + h / 2, draw: ctx => { sprite(ctx, type, v, x, y, k); if (extra) extra(ctx); } });
+    };
+    for (let i = -3; i <= 3; i++) if (i) put('shelf', (i + 3) % 3, r.cx + i * ts * 2.2, r.cy - (r.rh - 1.4) * ts);
+    const [px, py] = petP();
+    put('shelf', 1, px, py, 2, ctx => { sprite(ctx, 'egg', 0, px - 12, py - 30, 1.5); sprite(ctx, 'egg', 0, px + 12, py - 26, 1.5); });
+    const now = performance.now() / 1000;
+    put('roulette', Math.floor(now * 6) % 4, r.cx + (r.rw - 1.6) * ts, r.cy - ts * 0.6);
+    // Ya le vencisteis una vez: dos guardaespaldas vigilan el mostrador.
+    if (s && s.state === 'open' && kRep.robbed) for (const side of [-1, 1]) {
+      const gx = r.cx + side * GUARD_DX, gy = counterY() + 10;
+      out.push({ y: gy, draw: ctx => {
+        let an = guardAnim[side];
+        if (!an) { an = guardAnim[side] = new G.Sprites.Animator(GUARD_DEX, 1, false); G.Sprites.preload([GUARD_DEX]); }
+        an.loop('Idle'); an.update(1 / 60);
+        G.Sprites.drawShadow(ctx, GUARD_DEX, gx, gy);
+        an.draw(ctx, gx, gy, {});
+      } });
+    }
+    if (s && s.state === 'open') out.push({ y: counterY() - 6, draw: ctx => {
+      if (!kecleonAnim) kecleonAnim = new G.Sprites.Animator(352, 1, false);
+      kecleonAnim.loop('Idle'); kecleonAnim.update(1 / 60);
+      G.Sprites.drawShadow(ctx, 352, r.cx, counterY() - 6);
+      kecleonAnim.draw(ctx, r.cx, counterY() - 6, {});
+    } });
+    put('counter', 0, r.cx, counterY() + 14);
+    return out;
+  }
+
+  /** Lo alto del interior: carteles y bocadillos (los muebles van en drawables). */
   function drawRoomAir(ctx, now) {
     const r = room, ts = r.ts, pl = G.Game.player, [dx, dy] = doorP();
     ctx.save();
     if (r.kind === 'shop') {
       const s = byId(r.siteId);
-      // Estanterías contra la pared norte.
-      for (let i = -3; i <= 3; i++) if (i) sprite(ctx, 'shelf', (i + 3) % 3, r.cx + i * ts * 2.2, r.cy - (r.rh - 1.4) * ts);
-      // Rincón de mascotas: una estantería con huevos encima.
-      { const [px, py] = petP();
-        sprite(ctx, 'shelf', 1, px, py);
-        sprite(ctx, 'egg', 0, px - 12, py - 30, 1.5); sprite(ctx, 'egg', 0, px + 12, py - 26, 1.5);
-        label(ctx, G.T('Mascotas'), px, py - ts * 1.3, '#9fe0b0', 11); }
-      // La ruleta, a un lado (se juega desde el menú).
-      sprite(ctx, 'roulette', Math.floor(now * 6) % 4, r.cx + (r.rw - 1.6) * ts, r.cy - ts * 0.6);
+      // (Los muebles y Kecleon se dibujan con todo lo demás, ordenados por Y: ver drawables.)
+      { const [px, py] = petP(); label(ctx, G.T('Mascotas'), px, py - ts * 1.3, '#9fe0b0', 11); }
       label(ctx, G.T('Ruleta'), r.cx + (r.rw - 1.6) * ts, r.cy - ts * 1.9, '#ffd23f', 11);
       if (s && s.state === 'open') {
-        if (!kecleonAnim) kecleonAnim = new G.Sprites.Animator(352, 1, false);
-        kecleonAnim.loop('Idle'); kecleonAnim.update(1 / 60);
-        G.Sprites.drawShadow(ctx, 352, r.cx, counterY() - 6);
-        kecleonAnim.draw(ctx, r.cx, counterY() - 6, {});
         if (!openShop) G.Funny.bubble(ctx, r.cx, counterY() - 70, G.T('Acércate al mostrador para comprar'));
+        if (kRep.robbed) label(ctx, G.T('GUARDAESPALDAS'), r.cx - GUARD_DX, counterY() - 56, '#ff8a95', 10);
       } else if (s && s.state === 'angry') {
         const k = G.EnemyMgr.get(s.bossId);
         if (k && !k.dead) G.Funny.bubble(ctx, k.x, k.y - k.bodyH - 16, G.T('¡LADRÓN! ¡VUELVE AQUÍ!'), '#c8282a');
       }
-      sprite(ctx, 'counter', 0, r.cx, counterY() + 14);
       label(ctx, G.T('TIENDA DE KECLEON'), r.cx, r.cy - (r.rh - 0.2) * ts, '#9fe0b0');
     } else {
       const names = { house: 'CASA DE MONSTRUOS', treasure: 'SALA DEL TESORO', heal: 'SALA DE CURACIÓN', trap: 'SALA TRAMPA' };
@@ -1029,7 +1112,7 @@ G.Dungeon = (() => {
   function clearSites() { sites = []; buyT = 0; buyKey = ''; }
 
   const ROOM_NAME = { shop: 'Tienda de Kecleon', house: 'Casa de monstruos', treasure: 'Sala del tesoro', heal: 'Sala de curación', trap: 'Sala trampa' };
-  return { reset, clearSites, tick, update, onNet, onClient, drawGround, drawAir, blessingInfo, mod,
+  return { reset, clearSites, tick, update, onNet, onClient, drawGround, drawAir, drawables, blessingInfo, mod,
            get sites() { return room ? [] : sites; }, BLESS,
            /** ¿Está el grupo dentro de un interior? (spawner, loot, etc. no sacan nada) */
            get inRoom() { return !!room; },

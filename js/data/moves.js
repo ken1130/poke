@@ -206,6 +206,12 @@
       { t: '+3 de daño, sombras más grandes y +3% de velocidad',             m: {} },
       { t: '+4 de daño, sombras más duraderas y +2% de velocidad',           m: {} }
     ],
+    pan: [
+      { t: '+6 de daño y más probabilidad de aturdir', m: {} },
+      { t: '+6 de daño, más alcance y a 2 enemigos', m: {} },
+      { t: '+8 de daño y aturde más tiempo', m: {} },
+      { t: '+10 de daño, más alcance y 2 golpes seguidos', m: {} }
+    ],
     pounce: [
       { t: '+4 de daño por zarpazo; si lo derriba, salta a otro enemigo', m: {} },
       { t: '+4 de daño y más alcance', m: {} },
@@ -601,6 +607,9 @@
     { id: 'cat-pounce', name: 'Caza Ratones', type: 'dark', kind: 'pounce', only: 10006,
       desc: 'EXCLUSIVO de Tom: zarpazos seguidos al enemigo más cercano.',
       cd: 0.8, dmg: 14, radius: 176 },
+    { id: 'frying-pan', name: 'Sartenazo', type: 'normal', kind: 'pan', only: 10008,
+      desc: 'EXCLUSIVO de Jerry: un sartenazo al enemigo más cercano; a veces lo deja aturdido.',
+      cd: 0.9, dmg: 34, radius: 144 },
     { id: 'tongue-lash', name: 'Lengüetazo Látigo', type: 'poison', kind: 'whip', only: 10007,
       desc: 'EXCLUSIVO de Lika: la lengua sale como un látigo hasta un enemigo y envenena a todos los que toca por el camino.',
       cd: 0.9, dmg: 30, radius: 208 },
@@ -838,6 +847,14 @@
       { dmg: 18, life: 1.4, ir: 2.1, haste: 0.22 },
       { dmg: 24, life: 1.8, ir: 2.5, haste: 0.28, boom: 50 }
     ],
+    // Jerry: dmg por golpe, r alcance, n enemigos, hits golpes a cada uno, stun (probabilidad de
+    // aturdir), st (s aturdido; a los jefes sólo los frena); evo: splash (casillas: la mitad a los de al lado)
+    'frying-pan': [
+      { dmg: 34, r: 4.5, n: 1, hits: 1, stun: 0.25, st: 0.7 }, { dmg: 40, r: 4.5, n: 1, hits: 1, stun: 0.32, st: 0.7 },
+      { dmg: 46, r: 5, n: 2, hits: 1, stun: 0.36, st: 0.8 },   { dmg: 54, r: 5, n: 2, hits: 1, stun: 0.4, st: 1 },
+      { dmg: 64, r: 5.5, n: 2, hits: 2, stun: 0.45, st: 1 },
+      { dmg: 66, r: 6, n: 3, hits: 3, stun: 1, st: 1, splash: 1.5, cd: 0.75 }
+    ],
     // Tom: dmg por zarpazo, n zarpazos, r alcance, chain (saltos al derribar); evo: bleed (sangrado/s)
     'cat-pounce': [
       { dmg: 24, n: 3, r: 5.5, chain: 0 }, { dmg: 28, n: 3, r: 5.5, chain: 1 },
@@ -1057,6 +1074,7 @@
     'blade-storm': ['Cruzada', 'def'],           'destruction-beam': ['Poder Púrpura', 'atk'],
     'foam-punch': ['Gran Ola Esponjosa', 'atk'], 'scaredy-burst': ['Valor de Héroe', 'def'],
     'turbo-dash': ['Turbo Máximo', 'spd'],       'cat-pounce': ['Gato Implacable', 'atk'],
+    'frying-pan': ['Sartén Furiosa', 'atk'],
     'tongue-lash': ['Lengua Mortal', 'cd'],
     'curious-question': ['Cien Mil Porqués', 'cd'], 'potato-roll': ['Estampida de Boniatos', 'atk'],
     // apoyo (2026-10-15)
@@ -1108,6 +1126,7 @@
     scare:       { t: 'Inmoviliza 0,7 s a los normales y te vuelves invulnerable 0,5 s; +12 por enemigo (hasta 18), cada 0,8 s', m: {} },
     afterimage:  { t: 'Sombras más grandes y duraderas que estallan (50) al desaparecer; +28% de velocidad', m: {} },
     pounce:      { t: '5 zarpazos que hacen sangrar (14/s); si lo derriba, salta hasta a 4 enemigos', m: {} },
+    pan:         { t: '3 sartenazos seguidos a 3 enemigos: siempre aturden y salpican a los de al lado', m: {} },
     whip:        { t: 'Tres lenguas a la vez que atraen a los enemigos hacia ti y envenenan ×4; mucho más daño', m: {} },
     question:    { t: 'Pregunta a TODOS los enemigos del radio a la vez y se quedan pensando 0,8 s', m: {} },
     roll:        { t: '5 bolas enormes que lo atraviesan todo y electrocutan (40) a los de alrededor al golpear', m: {} },

@@ -89,7 +89,7 @@ G.Combat = (() => {
    * ese objeto con su daño.
    */
   const ENEMY_ONLY = new Set(['flameshield', 'lightning', 'drain', 'psyarrow', 'acidrain', 'fist', 'spear', 'treefall', 'hearts',
-                              'tornado', 'bladestorm', 'dbeam', 'foampunch', 'scare', 'afterimage', 'pounce', 'whip', 'question']);
+                              'tornado', 'bladestorm', 'dbeam', 'foampunch', 'scare', 'afterimage', 'pounce', 'whip', 'question', 'pan']);
   /** El objeto rompible más cercano a su alcance si no hay enemigos (cofres y rocas antes que la hierba). */
   function propNear(pl, m) {
     const R = reach(m);
@@ -147,6 +147,7 @@ G.Combat = (() => {
       case 'scare':      scare(pl, m); break;
       case 'afterimage': afterimage(pl, m); break;
       case 'pounce':     pounce(pl, m); break;
+      case 'pan':        pan(pl, m); break;
       case 'whip':       whips(pl, m); break;
       case 'question':   questions(pl, m); break;
       case 'roll':       potatoRoll(pl, m); break;
@@ -898,7 +899,7 @@ G.Combat = (() => {
   }
 
   const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone', 'lightning', 'drain', 'psyarrow',
-                    'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam', 'foampunch', 'pounce', 'whip', 'question', 'roll'];
+                    'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam', 'foampunch', 'pounce', 'whip', 'question', 'roll', 'pan'];
   function needsTarget(m) { return TARGETED.includes(m.kind); }
   function reach(m) {
     if (m.kind === 'melee') return m.radius + 30;
@@ -908,7 +909,7 @@ G.Combat = (() => {
     if (m.kind === 'meteor') return 340;
     if (m.kind === 'dash') return m.radius + 60;
     if (['lightning', 'drain', 'psyarrow', 'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam',
-         'foampunch', 'scare', 'pounce', 'whip', 'question', 'roll'].includes(m.kind)) return G.Moves.stat(m).r * 32;
+         'foampunch', 'scare', 'pounce', 'whip', 'question', 'roll', 'pan'].includes(m.kind)) return G.Moves.stat(m).r * 32;
     if (m.kind === 'cone') return m.speed * m.life + 30;
     return 520;
   }
@@ -1355,6 +1356,36 @@ G.Combat = (() => {
       if (nx) G.FX.sp('streak', 'dark', (fx + nx.x) / 2, (fy + nx.y) / 2 - 10, { life: 0.15, angle: Math.atan2(nx.y - fy, nx.x - fx), scale: 1.6 });
       e = nx;
     }
+  }
+
+  /**
+   * Jerry · Sartenazo: un sartenazo (`hits` seguidos) a los `n` enemigos más cercanos; con `stun`
+   * de probabilidad los deja aturdidos `st` s (a los jefes sólo los frena). Evolucionado (Sartén
+   * Furiosa): siempre aturde y salpica la mitad a los que están a `splash` casillas.
+   */
+  function pan(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE;
+    const list = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl)).slice(0, row.n);
+    if (!list.length) return;
+    for (const e of list) {
+      const a = Math.atan2(e.y - pl.y, e.x - pl.x), ex = e.x, ey = e.y - e.bodyH * 0.6;
+      const seen = G.Camera.sees(ex, ey, 30);
+      if (seen) for (let k = 0; k < row.hits; k++) {
+        // La sartén baja girando sobre la cabeza (una por golpe, un poco después cada una).
+        G.FX.sp('pan', 'steel', ex - Math.cos(a) * 8, ey - 10, { life: 0.2 + k * 0.12, scale: 1.7, angle: a - 1.3 + k * 0.3, spin: 7 });
+        G.FX.sp('impact', 'normal', ex + G.U.rand(-4, 4), ey + G.U.rand(-4, 4), { life: 0.14 + k * 0.12, scale: 1.6 });
+      }
+      if (ghost) continue;
+      for (let k = 0; k < row.hits && !e.dead; k++) hit(pl, e, row.dmg * pl.atk, '#d8d8e0', Math.cos(a), Math.sin(a), k === row.hits - 1 ? 30 : 0, m);
+      if (!e.dead && !isFoe(e) && Math.random() < row.stun) {
+        if (e.boss) e.applySlow(0.5, row.st * 2); else e.applyRoot(row.st);
+        if (seen) for (let k = 0; k < 3; k++) G.FX.twinkle(ex + G.U.rand(-14, 14), ey - 14 - G.U.rand(0, 8));
+      }
+      if (row.splash) {
+        for (const o of enemiesIn(e.x, e.y, row.splash * TILE)) if (o !== e && !o.dead) hit(pl, o, row.dmg * 0.5 * pl.atk, '#d8d8e0', o.x - e.x, o.y - e.y, 20, m);
+      }
+    }
+    if (G.Camera.sees(pl.x, pl.y, 0)) G.Audio.sfx('break');
   }
 
   /** Lika · Lengüetazo Látigo: una lengua (dos, evolucionado) hasta un enemigo; daña y envenena todo lo del camino. */

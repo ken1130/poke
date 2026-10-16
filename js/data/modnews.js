@@ -5,6 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-16', title: { zh: '升等變強、組隊難度依人數調整、迷宮設施不再跑到幾千公尺外', en: 'Level-ups make you stronger, co-op difficulty by player count, dungeon spots stay nearby' },
     new: [
+      { zh: '新增練功房：挑戰面板最下面，5 隻皮卡丘木樁圍一圈（不會動、不會倒），可以從全部招式自由配 5 招、設定等級或進化，左上角顯示總傷害和每秒傷害；不會生怪，也不給任何獎勵', en: 'New Training Room (bottom of the Challenges panel): 5 Pikachu dummies in a ring (they never move or fall); freely pick 5 moves from all moves with any level or evolved; total and per-second damage on the top left; no enemies and no rewards' },
+      { zh: '圖鑑「其他」加入傑利鼠（一般／妖精），專屬招式「平底鍋反擊」：拿平底鍋敲最近的敵人，有機率敲暈；進化「連環平底鍋」一次敲 3 個、每個連敲 3 下、一定敲暈，旁邊的敵人也會被波及', en: 'Jerry (Normal/Fairy) joins the Pokédex "Others" tab with his exclusive move Frying Pan Counter: whacks the nearest enemy and may stun it; it evolves into Frying Pan Frenzy: 3 whacks each on 3 enemies, always stuns and splashes nearby enemies' },
       { zh: '撿到道具不再跳視窗暫停：技能列上方會出現發光的道具圖示，想換的時候再點一下（電腦按 I）；最多暫存 3 個，多的會把最低等級的賣掉。商店買的、祝福卡給的道具照樣直接開視窗', en: 'Picking up an item no longer pauses with a popup: a glowing item icon appears above the move bar, tap it (or press I) when you want to swap; up to 3 wait there, extra ones sell the lowest tier. Items bought in the shop or given by boons still open the window right away' },
       { zh: '製作名單加入 BUG 審查員：readyplayer1996、peter', en: 'Credits now list the bug reviewers: readyplayer1996 and peter' },
       { zh: '一般模式有終點了：迷宮共 5 層（B1F～B5F）。每一層會出現「層主」（B1F 在 4:00，之後每層抵達 3 分 30 秒後），打倒才會出現樓梯；B5F 的層主是傳說級的「迷宮之主」，打倒就「迷宮制霸」：+300 金幣、扭蛋券 ×10、新成就與稱號，並可選「凱旋結算」（以通關結束，結算顯示通關）或「繼續挑戰（無盡）」往 B6F 以下前進。組隊時由房主決定，全隊都拿得到獎勵', en: 'Normal mode now has a finish line: a 5-floor dungeon (B1F–B5F). Each floor has a Floor Boss (B1F at 4:00, then 3:30 after arriving) and the stairs only appear once it is beaten; on B5F it is the legendary Dungeon Lord. Beat it to clear the dungeon: +300 coins, a ×10 ticket, a new achievement and title, and a choice to “Claim victory” (the run ends as a win) or “Keep going (endless)” to B6F and beyond. In co-op the host decides and everyone gets the reward' },
@@ -38,6 +40,11 @@ G.MODNEWS = [
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }
     ],
     chg: [
+      { zh: '卡克隆商店的商品全部漲價 2.5 倍；組隊時每多 1 人再 +35%（金幣是大家共用的）', en: 'Kecleon shop prices ×2.5; in co-op +35% per extra player (coins are shared)' },
+      { zh: '第一間商店提早到 4:00 出現', en: 'The first shop now appears at 4:00' },
+      { zh: '寵物專區固定賣寵物蛋：有幾個玩家就有幾顆，每人只能買一顆，已經有夥伴或蛋的人不能買；一般商品不再賣蛋', en: 'The Pets tab always sells eggs: one per player, each person can buy only one, and not if they already have a partner or egg; the general tab no longer sells eggs' },
+      { zh: '打倒過一次卡克隆之後，之後的商店櫃檯兩邊會站兩個保鑣（怪力）；再偷東西時保鑣會跟卡克隆一起出手', en: 'After you beat Kecleon once, later shops have two bodyguards (Machamp) by the counter; steal again and they fight alongside Kecleon' },
+      { zh: '輪盤改成 10 格（每格大小照中獎機率，機率跟以前一樣），輪盤和倍率字都放大', en: 'The roulette now has 10 slots (each sized by its odds, same odds as before), and the wheel and labels are bigger' },
       { zh: '紫色恐怖力量（毀滅射線進化）的射線長度縮短到原本的 60%（11.5 → 6.9 格）', en: 'Purple Power (evolved Destruction Beam) beam length cut to 60% (11.5 → 6.9 tiles)' },
       { zh: '自創的一般屬性招式（毀滅射線、歐美肥佬）只有一般屬性的寶可夢會出現；劍舞、變硬、高速移動等原作招式照舊', en: 'Our own Normal-type moves (Destruction Beam, Heavyweight) now only appear for Normal-type Pokémon; Swords Dance, Harden, Agility and other originals stay for everyone' },
       { zh: '十字軍出征：分裂出來的兩支刀刃碰到敵人會再分裂一次', en: 'Crusade: the two split blades split once more when they hit an enemy' },
@@ -56,6 +63,10 @@ G.MODNEWS = [
       { zh: '身上已有 2 個道具時撿到新道具，每個「換成」選項會同時顯示失去的道具效果和新道具的效果（原本只看得到新的）', en: 'When you pick up an item while already carrying two, each swap option now shows the effect you lose and the one you gain (before, only the new one)' }
     ],
     fix: [
+      { zh: '修正地圖上的商店小屋和雕像會蓋住站在前面的角色；從側邊或後面走過來，碰到小屋就直接進店，不會先穿過小屋', en: 'Fixed the shop hut and statue on the map covering characters in front of them; touching the hut from the side or back now enters the shop instead of walking through it' },
+      { zh: '修正商店裡比較高的角色（例如湯姆貓）站在櫃檯前時頭被櫃檯蓋住；櫃檯、架子、輪盤、卡克隆改成依前後位置繪製', en: 'Fixed tall characters (like Tom) having their head covered by the counter; the counter, shelves, roulette and Kecleon are now drawn by depth' },
+      { zh: '修正在寵物專區時走到櫃檯不會切回一般商品', en: 'Fixed the shop staying on the Pets tab when you walk back to the counter' },
+      { zh: '輪盤改成轉完才結算金幣和顯示結果（以前一按下去金幣就先變了）', en: 'The roulette now pays out and shows the result only when the wheel stops (before, your coins changed as soon as you pressed)' },
       { zh: '修正劍刃風暴射出去的是頭目的大刀（兩個圖案同名，後面的蓋掉前面的），看起來像砸過去；現在是一支小劍筆直射出', en: 'Fixed Blade Storm firing the boss cleaver (two shapes shared a name and one overwrote the other), so it looked like a slam; it now fires a small sword in a straight line' },
       { zh: '修正組隊時客人不會進入寶藏層（會留在舊地圖被舊的怪包圍）', en: 'Fixed co-op guests not entering the Treasure floor (they stayed on the old map with the old enemies)' },
       { zh: '修正離開裂縫後，地圖上的競技場沒有清掉', en: 'Fixed the rift arena staying on the map after leaving the rift' },

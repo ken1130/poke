@@ -1216,6 +1216,7 @@ G.Game = (() => {
     for (const e of G.EnemyMgr.drawables(cam)) items.push({ y: e.y, ent: e });
     for (const e of extra) items.push({ y: e.y, ent: e });
     for (const c of G.Companion.drawables()) items.push({ y: c.y, ent: c });
+    for (const f of G.Dungeon.drawables()) items.push({ y: f.y, ent: f });      // muebles de la tienda
     const rift = G.Rift.drawable();
     if (rift) items.push({ y: rift.y, ent: rift });
     const stairs = G.Floors.drawable();

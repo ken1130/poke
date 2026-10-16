@@ -7,6 +7,10 @@
  */
 G.CHANGELOG = [
   { d: '2026-10-16', title: ['Subir de nivel te hace más fuerte', 'Levelling up makes you stronger'], new: [
+    ['Sala de entrenamiento (al final de Retos): 5 muñecos de Pikachu en corro que no se mueven ni caen; eliges hasta 5 movimientos de todos, con su nivel o evolucionados, y ves el daño total y por segundo. Sin enemigos ni premios.',
+     'Training Room (end of Challenges): 5 Pikachu dummies in a ring that never move or fall; pick up to 5 moves from all of them, at any level or evolved, and see total and per-second damage. No enemies, no rewards.'],
+    ['Jerry (normal/hada) en la pestaña «Otros», con su movimiento exclusivo Sartenazo: golpea al enemigo más cercano y a veces lo aturde. Evoluciona en Sartén Furiosa: 3 golpes a 3 enemigos, siempre aturde y salpica.',
+     'Jerry (Normal/Fairy) in the "Others" tab, with his exclusive Frying Pan Counter: whacks the nearest enemy and sometimes stuns it. Evolves into Frying Pan Frenzy: 3 whacks on 3 enemies, always stuns and splashes.'],
     ['Al coger un objeto ya no sale una ventana que para el juego: aparece un icono que brilla sobre los movimientos y lo cambias cuando quieras (tócalo o pulsa I). Esperan hasta 3; si llega otro, se vende el de menos rango. Lo comprado en la tienda o regalado por una bendición abre la ventana al momento.',
      'Picking up an item no longer pauses the game with a window: a glowing icon appears above your moves and you swap it whenever you like (tap it or press I). Up to 3 can wait; another one sells the lowest tier. Items bought in the shop or given by a boon open the window right away.'],
     ['Ruleta de Kecleon: cuando alguien gira, los demás ven la misma ruleta girando arriba de la pantalla, con quién gira y el resultado (sin tapar nada).',
@@ -16,6 +20,16 @@ G.CHANGELOG = [
     ['Nuevo truco levelup30: +30 niveles desde el que tengas (en partida), eligiendo las cartas.',
      'New cheat levelup30: +30 levels from your current one (while playing), picking your cards.']
   ], chg: [
+    ['Tienda de Kecleon: precios ×2,5; en grupo, +35 % por cada jugador más (las monedas son de todos).',
+     'Kecleon shop: prices ×2.5; in a group, +35% per extra player (coins are shared).'],
+    ['La primera tienda sale a los 4:00 (antes 4:30).',
+     'The first shop appears at 4:00 (was 4:30).'],
+    ['Mascotas siempre vende huevos: uno por jugador, cada uno puede comprar sólo uno (y no si ya tiene compañero o huevo). La sección normal ya no los vende.',
+     'The Pets section always sells eggs: one per player, each can buy only one (and not with a partner or egg already). The normal section no longer sells them.'],
+    ['Si ya vencisteis a Kecleon, sus tiendas tienen dos guardaespaldas (Machamp) que pelean con él si robáis otra vez.',
+     'Once you beat Kecleon, his shops have two bodyguards (Machamp) who fight with him if you steal again.'],
+    ['Ruleta de 10 casillas (cada una del tamaño de su probabilidad, la misma de antes), más grande y con números más grandes.',
+     'Roulette with 10 slots (each sized by its chance, same odds as before), bigger and with bigger numbers.'],
     ['Poder Púrpura (Rayo Destructor evolucionado): el rayo mide un 60 % de lo que medía (11,5 → 6,9 casillas).',
      'Purple Power (evolved Destruction Beam): the beam is 60% as long as before (11.5 → 6.9 tiles).'],
     ['Rayo Destructor y Peso Pesado (movimientos normales de esta versión) sólo salen a Pokémon de tipo normal; Danza Espada, Fortaleza, Agilidad y los demás de siempre siguen para todos.',
@@ -35,6 +49,14 @@ G.CHANGELOG = [
     ['En grupo, la dificultad va según cuántos sois (solo, igual que siempre): por cada jugador más, +60 % de enemigos, +30 % de vida (+40 % en Aventura, retos, torre y desafío legendario), +10 % de daño y +30 % de enemigos a la vez. En la mazmorra con 3, a los 9 minutos ya todo era élite y no se acababa nunca.',
      'In a group, difficulty depends on how many you are (solo is unchanged): per extra player, +60% enemies, +30% HP (+40% in Adventure, challenges, tower and legend rush), +10% damage and +30% enemies at once. In the dungeon with 3, after 9 minutes everything was elite and it never ended.']
   ], fix: [
+    ['En el mapa, la caseta de la tienda y la estatua tapaban a quien estaba delante; y llegando por un lado se atravesaba la caseta antes de entrar.',
+     'On the map, the shop hut and the statue covered whoever stood in front; and coming from the side you walked through the hut before entering.'],
+    ['En la tienda, a un Pokémon alto (Tom) delante del mostrador se le tapaba la cabeza: los muebles y Kecleon se dibujan ahora por profundidad.',
+     'In the shop, a tall Pokémon (Tom) in front of the counter had its head covered: furniture and Kecleon are now drawn by depth.'],
+    ['Al volver al mostrador desde la estantería de mascotas, la tienda se quedaba en la pestaña de mascotas.',
+     'Walking back to the counter from the pet shelf left the shop on the Pets tab.'],
+    ['La ruleta cambiaba las monedas al pulsar: ahora se cobra y se avisa cuando la rueda se para.',
+     'The roulette changed your coins as soon as you pressed: now it pays and announces when the wheel stops.'],
     ['La Tormenta de Cuchillas lanzaba la cuchilla gigante de los jefes (dos dibujos con el mismo nombre) y parecía un golpe; ahora dispara una espada pequeña en línea recta.',
      'Blade Storm fired the giant boss cleaver (two drawings shared a name) and looked like a slam; it now shoots a small sword in a straight line.'],
     ['En la tienda de Kecleon se podía atravesar el mostrador, las estanterías y la ruleta corriendo o con un acelerón.',
