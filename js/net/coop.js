@@ -48,8 +48,19 @@ G.Coop = (() => {
 
   // ---------------- escalado de dificultad ----------------
 
-  const scaleRate = n => 1 + 0.75 * Math.max(0, n - 1);
-  const scaleHp = n => 1 + 0.3 * Math.max(0, n - 1);
+  // Solo (n = 1): todo ×1, la dificultad normal. Por cada jugador más (2026-10-16):
+  //   rate  +60 % de enemigos (antes +75 %)
+  //   hp    +30 % de vida; en los otros modos (aventura, retos diario y semanal, torre sin fin,
+  //         desafío legendario) +40 %: con
+  //         revivir y concentrar el fuego se hacían demasiado fáciles en grupo
+  //   dmg   +10 % de daño (se reparten entre más gente)
+  //   cap   +30 % de enemigos a la vez (antes el tope era fijo: en grupo se llenaba enseguida
+  //         y todo lo que salía era élite; a los 9 min en la mazmorra no había quien pudiera)
+  const more = n => Math.max(0, n - 1);
+  const scaleRate = n => 1 + 0.6 * more(n);
+  const scaleHp = n => 1 + (G.Modes.run === 'normal' ? 0.3 : 0.4) * more(n);
+  const scaleDmg = n => 1 + 0.1 * more(n);
+  const scaleCap = n => 1 + 0.3 * more(n);
 
   // ---------------- arranque / fin ----------------
 
@@ -707,7 +718,7 @@ G.Coop = (() => {
   }
 
   return {
-    ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, xpShare, scaleRate, scaleHp,
+    ANIMS, COLORS, begin, end, leave, tick, players, puppets, xpFactor, xpShare, scaleRate, scaleHp, scaleDmg, scaleCap,
     hitter, creditKill, creditRevive, teamStats,
     cast, hit, status, hurtShown, enemyAdded, enemyGone, enemyShot, pickupAdded, pickupGone, say,
     propBroken, collected, shinyCaught, levelStart, localPicked, over, holdStart, holdEnd,

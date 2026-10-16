@@ -3,11 +3,13 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
-  { d: '2026-10-16', title: { zh: '迷宮設施不再跑到幾千公尺外、+30 等金手指', en: 'Dungeon spots stay nearby, +30 levels cheat' },
+  { d: '2026-10-16', title: { zh: '升等變強、組隊難度依人數調整、迷宮設施不再跑到幾千公尺外', en: 'Level-ups make you stronger, co-op difficulty by player count, dungeon spots stay nearby' },
     new: [
+      { zh: '每升 1 級：最大生命 +2%（並補回這些血）、攻擊 +1%，算到 50 級（PK 不算）', en: 'Each level: +2% max HP (healed too) and +1% attack, up to level 50 (not in PvP)' },
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }
     ],
     fix: [
+      { zh: '組隊難度依人數調整（一個人維持原本難度）：每多 1 人，怪物 +60%、血量 +30%（冒險、每日／每週挑戰、無盡塔、傳說連戰 +40%）、傷害 +10%，同時在場上限 +30%。修正三人迷宮 9 分鐘後怪物全變精英、打不完的問題', en: 'Co-op difficulty now scales with player count (solo unchanged): per extra player, +60% enemies, +30% HP (+40% in Adventure, Daily/Weekly, Endless Tower and Legend rush), +10% damage and +30% enemy cap. Fixes 3-player dungeon runs where after 9 min every enemy was elite and it never ended' },
       { zh: '迷宮的神秘房間、商店、雕像和樓梯離所有人超過 100 公尺時，會重新出現在附近（之前走遠後小地圖會顯示幾千公尺）', en: 'Dungeon mystery rooms, shops, statues and stairs now move back near you when everyone is more than 100 m away (before, the minimap could show thousands of metres)' }
     ] },
   { d: '2026-10-15', title: { zh: '迷宮大更新：新招式、技能光碟、迷宮事件、夥伴與樓梯', en: 'Big dungeon update: new moves, move discs, dungeon events, partners and stairs' },

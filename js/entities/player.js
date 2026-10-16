@@ -4,6 +4,8 @@
  * ataque de Mundo Misterioso que le toca (Attack, Shoot o Charge).
  */
 G.Player = class Player {
+  /** Lo que da cada nivel (levelGrowth): vida y ataque, hasta el nivel `max`. */
+  static LV = { hp: 0.02, atk: 0.01, max: 50 };
   /**
    * @param mon   entrada de G.DEX
    * @param perks mejoras permanentes ya resueltas (ver data/upgrades.js)
@@ -91,7 +93,7 @@ G.Player = class Player {
 
   // ---------------- stats efectivos ----------------
   // calmN/calmAmt: Paz Mental (apoyo, combat.js)
-  get atk() { return this.baseAtk * this.atkMul * (1 + this.buffs.atk.n * this.buffs.atk.amount) * (1 + (this.calmN || 0) * (this.calmAmt || 0)); }
+  get atk() { return this.baseAtk * this.atkMul * (1 + (this.lvGrown || 0) * Player.LV.atk) * (1 + this.buffs.atk.n * this.buffs.atk.amount) * (1 + (this.calmN || 0) * (this.calmAmt || 0)); }
   get spd() {
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
     const w = G.Weather.speedFor(this.mon.types);
@@ -371,7 +373,23 @@ G.Player = class Player {
       this.xpNext = Player.xpFor(this.level);
       leveled++;
     }
+    if (leveled) this.levelGrowth();
     return leveled;
+  }
+
+  /**
+   * Cada nivel (2026-10-16): +2 % de la vida del principio (y te cura eso) y +1 % de ataque,
+   * hasta el nivel 50. En PK no (igualdad). Se llama cada vez que sube `level`.
+   */
+  levelGrowth() {
+    if (this.remote || (G.PvP && G.PvP.on)) return;
+    const want = Math.max(0, Math.min(this.level, Player.LV.max) - 1), add = want - (this.lvGrown || 0);
+    if (add <= 0) return;
+    if (!this.lvHpBase) this.lvHpBase = this.maxHp;
+    const tot = k => Math.round(this.lvHpBase * Player.LV.hp * k);     // (por el total: sin acumular redondeos)
+    const hp = tot(want) - tot(this.lvGrown || 0);
+    this.maxHp += hp; this.hp = Math.min(this.maxHp, this.hp + hp);
+    this.lvGrown = want;
   }
 
   // ---------------- objeto equipado ----------------

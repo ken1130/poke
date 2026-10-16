@@ -6,9 +6,14 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-16', title: ['Lugares de la mazmorra siempre cerca', 'Dungeon spots always nearby'], new: [
+  { d: '2026-10-16', title: ['Subir de nivel te hace más fuerte', 'Levelling up makes you stronger'], new: [
+    ['Cada nivel: +2 % de vida máxima (y te cura eso) y +1 % de ataque, hasta el nivel 50 (en PK no).',
+     'Each level: +2% max HP (healed too) and +1% attack, up to level 50 (not in PvP).'],
     ['Nuevo truco levelup30: +30 niveles desde el que tengas (en partida), eligiendo las cartas.',
      'New cheat levelup30: +30 levels from your current one (while playing), picking your cards.']
+  ], chg: [
+    ['En grupo, la dificultad va según cuántos sois (solo, igual que siempre): por cada jugador más, +60 % de enemigos, +30 % de vida (+40 % en Aventura, retos, torre y desafío legendario), +10 % de daño y +30 % de enemigos a la vez. En la mazmorra con 3, a los 9 minutos ya todo era élite y no se acababa nunca.',
+     'In a group, difficulty depends on how many you are (solo is unchanged): per extra player, +60% enemies, +30% HP (+40% in Adventure, challenges, tower and legend rush), +10% damage and +30% enemies at once. In the dungeon with 3, after 9 minutes everything was elite and it never ended.']
   ], fix: [
     ['La sala misteriosa, la tienda, la estatua y las escaleras vuelven a aparecer cerca si todos os alejáis más de 100 m (en el minimapa salían a miles de metros).',
      'The mystery room, shop, statue and stairs reappear nearby if everyone gets more than 100 m away (the minimap showed them thousands of metres away).']

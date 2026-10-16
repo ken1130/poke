@@ -88,7 +88,7 @@ G.Spawner = (() => {
   // Con los modos de dificultad (modes.js) ya aplicados.
   function scaled(sc, k) { return G.Modes.scale(k === 1 ? sc : Object.assign({}, sc, { hp: sc.hp * k })); }
   /** Tope de enemigos con la "cantidad" a medida (como mucho el doble). */
-  const capNow = () => Math.round(CAP * G.U.clamp(G.Modes.countMul(), 0.5, 2));
+  const capNow = () => Math.round(CAP * G.U.clamp(G.Modes.countMul(), 0.5, 2) * G.Coop.scaleCap(players.length));
 
   function isFlyer(def) { return G.Sprites.hovers(def.dex); }
 
@@ -105,7 +105,7 @@ G.Spawner = (() => {
     if (!pt) return null;
     const shiny = rollShiny(def.dex);
     const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t)));
-    e.dmg *= DMG_K; e.xp = Math.round(e.xp * XP_K);
+    e.dmg *= DMG_K * G.Coop.scaleDmg(players.length); e.xp = Math.round(e.xp * XP_K);
     e.spd = Math.min(e.spd, 92);           // ninguno normal corre más que la mayoría de Pokémon (mediana 105)
     e.maxHp = e.hp = Math.round(e.maxHp * G.Dungeon.mod('enemyHp'));     // maldición de la avaricia
     // Comienzo más suave (2026-10-14): sin mejoras se moría enseguida. Los primeros
@@ -131,6 +131,7 @@ G.Spawner = (() => {
   function spawnBoss(pl, t, b) {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
     const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1)), true);
+    e.dmg *= G.Coop.scaleDmg(players.length);
     // Un jefe nunca es más flojo que varios normales de ese momento (salvo en la Aventura, que tiene los suyos).
     if (G.Modes.run !== 'stage') {
       const floor = Math.round(G.Enemies.bossFloor(t) * G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1));
@@ -225,7 +226,7 @@ G.Spawner = (() => {
   function burst(n) {
     if (G.Modes.on('boss') || G.Modes.run === 'legend') return;   // sin hordas
     const base = Math.random() * 6.2832, target = anchor() || G.Game.player, t = G.Game.st.time;
-    for (let i = 0; i < n && G.EnemyMgr.count < CAP + 10; i++) spawnOne(target, t, base + G.U.rand(-0.6, 0.6));
+    for (let i = 0; i < n && G.EnemyMgr.count < capNow() + 10; i++) spawnOne(target, t, base + G.U.rand(-0.6, 0.6));
   }
 
   /**

@@ -181,7 +181,7 @@ G.Game = (() => {
     // Modo jefes (2026-10-15): empiezas con 5 niveles (y sus cartas): con un solo movimiento a
     // nivel 1, el primer jefe apenas notaba los golpes.
     const head = G.Stages.headStart() || (G.Modes.on('boss') && !G.PvP.on ? 5 : 0);
-    if (head) { pl.level += head; pl.xpNext = G.Player.xpFor(pl.level); pendingLevels += head; }
+    if (head) { pl.level += head; pl.xpNext = G.Player.xpFor(pl.level); pendingLevels += head; pl.levelGrowth(); }
 
     if (coop) {
       G.Coop.begin(coop, pl, coopApi);
@@ -1242,7 +1242,7 @@ G.Game = (() => {
     /** Acaba la run como si hubieras caído (Desafío legendario: pierdes en la arena). */
     end() { if (state !== 'ui' && state !== 'over') endRun(true); },
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
-    debugLevelUp() { pl.level++; pendingLevels++; },
+    debugLevelUp() { pl.level++; pendingLevels++; pl.levelGrowth(); },
     toUI() { state = 'ui'; Backdrop.restore(); },
     get state() { return state; }, get player() { return pl; }, get fixedScene() { return fixedScene != null; }, st
   };
