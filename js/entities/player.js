@@ -112,6 +112,8 @@ G.Player = class Player {
 
   // ---------------- movimientos ----------------
   addMove(id) {
+    // (2026-10-16) Un id que no existe (guardado viejo, atajo de un movimiento quitado...) rompía el HUD en cada fotograma.
+    if (!G.Moves.BY_ID[id]) return false;
     if (this.slots.length >= this.maxMoves || this.hasMove(id)) return false;
     // Reto semanal "Un solo ataque": sólo un movimiento que no sea potenciador.
     if (G.Modes.rule('oneMove') && G.Moves.BY_ID[id] && G.Moves.BY_ID[id].kind !== 'buff' && this.moves.some(m => m.kind !== 'buff')) return false;
