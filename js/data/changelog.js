@@ -28,6 +28,10 @@ G.CHANGELOG = [
     ['Nuevo truco levelup30: +30 niveles desde el que tengas (en partida), eligiendo las cartas.',
      'New cheat levelup30: +30 levels from your current one (while playing), picking your cards.']
   ], chg: [
+    ['Más fluido en el móvil: el tinte rojo de los élite enfurecidos ya no se recalcula cada fotograma, menos resolución interna con muchos enemigos, los sprites se precargan por partes y el minimapa y los iconos de la tienda cuestan menos.',
+     'Smoother on phones: the red tint of enraged elites is no longer recomputed every frame, lower internal resolution when crowded, sprites preload in batches, and the minimap and shop icons are cheaper.'],
+    ['Móvil: la ruleta, la pausa, el resumen, el gacha y las ventanas de elección caben en pantallas bajas; el título del menú no se parte; márgenes para la muesca del iPhone; los campos no hacen zoom en iOS; controles y enlaces más fáciles de tocar.',
+     'Mobile: the roulette, pause, summary, gacha and choice windows fit short screens; the menu title no longer wraps; iPhone notch margins; inputs do not zoom on iOS; easier-to-tap controls and links.'],
     ['Tienda de Kecleon: precios ×2; en grupo, +35 % por cada jugador más (las monedas son de todos).',
      'Kecleon shop: prices ×2; in a group, +35% per extra player (coins are shared).'],
     ['La primera tienda sale a los 4:00 (antes 4:30).',

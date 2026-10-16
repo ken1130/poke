@@ -45,6 +45,8 @@ G.MODNEWS = [
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }
     ],
     chg: [
+      { zh: '手機變順了：狂暴精英的紅色效果不再每格重算（25 隻狂暴時從幾乎卡死變正常）、後期怪多時手機自動降低內部解析度、圖片改成分批預載（不再每 10 秒卡一下）、小地圖與商店圖示更省效能', en: 'Smoother on phones: the enraged elite red tint is no longer recomputed every frame (25 enraged enemies went from nearly frozen to normal), phones lower the internal resolution when crowded, sprites preload in batches (no more hitch every 10 s), and the minimap and shop icons are cheaper' },
+      { zh: '手機版面修正：輪盤在矮螢幕改成左輪盤右按鈕、暫停與結算的按鈕不再跑到畫面外、扭蛋抽卡按鈕一直看得到、選卡視窗不再切掉第三張、挑戰卡說明不再擠成窄欄、主選單標題不折行、避開 iPhone 瀏海、輸入框不會被 iOS 放大、滑桿和連結更好點', en: 'Phone layout fixes: the roulette uses a side-by-side layout on short screens, pause and summary buttons stay on screen, gacha pull buttons stay visible, choice windows no longer cut the third card, challenge cards no longer squeeze their text, the menu title no longer wraps, iPhone notch safe areas, inputs no longer zoom on iOS, larger sliders and links' },
       { zh: '卡克隆商店的商品全部漲價 2 倍；組隊時每多 1 人再 +35%（金幣是大家共用的）', en: 'Kecleon shop prices ×2; in co-op +35% per extra player (coins are shared)' },
       { zh: '第一間商店提早到 4:00 出現', en: 'The first shop now appears at 4:00' },
       { zh: '寵物專區固定賣寵物蛋：有幾個玩家就有幾顆，每人只能買一顆，已經有夥伴或蛋的人不能買；一般商品不再賣蛋', en: 'The Pets tab always sells eggs: one per player, each person can buy only one, and not if they already have a partner or egg; the general tab no longer sells eggs' },
