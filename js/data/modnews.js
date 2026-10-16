@@ -34,6 +34,7 @@ G.MODNEWS = [
       { zh: '新金手指 levelup30：遊戲中從現在的等級再升 30 級，並選升級卡', en: 'New cheat levelup30: gain +30 levels from your current level while playing, and pick your cards' }
     ],
     chg: [
+      { zh: '介面全面改版成我們自己的「營火石窟」風格：石板視窗與按鈕、火炬琥珀色主色；主選單標題兩側有像素火炬、角色站在石龕裡的石台上、「開始遊戲」改成發光的大按鈕；上方金幣與按鈕收成一條石板帶；手機直式與橫式都重新排版', en: 'Brand-new “Campfire Grotto” look: stone windows and buttons with torch-amber accents; the main menu has pixel torches by the title, your character on a pedestal in a stone niche and a glowing Play button; coins and buttons sit in one stone strip at the top; reworked layouts for phones in portrait and landscape' },
       { zh: '落雷改成像素風：粗的鋸齒閃電從天而降（深色外框、黃色光暈、白色核心，還會分岔），落地有星狀火花和焦痕；進化後的連鎖電流也改成會閃動的像素電弧', en: 'Thunder Strike now uses pixel-art lightning: thick jagged bolts with branches, star sparks and a scorch mark; the evolved chain current is a crackling pixel arc' },
 
       { zh: '被打到時角色會做受傷動作（最長 0.3 秒，不會打斷正在做的攻擊動作）', en: 'Your Pokémon now plays its hurt pose when hit (up to 0.3 s, never interrupting an attack animation)' },
