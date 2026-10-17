@@ -154,6 +154,27 @@ G.PartyGameUI = (() => {
   /** Dónde se sienta cada uno (visto desde ti): abajo tú; los demás en orden de turno a la derecha, arriba, izquierda. */
   function places(n) { return n === 2 ? ['top'] : n === 3 ? ['right', 'left'] : ['right', 'top', 'left']; }
 
+  /*
+   * Mesa (2026-10-17, pedido del dueño, estilo de los juegos de cartas del móvil): cada jugador con su
+   * cuadro grande (Pokémon + placa con el nombre) y el tiempo como un aro alrededor; los rivales con sus
+   * cartas boca abajo en abanico; tu mano grande abajo (lo que puedes echar, iluminado; lo demás, apagado);
+   * a la derecha, botones redondos grandes. La pista sube en tu mano las cartas de la jugada (otra vez: la
+   * siguiente). "Auto": la CPU juega por ti hasta que lo quites.
+   */
+  function whoHTML(me) {
+    return `<div class="b2-who${me ? ' me' : ''}">
+      <div class="b2-av"><span class="b2-sec hidden"></span></div>
+      <div class="b2-plate"><b class="b2-name" translate="no"></b><span class="b2-tag"></span></div>
+      <div class="b2-bub hidden">${G.T('Ha pasado')}</div>
+    </div>`;
+  }
+  /** Abanico de cartas boca abajo (cada una un poco girada). */
+  function fanHTML(n) {
+    let h = '';
+    for (let i = 0; i < n; i++) h += `<i class="b2-back fan" style="--r:${((i - (n - 1) / 2) * 3.2).toFixed(1)}deg"></i>`;
+    return h;
+  }
+
   const RB = {
     rulesTitle: 'Reglas del Big Two',
     rules() {
@@ -165,7 +186,8 @@ G.PartyGameUI = (() => {
         'Escaleras: 5 rangos seguidos de 3 a A; también valen A-2-3-4-5 (la más baja) y 2-3-4-5-6. No valen J-Q-K-A-2 ni las que tienen el 2 en medio.',
         'Pasar no te deja fuera de la baza. Si todos los demás pasan, quien jugó la última abre como quiera.',
         'Al acabar, cada carta que te queda es un punto de castigo. Los puntos se suman ronda tras ronda: menos es mejor.',
-        'Tienes 60 segundos por turno; si se acaba el tiempo, pasas (o echas la carta obligada al abrir).'];
+        'Tienes 30 segundos por turno; si se acaba el tiempo, pasas (o echas la carta obligada al abrir).',
+        'Con «Juego automático» la CPU juega por ti hasta que lo quites.'];
       const suits = SUIT_MON.map((d, s) => `<span class="b2-rs s${s}" translate="no">${G.BigTwo.SUITS[s]}</span> ${esc((G.DEX_BY[d] || {}).name || '')}`).join(' · ');
       return `<ul class="b2-rules">${L.map(t => `<li>${esc(G.T(t))}</li>`).join('')}</ul><p class="b2-rules-s">${G.T('Palos')}: ${suits}</p>`;
     },
@@ -173,41 +195,40 @@ G.PartyGameUI = (() => {
     build(root, v, c) {
       c.sel = new Set();
       c.bySuit = (() => { try { return localStorage.getItem('ps.b2.sort') === 'suit'; } catch (e) { return false; } })();
-      c.hint = null; c.hintI = -1; c.lastSeq = 0; c.handKey = ''; c.trickKey = ''; c.turnWas = -2; c.resKey = '';
+      c.hint = null; c.hintI = -1; c.lastSeq = 0; c.handKey = ''; c.trickKey = ''; c.turnWas = -2; c.resKey = ''; c.legalKey = ''; c.legal = null;
       const n = v.seats.length, pl = places(n);
       let opp = '';
       for (let k = 1; k < n; k++) {
         const j = (v.you + k) % n;
-        opp += `<div class="b2-opp pos-${pl[k - 1]}" data-seat="${j}">
-          <div class="b2-av"></div>
-          <div class="b2-info"><b class="b2-name" translate="no"></b>
-            <span class="b2-cnt"><span class="b2-fan"></span><span translate="no"></span></span>
-            <span class="b2-tag"></span></div>
-          <div class="b2-bub hidden">${G.T('Ha pasado')}</div>
-          <div class="b2-tm"><i></i></div>
-        </div>`;
+        opp += `<div class="b2-opp pos-${pl[k - 1]}" data-seat="${j}">${whoHTML(false)}
+          <div class="b2-fanw"><div class="b2-fan"></div><span class="b2-cnt" translate="no"></span></div></div>`;
       }
       root.innerHTML = `<div class="b2-table n${n}">
         ${opp}
         <div class="b2-mid"><div class="b2-cap"></div><div class="b2-trick"></div></div>
-        <div class="b2-me">
-          <div class="b2-mebar"><b class="b2-mename" translate="no"></b><span class="b2-meinfo"></span><span class="b2-bub me hidden">${G.T('Ha pasado')}</span><div class="b2-tm me"><i></i></div></div>
-          <div class="b2-handwrap"><div class="b2-hand"></div></div>
+        <div class="b2-me" data-seat="${v.you}">
+          ${whoHTML(true)}
+          <div class="b2-handwrap"><div class="b2-hpill hidden"></div><div class="b2-hand"></div>
+            <button class="b2-autocover hidden" data-b2="autooff"></button></div>
           <div class="b2-acts">
-            <button class="btn small" data-b2="sort"></button>
-            <button class="btn small" data-b2="hint">${G.T('Pista de jugada')}</button>
-            <button class="btn small ghost" data-b2="pass">${G.T('Pasar turno')}</button>
-            <button class="btn small gold" data-b2="play">${G.T('Echar cartas')}</button>
+            <div class="b2-sm">
+              <button class="b2-pill" data-b2="sort"></button>
+              <button class="b2-pill" data-b2="auto">${G.T('Juego automático')}</button>
+            </div>
+            <div class="b2-big">
+              <button class="b2-rb hint" data-b2="hint">${G.T('Pista de jugada')}</button>
+              <button class="b2-rb pass" data-b2="pass">${G.T('Pasar turno')}</button>
+              <button class="b2-rb play" data-b2="play">${G.T('Echar cartas')}</button>
+            </div>
           </div>
           <div id="pt-flash" class="b2-flash hidden"></div>
         </div>
-        <div class="b2-hints hidden"><div class="b2-hh"><b>${G.T('Jugadas posibles')}</b><button class="btn small ghost" data-hx>✕</button></div><div class="b2-hl"></div></div>
         <div class="b2-res hidden"></div>
       </div>`;
       // Avatares (sprites animados): una vez por partida.
-      root.querySelectorAll('.b2-opp').forEach(el => {
+      root.querySelectorAll('[data-seat]').forEach(el => {
         const s = v.seats[+el.dataset.seat];
-        el.querySelector('.b2-av').appendChild(G.UI.spriteCanvas(s.dex, 64, 56, { scale: 2, hero: true, shiny: !!s.shiny }));
+        el.querySelector('.b2-av').appendChild(G.UI.spriteCanvas(s.dex, 144, 128, { scale: 4, hero: true, shiny: !!s.shiny }));
       });
       const hand = root.querySelector('.b2-hand');
       hand.onclick = e => {
@@ -217,10 +238,11 @@ G.PartyGameUI = (() => {
         if (c.sel.has(id)) c.sel.delete(id); else c.sel.add(id);
         el.classList.toggle('up', c.sel.has(id));
         c.hintI = -1;
+        root.querySelector('.b2-hpill').classList.add('hidden');
         G.Audio.sfx('select');
         RB.buttons(G.Party.view, c);
       };
-      root.querySelector('.b2-acts').onclick = e => {
+      root.querySelector('.b2-me').onclick = e => {
         const b = e.target.closest('[data-b2]');
         if (!b || b.disabled) return;
         const v2 = G.Party.view;
@@ -231,23 +253,17 @@ G.PartyGameUI = (() => {
           c.handKey = ''; RB.update(v2, c);
         } else if (k === 'hint') RB.hintNext(v2, c);
         else if (k === 'pass') RB.send(v2, c, { type: 'pass' });
-        else if (k === 'play') {
+        else if (k === 'auto' || k === 'autooff') {
+          const me = v2.seats[v2.you], on = k === 'auto' && !(me.auto || me.afk);
+          G.Party.act({ type: 'auto', on });
+          G.Audio.sfx('select');
+        } else if (k === 'play') {
           if (!c.sel.size) { G.Audio.sfx('error'); flash(G.T('Elige alguna carta.')); return; }
           RB.send(v2, c, { type: 'play', cards: [...c.sel] });
         }
       };
-      root.querySelector('.b2-hints').onclick = e => {
-        if (e.target.closest('[data-hx]')) { RB.hideHints(); return; }
-        const it = e.target.closest('[data-hi]');
-        if (!it || !c.hint) return;
-        c.sel = new Set(c.hint[+it.dataset.hi]);
-        G.Audio.sfx('select');
-        RB.hideHints();
-        c.handKey = ''; RB.update(G.Party.view, c);
-      };
       window.addEventListener('resize', () => RB.layoutHand(c));
     },
-    hideHints() { const h = document.querySelector('#scr-party .b2-hints'); if (h) h.classList.add('hidden'); },
 
     send(v, c, a) {
       const r = G.Party.act(a);
@@ -256,39 +272,41 @@ G.PartyGameUI = (() => {
       c.hintI = -1;
     },
 
-    hintNext(v, c) {
+    /** Jugadas posibles ahora (la recomendada primero al abrir). */
+    plays(v, c) {
       const p = v.pub, hand = v.priv.hand;
+      const hs = v.round * 10000 + (p.last ? p.last.seq : 0) + '|' + hand.join();
+      if (c.hint && c.hintSeq === hs) return c.hint;
+      let list = G.BigTwo.legalPlays(hand, p.lead, p.first ? p.must : -1).map(x => x.cards);
+      if (!p.lead) {
+        // Al abrir, primero lo que haría la CPU (suelta la carta más baja en la jugada más larga).
+        const opp = v.seats.map((s, j) => (j === v.you ? 99 : p.counts[j]));
+        const best = G.BigTwo.cpuMove(hand, { lead: null, must: p.first ? p.must : -1, oppMin: Math.min(...opp), mine: hand.length });
+        if (best.cards) list = [best.cards].concat(list.filter(x => x.join() !== best.cards.join()));
+      } else {
+        // Sobre la mesa: primero las más bajas (lo que menos te cuesta).
+        const B = G.BigTwo;
+        list.sort((a, b) => Math.max(...a.map(B.rankOf)) - Math.max(...b.map(B.rankOf)) || a.length - b.length);
+      }
+      c.hint = list; c.hintSeq = hs; c.hintI = -1;
+      return list;
+    },
+
+    /** Pista: sube en tu mano las cartas de una jugada posible; otra vez, la siguiente. */
+    hintNext(v, c) {
+      const p = v.pub;
       if (p.turn !== v.you) { flash(G.T('No es tu turno.')); return; }
-      const hs = v.round * 10000 + (p.last ? p.last.seq : 0);
-      if (!c.hint || c.hintSeq !== hs) {
-        let list = G.BigTwo.legalPlays(hand, p.lead, p.first ? p.must : -1).map(x => x.cards);
-        if (!p.lead) {
-          // Al abrir, primero lo que haría la CPU (suelta la carta más baja en la jugada más larga).
-          const opp = v.seats.map((s, j) => (j === v.you ? 99 : p.counts[j]));
-          const best = G.BigTwo.cpuMove(hand, { lead: null, must: p.first ? p.must : -1, oppMin: Math.min(...opp), mine: hand.length });
-          if (best.cards) list = [best.cards].concat(list.filter(x => x.join() !== best.cards.join()));
-        }
-        c.hint = list; c.hintSeq = hs; c.hintI = -1;
-      }
-      if (!c.hint.length) { flash(G.T('No tienes ninguna jugada que gane: pasa.')); G.Audio.sfx('error'); return; }
-      // (2026-10-17, pedido del dueño) Todas las jugadas posibles, por tipo: tocas una y se elige.
-      const B = G.BigTwo, ORDER = ['single', 'pair', 'triple', 'straight', 'flush', 'full', 'four', 'sflush'], MAX = 12;
-      const groups = {};
-      c.hint.forEach((cards, i) => { const t = B.classify(cards); if (t) (groups[t.type] = groups[t.type] || []).push(i); });
-      const card = id => `<span class="b2-hc s${B.suitOf(id)}">${B.label(id)}</span>`;
-      let html = '';
-      if (!p.lead) html += `<div class="b2-hg"><i>${G.T('Recomendada')}</i><button class="b2-hi rec" data-hi="0">${c.hint[0].map(card).join('')}</button></div>`;
-      for (const t of ORDER) {
-        const ids = groups[t];
-        if (!ids) continue;
-        html += `<div class="b2-hg"><i>${G.T(B.TYPE_NAMES[t])} · ${ids.length}</i>` +
-          ids.slice(0, MAX).map(i => `<button class="b2-hi" data-hi="${i}">${c.hint[i].map(card).join('')}</button>`).join('') +
-          (ids.length > MAX ? `<span class="b2-hmore">${G.I18n.f('y {x} más', ids.length - MAX)}</span>` : '') + '</div>';
-      }
-      const panel = document.querySelector('#scr-party .b2-hints');
-      panel.querySelector('.b2-hl').innerHTML = html;
-      panel.classList.remove('hidden');
+      const list = RB.plays(v, c);
+      if (!list.length) { flash(G.T('No tienes ninguna jugada que gane: pasa.')); G.Audio.sfx('error'); return; }
+      c.hintI = (c.hintI + 1) % list.length;
+      const i = c.hintI, t = G.BigTwo.classify(list[i]);
+      c.sel = new Set(list[i]);
+      const pill = $('pt-body').querySelector('.b2-hpill');
+      pill.textContent = G.I18n.f('Pista {x}/{x}', String(i + 1), String(list.length)) + ' · ' +
+        (i === 0 && !p.lead ? G.T('Recomendada') : G.T(t ? G.BigTwo.TYPE_NAMES[t.type] : ''));
+      pill.classList.remove('hidden');
       G.Audio.sfx('select');
+      c.handKey = ''; RB.update(v, c);
     },
 
     /** Coloca las cartas de la mano: se solapan lo justo para que quepan sin barra. */
@@ -297,20 +315,24 @@ G.PartyGameUI = (() => {
       if (!hand) return;
       const cards = hand.children.length;
       if (!cards) return;
-      const cw = hand.firstElementChild.getBoundingClientRect().width || 46;
+      const cw = hand.firstElementChild.getBoundingClientRect().width || 60;
       const room = wrap.clientWidth - 8;
-      const step = cards > 1 ? Math.max(cw * 0.42, Math.min(cw + 4, (room - cw) / (cards - 1))) : cw;
+      const step = cards > 1 ? Math.max(cw * 0.36, Math.min(cw * 0.72, (room - cw) / (cards - 1))) : cw;
       hand.style.setProperty('--step', (step - cw) + 'px');
     },
 
     buttons(v, c) {
-      const root = $('pt-body'), p = v.pub, mine = p.turn === v.you && !v.res;
+      const root = $('pt-body'), p = v.pub, me = v.seats[v.you], auto = !!(me.auto || me.afk), mine = p.turn === v.you && !v.res && !auto;
       const q = k => root.querySelector(`[data-b2="${k}"]`);
       if (!q('play')) return;
       q('play').disabled = !mine;
       q('pass').disabled = !mine || !p.lead;
       q('hint').disabled = !mine;
       q('sort').textContent = G.T(c.bySuit ? 'Ordenar por palo' : 'Ordenar por número');
+      q('auto').classList.toggle('on', auto);
+      const cover = q('autooff');
+      cover.classList.toggle('hidden', !auto || !!v.res);
+      cover.textContent = G.T('La CPU juega por ti · toca para seguir tú');
     },
 
     update(v, c) {
@@ -325,25 +347,24 @@ G.PartyGameUI = (() => {
         else G.Audio.sfx('back');
       }
       c.lastSeq = seq;
-      // Rivales
-      root.querySelectorAll('.b2-opp').forEach(el => {
-        const j = +el.dataset.seat, s = v.seats[j];
-        el.querySelector('.b2-name').textContent = seatName(s);
-        // Sus cartas boca abajo, de verdad (2026-10-17, pedido del dueño), y el número al lado.
-        const fan = el.querySelector('.b2-fan'), nC = p.counts[j];
-        if (fan.childElementCount !== nC) fan.innerHTML = '<i class="b2-back fan"></i>'.repeat(nC);
-        el.querySelector('.b2-cnt > span[translate]').textContent = nC;
-        el.classList.toggle('few', p.counts[j] <= 2 && !v.res);
-        el.querySelector('.b2-tag').textContent = !s.cpu && (s.gone || s.afk) ? G.T('Juega la CPU') : G.I18n.f('Castigo: {x}', String(s.total));
-        el.querySelector('.b2-tag').classList.toggle('away', !s.cpu && (s.gone || s.afk));
-        el.classList.toggle('on', p.turn === j);
+      // Jugadores (rivales y tú)
+      root.querySelectorAll('[data-seat]').forEach(el => {
+        const j = +el.dataset.seat, s = v.seats[j], isMe = j === v.you;
+        el.querySelector('.b2-name').textContent = isMe ? s.name : seatName(s);
+        const away = !s.cpu && (s.gone || s.afk || s.auto);
+        const tag = el.querySelector('.b2-tag');
+        tag.textContent = away ? G.T('Juega la CPU') : G.I18n.f('Castigo: {x}', String(s.total));
+        tag.classList.toggle('away', away);
+        el.classList.toggle('on', p.turn === j && !v.res);
         el.querySelector('.b2-bub').classList.toggle('hidden', !p.passed[j] || !p.lead);
+        if (!isMe) {
+          // Sus cartas boca abajo, de verdad, y el número encima.
+          const fan = el.querySelector('.b2-fan'), nC = p.counts[j];
+          if (fan.childElementCount !== nC) fan.innerHTML = fanHTML(nC);
+          el.querySelector('.b2-cnt').textContent = nC;
+          el.classList.toggle('few', nC <= 2 && !v.res);
+        }
       });
-      const me = v.seats[v.you];
-      root.querySelector('.b2-mename').textContent = me.name;
-      root.querySelector('.b2-meinfo').textContent = G.I18n.f('Castigo: {x}', String(me.total)) + ((me.afk || me.gone) ? ' · ' + G.T('Juega la CPU') : '');
-      root.querySelector('.b2-bub.me').classList.toggle('hidden', !p.passed[v.you] || !p.lead);
-      root.querySelector('.b2-me').classList.toggle('on', p.turn === v.you);
       // Mesa
       const cap = root.querySelector('.b2-cap');
       let capT;
@@ -358,16 +379,20 @@ G.PartyGameUI = (() => {
         const from = p.lead ? (p.lead.seat === v.you ? 'bottom' : places(n)[(p.lead.seat - v.you + n) % n - 1]) : '';
         root.querySelector('.b2-trick').innerHTML = p.lead ? p.lead.cards.map(x => cardHTML(x, newMove ? 'in from-' + from : '')).join('') : '';
       }
-      // Mano
+      if (newMove) { c.hintI = -1; root.querySelector('.b2-hpill').classList.add('hidden'); }
+      // Mano: lo que puedes echar, iluminado (si te toca).
       const hand = B.sortHand(v.priv.hand, c.bySuit);
       for (const x of [...c.sel]) if (!hand.includes(x)) c.sel.delete(x);
-      const hKey = hand.join(',') + '|' + [...c.sel].join(',');
+      const me = v.seats[v.you], myTurn = p.turn === v.you && !v.res && !(me.auto || me.afk);
+      let legal = null;
+      if (myTurn) { legal = new Set(); for (const pl of RB.plays(v, c)) for (const x of pl) legal.add(x); }
+      const hKey = hand.join(',') + '|' + [...c.sel].join(',') + '|' + (legal ? [...legal].join(',') : '-');
       if (hKey !== c.handKey) {
         c.handKey = hKey;
-        root.querySelector('.b2-hand').innerHTML = hand.map(x => cardHTML(x, c.sel.has(x) ? 'up' : '')).join('');
+        root.querySelector('.b2-hand').innerHTML = hand.map(x => cardHTML(x, (c.sel.has(x) ? 'up ' : '') + (legal && !legal.has(x) ? 'dim' : ''))).join('');
         requestAnimationFrame(() => RB.layoutHand(c));
       }
-      if (newMove) { c.hint = null; c.hintI = -1; RB.hideHints(); }
+      root.querySelector('.b2-table').classList.toggle('myturn', myTurn);
       // Te toca
       if (p.turn === v.you && c.turnWas !== v.you && !v.res) { G.Audio.sfx('shake'); }
       c.turnWas = p.turn;
@@ -376,48 +401,89 @@ G.PartyGameUI = (() => {
       RB.tick(v, c);
     },
 
+    /** Aro de tiempo alrededor del cuadro de quien juega y los segundos. */
     tick(v, c) {
       const root = $('pt-body'), p = v.pub;
       if (!root.querySelector('.b2-table')) return;
       const left = Math.max(0, v.left - (Date.now() - v.at));
       const frac = v.turnMs ? left / v.turnMs : 0;
-      root.querySelectorAll('.b2-tm').forEach(el => {
-        const j = el.classList.contains('me') ? v.you : +el.parentElement.dataset.seat;
+      root.querySelectorAll('[data-seat]').forEach(el => {
+        const j = +el.dataset.seat, av = el.querySelector('.b2-av'), sec = el.querySelector('.b2-sec');
         const on = p.turn === j && v.left > 0 && !v.res;
-        el.classList.toggle('hidden', !on);
-        if (on) { el.firstElementChild.style.width = (frac * 100).toFixed(1) + '%'; el.classList.toggle('urgent', left < 6000); }
+        av.classList.toggle('timed', on);
+        sec.classList.toggle('hidden', !on);
+        if (on) {
+          av.style.setProperty('--p', frac.toFixed(3));
+          av.classList.toggle('urgent', left < 8000);
+          sec.textContent = Math.ceil(left / 1000);
+        }
       });
-      const mi = root.querySelector('.b2-meinfo');
-      if (mi && p.turn === v.you && v.left > 0 && !v.res) mi.dataset.sec = Math.ceil(left / 1000) + 's';
-      else if (mi) delete mi.dataset.sec;
     },
 
+    /*
+     * Final de ronda (2026-10-17, estilo de los juegos del móvil): cartel grande con cinta, el número
+     * que sube, Poké Balls que vuelan hacia el ganador, y luego cada jugador con su puesto y sus puntos.
+     * Tocar salta la animación.
+     */
     results(v, c) {
       const box = $('pt-body').querySelector('.b2-res');
-      if (!v.res) { box.classList.add('hidden'); c.resKey = ''; return; }
+      if (!v.res) { box.classList.add('hidden'); box.innerHTML = ''; c.resKey = ''; clearInterval(c.countT); return; }
       const key = v.sid + ':' + v.round + ':' + (G.Party.isHost ? 1 : 0);
       if (key === c.resKey) return;
       c.resKey = key;
       const won = v.pub.winner === v.you;
+      const mine = v.res.find(r => r.seat === v.you) || { place: 1, pts: 0 };
+      const others = v.res.reduce((t, r) => t + (r.seat === v.pub.winner ? 0 : r.left), 0);
+      const target = won ? others : mine.pts;
       G.Audio.sfx(won ? 'levelup' : 'gameover');
-      const rows = v.res.map(r => {
+      let balls = '';
+      if (won) for (let i = 0; i < 22; i++) {
+        const a = Math.random() * 6.283, d = 38 + Math.random() * 30;
+        balls += `<i class="b2-ball" style="--x:${(Math.cos(a) * d).toFixed(1)}vw;--y:${(Math.sin(a) * d * 0.7).toFixed(1)}vh;--d:${(Math.random() * 0.9).toFixed(2)}s"></i>`;
+      }
+      const cards = v.res.slice().sort((a, b) => a.place - b.place).map(r => {
         const s = v.seats[r.seat];
-        return `<tr class="${r.seat === v.you ? 'me' : ''}"><td>${r.place}</td><td class="nm" translate="no">${esc(seatName(s))}</td>
-          <td>${r.left}</td><td>${r.pts ? '+' + r.pts : '0'}</td><td><b>${s.total}</b></td></tr>`;
+        return `<div class="b2-pc p${r.place}${r.seat === v.you ? ' me' : ''}" data-ps="${r.seat}">
+          <span class="b2-medal">${r.place}</span><div class="b2-pav"></div>
+          <b class="b2-pn" translate="no">${esc(r.seat === v.you ? s.name : seatName(s))}</b>
+          <div class="b2-pr"><span>${G.T('Cartas que quedan')}</span><b>${r.left}</b></div>
+          <div class="b2-pr"><span>${G.T('Esta ronda')}</span><b class="${r.pts ? 'bad' : 'good'}">${r.pts ? '+' + r.pts : '0'}</b></div>
+          <div class="b2-pr"><span>${G.T('Puntos totales')}</span><b>${s.total}</b></div>
+        </div>`;
       }).join('');
       const host = G.Party.isHost;
-      box.innerHTML = `<div class="box b2-resbox">
-        <h3>${esc(won ? G.T('¡Has ganado la ronda!') : G.I18n.f('¡{x} se queda sin cartas y gana!', seatName(v.seats[v.pub.winner])))}</h3>
-        <table class="b2-rt"><thead><tr><th>#</th><th>${G.T('Jugador')}</th><th>${G.T('Cartas que quedan')}</th><th>${G.T('Esta ronda')}</th><th>${G.T('Puntos totales')}</th></tr></thead><tbody>${rows}</tbody></table>
-        <p class="sub" style="margin:6px 0">${G.T('Cada carta que queda es un punto de castigo: menos es mejor.')}</p>
-        <div class="row" style="gap:8px;justify-content:center;flex-wrap:wrap">
+      box.innerHTML = `<div class="b2-fx">${balls}</div>
+        <div class="b2-banner ${won ? 'win' : 'lose'}">
+          <div class="b2-bt">${esc(won ? G.T('¡Victoria!') : G.I18n.f('Puesto {x}', String(mine.place)))}</div>
+          <div class="b2-ribbon"><span class="b2-num" translate="no">0</span></div>
+          <div class="b2-bsub">${esc(won ? G.T('Cartas de los rivales') : G.T('Puntos de castigo'))}</div>
+        </div>
+        <div class="b2-podium">${cards}</div>
+        <div class="b2-rbtns">
           ${host ? `<button class="btn gold" data-r="again">${G.T('Otra ronda')}</button>` : `<span class="sub" style="margin:0">${G.T('Esperando al anfitrión…')}</span>`}
           <button class="btn ghost" data-r="room">${G.T('Volver a la sala')}</button>
-        </div></div>`;
-      box.classList.remove('hidden');
-      box.querySelectorAll('[data-r]').forEach(b => {
-        b.onclick = () => { if (b.dataset.r === 'again') G.Party.again(); else G.Party.leave(); };
+        </div>
+        <div class="b2-skip">${G.T('Toca para saltar')}</div>`;
+      box.querySelectorAll('.b2-pc').forEach(el => {
+        const s = v.seats[+el.dataset.ps];
+        el.querySelector('.b2-pav').appendChild(G.UI.spriteCanvas(s.dex, 144, 128, { scale: 4, hero: true, shiny: !!s.shiny }));
       });
+      box.className = 'b2-res';
+      const num = box.querySelector('.b2-num');
+      const t0 = Date.now(), DUR = 1300;
+      const done = () => { clearInterval(c.countT); num.textContent = (won ? '' : '+') + target; box.classList.add('done'); };
+      clearInterval(c.countT);
+      c.countT = setInterval(() => {
+        const k = Math.min(1, (Date.now() - t0) / DUR);
+        num.textContent = (won ? '' : '+') + Math.round(target * (1 - Math.pow(1 - k, 3)));
+        if (k >= 1) done();
+      }, 40);
+      setTimeout(() => { if (c.resKey === key) done(); }, 2200);
+      box.onclick = e => {
+        const b = e.target.closest('[data-r]');
+        if (b && box.classList.contains('done')) { if (b.dataset.r === 'again') G.Party.again(); else G.Party.leave(); return; }
+        done();
+      };
     }
   };
 
