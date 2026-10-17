@@ -512,8 +512,13 @@ G.HUD = (() => {
     const n = Math.max(1, pl.slots.length, pl.maxMoves || 0);
     const totalW = n * S + (n - 1) * GAP;
     let sx = (w - totalW) / 2;
-    // Táctil: que los objetos (a la izquierda de los movimientos) no queden bajo la muesca.
-    if (touch) sx = Math.max(sx, SL + 8 + G.Player.MAX_ITEMS * (S + 12) + 6);
+    // Táctil: la barra a la derecha (2026-10-17, pedido del dueño): abajo a la izquierda va el
+    // joystick y los objetos quedaban bajo el pulgar. Si no cabe, como antes (y nunca bajo la muesca).
+    if (touch) {
+      const bondW = pl.bonds > 0 ? 12 + 24 + (pl.bonds > 1 ? 24 : 0) : 0;
+      sx = Math.max(sx, w - SR - 20 - totalW - bondW);
+      sx = Math.max(sx, SL + 8 + G.Player.MAX_ITEMS * (S + 12) + 6);
+    }
     barRight = sx + totalW + (pl.bonds > 0 ? 12 + 24 + (pl.bonds > 1 ? 24 : 0) : 0);
     // Por encima de la barra de inicio del iPhone (allí los toques a veces no llegan).
     const sy = h - S - 18 - SB;

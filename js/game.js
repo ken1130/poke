@@ -16,6 +16,11 @@
  */
 G.Game = (() => {
   let cv, ctx, dpr = 1, w = 0, h = 0;
+  // Capa del HUD (2026-10-17): textos e interfaz en un lienzo aparte a la resolución real de la
+  // pantalla. El mundo puede ir a ×1-1,5 (es pixel art y es lo que cuesta), pero el texto escalado
+  // ×2-3 en un iPhone se veía borroso.
+  let hcv, hctx, hdpr = 1;
+  const wantHudDpr = () => Math.min(window.devicePixelRatio || 1, lowRes ? 2 : 3);
   let state = 'ui';
   let time = 0, last = 0, pendingLevels = 0;
   let pl = null;
@@ -29,6 +34,10 @@ G.Game = (() => {
   function init() {
     cv = document.getElementById('game');
     ctx = cv.getContext('2d');
+    hcv = document.createElement('canvas');
+    hcv.id = 'hud-cv';
+    cv.insertAdjacentElement('afterend', hcv);
+    hctx = hcv.getContext('2d');
     resize();
     addEventListener('resize', resize);
     // (2026-10-17, iPhone: al girarlo o al esconderse la barra de Safari, el evento 'resize'
@@ -64,6 +73,9 @@ G.Game = (() => {
     w = cv.clientWidth; h = cv.clientHeight;
     cv.width = Math.round(w * dpr);
     cv.height = Math.round(h * dpr);
+    hdpr = wantHudDpr();
+    hcv.width = Math.round(w * hdpr);
+    hcv.height = Math.round(h * hdpr);
     G.Camera.resize(w, h, dpr);
     checkOrientation();
   }
@@ -921,7 +933,7 @@ G.Game = (() => {
     const dt = Math.min(1 / 30, real) * speedK * (state === 'playing' ? G.PvP.timeScale(real) : 1);   // PK: parón al golpear
     last = ts;
     if (state === 'playing') G.Settings.sample(real);
-    if (cv && wantDpr() !== dpr) resize();          // (la calidad automática ha bajado a "baja" en el móvil)
+    if (cv && (wantDpr() !== dpr || wantHudDpr() !== hdpr)) resize();          // (la calidad automática ha bajado a "baja" en el móvil)
     fpsAcc += real; fpsN++;
     if (fpsAcc >= 0.5) { fpsShown = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
     frameDt = state === 'playing' ? dt : 0;
@@ -1291,17 +1303,22 @@ G.Game = (() => {
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
     }
-    G.HUD.draw(ctx, w, h, pl, st);
-    G.PvP.drawHud(ctx, w, h);
-    G.Floors.drawFade(ctx, w, h, (wt, s) => `${wt} ${s}px Pixelify,"Segoe UI",system-ui,sans-serif`);   // bajada de piso
-    G.Touch.draw(ctx);
+    // HUD, en su capa nítida.
+    const hc = hctx;
+    hc.setTransform(hdpr, 0, 0, hdpr, 0, 0);
+    hc.clearRect(0, 0, w, h);
+    hc.imageSmoothingEnabled = false;
+    G.HUD.draw(hc, w, h, pl, st);
+    G.PvP.drawHud(hc, w, h);
+    G.Floors.drawFade(hc, w, h, (wt, s) => `${wt} ${s}px Pixelify,"Segoe UI",system-ui,sans-serif`);   // bajada de piso
+    G.Touch.draw(hc);
     if (G.Settings.get('fps')) {
-      ctx.save();
-      ctx.font = '700 11px Pixelify, monospace';
-      ctx.textAlign = 'right';
-      ctx.fillStyle = fpsShown >= 50 ? '#5fe08a' : fpsShown >= 30 ? '#ffd23f' : '#ff5f6d';
-      ctx.fillText(fpsShown + ' FPS', w - 10, h - 8);
-      ctx.restore();
+      hc.save();
+      hc.font = '700 11px Pixelify, monospace';
+      hc.textAlign = 'right';
+      hc.fillStyle = fpsShown >= 50 ? '#5fe08a' : fpsShown >= 30 ? '#ffd23f' : '#ff5f6d';
+      hc.fillText(fpsShown + ' FPS', w - 10, h - 8);
+      hc.restore();
     }
     if (flashT > 0) {
       ctx.save();

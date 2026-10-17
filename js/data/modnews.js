@@ -12,6 +12,8 @@ G.MODNEWS = [
       { zh: '火焰盾、念力追噬箭的特效改成像素風：火焰盾是一圈繞著你轉、會跳動的像素小火焰；念力追噬箭是粉紅像素箭加一格一格的殘影', en: 'Fire Shield and Psy Arrow now have pixel-art effects: a ring of flickering pixel flames orbiting you, and a pink pixel arrow with a blocky trail' }
     ],
     fix: [
+      { zh: '修正手機上的字糊糊的：介面改畫在另一層高解析度畫布上（遊戲畫面維持省效能的解析度），文字變清楚', en: 'Fixed blurry text on phones: the HUD is now drawn on its own full-resolution layer (the game world keeps its lighter resolution), so text is sharp' },
+      { zh: '手機上技能列和道具格改成靠右，左下角留給搖桿，不會再被拇指蓋住', en: 'On phones the move bar and item slots are now aligned to the right, leaving the bottom left free for the joystick' },
       { zh: '修正 iPhone 轉成橫向（或網址列收起）後，遊戲畫面被壓扁、搖桿出現的位置跟手指對不上：現在畫面大小一變就會自動重新設定', en: 'Fixed the game being squashed on iPhone after rotating to landscape (or when the address bar hides) and the joystick appearing away from your finger: the canvas now re-measures whenever its size changes' },
       { zh: '修正手機橫向的圖鑑：「我的戰隊」按鈕和「選為夥伴」疊在一起、蓋住寶可夢的圖；矮螢幕（Safari 有網址列時）格子和介紹欄改得更緊湊，看得到完整一排', en: 'Fixed the phone Pokédex in landscape: the "My team" and "Choose as partner" buttons overlapped and covered the Pokémon; on short screens (Safari with the address bar) the grid and details are more compact so a full row fits' }
     ] },
