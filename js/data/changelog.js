@@ -6,6 +6,12 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-17', title: ['Pantalla del iPhone sin aplastar', 'iPhone screen no longer squashed'], fix: [
+    ['En el iPhone, al girarlo a horizontal (o al esconderse la barra de direcciones) el juego se veía aplastado y el joystick salía lejos del dedo: ahora el lienzo se vuelve a medir cada vez que cambia de tamaño.',
+     'On iPhone, after rotating to landscape (or when the address bar hid) the game looked squashed and the joystick appeared away from your finger: the canvas now re-measures whenever its size changes.'],
+    ['Pokédex en el móvil en horizontal: los botones de «Mi equipo» y de elegir compañero se montaban y tapaban el Pokémon; en pantallas muy bajas todo es más compacto.',
+     'Pokédex on phones in landscape: the "My team" and choose-partner buttons overlapped and covered the Pokémon; on very short screens everything is more compact.']
+  ] },
   { d: '2026-10-16', title: ['Subir de nivel te hace más fuerte', 'Levelling up makes you stronger'], new: [
     ['PK: una ronda o al mejor de 3 (vida llena entre rondas y marcador arriba). Con 2: premio en el centro cada 30 s (ataque ×2, velocidad o 3 s de invisibilidad: los rivales no te apuntan ni te ven en el minimapa), suelo trampa que estalla (−15 % de vida) y el que pierde la ronda puede cambiar sus movimientos. Con 3 o más: los caídos son fantasmas que lanzan piedras que frenan, rachas de K.O. y duelo final con la zona cerrándose. Todo se activa o no en la sala.',
      'PvP: one round or best of 3 (full HP between rounds, score on top). With 2: a center power-up every 30 s (×2 attack, speed or 3 s invisibility: rivals cannot target you or see you on the minimap), exploding trap floors (−15% HP) and the round loser may change moves. With 3+: downed players are ghosts throwing slowing pebbles, K.O. streaks and a final duel with the zone closing. Each one can be turned on or off in the room.'],

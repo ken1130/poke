@@ -891,6 +891,29 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
   /* El botón de elegir, pegado abajo de la ficha: se ve aunque la ficha no quepa. */
   #dex-detail .btn { position: sticky; bottom: 0; order: 9; margin-top: auto; padding: 8px 6px; font-size: 15px;
     box-shadow: 0 -6px 10px rgba(5,10,25,.6); }
+  /* «Mi equipo» (2026-10-17): botón pequeño arriba a la derecha de la ficha. Antes iba pegado
+     abajo como el de elegir y los dos se montaban, tapando el dibujo del Pokémon. */
+  #dex-detail { position: relative; }
+  #dex-detail .stage { margin-left: 2px; margin-right: auto; }      /* a la izquierda: el botón de equipo va a su derecha */
+  #dex-detail #dex-team { position: absolute; top: 6px; right: 6px; bottom: auto; width: auto !important; margin: 0;
+    padding: 4px 8px; font-size: 12px; box-shadow: none; z-index: 2; }
+}
+/* Muy bajito (iPhone en horizontal con la barra de Safari: ~320 px): todo más compacto para que
+   se vea al menos una fila entera de Pokémon y la ficha quepa. */
+@media (max-height: 360px) {
+  #scr-dex .box { padding: 4px 8px; }
+  #scr-dex .box > .row:first-child h2, #scr-dex .box h2 { font-size: 18px; margin: 0; }
+  #scr-dex .gen-tab { padding: 2px 8px; }
+  #scr-dex .gen-tab small { display: none; }
+  #scr-dex #dex-search { padding: 4px 10px; font-size: 16px; height: 30px; margin: 2px 0 !important; }
+  #scr-dex .filters { margin-bottom: 2px; }
+  #scr-dex .grid { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; }
+  #scr-dex .cell { padding: 2px; }
+  #scr-dex .cell canvas { width: 56px; height: 48px; }
+  #scr-dex .cell b { font-size: 10px; }
+  #dex-detail .stage { width: 96px; height: 84px; }
+  #dex-detail .stat { font-size: 11px; margin: 1px 0; }
+  #dex-detail .btn { padding: 6px; font-size: 14px; }
 }
 
 /* Barra de arriba en pantallas estrechas: "Novedades" sólo con el icono. */

@@ -251,3 +251,17 @@
   - 邊緣箭頭統一用 `avoidZones()` 避開左區塊和小地圖；手機矮螢幕最多畫 3 個。
   - 左右兩側要加上 `G.HUD.SL`／`SR`（safe-area，避開瀏海）。
 - **以後怎麼避免**：在 HUD 新增東西時，x 位置要加上 `SL`／`SR`；放在上方中間的用 `laneX`；新的邊緣箭頭要經過 `edgeArrow`（才會有數量上限和避讓）。改完用 `scratchpad/hud/scene.js` 截 5 種尺寸檢查。
+
+## 33. iPhone 畫面被壓扁、搖桿對不準（2026-10-17）
+
+- **症狀**：iPhone 14 橫向玩時，整個遊戲畫面被壓扁（圓形的搖桿變成寬是高兩倍的橢圓），搖桿出現的位置也比手指高。有沒有網址列都會發生。
+- **原因**：畫布只在 `window` 的 `resize` 事件時重新量尺寸。iPhone 轉向（或網址列收起、展開）時，這個事件常常在尺寸還沒變之前就發出，或乾脆不發。結果畫布的像素大小還停在直向的尺寸（例如 585×1266），被 CSS 拉成橫向的 844×390，比例錯了將近 5 倍。觸控座標用的是螢幕上的真實位置，畫面卻用舊的座標畫，所以搖桿也對不準。
+- **修法**：`game.js` 加上 `ResizeObserver` 監看畫布本身、`visualViewport` 的 resize、`orientationchange` 之後延遲再量兩次；每格也比對一次 `clientWidth`／`clientHeight`，不一樣就重設。
+- **以後怎麼避免**：畫布尺寸不要只靠 `resize` 事件。測試方式：模擬直向載入，擋掉 resize 事件後再轉成橫向，檢查 `cv.width / cv.height` 是否等於 `clientWidth / clientHeight`（`scratchpad/pw/rotate.js`）。
+
+## 34. 同一個面板裡有兩顆 `position: sticky` 的按鈕會疊在一起（2026-10-17）
+
+- **症狀**：手機橫向的圖鑑，「我的戰隊」按鈕和「選為夥伴」疊在一起，還蓋住寶可夢的圖。
+- **原因**：矮螢幕的樣式寫成 `#dex-detail .btn { position: sticky; bottom: 0 }`，原本只有一顆按鈕所以沒事；新增第二顆按鈕後，兩顆都黏在底部。
+- **修法**：「我的戰隊」改成介紹欄右上角的小按鈕（`#dex-team` 用 absolute），大圖靠左。
+- **以後怎麼避免**：在現有的面板加按鈕時，先查有沒有「所有 `.btn`」的通用樣式（sticky、order、margin-top:auto），必要時用 id 個別指定。新介面要用 844×320（iPhone 橫向有網址列）截圖檢查。

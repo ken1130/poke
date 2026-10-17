@@ -3,6 +3,11 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-17', title: { zh: '修正 iPhone 畫面被壓扁、搖桿對不準；手機圖鑑版面', en: 'Fixed squashed iPhone screen and misaligned joystick; phone Pokédex layout' },
+    fix: [
+      { zh: '修正 iPhone 轉成橫向（或網址列收起）後，遊戲畫面被壓扁、搖桿出現的位置跟手指對不上：現在畫面大小一變就會自動重新設定', en: 'Fixed the game being squashed on iPhone after rotating to landscape (or when the address bar hides) and the joystick appearing away from your finger: the canvas now re-measures whenever its size changes' },
+      { zh: '修正手機橫向的圖鑑：「我的戰隊」按鈕和「選為夥伴」疊在一起、蓋住寶可夢的圖；矮螢幕（Safari 有網址列時）格子和介紹欄改得更緊湊，看得到完整一排', en: 'Fixed the phone Pokédex in landscape: the "My team" and "Choose as partner" buttons overlapped and covered the Pokémon; on short screens (Safari with the address bar) the grid and details are more compact so a full row fits' }
+    ] },
   { d: '2026-10-16', title: { zh: '升等變強、組隊難度依人數調整、迷宮設施不再跑到幾千公尺外', en: 'Level-ups make you stronger, co-op difficulty by player count, dungeon spots stay nearby' },
     new: [
       { zh: 'PK 新玩法（房間裡每一項都能開關）：可選「一戰定勝負」或「三戰兩勝」（回合之間滿血重來，上方顯示比分）。2 人時：場中央每 30 秒出現寶物（攻擊 ×2、加速、隱形 3 秒，隱形時對手鎖定不到、小地圖也看不到）、陷阱地板（閃 3 秒後爆炸扣 15% 血）、輸的人回合之間可以重抽招式。3 人以上：倒下變幽靈丟石頭讓活人減速、連殺播報（雙殺／三殺／勢不可擋）、剩 2 人時「最終決戰」快速縮圈', en: 'New PvP features (each can be toggled in the room): one round or best of 3 (full heal between rounds, score on top). With 2 players: a center power-up every 30 s (×2 attack, speed, 3 s invisibility — opponents cannot target you or see you on the minimap), trap floors (blink 3 s then explode for 15% HP) and the round loser may reroll moves. With 3+: downed players become ghosts that throw slowing pebbles, kill-streak announcements, and a "Final duel" with a fast-closing zone when 2 remain' },

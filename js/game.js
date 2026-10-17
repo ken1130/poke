@@ -31,6 +31,13 @@ G.Game = (() => {
     ctx = cv.getContext('2d');
     resize();
     addEventListener('resize', resize);
+    // (2026-10-17, iPhone: al girarlo o al esconderse la barra de Safari, el evento 'resize'
+    // llegaba antes de que cambiara el tamaño, o no llegaba: el lienzo se quedaba con el tamaño
+    // viejo estirado a la pantalla nueva (todo aplastado y el joystick lejos del dedo).)
+    // Se mira el tamaño de verdad: cuando cambia el del lienzo, y otra vez tras girar.
+    if (window.ResizeObserver) new ResizeObserver(() => resize()).observe(cv);
+    if (window.visualViewport) visualViewport.addEventListener('resize', resize);
+    addEventListener('orientationchange', () => { setTimeout(resize, 120); setTimeout(resize, 500); });
     G.Touch.init(cv);
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
     document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); else if (pl && state !== 'over' && state !== 'ui') keepAwake(true); });
@@ -908,6 +915,8 @@ G.Game = (() => {
   }
 
   function frame(ts) {
+    // Por si acaso: si el lienzo ya no mide lo que creemos, se rehace (lectura barata, sin cambios de diseño).
+    if (cv.clientWidth !== w || cv.clientHeight !== h) resize();
     const real = (ts - last) / 1000 || 0;
     const dt = Math.min(1 / 30, real) * speedK * (state === 'playing' ? G.PvP.timeScale(real) : 1);   // PK: parón al golpear
     last = ts;
