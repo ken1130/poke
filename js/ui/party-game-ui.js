@@ -147,6 +147,7 @@ G.PartyGameUI = (() => {
   function cardHTML(c, extra = '') {
     const B = G.BigTwo, r = B.RANKS[B.rankOf(c)], s = B.suitOf(c), src = mascot(s);
     return `<div class="b2c s${s} ${extra}" data-c="${c}" translate="no"><span class="b2i"><b>${r}</b><i>${B.SUITS[s]}</i></span>` +
+      `<i class="b2w">${B.SUITS[s]}</i>` +
       (src ? `<img class="b2m" src="${src}" alt="" draggable="false">` : `<span class="b2m b2ms">${B.SUITS[s]}</span>`) +
       `<span class="b2i b2i2"><b>${r}</b><i>${B.SUITS[s]}</i></span></div>`;
   }
@@ -317,8 +318,10 @@ G.PartyGameUI = (() => {
       if (!cards) return;
       const cw = hand.firstElementChild.getBoundingClientRect().width || 60;
       const room = wrap.clientWidth - 8;
-      const step = cards > 1 ? Math.max(cw * 0.36, Math.min(cw * 0.72, (room - cw) / (cards - 1))) : cw;
+      const step = cards > 1 ? Math.max(cw * 0.5, Math.min(cw * 0.72, (room - cw) / (cards - 1))) : cw;
       hand.style.setProperty('--step', (step - cw) + 'px');
+      // Lo que se ve de cada carta (el Pokémon se encoge a ese ancho para no quedar cortado por la siguiente).
+      hand.style.setProperty('--vis', Math.round(step) + 'px');
     },
 
     buttons(v, c) {
@@ -436,15 +439,22 @@ G.PartyGameUI = (() => {
       const others = v.res.reduce((t, r) => t + (r.seat === v.pub.winner ? 0 : r.left), 0);
       const target = won ? others : mine.pts;
       G.Audio.sfx(won ? 'levelup' : 'gameover');
-      let balls = '';
-      if (won) for (let i = 0; i < 22; i++) {
-        const a = Math.random() * 6.283, d = 38 + Math.random() * 30;
-        balls += `<i class="b2-ball" style="--x:${(Math.cos(a) * d).toFixed(1)}vw;--y:${(Math.sin(a) * d * 0.7).toFixed(1)}vh;--d:${(Math.random() * 0.9).toFixed(2)}s"></i>`;
+      // Adornos (una vez, con valores al azar fijos): Poké Balls y monedas que vuelan al cartel, confeti y destellos.
+      const R = (a, b) => (a + Math.random() * (b - a)).toFixed(2);
+      let balls = '', confetti = '', stars = '';
+      if (won) {
+        for (let i = 0; i < 26; i++) {
+          const a = Math.random() * 6.283, d = 38 + Math.random() * 30;
+          balls += `<i class="${i % 3 ? 'b2-coin' : 'b2-ball'}" style="--x:${(Math.cos(a) * d).toFixed(1)}vw;--y:${(Math.sin(a) * d * 0.7).toFixed(1)}vh;--d:${R(0, 0.9)}s"></i>`;
+        }
+        const COL = ['#ffd23f', '#ff5a4e', '#4a88ff', '#5fcb6a', '#ff9ed8', '#ffffff'];
+        for (let i = 0; i < 36; i++) confetti += `<i class="b2-conf" style="left:${R(0, 100)}%;--c:${COL[i % COL.length]};--d:${R(0, 1.6)}s;--t:${R(2.2, 3.6)}s;--s:${R(-1, 1)}"></i>`;
       }
+      for (let i = 0; i < 8; i++) stars += `<i class="b2-star" style="left:${R(-8, 108)}%;top:${R(-10, 100)}%;--d:${R(0, 1.4)}s"></i>`;
       const cards = v.res.slice().sort((a, b) => a.place - b.place).map(r => {
         const s = v.seats[r.seat];
-        return `<div class="b2-pc p${r.place}${r.seat === v.you ? ' me' : ''}" data-ps="${r.seat}">
-          <span class="b2-medal">${r.place}</span><div class="b2-pav"></div>
+        return `<div class="b2-pc p${r.place}${r.seat === v.you ? ' me' : ''}" data-ps="${r.seat}" style="--i:${r.place}">
+          ${r.place === 1 ? '<i class="b2-crown"></i>' : ''}<span class="b2-medal">${r.place}</span><div class="b2-pav"></div>
           <b class="b2-pn" translate="no">${esc(r.seat === v.you ? s.name : seatName(s))}</b>
           <div class="b2-pr"><span>${G.T('Cartas que quedan')}</span><b>${r.left}</b></div>
           <div class="b2-pr"><span>${G.T('Esta ronda')}</span><b class="${r.pts ? 'bad' : 'good'}">${r.pts ? '+' + r.pts : '0'}</b></div>
@@ -452,10 +462,10 @@ G.PartyGameUI = (() => {
         </div>`;
       }).join('');
       const host = G.Party.isHost;
-      box.innerHTML = `<div class="b2-fx">${balls}</div>
-        <div class="b2-banner ${won ? 'win' : 'lose'}">
-          <div class="b2-bt">${esc(won ? G.T('¡Victoria!') : G.I18n.f('Puesto {x}', String(mine.place)))}</div>
-          <div class="b2-ribbon"><span class="b2-num" translate="no">0</span></div>
+      box.innerHTML = `<div class="b2-rays ${won ? 'win' : 'lose'}"></div><div class="b2-confw">${confetti}</div><div class="b2-fx">${balls}</div>
+        <div class="b2-banner ${won ? 'win' : 'lose'}">${stars}
+          <div class="b2-btw"><div class="b2-bt">${esc(won ? G.T('¡Victoria!') : G.I18n.f('Puesto {x}', String(mine.place)))}</div></div>
+          <div class="b2-rib"><div class="b2-ribbon"><span class="b2-num" translate="no">0</span></div></div>
           <div class="b2-bsub">${esc(won ? G.T('Cartas de los rivales') : G.T('Puntos de castigo'))}</div>
         </div>
         <div class="b2-podium">${cards}</div>
