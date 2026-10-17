@@ -266,6 +266,9 @@ G.Dungeon = (() => {
     const el = document.getElementById('shop-leave');
     el.onclick = () => { shopSkip = s.id; closeShop(); requestExit(); };
     document.getElementById('shop-roul').onclick = () => { if (!choosing() && (s.spins == null ? 3 : s.spins) > 0) openRoulette(s); };
+    // Móvil (rwd-run.css): la hoja de la tienda se recoge con ▾ para ver la sala; al abrir, desplegada.
+    const sbox = document.querySelector('#scr-shop > .box');
+    if (sbox) { sbox.classList.remove('min'); document.getElementById('shop-min').onclick = () => sbox.classList.toggle('min'); }
     refreshShop();
     document.getElementById('scr-shop').classList.remove('hidden');    // (sin G.UI.show: no cierra otras ventanas)
     G.Audio.sfx('select');
