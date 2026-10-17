@@ -179,3 +179,45 @@
   #scr-party { --cw: 44px; --ch: 62px; }
   .b2-av canvas { width: 38px; height: 33px; }
 }
+
+/* ---------- fondos de la mesa (2026-10-17, botón «Fondo» de la barra) ---------- */
+#scr-party.bg-blue   { background: radial-gradient(ellipse at 50% 45%, #2f5f9a 0%, #1d3f6e 48%, #0d2140 100%); }
+#scr-party.bg-wine   { background: radial-gradient(ellipse at 50% 45%, #8a2b3c 0%, #5e1a28 48%, #300c14 100%); }
+#scr-party.bg-wood   { background: repeating-linear-gradient(92deg, #7a4a24 0 14px, #6c3f1e 14px 26px, #84522a 26px 44px), #6c3f1e; }
+#scr-party.bg-night  { background: radial-gradient(1px 1px at 12% 20%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 40% 70%, #fff 50%, transparent 51%),
+  radial-gradient(1.5px 1.5px at 70% 30%, #ffe9a0 50%, transparent 51%), radial-gradient(1px 1px at 85% 80%, #fff 50%, transparent 51%),
+  radial-gradient(1px 1px at 25% 85%, #cfe0ff 50%, transparent 51%), radial-gradient(ellipse at 50% 40%, #27305e 0%, #151a3a 55%, #070a1c 100%); }
+#scr-party.bg-center { background: linear-gradient(#f4d2da 0 50%, #e8eef6 50% 100%); }
+#scr-party.bg-center .pt-bar { background: rgba(170, 40, 70, .85); }
+#scr-party.bg-grass  { background: repeating-conic-gradient(#3f8a3a 0 25%, #47963f 0 50%) 0 0 / 32px 32px; }
+#scr-party.bg-center .b2-cap, #scr-party.bg-center .b2-meinfo { color: #4a2030; }
+
+/* ---------- lista de jugadas posibles (botón de pista) ---------- */
+.b2-hints { position: absolute; z-index: 6; right: 12px; bottom: calc(100% - 4px); bottom: 0; top: 8px; width: min(440px, 62%);
+  display: flex; flex-direction: column; background: rgba(8, 16, 28, .96); border: 2px solid var(--gold); border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.6); }
+.b2-hints.hidden { display: none; }
+.b2-hh { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.b2-hh b { color: var(--gold); font-size: 16px; }
+.b2-hl { overflow-y: auto; padding: 6px 10px 10px; }
+.b2-hg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+.b2-hg > i { flex-basis: 100%; font-style: normal; font-size: 13px; color: var(--muted); }
+.b2-hi { display: inline-flex; gap: 3px; min-height: 40px; padding: 4px 8px; border-radius: 8px; border: 2px solid rgba(255,255,255,.18); background: #1c2840; cursor: pointer; }
+.b2-hi:hover, .b2-hi:active { border-color: var(--gold); }
+.b2-hi.rec { border-color: var(--gold); background: #3a2f10; }
+.b2-hc { display: inline-block; min-width: 26px; padding: 3px 4px; border-radius: 4px; background: #fbf6e8; font: 800 15px var(--font); text-align: center; color: #1b1b1b; }
+.b2-hc.s1, .b2-hc.s2 { color: #c8202e; }
+.b2-hmore { font-size: 12px; color: var(--muted); }
+@media (max-height: 520px) {
+  .b2-hints { top: 4px; width: min(420px, 70%); }
+  .b2-hc { font-size: 14px; min-width: 24px; }
+}
+
+/* Cartas boca abajo de los rivales (2026-10-17): una por carta que le queda, en abanico. */
+.b2-fan { display: inline-flex; align-items: flex-end; padding-left: 8px; }
+.b2-back.fan { width: 18px; height: 26px; margin-left: -9px; box-shadow: -1px 1px 2px rgba(0,0,0,.45); }
+.b2-opp.pos-left .b2-fan, .b2-opp.pos-right .b2-fan { max-width: 150px; flex-wrap: wrap; justify-content: center; row-gap: 2px; }
+.b2-opp.pos-left .b2-back.fan, .b2-opp.pos-right .b2-back.fan { margin-left: -11px; }
+@media (max-height: 520px) {
+  .b2-back.fan { width: 13px; height: 19px; margin-left: -8px; }
+  .b2-opp.pos-left .b2-fan, .b2-opp.pos-right .b2-fan { max-width: 110px; }
+}

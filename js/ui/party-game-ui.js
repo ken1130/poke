@@ -16,10 +16,23 @@ G.PartyGameUI = (() => {
   /** Nombre que se enseña: el de la persona, o "Eevee (CPU)" en tu idioma para las CPU. */
   const seatName = s => (s.cpu ? G.I18n.f('{x} (jugador CPU)', G.T((G.DEX_BY[s.dex] || {}).name || 'CPU')) : s.name);
 
+  const BG_KEY = 'ps.party.bg';
+  const BGS = ['green', 'blue', 'wine', 'wood', 'night', 'center', 'grass'];
+  const BG_NAMES = { green: 'Fieltro verde', blue: 'Fieltro azul', wine: 'Fieltro granate', wood: 'Mesa de madera', night: 'Noche estrellada', center: 'Centro Pokémon', grass: 'Pradera' };
+  const bgNow = () => { try { const b = localStorage.getItem(BG_KEY); return BGS.includes(b) ? b : 'green'; } catch (e) { return 'green'; } };
+  function applyBg() {
+    const scr = document.getElementById('scr-party'), b = bgNow();
+    BGS.forEach(x => scr.classList.toggle('bg-' + x, x === b));
+    const btn = document.getElementById('pt-bg');
+    if (btn) btn.textContent = G.I18n.f('Fondo: {x}', G.T(BG_NAMES[b]));
+  }
   function wire() {
     if (wired) return;
     wired = true;
     $('pt-rules').onclick = rules;
+    // Fondo de la mesa (2026-10-17): se elige aquí y se recuerda en este aparato.
+    $('pt-bg').onclick = () => { const i = (BGS.indexOf(bgNow()) + 1) % BGS.length; try { localStorage.setItem(BG_KEY, BGS[i]); } catch (e) { /* nada */ } applyBg(); G.Audio.sfx('select'); };
+    applyBg();
     $('pt-leave').onclick = async () => {
       const host = G.Party.isHost, v = G.Party.view;
       const over = v && v.res;
@@ -152,7 +165,7 @@ G.PartyGameUI = (() => {
         'Escaleras: 5 rangos seguidos de 3 a A; también valen A-2-3-4-5 (la más baja) y 2-3-4-5-6. No valen J-Q-K-A-2 ni las que tienen el 2 en medio.',
         'Pasar no te deja fuera de la baza. Si todos los demás pasan, quien jugó la última abre como quiera.',
         'Al acabar, cada carta que te queda es un punto de castigo. Los puntos se suman ronda tras ronda: menos es mejor.',
-        'Tienes 25 segundos por turno; si se acaba el tiempo, pasas (o echas la carta obligada al abrir).'];
+        'Tienes 60 segundos por turno; si se acaba el tiempo, pasas (o echas la carta obligada al abrir).'];
       const suits = SUIT_MON.map((d, s) => `<span class="b2-rs s${s}" translate="no">${G.BigTwo.SUITS[s]}</span> ${esc((G.DEX_BY[d] || {}).name || '')}`).join(' · ');
       return `<ul class="b2-rules">${L.map(t => `<li>${esc(G.T(t))}</li>`).join('')}</ul><p class="b2-rules-s">${G.T('Palos')}: ${suits}</p>`;
     },
@@ -168,7 +181,7 @@ G.PartyGameUI = (() => {
         opp += `<div class="b2-opp pos-${pl[k - 1]}" data-seat="${j}">
           <div class="b2-av"></div>
           <div class="b2-info"><b class="b2-name" translate="no"></b>
-            <span class="b2-cnt"><i class="b2-back mini"></i><span translate="no"></span></span>
+            <span class="b2-cnt"><span class="b2-fan"></span><span translate="no"></span></span>
             <span class="b2-tag"></span></div>
           <div class="b2-bub hidden">${G.T('Ha pasado')}</div>
           <div class="b2-tm"><i></i></div>
@@ -188,6 +201,7 @@ G.PartyGameUI = (() => {
           </div>
           <div id="pt-flash" class="b2-flash hidden"></div>
         </div>
+        <div class="b2-hints hidden"><div class="b2-hh"><b>${G.T('Jugadas posibles')}</b><button class="btn small ghost" data-hx>✕</button></div><div class="b2-hl"></div></div>
         <div class="b2-res hidden"></div>
       </div>`;
       // Avatares (sprites animados): una vez por partida.
@@ -222,8 +236,18 @@ G.PartyGameUI = (() => {
           RB.send(v2, c, { type: 'play', cards: [...c.sel] });
         }
       };
+      root.querySelector('.b2-hints').onclick = e => {
+        if (e.target.closest('[data-hx]')) { RB.hideHints(); return; }
+        const it = e.target.closest('[data-hi]');
+        if (!it || !c.hint) return;
+        c.sel = new Set(c.hint[+it.dataset.hi]);
+        G.Audio.sfx('select');
+        RB.hideHints();
+        c.handKey = ''; RB.update(G.Party.view, c);
+      };
       window.addEventListener('resize', () => RB.layoutHand(c));
     },
+    hideHints() { const h = document.querySelector('#scr-party .b2-hints'); if (h) h.classList.add('hidden'); },
 
     send(v, c, a) {
       const r = G.Party.act(a);
@@ -247,10 +271,24 @@ G.PartyGameUI = (() => {
         c.hint = list; c.hintSeq = hs; c.hintI = -1;
       }
       if (!c.hint.length) { flash(G.T('No tienes ninguna jugada que gane: pasa.')); G.Audio.sfx('error'); return; }
-      c.hintI = (c.hintI + 1) % c.hint.length;
-      c.sel = new Set(c.hint[c.hintI]);
+      // (2026-10-17, pedido del dueño) Todas las jugadas posibles, por tipo: tocas una y se elige.
+      const B = G.BigTwo, ORDER = ['single', 'pair', 'triple', 'straight', 'flush', 'full', 'four', 'sflush'], MAX = 12;
+      const groups = {};
+      c.hint.forEach((cards, i) => { const t = B.classify(cards); if (t) (groups[t.type] = groups[t.type] || []).push(i); });
+      const card = id => `<span class="b2-hc s${B.suitOf(id)}">${B.label(id)}</span>`;
+      let html = '';
+      if (!p.lead) html += `<div class="b2-hg"><i>${G.T('Recomendada')}</i><button class="b2-hi rec" data-hi="0">${c.hint[0].map(card).join('')}</button></div>`;
+      for (const t of ORDER) {
+        const ids = groups[t];
+        if (!ids) continue;
+        html += `<div class="b2-hg"><i>${G.T(B.TYPE_NAMES[t])} · ${ids.length}</i>` +
+          ids.slice(0, MAX).map(i => `<button class="b2-hi" data-hi="${i}">${c.hint[i].map(card).join('')}</button>`).join('') +
+          (ids.length > MAX ? `<span class="b2-hmore">${G.I18n.f('y {x} más', ids.length - MAX)}</span>` : '') + '</div>';
+      }
+      const panel = document.querySelector('#scr-party .b2-hints');
+      panel.querySelector('.b2-hl').innerHTML = html;
+      panel.classList.remove('hidden');
       G.Audio.sfx('select');
-      c.handKey = ''; RB.update(v, c);
     },
 
     /** Coloca las cartas de la mano: se solapan lo justo para que quepan sin barra. */
@@ -291,7 +329,10 @@ G.PartyGameUI = (() => {
       root.querySelectorAll('.b2-opp').forEach(el => {
         const j = +el.dataset.seat, s = v.seats[j];
         el.querySelector('.b2-name').textContent = seatName(s);
-        el.querySelector('.b2-cnt span').textContent = '×' + p.counts[j];
+        // Sus cartas boca abajo, de verdad (2026-10-17, pedido del dueño), y el número al lado.
+        const fan = el.querySelector('.b2-fan'), nC = p.counts[j];
+        if (fan.childElementCount !== nC) fan.innerHTML = '<i class="b2-back fan"></i>'.repeat(nC);
+        el.querySelector('.b2-cnt > span[translate]').textContent = nC;
         el.classList.toggle('few', p.counts[j] <= 2 && !v.res);
         el.querySelector('.b2-tag').textContent = !s.cpu && (s.gone || s.afk) ? G.T('Juega la CPU') : G.I18n.f('Castigo: {x}', String(s.total));
         el.querySelector('.b2-tag').classList.toggle('away', !s.cpu && (s.gone || s.afk));
@@ -326,7 +367,7 @@ G.PartyGameUI = (() => {
         root.querySelector('.b2-hand').innerHTML = hand.map(x => cardHTML(x, c.sel.has(x) ? 'up' : '')).join('');
         requestAnimationFrame(() => RB.layoutHand(c));
       }
-      if (newMove) { c.hint = null; c.hintI = -1; }
+      if (newMove) { c.hint = null; c.hintI = -1; RB.hideHints(); }
       // Te toca
       if (p.turn === v.you && c.turnWas !== v.you && !v.res) { G.Audio.sfx('shake'); }
       c.turnWas = p.turn;

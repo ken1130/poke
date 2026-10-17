@@ -5,6 +5,7 @@
 G.MODNEWS = [
   { d: '2026-10-17', title: { zh: '派對模式：大老二', en: 'Party mode: Big Two' },
     new: [
+      { zh: '大老二：每回合思考時間改成 60 秒；「提示」改成列出所有能出的組合（依牌型分類，點一組就幫你選好）；其他玩家剩下的牌直接畫出牌背；牌桌可以選背景（綠色、藍色、酒紅、木頭、星空、寶可夢中心、草地）', en: 'Big Two: 60 s per turn; Hint now lists every playable combination (grouped by type, tap one to select it); opponents show their face-down cards; choose a table background (green, blue, wine, wood, starry night, Pokémon Center, meadow)' },
       { zh: '新增派對模式：在「和朋友一起玩」的房間選「派對」，房主選遊戲、人不夠可以加電腦玩家（最多 4 人）。第一個遊戲是大老二（台灣規則、寶可夢花色卡牌）：每人只看得到自己的牌、25 秒倒數、提示和排序按鈕、再來一局與累計罰分；有人斷線會由電腦代打，同一個帳號回到房間就能拿回座位繼續打。寶可夢屬性牌、頑皮雷彈、寶可夢網球即將推出', en: 'New Party mode: pick "Party" in a friends room; the host chooses the game and can add CPU players (up to 4). The first game is Big Two (Taiwan rules, Pokémon suit cards): you only see your own hand, 25 s turns, hint and sort buttons, play again with cumulative penalties; a disconnected player is replaced by the CPU and gets the seat back when the same account rejoins. Pokémon Type Cards, Electrode Bomb and Pokémon Tennis are coming soon' }
     ] },
   { d: '2026-10-17', title: { zh: '修正 iPhone 畫面被壓扁、搖桿對不準；手機圖鑑版面', en: 'Fixed squashed iPhone screen and misaligned joystick; phone Pokédex layout' },

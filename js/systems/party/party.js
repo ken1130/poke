@@ -38,7 +38,7 @@ G.Party = (() => {
   // ---------------- registro de juegos ----------------
   const B = () => G.BigTwo;
   register({
-    id: 'bigtwo', name: 'Big Two', minPlayers: 2, maxPlayers: 4, turnMs: 25000,
+    id: 'bigtwo', name: 'Big Two', minPlayers: 2, maxPlayers: 4, turnMs: 60000,
     desc: 'El clásico de cartas: echa sueltas, parejas o jugadas de 5 y quédate sin cartas el primero.',
     newRound: n => B().newRound(n),
     act: (st, seat, a) => B().act(st, seat, a),

@@ -7,6 +7,8 @@
  */
 G.CHANGELOG = [
   { d: '2026-10-17', title: ['Modo fiesta: Big Two', 'Party mode: Big Two'], new: [
+    ['Big Two: 60 s por turno; la pista enseña todas las jugadas posibles por tipo (tocas una y se elige); las cartas de los rivales se ven boca abajo; y puedes elegir el fondo de la mesa.',
+     'Big Two: 60 s per turn; the hint shows every possible play by type (tap one to pick it); rivals\' cards are shown face down; and you can choose the table background.'],
     ['Modo fiesta en las salas con amigos: el anfitrión elige el juego y puede añadir jugadores de la CPU (hasta 4). El primero es el Big Two (reglas de Taiwán, cartas con Pokémon): cada uno sólo ve sus cartas, turnos de 25 s, pistas, ordenar, otra ronda y puntos acumulados; si alguien se desconecta juega la CPU por él y recupera su sitio al volver con la misma cuenta.',
      'Party mode in friends rooms: the host picks the game and can add CPU players (up to 4). The first one is Big Two (Taiwan rules, Pokémon cards): everyone only sees their own hand, 25 s turns, hints, sorting, play again and cumulative points; if someone disconnects the CPU plays for them and they get their seat back by rejoining with the same account.']
   ] },
