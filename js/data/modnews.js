@@ -3,6 +3,10 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-17', title: { zh: '派對模式：寶可夢屬性牌', en: 'Party mode: Pokémon Type Cards' },
+    new: [
+      { zh: '新派對遊戲「寶可夢屬性牌」：108 張牌，火（小火龍）、水（傑尼龜）、草（妙蛙種子）、電（皮卡丘）四種屬性，加上睡眠粉（跳過）、急速折返（反轉）、雙重攻擊 +2、百變怪（指定屬性）、超夢之力 +4。出相同屬性或數字的牌，最先出完的人拿走其他人手牌的分數。剩一張要按「最後一張！」（全桌會聽到語音喊出來），沒喊被抓到罰抽 2 張，電腦偶爾也會忘記喊讓你抓。一樣有電腦玩家、提示、自動代打、30 秒倒數、斷線重連和手遊風格的牌桌與結算畫面', en: 'New party game "Pokémon Type Cards": 108 cards in fire (Charmander), water (Squirtle), grass (Bulbasaur) and electric (Pikachu), plus Sleep Powder (skip), U-turn (reverse), Double Hit +2, Ditto (pick a type) and Mewtwo Power +4. Match type or number; the first to empty their hand scores the others\' cards. With one card left press "Last card!" (everyone hears a voice call it); get caught without calling and you draw 2 — CPUs sometimes forget too. CPU players, hints, auto-play, 30 s turns, reconnection and the mobile-game style table and results' }
+    ] },
   { d: '2026-10-17', title: { zh: '派對模式：大老二', en: 'Party mode: Big Two' },
     new: [
       { zh: '大老二牌桌改版，走手遊卡牌風格：每位玩家有大頭像和名牌、倒數變成頭像外的光圈、對手的牌背排成扇形、卡牌和字都放大、圓形大按鈕；可以出的牌會亮起來（不能出的變暗），「提示」直接把牌從手牌中抬起來（再按換下一組）。思考時間改成 30 秒；新增「自動代打」（電腦幫你出牌，點一下就換回自己）；每局結束有光芒、彩帶、金幣、大字標語、分數跳動和名次看板（冠軍戴皇冠）；寶可夢改成平面印在牌面左側，疊牌時也看得到；7 種背景全部重新設計（橢圓牌桌＋桌框＋房間花紋）；有人 Pass 時桌上的牌不會再跳一次', en: 'Big Two table redesign in a mobile card game style: big portraits with name plates, the timer as a ring, opponents\' card backs in a fan, bigger cards and text, big round buttons; playable cards light up (others dim) and Hint raises the cards right in your hand (press again for the next). 30 s per turn; new Auto-play (the CPU plays for you, tap to take over); end of round shows rays, confetti, coins, a big banner, counting score and a podium (crown for the winner); Pokémon are printed flat on the card\'s left side so they show when overlapped; all 7 backgrounds redesigned (oval table, rim and room pattern); table cards no longer jump again when someone passes' },
