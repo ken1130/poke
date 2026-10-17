@@ -3,6 +3,10 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-17', title: { zh: '派對模式：頑皮雷彈', en: 'Party mode: Naughty Voltorb' },
+    new: [
+      { zh: '新派對遊戲「頑皮雷彈」：輪到你時可以出任意張功能牌，最後抽一張結束；抽到雷電球又沒有「絕緣橡膠」就會被炸飛出局！有橡膠就能拆掉，還能偷偷把雷電球放回牌堆任何位置。功能牌有大鬧一番（下一位連玩 2 回合）、呼呼大睡（跳過）、瞬間移動（洗牌）、預知未來（偷看最上面 3 張）、撒嬌（對方給你一張牌）、看穿（3 秒內取消別人的牌，也能看穿看穿），還有寶可夢對子可以偷牌。活到最後的人獲勝。一樣有電腦玩家、自動代打、30 秒倒數、斷線重連和手遊風格牌桌', en: 'New party game "Naughty Voltorb": on your turn play any number of action cards, then draw to end it; draw a Voltorb without an Insulating Rubber and you blow up! With a Rubber you defuse it and can secretly put it back anywhere in the deck. Actions: Rampage (next player takes 2 turns), Nap (skip), Teleport (shuffle), Premonition (peek top 3), Charm (they give you a card), See Through (cancel someone\'s card within 3 s, even another See Through), plus Pokémon pairs to steal cards. Last one standing wins. CPU players, auto-play, 30 s turns, reconnection and the mobile-game style table' }
+    ] },
   { d: '2026-10-17', title: { zh: '派對模式：寶可夢屬性牌', en: 'Party mode: Pokémon Type Cards' },
     new: [
       { zh: '新派對遊戲「寶可夢屬性牌」：108 張牌，火（小火龍）、水（傑尼龜）、草（妙蛙種子）、電（皮卡丘）四種屬性，加上睡眠粉（跳過）、急速折返（反轉）、雙重攻擊 +2、百變怪（指定屬性）、超夢之力 +4。出相同屬性或數字的牌，最先出完的人拿走其他人手牌的分數。剩一張要按「最後一張！」（全桌會聽到語音喊出來），沒喊被抓到罰抽 2 張，電腦偶爾也會忘記喊讓你抓。一樣有電腦玩家、提示、自動代打、30 秒倒數、斷線重連和手遊風格的牌桌與結算畫面', en: 'New party game "Pokémon Type Cards": 108 cards in fire (Charmander), water (Squirtle), grass (Bulbasaur) and electric (Pikachu), plus Sleep Powder (skip), U-turn (reverse), Double Hit +2, Ditto (pick a type) and Mewtwo Power +4. Match type or number; the first to empty their hand scores the others\' cards. With one card left press "Last card!" (everyone hears a voice call it); get caught without calling and you draw 2 — CPUs sometimes forget too. CPU players, hints, auto-play, 30 s turns, reconnection and the mobile-game style table and results' }
