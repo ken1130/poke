@@ -233,9 +233,10 @@ G.Challenges = (() => {
   /** Ventana con una clasificación. fmt(v) = cómo se escribe la marca. */
   async function openBoard(key, title, fmt, group = false) {
     const ov = document.createElement('div');
+    ov.className = 'pn-ov';
     ov.style.cssText = 'position:fixed;inset:0;z-index:72;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.7)';
-    ov.innerHTML = `<div class="box" style="width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
-      <div class="row between"><h3 style="margin:0">${title}</h3>
+    ov.innerHTML = `<div class="box pn-sheet pn-board" style="width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
+      <div class="row between pn-bar"><h3 style="margin:0">${title}</h3>
       <button class="btn small ghost" data-close>${G.T('Volver')}</button></div><div data-list style="margin-top:10px">${G.T('Cargando…')}</div></div>`;
     ov.onclick = e => { if (e.target === ov) ov.remove(); };
     ov.querySelector('[data-close]').onclick = () => ov.remove();
@@ -282,11 +283,12 @@ G.Challenges = (() => {
   function open() {
     close();
     overlay = document.createElement('div');
+    overlay.className = 'pn-ov';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:66;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.7)';
     overlay.onclick = e => { if (e.target === overlay) close(); };
     const db = G.Modes.dailyBest(), wb = weeklyBest(), tb = towerBest(), lb = G.Modes.legendBest(), wk = weekly();
     const card = (id, title, sub, desc, rec, board) => `
-      <div class="panel" style="padding:10px 12px;margin-top:8px">
+      <div class="panel ch-card" style="padding:10px 12px;margin-top:8px">
         <div class="row between" style="gap:10px">
           <div class="grow"><b>${G.T(title)}</b> ${sub ? `<small style="color:var(--muted)">${sub}</small>` : ''}
             <div style="font-size:13px;color:var(--muted)">${desc}</div>
@@ -297,11 +299,11 @@ G.Challenges = (() => {
         </div>
       </div>`;
     overlay.innerHTML = `
-      <div class="box" style="width:min(560px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
-        <div class="row between"><h3 style="margin:0">${G.T('Desafíos')}</h3><button class="btn small ghost" data-close>${G.T('Volver')}</button></div>
+      <div class="box pn-sheet pn-ch" style="width:min(560px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
+        <div class="row between pn-bar"><h3 style="margin:0">${G.T('Desafíos')}</h3><button class="btn small ghost" data-close>${G.T('Volver')}</button></div>
         <p class="sub" style="margin:6px 0 0">${G.T('Cada desafío tiene sus propias reglas: las «Reglas a medida» no cuentan aquí.')}
           ${G.T('Con amigos: crea una sala en «Jugar con amigos» y elige el desafío en «Qué jugar» (tiene su clasificación de grupos).')}</p>
-        ${card('daily', 'Reto diario', G.Modes.today(), dailyBlock(), db ? G.I18n.f('Tu mejor marca de hoy: {x} · {x} derrotados', G.U.mmss(db.time), db.kills | 0) : '', true)}
+        <div class="ch-cards">${card('daily', 'Reto diario', G.Modes.today(), dailyBlock(), db ? G.I18n.f('Tu mejor marca de hoy: {x} · {x} derrotados', G.U.mmss(db.time), db.kills | 0) : '', true)}
         ${card('weekly', 'Reto semanal', isoWeek().key, `<b style="color:#ffd23f">${G.T(wk.name)}</b> — ${G.T(wk.desc)}`,
           wb ? G.I18n.f('Tu mejor marca de la semana: {x}', G.U.mmss(wb.time)) : '', true)}
         ${card('tower', 'Torre sin fin', '', G.T('Cada minuto subes un piso y cae una maldición nueva. ¿Hasta dónde llegas?'),
@@ -312,7 +314,7 @@ G.Challenges = (() => {
              <small style="color:var(--muted)">${G.T(G.Modes.LEGEND_TIERS[G.Modes.legendTier()].desc)}</small>`,
           lb ? G.I18n.f('Récord: {x}', lb) : '', false)}
         ${card('training', 'Sala de entrenamiento', '', G.T('Muñecos Pikachu que no se mueven, no atacan y nunca caen. Elige cualquier movimiento y su nivel y mira cuánto daño haces por segundo.')
-          + `<div><small style="color:var(--muted)">${G.T('Sin enemigos, sin premios y sin récords. Sólo en solitario.')}</small></div>`, '', false)}
+          + `<div><small style="color:var(--muted)">${G.T('Sin enemigos, sin premios y sin récords. Sólo en solitario.')}</small></div>`, '', false)}</div>
       </div>`;
     overlay.querySelector('[data-close]').onclick = close;
     // El Pokémon del día, animado.

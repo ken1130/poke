@@ -397,6 +397,7 @@ G.Stages = (() => {
     picker = opts && opts.pick ? opts : null;
     if (picker && Number.isInteger(picker.current)) pick = picker.current;
     overlay = document.createElement('div');
+    overlay.className = 'pn-ov';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:66;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.7)';
     overlay.onclick = e => { if (e.target === overlay) closeMap(); };
     document.body.appendChild(overlay);
@@ -418,17 +419,17 @@ G.Stages = (() => {
     const why = !ok ? (s.id > 0 && !starsOf(s.id - 1) ? G.I18n.f('Supera antes la fase {x}.', LIST[s.id - 1].code)
                                                       : G.I18n.f('Necesitas {x} estrellas (tienes {x}).', reg.need, total)) : '';
     overlay.innerHTML = `
-      <div class="box" style="width:min(640px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
-        <div class="row between"><h3 style="margin:0">${G.T(picker ? 'Elige la fase de la sala' : 'Aventura')} <small class="gold">★ ${total} / ${LIST.length * 3}</small></h3>
+      <div class="box pn-sheet pn-stages" style="width:min(640px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
+        <div class="row between pn-bar"><h3 style="margin:0">${G.T(picker ? 'Elige la fase de la sala' : 'Aventura')} <small class="gold">★ ${total} / ${LIST.length * 3}</small></h3>
           <button class="btn small ghost" data-close>${G.T('Volver')}</button></div>
         <p class="sub" style="margin:6px 0 4px">${G.T('Supera las fases en orden, gana estrellas y llega a la Liga. Cada región nueva pide unas estrellas.')}</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">
+        <div class="st-regions" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">
           ${REGIONS.map((R, ri) => `<div class="panel" style="padding:6px 8px">
             <div style="font-size:13px;display:flex;justify-content:space-between"><b>${ri + 1}. ${G.T(R.name)}</b>
               ${R.need ? `<small style="color:${total >= R.need ? 'var(--muted)' : '#ff8a96'}">★${R.need}</small>` : ''}</div>
             <div style="display:flex;gap:4px;margin-top:4px">${LIST.filter(x => x.r === ri).map(chip).join('')}</div></div>`).join('')}
         </div>
-        <div class="panel" style="padding:10px 12px;margin-top:10px;position:sticky;bottom:-18px;z-index:2;background:var(--box2);box-shadow:0 -6px 16px #0007">
+        <div class="panel st-detail" style="padding:10px 12px;margin-top:10px;position:sticky;bottom:-18px;z-index:2;background:var(--box2);box-shadow:0 -6px 16px #0007">
           <div class="row between" style="gap:10px;align-items:flex-start">
             <div class="grow">
               <b class="gold">${title(s)}</b> <small style="color:var(--muted)">${G.T(G.Tiles.BIOMES[s.scene].name)}</small>

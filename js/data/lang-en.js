@@ -1250,6 +1250,7 @@ G.I18n.add({
   'Bonus de experiencia': 'XP bonus',
   'Bonus de monedas': 'Coin bonus',
   'Mi equipo': 'My team',
+  'Gira la pantalla': 'Turn your screen sideways',
   // Revisión móvil (2026-10-16): aviso del objeto pendiente sin «pulsa I»
   '{x}: toca el icono que brilla para cambiarlo': '{x}: tap the glowing icon to swap it',
   // Extras del PK (pvp-extra.js, 2026-10-16)

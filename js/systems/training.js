@@ -233,6 +233,7 @@ G.Training = (() => {
     query = '';
     panel = document.createElement('div');
     panel.id = 'training-panel';
+    panel.className = 'pn-ov';
     panel.style.cssText = 'position:fixed;inset:0;z-index:66;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.6)';
     panel.onclick = e => { if (e.target === panel) closePanel(); };
     document.body.appendChild(panel);
@@ -269,10 +270,10 @@ G.Training = (() => {
     });
     const full = draft.moves.length >= max;
     panel.innerHTML = `
-      <div class="box" style="width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:16px 18px">
-        <div class="row between"><h3 style="margin:0">${G.T('Sala de entrenamiento')} · ${G.T('Movimientos')}</h3>
+      <div class="box pn-sheet pn-train" style="width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:16px 18px">
+        <div class="row between pn-bar"><h3 style="margin:0">${G.T('Sala de entrenamiento')} · ${G.T('Movimientos')}</h3>
           <button class="btn small ghost" data-close>${G.T('Volver')}</button></div>
-        <p class="sub" style="margin:6px 0 0">${G.I18n.f('Elige hasta {x} movimientos (de todos) y su nivel; se aplica sin volver a empezar.', max)}</p>
+        <div class="pn-col"><p class="sub" style="margin:6px 0 0">${G.I18n.f('Elige hasta {x} movimientos (de todos) y su nivel; se aplica sin volver a empezar.', max)}</p>
         <div style="margin-top:8px">${rows}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
           <span>${G.T('Muñecos')}</span>${COUNTS.map(n => `<button class="btn small ${draft.n === n ? 'gold' : ''}" data-n="${n}">${n}</button>`).join('')}
@@ -281,8 +282,8 @@ G.Training = (() => {
         <small style="color:var(--muted)">${G.T('La vida sólo cambia lo que quita un % de la vida (veneno...). Los muñecos nunca caen.')}</small>
         <div class="row" style="gap:8px;margin-top:10px;justify-content:flex-end">
           <button class="btn small ghost" data-clear>${G.T('Quitar todos')}</button>
-          <button class="btn gold" data-apply>${G.T('Aplicar')}</button></div>
-        <h3 class="set-h" style="margin-top:12px">${G.T('Todos los movimientos')} <small style="color:var(--muted)">${full ? G.I18n.f('(máximo {x})', max) : ''}</small></h3>
+          <button class="btn gold" data-apply>${G.T('Aplicar')}</button></div></div>
+        <div class="pn-col"><h3 class="set-h" style="margin-top:12px">${G.T('Todos los movimientos')} <small style="color:var(--muted)">${full ? G.I18n.f('(máximo {x})', max) : ''}</small></h3>
         <input type="search" data-q value="${esc(query)}" placeholder="${esc(G.T('Buscar por nombre o tipo…'))}" style="width:100%;margin:4px 0 8px;padding:6px 8px;border-radius:8px;border:1px solid #ffffff33;background:#0b1430;color:#fff">
         <div data-list style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">
           ${list.map(d => {
@@ -292,7 +293,7 @@ G.Training = (() => {
               <i style="flex:0 0 10px;height:10px;border-radius:50%;background:${G.U.TYPE_COLOR[d.type] || '#888'}"></i>
               <span>${esc(G.T(d.name))}${d.only ? ' ✦' : ''}</span></button>`;
           }).join('')}
-        </div>
+        </div></div>
       </div>`;
     const $$ = s => panel.querySelectorAll(s);
     panel.querySelector('[data-close]').onclick = closePanel;

@@ -1,3 +1,491 @@
 /* ============ rwd-panels.css — versión para móvil/tableta en horizontal (2026-10-17) ============
- * Se carga después de style.css. Sólo reglas de diseño adaptable para este grupo de pantallas.
+ * Se carga después de style.css. Sólo reglas de diseño adaptable para este grupo de pantallas:
+ * misiones/logros/perfil, ajustes, aviso legal, novedades, ranking, amigos, sala, perfil público,
+ * reglas a medida, desafíos, aventura, clasificaciones, jugar con amigos, trucos, sala de
+ * entrenamiento, diálogos, avisos (toast / logro / invitación) y el aviso de girar la pantalla.
+ *
+ * Móvil en horizontal (alto ≤ 520 px): cada ventana es una «hoja» a pantalla completa (tapa la
+ * barra de arriba: en 320 px de alto, esos 50 px eran un sexto de la pantalla), con una barra fija
+ * arriba (‹ volver a la izquierda, título y pestañas en forma de fichas deslizables) y el contenido
+ * en paneles con su propio desplazamiento. Donde sobra ancho y falta alto, dos columnas
+ * (lista | detalle) en vez de una columna larga.
+ * Tableta (táctil, más alta): igual que en PC, pero con botones de al menos 40 px.
+ * PC: sin cambios (todo va dentro de media queries de pantalla baja o de puntero táctil).
+ *
+ * Ojo (KNOWN-FAILURES 34): no hay reglas genéricas «todos los .btn sticky» — cada pieza fija va por id/clase.
  */
+
+/* ===================================================================== */
+/*  Tableta y móvil (táctil): zonas de toque de al menos 40 px            */
+/* ===================================================================== */
+@media (pointer: coarse) {
+  :is(#scr-goals, #scr-settings, #scr-legal, #scr-news, #scr-rank, #scr-friends, #scr-lobby, #scr-profile, .pn-ov, .dlg) .btn.small {
+    min-height: 40px; min-width: 40px;
+  }
+  :is(#scr-goals, #scr-settings, #scr-rank, #scr-lobby, .pn-ov) .chip { min-height: 38px; padding-left: 14px; padding-right: 14px; font-size: 14px; }
+  :is(#scr-goals, #scr-settings, #scr-rank) :is(.tab, .gen-tab) { min-height: 42px; justify-content: center; }
+  .dlg .btn { min-height: 44px; min-width: 120px; }
+  /* La línea de créditos de abajo se montaba encima de la sala y del ranking en la tableta. */
+  body:has(:is(#scr-goals, #scr-rank, #scr-friends, #scr-lobby, #scr-news):not(.hidden)) .credits-line { display: none !important; }
+}
+
+/* Aviso de girar: vale para móvil y tableta (antes decía «el móvil»). */
+#rotate .box { max-width: min(360px, calc(100vw - 32px)); padding: 22px 20px; }
+#rotate h2 { font-size: 22px; }
+#rotate .sub { font-size: 15px; margin: 4px 0 0; }
+
+/* ===================================================================== */
+/*  Móvil en horizontal (pantalla baja)                                   */
+/* ===================================================================== */
+@media (max-height: 520px) {
+  /* ---------- hojas a pantalla completa ---------- */
+  /* (.scr#… : tiene que ganar a «.scr:not(#scr-menu)» de style.css, que pone márgenes con !important) */
+  .scr:is(#scr-goals, #scr-friends, #scr-lobby, #scr-rank, #scr-news, #scr-profile, #scr-settings, #scr-legal) {
+    padding: 0 !important; align-items: stretch; justify-content: stretch;
+  }
+  /* Por encima de la barra de arriba (25); Ajustes (60) y Aviso legal (65) ya lo estaban. */
+  #scr-goals, #scr-friends, #scr-lobby, #scr-rank, #scr-news, #scr-profile { z-index: 27; }
+  .pn-ov { padding: 0; align-items: stretch !important; }
+
+  :is(#scr-goals, #scr-friends, #scr-lobby, #scr-rank, #scr-news, #scr-profile, #scr-settings, #scr-legal) > .box,
+  .pn-ov > .pn-sheet {
+    width: 100% !important; max-width: none !important; height: 100%; max-height: none !important; margin: 0;
+    border: 0; border-radius: 0; box-shadow: none;
+    padding: 0 max(14px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)) !important;
+    animation: pn-in .16s ease-out;
+    font-size: 14px;
+  }
+  @keyframes pn-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  /* Barra de arriba de cada hoja: ‹ Volver | título | (pestañas / acciones). */
+  :is(#scr-goals, #scr-friends, #scr-lobby, #scr-rank, #scr-news, #scr-settings, #scr-legal) > .box > .row.between:first-child,
+  #scr-profile > .box > .row.end:first-child,
+  .pn-sheet > .pn-bar {
+    flex-wrap: nowrap; justify-content: flex-start; gap: 10px; min-height: 50px; margin: 0;
+    padding: 5px 0; border-bottom: 2px solid rgba(255,255,255,.08);
+  }
+  :is(#scr-goals, #scr-friends, #scr-lobby, #scr-rank, #scr-news, #scr-settings, #scr-legal) > .box > .row.between:first-child > h2,
+  .pn-sheet > .pn-bar > h3 {
+    order: 1; margin: 0; font-size: 19px; line-height: 1.15; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pn-sheet > .pn-bar > h3 small { font-size: 13px; }
+  /* Botón de volver / cerrar: a la izquierda, con flecha, grande. */
+  :is(#scr-goals, #scr-friends, #scr-rank) [data-back], #news-close, #set-close, #legal-close, #prof-close, #lobby-menu,
+  .pn-sheet > .pn-bar [data-close] {
+    order: 0; flex: 0 0 auto; min-height: 40px; min-width: 40px; padding: 0 14px 0 10px !important; font-size: 15px !important;
+    display: inline-flex; align-items: center; gap: 4px; margin: 0;
+  }
+  :is(#scr-goals, #scr-friends, #scr-rank) [data-back]::before, #news-close::before, #set-close::before, #legal-close::before,
+  #prof-close::before, #lobby-menu::before, .pn-sheet > .pn-bar [data-close]::before {
+    content: '‹'; font-size: 24px; line-height: 0; margin-top: -3px;
+  }
+  /* Cuando lo único que hay a la derecha es «volver», la barra se ve como la de una app. */
+  .pn-sheet > .pn-bar > h3 { flex: 1 1 auto; }
+
+  /* Paneles con su propio desplazamiento. */
+  .pn-scroll, #goals-body, #set-body, #news-body, #rk-list, #fr-list {
+    overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  }
+
+  /* ---------- Misiones · Logros · Perfil ---------- */
+  #scr-goals > .box {
+    display: grid; grid-template-columns: auto auto minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 10px; overflow: hidden;
+  }
+  #scr-goals > .box > .row.between { display: contents; }
+  #scr-goals > .box > .row.between > [data-back] { grid-column: 1; grid-row: 1; align-self: center; }
+  #scr-goals > .box > .row.between > h2 { grid-column: 2; grid-row: 1; align-self: center; margin: 0; font-size: 19px; }
+  #goals-tabs {
+    grid-column: 3; grid-row: 1; margin: 0; padding: 5px 0; justify-content: flex-end; gap: 6px;
+    overflow-x: auto; scrollbar-width: none; min-height: 50px; align-items: center;
+  }
+  #goals-tabs::-webkit-scrollbar { display: none; }
+  #goals-tabs .tab { flex: 0 0 auto; min-height: 40px; display: flex; align-items: center; padding: 0 16px; border-radius: 20px; font-size: 15px; }
+  #goals-body {
+    grid-column: 1 / -1; grid-row: 2; max-height: none; min-height: 0; overflow-y: auto; padding: 8px 4px 8px 0;
+    border-top: 2px solid rgba(255,255,255,.08);
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 8px; align-content: start;
+  }
+  #goals-body > * { grid-column: 1 / -1; min-width: 0; }
+  /* Misiones: dos columnas de tarjetas; el botón a la derecha ocupa las dos líneas. */
+  #goals-body > .mission {
+    grid-column: auto; margin: 0; padding: 8px 10px; gap: 4px 10px;
+    grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  }
+  #goals-body > .mission .m-txt { grid-column: 1; grid-row: 1; }
+  #goals-body > .mission .m-txt b { font-size: 14px; }
+  #goals-body > .mission .m-rw { grid-column: 1; grid-row: 2; font-size: 13px; }
+  #goals-body > .mission .btn { grid-column: 2; grid-row: 1 / span 2; min-height: 40px; }
+  #goals-body > .goals-h { margin: 2px 0 0; }
+  #goals-body > .goals-h h3 { font-size: 16px; }
+  #goals-body > .goals-h .sub { margin: 0; font-size: 12px; }
+  /* Logros: las categorías en una columna a la izquierda (fija), los logros a la derecha. */
+  #goals-body:has(> .ach-grid) { grid-template-columns: 172px minmax(0, 1fr); column-gap: 12px; }
+  #goals-body:has(> .ach-grid) > * { grid-column: 2; }
+  #goals-body:has(> .ach-grid) > .filters {
+    grid-column: 1; grid-row: 1 / span 20; align-self: start; position: sticky; top: 0;
+    flex-direction: column; flex-wrap: nowrap; gap: 5px; margin: 0;
+    max-height: calc(100dvh - 72px); overflow-y: auto; scrollbar-width: thin;
+  }
+  #goals-body:has(> .ach-grid) > .filters .chip {
+    text-align: left; border-radius: 8px; min-height: 38px; padding: 4px 10px; font-size: 14px; flex: 0 0 auto;
+  }
+  #goals-body > p.sub { margin: 0 0 2px; font-size: 13px; }
+  #goals-body .ach-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 6px; }
+  #goals-body .ach { padding: 6px 8px; gap: 8px; }
+  #goals-body .ach b { font-size: 14px; }
+  #goals-body .ach small, #goals-body .a-rw { font-size: 12px; }
+  #goals-body .leg-grid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+  #goals-body .leg-cell small { font-size: 11px; }
+  /* Perfil: favoritos más pequeños para que se vea también el título y el aspecto. */
+  #goals-body .fav-slots { gap: 8px; margin: 2px 0; }
+  #goals-body .fav-slot { width: 112px; min-height: 104px; }
+  #goals-body .fav-slot canvas { width: 96px; height: auto; }
+  #goals-body > h3 { margin: 6px 0 2px; font-size: 16px; }
+  #goals-body > select.field { max-width: 320px; }
+  #goals-body > .btn.gold { justify-self: start; min-height: 44px; }
+  /* Elegir favorito: rejilla de Pokémon como en la Pokédex. */
+  #goals-body #fav-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; max-height: none; }
+  #goals-body #fav-grid .cell canvas { width: 72px; height: auto; }
+
+  /* ---------- Ajustes: pestañas a la izquierda (como en los ajustes de un teléfono) ---------- */
+  #scr-settings > .box.settings {
+    display: grid; grid-template-columns: 158px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 14px; overflow: hidden;
+  }
+  #scr-settings > .box > .row.between { grid-column: 1 / -1; }
+  #set-tabs {
+    grid-column: 1; grid-row: 2; flex-direction: column; flex-wrap: nowrap; gap: 6px; margin: 0; padding: 8px 0;
+    overflow-y: auto; scrollbar-width: none; min-height: 0;
+  }
+  #set-tabs .gen-tab {
+    min-height: 42px; padding: 0 14px; flex-direction: row; justify-content: flex-start; font-size: 15px; font-weight: 700;
+    border-radius: 8px; text-align: left; width: 100%;
+  }
+  #set-body { grid-column: 2; grid-row: 2; min-height: 0; overflow-y: auto; padding: 4px 4px 10px 0; }
+  #set-body .set-h { font-size: 16px; margin: 12px 0 4px; }
+  #set-body .set-h:first-child { margin-top: 6px; }
+  #set-body .sub { font-size: 13px; margin: 0 0 6px; }
+  #set-body .set-row { padding: 7px 0; gap: 10px; }
+  #set-body .set-row b { font-size: 15px; }
+  #set-body .set-row small { font-size: 12px; }
+  #set-body .set-row .switch { min-width: 64px; min-height: 40px; }
+  #set-body .set-chips { margin: 4px 0 8px; }
+  #set-body .keys { font-size: 13px; gap: 6px 12px; }
+  #set-body .credits { font-size: 13px; line-height: 1.5; }
+  #set-body .about-logo { font-size: 24px; margin-top: 4px; }
+  #set-body .sound-inline { margin: 6px 0 12px; max-width: 480px; }
+  #set-body .sound-inline .snd-row { min-height: 44px; grid-template-columns: 22px 72px 1fr; font-size: 15px; margin-bottom: 4px; }
+  #set-body .sound-inline [data-mute] { min-height: 44px; margin-top: 4px; }
+  #set-body .row.wrap .btn, #set-body > .btn { min-height: 44px; }
+
+  /* ---------- Aviso legal: texto de lectura ---------- */
+  #scr-legal > .box.legal { overflow-y: auto; font-size: 14px; line-height: 1.55; }
+  #scr-legal > .box > .row.between:first-child { position: sticky; top: 0; z-index: 2; background: var(--box1); }
+  #scr-legal > .box > :not(.row.between:first-child) { max-width: 780px; margin-left: auto; margin-right: auto; }
+  #scr-legal h3 { font-size: 16px; margin: 14px auto 4px; }
+  #scr-legal p { margin: 6px auto; }
+  #scr-legal .btn { min-height: 42px; display: inline-flex; align-items: center; }
+
+  /* ---------- Novedades ---------- */
+  #scr-news > .box.news-box { display: flex; flex-direction: column; overflow: hidden; }
+  #scr-news > .box > .row.between { flex: 0 0 auto; }
+  #news-body { flex: 1 1 auto; min-height: 0; padding: 0 6px 12px 0; }
+  #news-body .news-day { max-width: 860px; margin: 0 auto; }
+  #news-body .news-day h3 { font-size: 16px; margin: 10px 0 4px; }
+  #news-body .news-day h3 small { font-size: 12px; }
+  #news-body .news-day li { font-size: 14px; line-height: 1.45; margin: 3px 0; }
+
+  /* ---------- Ranking: filtros a la izquierda, la lista a la derecha ---------- */
+  #scr-rank > .box {
+    display: grid; grid-template-columns: 226px minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto minmax(0, 1fr); column-gap: 14px; overflow: hidden;
+  }
+  #scr-rank > .box > .row.between { grid-column: 1 / -1; grid-row: 1; }
+  #scr-rank > .box > .row.between h2 .sub { font-size: 13px !important; }
+  #rk-mode { grid-column: 1; grid-row: 2; margin: 8px 0 0; padding: 0; overflow: visible; }
+  #rk-mode .gen-tab { flex: 1 1 0; flex-direction: row; justify-content: center; min-height: 40px; padding: 0 8px; }
+  #rk-period, #scr-rank .rk-tools #rk-scope { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  #rk-period::-webkit-scrollbar, #rk-scope::-webkit-scrollbar { display: none; }
+  #rk-period { grid-column: 1; grid-row: 3; margin: 6px 0 0; gap: 5px; }
+  #rk-period .chip, #rk-scope .chip { flex: 0 0 auto; }
+  #rk-period .chip, #rk-scope .chip { min-height: 36px; padding: 2px 10px; font-size: 14px; }
+  #scr-rank .rk-tools { grid-column: 1; grid-row: 4; flex-direction: column; align-items: stretch; gap: 6px; margin: 6px 0 0; }
+  #scr-rank .rk-tools #rk-scope { gap: 5px; flex-wrap: nowrap; }
+  #scr-rank .rk-tools .field { width: 100%; min-height: 40px; padding: 6px 10px; }
+  #rk-me { grid-column: 1; grid-row: 5; align-self: end; margin: 6px 0 4px; padding: 8px 10px; font-size: 13px; line-height: 1.35; }
+  #rk-list { grid-column: 2; grid-row: 2 / -1; max-height: none; min-height: 0; padding: 8px 4px 8px 0; gap: 4px; }
+  #rk-list .rk-row { grid-template-columns: 46px auto minmax(0, 1fr) auto; gap: 8px; padding: 4px 10px; min-height: 48px; }
+  #rk-list .rk-row .pos { font-size: 16px; }
+  #rk-list .rk-row .who b { font-size: 15px; }
+  #rk-list .rk-row .who small { font-size: 12px; }
+  #rk-list .rk-row .time { font-size: 19px; }
+  #rk-list .rk-row .who a.plink { display: inline-block; padding: 4px 0; }
+
+  /* ---------- Amigos: añadir a la izquierda, la lista a la derecha ---------- */
+  #scr-friends > .box {
+    display: grid; grid-template-columns: minmax(220px, 34%) minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr); column-gap: 14px; overflow: hidden;
+  }
+  #scr-friends > .box > .row.between { grid-column: 1 / -1; }
+  #scr-friends > .box > .row.between > .row { display: contents; }
+  #fr-room { order: 3; margin-left: auto; min-height: 40px; }
+  #fr-me { grid-column: 1; grid-row: 2; margin: 8px 0 0; font-size: 13px; line-height: 1.4; }
+  #fr-add { grid-column: 1; grid-row: 3; margin: 8px 0 0; flex-direction: column; align-items: stretch; gap: 8px; }
+  #fr-add .field { min-width: 0; width: 100%; min-height: 44px; }
+  #fr-add .btn { min-height: 44px; }
+  #fr-msg { grid-column: 1; grid-row: 4; margin: 6px 0 0; }
+  #fr-list { grid-column: 2; grid-row: 2 / -1; max-height: none; min-height: 0; padding: 8px 4px 8px 0; }
+  #fr-list .fr-row { padding: 4px 10px; min-height: 52px; gap: 8px; flex-wrap: wrap; }
+  #fr-list .fr-row b { font-size: 15px; }
+  #fr-list .fr-row .plink { display: inline-block; padding: 6px 0; }
+
+  /* ---------- Sala: el grupo y «Empezar» a la izquierda, cómo jugar a la derecha ---------- */
+  #scr-lobby > .box {
+    display: grid; grid-template-columns: minmax(0, 45%) minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto; column-gap: 14px; overflow: hidden;
+  }
+  #scr-lobby > .box > .row.between { grid-column: 1 / -1; grid-row: 1; }
+  #scr-lobby > .box > .row.between > .row { display: contents; }
+  #lobby-leave { order: 3; margin-left: auto !important; min-height: 40px; font-size: 14px !important; flex: 0 0 auto; }
+  #lobby-sub { grid-column: 1; grid-row: 2; margin: 6px 0 0; font-size: 12px; line-height: 1.35; }
+  #scr-lobby > .box > .panel:not(.lobby-set) {
+    grid-column: 1; grid-row: 3; margin: 6px 0 0 !important; padding: 6px 8px !important; gap: 6px 8px !important;
+  }
+  #scr-lobby > .box > .panel:not(.lobby-set) > span { font-size: 12px; flex-basis: 100%; text-align: center; margin-bottom: -4px; color: var(--muted); }
+  #lobby-code { font-size: 24px !important; letter-spacing: 4px !important; }
+  #lobby-copy, #lobby-link { min-height: 38px; font-size: 13px !important; }
+  #scr-lobby > .box > h3.lobby-h { display: none; }   /* «Jugadores»: las tarjetas ya se explican solas */
+  #lobby-members { grid-column: 1; grid-row: 4; margin: 6px 0 0; gap: 5px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #lobby-members .lob-card { padding: 3px 3px 5px !important; border-width: 2px; }
+  #lobby-members .lob-card canvas { width: 54px !important; height: 44px !important; }
+  #lobby-members .lob-card b { font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #lobby-members .lob-card .conn { font-size: 11px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  #lobby-members .lob-card.empty { min-height: 64px !important; font-size: 12px; }
+  #scr-lobby .lobby-startbar {
+    grid-column: 1; grid-row: 6; position: static; margin: 6px 0 0 !important; padding: 0; background: none;
+  }
+  #lobby-start { min-height: 46px; font-size: 16px; }
+  #lobby-note { grid-column: 1; grid-row: 7; margin: 4px 0 2px; font-size: 12px; min-height: 0; }
+  #lobby-inv-title, #lobby-invite { grid-column: 1; }
+  #scr-lobby > .box > .lobby-set {
+    grid-column: 2; grid-row: 2 / -1; min-height: 0; overflow-y: auto; margin: 6px 0 4px; padding: 8px 10px 10px;
+    overscroll-behavior: contain;
+  }
+  #scr-lobby .lobby-set .lobby-h { font-size: 15px; margin: 0 0 6px; }
+  #scr-lobby .lobby-set .btn.small { min-height: 40px; }
+  #lobby-mode { justify-content: flex-start; margin-bottom: 6px; }
+  #lobby-mode [data-mode] { min-width: 72px; }
+  #lobby-mode-desc { flex-basis: 100%; font-size: 12px; }
+  #lobby-play { justify-content: flex-start !important; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  #lobby-play::-webkit-scrollbar { display: none; }
+  /* el borde difuminado avisa de que hay más fichas a la derecha */
+  #lobby-play { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent); padding-right: 22px; }
+  #lobby-play .chip { flex: 0 0 auto; min-height: 38px; }
+  #lobby-play-info { font-size: 13px; padding: 6px 10px !important; }
+  #scr-lobby .lobby-opts { justify-content: flex-start; gap: 8px; flex-direction: column; align-items: stretch; }
+  #scr-lobby .lobby-opts > .row { justify-content: flex-start !important; gap: 6px 8px; }
+  #scr-lobby .lobby-opts .sub { font-size: 12px; flex-basis: 100%; }
+  #lobby-scene { min-height: 40px; min-width: 0 !important; flex: 1 1 160px; }
+  #lobby-pkx { align-items: stretch !important; gap: 8px !important; }
+  #lobby-pkx > .row { justify-content: flex-start !important; gap: 6px 10px !important; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.07); }
+  #lobby-pkx > .row > b { flex-basis: 100%; font-size: 14px; }
+  #lobby-pkx > .row > span:not(.sub) { display: inline-flex; align-items: center; gap: 6px; }
+  #lobby-pkx > .row > .sub { text-align: left !important; }
+  #lobby-teams-list > div { text-align: left !important; }
+
+  /* ---------- Perfil público: cabecera y favoritos a la izquierda, medallas a la derecha ---------- */
+  #scr-profile > .box.profile-box { overflow-y: auto; }
+  #scr-profile > .box > .row.end:first-child { position: sticky; top: 0; z-index: 2; background: var(--box1); }
+  #prof-body {
+    display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: 16px; align-items: start; padding: 6px 0 8px;
+  }
+  #prof-body > .prof-head { grid-column: 1; margin: 0; }
+  #prof-body > .prof-head h2 { font-size: 20px; }
+  #prof-body > .fav-slots { grid-column: 1; gap: 8px; margin: 6px 0; }
+  #prof-body .fav-slot { width: 104px; min-height: 100px; }
+  #prof-body .fav-slot canvas { width: 92px; height: auto; }
+  #prof-body .fav-slot b { font-size: 13px; }
+  #prof-body > .prof-marks { grid-column: 1; margin: 4px 0 0; gap: 5px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #prof-body > .prof-marks b { font-size: 16px; }
+  #prof-body > h3 { grid-column: 2; grid-row: 1; margin: 2px 0 6px; font-size: 16px; }
+  #prof-body > .prof-medals { grid-column: 2; grid-row: 2 / span 2; gap: 6px; }
+  #prof-body .prof-medals .pm { width: 72px; }
+  #prof-body .prof-medals small { font-size: 11px; }
+
+  /* ---------- Hojas creadas por JS (reglas, desafíos, aventura, trucos, entrenamiento) ---------- */
+  .pn-sheet:not(.pn-modes):not(.pn-train):not(.pn-stages):not(.pn-cheat) { overflow-y: auto !important; }
+  .pn-sheet > .pn-bar { position: sticky; top: 0; z-index: 3; background: var(--box1); }
+
+  /* Reglas a medida: dos columnas que se desplazan cada una. */
+  .pn-sheet.pn-modes {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 18px; overflow: hidden !important;
+  }
+  .pn-modes > .pn-bar, .pn-train > .pn-bar, .pn-cheat > h3 { grid-column: 1 / -1; }
+  .pn-sheet > .pn-col { min-height: 0; overflow-y: auto; padding: 4px 4px 10px 0; overscroll-behavior: contain; }
+  .pn-modes .sub { font-size: 12px !important; line-height: 1.4; }
+  .pn-modes .set-row { padding: 7px 0; }
+  .pn-modes .set-row b { font-size: 15px; }
+  .pn-modes .set-row small { font-size: 12px; }
+  .pn-modes .set-row .switch { min-width: 64px; min-height: 40px; }
+  .pn-modes .set-row [data-train] { min-height: 42px; }
+  .pn-modes .set-h { margin-top: 10px !important; font-size: 16px; }
+  .pn-modes .scene-grid { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)) !important; }
+  .pn-modes .scene-grid .btn { min-height: 40px; }
+  .pn-modes input[type=range] { width: 130px !important; }
+
+  /* Desafíos: las tarjetas en dos columnas, cada una con sus botones abajo. */
+  .pn-ch > .sub { font-size: 12px !important; margin: 6px 0 2px !important; }
+  .pn-ch .ch-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; padding-bottom: 8px; }
+  .pn-ch .ch-card { margin: 0 !important; display: flex; flex-direction: column; }
+  .pn-ch .ch-card > .row.between { flex-direction: column; align-items: stretch !important; flex: 1; flex-wrap: nowrap !important; }
+  .pn-ch .ch-card > .row.between > .grow { min-width: 0 !important; }
+  .pn-ch .ch-card .ch-btns { flex-direction: row !important; flex-wrap: wrap; justify-content: flex-start !important; margin: 4px 0 0 !important; margin-top: auto !important; }
+  .pn-ch .ch-card .ch-btns .btn { min-height: 40px; padding: 6px 14px; font-size: 14px; }
+  .pn-ch .ch-card .ch-btns [data-go] { min-width: 96px; }
+  .pn-ch .daily-card { gap: 8px; }
+  .pn-ch .daily-mon { width: 60px; height: 60px; }
+
+  /* Aventura: las regiones a la izquierda, la fase elegida (con «Jugar») a la derecha. */
+  .pn-sheet.pn-stages {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 36%); grid-template-rows: auto auto minmax(0, 1fr);
+    column-gap: 12px; overflow: hidden !important;
+  }
+  .pn-stages > .pn-bar { grid-column: 1 / -1; }
+  .pn-stages > .sub { grid-column: 1; font-size: 12px !important; margin: 4px 0 !important; }
+  .pn-stages > .st-regions {
+    grid-column: 1; grid-row: 3; min-height: 0; overflow-y: auto; align-content: start; padding: 0 4px 8px 0;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important; overscroll-behavior: contain;
+  }
+  .pn-stages .st-regions [data-st] { min-height: 46px; }
+  .pn-stages > .st-detail {
+    grid-column: 2; grid-row: 2 / -1; position: static !important; margin: 6px 0 8px !important; box-shadow: none !important;
+    min-height: 0; overflow: hidden; display: flex; flex-direction: column;
+  }
+  /* La ficha: el texto se desplaza; «Jugar» y «Con amigos» siempre abajo, a la vista. */
+  .pn-stages .st-detail > .row.between { flex: 1 1 auto; min-height: 0; flex-direction: column; align-items: stretch !important; flex-wrap: nowrap; gap: 6px !important; }
+  .pn-stages .st-detail > .row.between > .grow { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .pn-stages .st-detail > .row.between > div:last-child { flex: 0 0 auto; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.08); }
+  .pn-stages .st-detail [data-play] { width: 100%; min-height: 46px; }
+  .pn-stages .st-detail [data-hard], .pn-stages .st-detail [data-party] { min-height: 40px; width: 100%; }
+
+  /* Clasificaciones (diario, semanal, torre). */
+  .pn-board [data-list], .pn-board #db-list { font-size: 14px; }
+  .pn-board table { max-width: 860px; margin: 0 auto; }
+  .pn-board td { padding: 7px 6px !important; }
+
+  /* Trucos: la lista a la izquierda, el campo y «Usar» a la derecha. */
+  .pn-sheet.pn-cheat {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 34%); grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 14px; overflow: hidden !important;
+  }
+  .pn-cheat > h3 { margin: 0; min-height: 50px; display: flex; align-items: center; border-bottom: 2px solid rgba(255,255,255,.08); font-size: 19px; }
+  .pn-cheat > .cheat-list { grid-column: 1; min-height: 0; overflow-y: auto; margin: 8px 0 !important; padding-right: 4px; }
+  .pn-cheat .cheat-list .btn { min-height: 40px; }
+  .pn-cheat > .cheat-use { grid-column: 2; grid-row: 2; align-self: start; padding-top: 8px; }
+  .pn-cheat > .cheat-use .row .btn { min-height: 44px; }
+
+  /* Jugar con amigos: crear a la izquierda, entrar con un código a la derecha (ventana, no hoja). */
+  .pn-ov > .pn-party {
+    width: min(660px, calc(100% - 24px)) !important; max-height: calc(100% - 16px); overflow-y: auto; align-self: center; margin: auto;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 18px; padding: 10px 16px 12px !important;
+  }
+  .pn-party > .pn-bar { grid-column: 1 / -1; min-height: 48px; }
+  .pn-party > .sub { grid-column: 1; margin: 8px 0 !important; font-size: 13px; }
+  .pn-party > [data-create] { grid-column: 1; min-height: 48px; align-self: end; }
+  .pn-party > .party-join { grid-column: 2; grid-row: 2 / span 2; }
+  .pn-party .party-join .set-h { margin-top: 8px !important; }
+  .pn-party .party-join .field, .pn-party .party-join .btn { min-height: 48px; }
+
+  /* Sala de entrenamiento: tus movimientos a la izquierda, todos los movimientos a la derecha. */
+  .pn-sheet.pn-train {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 14px; overflow: hidden !important;
+  }
+  .pn-train .sub { font-size: 12px !important; }
+  .pn-train .set-row { padding: 6px 0; }
+  .pn-train .set-row .grow { min-width: 0 !important; flex-basis: 100%; }
+  .pn-train .set-row { gap: 4px 6px !important; }
+  .pn-train .set-row b { display: inline; margin-right: 4px; }
+  .pn-train .set-row .btn { min-height: 38px; min-width: 34px !important; padding: 2px 6px !important; }
+  .pn-train > .pn-col:nth-child(2) > .row .btn { min-height: 40px; }
+  .pn-train > .pn-col:nth-child(2) > .row:last-child {
+    position: sticky; bottom: -10px; padding: 8px 0 10px; margin-bottom: -10px; background: var(--box2); z-index: 1;
+    box-shadow: 0 -8px 10px -4px rgba(5, 8, 16, .6);
+  }
+  .pn-train [data-apply] { min-height: 44px; min-width: 110px; }
+  .pn-train > .pn-col:nth-child(3) > .set-h { margin-top: 4px !important; font-size: 16px; }
+  .pn-train [data-q] { position: sticky; top: 0; z-index: 1; min-height: 42px; }
+  .pn-train [data-list] { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }
+  .pn-train [data-list] .btn { min-height: 40px; font-size: 13px; }
+
+  /* ---------- Diálogos: ventana centrada, nunca más alta que la pantalla ---------- */
+  .scr.dlg { padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)) !important; }
+  .scr.dlg > .box { width: min(460px, calc(100% - 16px)) !important; max-height: calc(100dvh - 16px); overflow-y: auto; padding: 14px 18px; }
+  .scr.dlg > .box h3 { font-size: 18px; }
+  .scr.dlg > .box .sub { font-size: 14px; line-height: 1.45; margin-bottom: 4px; }
+  .scr.dlg > .box > div:last-child { position: sticky; bottom: -14px; margin: 10px -18px -14px !important; padding: 10px 18px 12px; background: var(--box2); }
+  .scr.dlg .btn { min-height: 44px; min-width: 120px; }
+
+  /* ---------- Avisos: arriba, pequeños y sin tapar botones ----------
+   * Antes salían abajo a la derecha / abajo en el centro, encima de los botones del menú
+   * (Gacha, Reglas a medida) y de los de las ventanas. Ahora arriba en el centro, como en
+   * las apps; no se comen los toques. En el menú, sobre el título de la izquierda. */
+  .toast, .ach-pop {
+    top: max(6px, env(safe-area-inset-top)) !important; bottom: auto !important; left: 50% !important; right: auto !important;
+    transform: translateX(-50%) !important; max-width: min(58vw, 440px) !important; pointer-events: none;
+    padding: 6px 14px !important; font-size: 14px; line-height: 1.3; text-align: center;
+  }
+  .ach-pop { gap: 8px !important; text-align: left; }
+  .ach-pop b { font-size: 14px; }
+  .ach-pop small { font-size: 12px; }
+  .ach-pop img, .ach-pop canvas { max-width: 30px; max-height: 30px; }
+  /* Dos a la vez: el logro debajo del aviso. */
+  .toast[style*="block"] ~ .ach-pop { top: calc(max(6px, env(safe-area-inset-top)) + 44px) !important; }
+  body:has(#scr-menu:not(.hidden)) :is(.toast, .ach-pop) { left: calc(max(8px, env(safe-area-inset-left)) + 23vw) !important; max-width: 44vw !important; }
+  /* Invitación: abajo a la izquierda (sobre el compañero), lejos de los botones del menú. */
+  .invite-pop {
+    right: auto; left: max(10px, env(safe-area-inset-left)); bottom: max(8px, env(safe-area-inset-bottom));
+    width: min(320px, 44vw); padding: 10px 12px;
+  }
+  .invite-pop .btn { min-height: 42px; }
+
+  /* Aviso de girar (por si una tableta baja lo enseña). */
+  #rotate .box { padding: 14px 18px; }
+}
+
+/* Móvil algo más alto (≥ 400 px: 844×390, 932×430): las tarjetas de la sala con el Pokémon más grande. */
+@media (max-height: 520px) and (min-height: 400px) {
+  #lobby-members .lob-card canvas { width: 76px !important; height: 62px !important; }
+  #lobby-members .lob-card.empty { min-height: 90px !important; }
+}
+
+/* ---------- Muy bajo (iPhone en horizontal con barras de Safari, ~300–360 px) ---------- */
+@media (max-height: 360px) {
+  :is(#scr-goals, #scr-friends, #scr-lobby, #scr-rank, #scr-news, #scr-settings, #scr-legal) > .box > .row.between:first-child,
+  #scr-profile > .box > .row.end:first-child, .pn-sheet > .pn-bar, #goals-tabs, .pn-cheat > h3 { min-height: 46px; padding-top: 3px; padding-bottom: 3px; }
+  #set-tabs .gen-tab { min-height: 40px; }
+  #set-tabs { gap: 4px; padding-top: 6px; }
+  #lobby-sub { display: none; }
+  #lobby-members .lob-card small { display: none; }
+  .pn-stages > .sub, .pn-modes .pn-col:first-child > .sub:first-child { display: none; }
+  .pn-ch > .sub { display: none; }
+  #rk-me { font-size: 12px; padding: 5px 8px; }
+  #rk-period .chip, #rk-scope .chip { min-height: 34px; padding: 2px 9px; font-size: 13px; }
+  #rk-mode .gen-tab { min-height: 38px; }
+}
+
+/* ---------- Móvil estrecho en horizontal (≤ 700 px de ancho: 667×375, 667×300) ---------- */
+@media (max-height: 520px) and (max-width: 700px) {
+  #goals-body:has(> .ach-grid) { grid-template-columns: 148px minmax(0, 1fr); }
+  #scr-settings > .box.settings { grid-template-columns: 136px minmax(0, 1fr); }
+  #scr-rank > .box { grid-template-columns: 200px minmax(0, 1fr); }
+  #rk-list .rk-row { grid-template-columns: 34px auto minmax(0, 1fr) auto; gap: 6px; padding: 4px 8px; }
+  #rk-list .rk-row .mons canvas:nth-child(n+2) { display: none; }
+  #scr-lobby > .box { grid-template-columns: minmax(0, 48%) minmax(0, 1fr); }
+  .pn-ch .ch-cards { grid-template-columns: 1fr; }
+  #prof-body .fav-slot { width: 88px; min-height: 88px; }
+  #prof-body .fav-slot canvas { width: 76px; }
+}
