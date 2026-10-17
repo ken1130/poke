@@ -4,8 +4,10 @@
  * Al empezar NO se entra en el mundo: se abre la mesa (#scr-party, party-game-ui.js).
  *
  * Juegos (registro): { id, name, minPlayers, maxPlayers, soon?, turnMs, newRound, act, turn,
- *   cpu, timeout, priv, pub, results }. Por ahora sólo Big Two (bigtwo.js); los demás salen
- *   en la lista como "Próximamente".
+ *   cpu, timeout, priv, pub, results, precheck?, cpuDelay? }. Big Two (bigtwo.js) y
+ *   Cartas de tipos (typecards.js); los demás salen en la lista como "Próximamente".
+ *   precheck(vista, a): validación en el jugador antes de enviar (el anfitrión vuelve a validar).
+ *   cpuDelay(st): milisegundos de más antes de que juegue la CPU (p. ej. para dar tiempo a avisar).
  *
  * Red (los mismos canales que el cooperativo, G.Net; mensajes { k:'pty', t, ... }):
  *   El ANFITRIÓN manda: tiene la baraja y todo el estado, valida cada jugada, mueve a las
@@ -49,13 +51,55 @@ G.Party = (() => {
       return B().cpuMove(st.hands[seat], { lead: st.lead, must: st.first ? st.must : -1, oppMin: Math.min(...opp), mine: st.hands[seat].length });
     },
     timeout: (st, seat) => B().timeoutMove(st.hands[seat], st.lead, st.first ? st.must : -1),
+    precheck: (v, a) => {
+      const p = v.pub;
+      if (p.turn !== v.you) return { ok: false, err: 'No es tu turno.' };
+      if (a.type === 'pass') return p.lead ? { ok: true } : { ok: false, err: 'Abres tú: no puedes pasar.' };
+      return B().check(v.priv.hand, a.cards, p.lead, p.first ? p.must : -1);
+    },
     priv: (st, seat) => ({ hand: st.hands[seat].slice() }),
     pub: st => ({ counts: st.hands.map(h => h.length), turn: st.over ? -1 : st.turn, lead: st.lead, passed: st.passed.slice(),
                   first: st.first, must: st.first ? st.must : -1, last: st.last, over: st.over, winner: st.winner }),
     results: st => B().results(st)
   });
-  register({ id: 'types', name: 'Cartas de tipos', minPlayers: 2, maxPlayers: 4, soon: true,
-             desc: 'Juega cartas del mismo tipo o número; cartas de efecto para fastidiar al siguiente.' });
+  // Cartas de tipos (寶可夢屬性牌, typecards.js, 2026-10-17).
+  const T = () => G.TypeCards;
+  register({
+    id: 'types', name: 'Cartas de tipos', minPlayers: 2, maxPlayers: 4, turnMs: 30000,
+    desc: 'Juega cartas del mismo tipo o número; cartas de efecto para fastidiar al siguiente.',
+    newRound: n => T().newRound(n),
+    act: (st, seat, a) => T().act(st, seat, a),
+    turn: st => (st.over ? -1 : st.turn),
+    over: st => st.over,
+    cpu: (st, seat) => {
+      // A veces la CPU pilla primero a quien no avisó de su última carta (luego juega).
+      if (st.vuln >= 0 && st.vuln !== seat && !st.called[st.vuln] && st.hands[st.vuln].length === 1 && Math.random() < 0.5) return { type: 'catch' };
+      const nx = T().nextSeat(st, seat), pv = T().nextSeat(st, seat, -1);
+      return T().cpuMove(st.hands[seat], { top: st.discard[st.discard.length - 1], color: st.color, phase: st.phase, drawn: st.drawn,
+        nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n });
+    },
+    timeout: st => T().timeoutMove(st.phase),
+    // Si alguien acaba de quedarse con 1 carta sin avisar, la CPU espera un poco: da tiempo a pulsar "¡Última carta!".
+    cpuDelay: st => (st.vuln >= 0 ? 1600 : 0),
+    precheck: (v, a) => {
+      const p = v.pub;
+      if (a.type === 'call' || a.type === 'catch') return { ok: true };
+      if (p.turn !== v.you) return { ok: false, err: 'No es tu turno.' };
+      if (a.type === 'play') {
+        if (p.phase === 'pick') return { ok: false, err: 'Primero elige el tipo de la mesa.' };
+        if (!v.priv.hand.includes(a.card)) return { ok: false, err: 'Esa carta no es tuya.' };
+        if (p.phase === 'drawn' && a.card !== v.priv.drawn) return { ok: false, err: 'Sólo puedes echar la carta que acabas de robar.' };
+        if (!T().playable(a.card, p.top, p.color)) return { ok: false, err: 'Esa carta no vale: tiene que ser del mismo tipo o número.' };
+      }
+      return { ok: true };
+    },
+    priv: (st, seat) => ({ hand: st.hands[seat].slice(), drawn: st.turn === seat && st.phase === 'drawn' ? st.drawn : -1, called: !!st.called[seat] }),
+    pub: st => ({ counts: st.hands.map(h => h.length), turn: st.over ? -1 : st.turn, top: st.discard[st.discard.length - 1],
+                  under: st.discard.slice(-4, -1), color: st.color, dir: st.dir, phase: st.phase, deck: st.deck.length,
+                  called: st.called.map((c, i) => c && st.hands[i].length === 1), vuln: st.vuln >= 0 && !st.called[st.vuln] && st.hands[st.vuln].length === 1 ? st.vuln : -1,
+                  ev: st.ev, moves: st.moves, over: st.over, winner: st.winner }),
+    results: st => T().results(st)
+  });
   register({ id: 'voltorb', name: 'Voltorb travieso', minPlayers: 2, maxPlayers: 4, soon: true,
              desc: 'Roba cartas y que no te explote el Voltorb.' });
   register({ id: 'tennis', name: 'Tenis Pokémon', minPlayers: 2, maxPlayers: 4, soon: true,
@@ -132,7 +176,7 @@ G.Party = (() => {
       const still = () => S && S.sid === sid && S.st === st && st.moves === moves;
       if (s.cpu || s.gone || s.afk) {
         S.deadline = 0;
-        S.timer = setTimeout(() => { if (still()) apply(seat, def.cpu(st, seat), true); }, 600 + Math.random() * 600);
+        S.timer = setTimeout(() => { if (still()) apply(seat, def.cpu(st, seat), true); }, 600 + Math.random() * 600 + (def.cpuDelay ? def.cpuDelay(st) : 0));
       } else {
         S.deadline = Date.now() + def.turnMs;
         S.timer = setTimeout(() => {
@@ -259,12 +303,7 @@ G.Party = (() => {
       return r;
     }
     const def = game(V.game);
-    if (def && def.id === 'bigtwo') {
-      const p = V.pub;
-      if (p.turn !== V.you) return { ok: false, err: 'No es tu turno.' };
-      if (a.type === 'pass') { if (!p.lead) return { ok: false, err: 'Abres tú: no puedes pasar.' }; }
-      else { const r = G.BigTwo.check(V.priv.hand, a.cards, p.lead, p.first ? p.must : -1); if (!r.ok) return r; }
-    }
+    if (def && def.precheck) { const r = def.precheck(V, a); if (!r.ok) return r; }
     toHost({ t: 'act', sid: V.sid, a });
     return { ok: true, sent: true };
   }
