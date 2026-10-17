@@ -3,6 +3,10 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-17', title: { zh: '派對模式：2 對 2 組隊', en: 'Party mode: 2 vs 2 teams' },
+    new: [
+      { zh: '寶可夢屬性牌和頑皮雷彈可以 2 對 2：牌桌剛好 4 人（含電腦）時，房主在房間選「2 對 2」，會顯示藍隊和紅隊，也可以按「重新分隊」。隊友坐對面，兩隊輪流出牌。屬性牌：任何一個人出完牌全隊獲勝，兩人拿一樣的分數，而且不能抓隊友沒喊「最後一張」。頑皮雷彈：兩個人都被炸飛才算整隊出局，勝隊每人 3 分；放回雷電球時會顯示每個位置會被誰抽到。電腦不會對隊友出手。名牌有隊伍顏色和「隊友」標記，結算畫面依隊伍分組顯示「我們贏了！」', en: 'Pokémon Type Cards and Naughty Voltorb can be played 2 vs 2: with exactly 4 seats (CPUs included) the host picks "2 vs 2" in the room, sees Blue and Red teams and can reshuffle them. Partners sit opposite and teams alternate turns. Type Cards: when either partner empties their hand the team wins, both score the same, and you can\'t catch your partner. Naughty Voltorb: a team is out only when both explode, each winner scores 3; when putting a Voltorb back you see who would draw each spot. CPUs never target their partner. Team colours, a "Partner" tag and team-grouped results ("We won!")' }
+    ] },
   { d: '2026-10-17', title: { zh: '派對模式小調整', en: 'Party mode tweaks' },
     new: [
       { zh: '電腦出牌變慢一點（每次約 1.4～2.2 秒），看得清楚每台電腦出了什麼', en: 'CPUs play a little slower (about 1.4-2.2 s each) so you can see what each one played' },

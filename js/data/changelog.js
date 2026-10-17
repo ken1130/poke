@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-17', title: ['Modo fiesta: 2 contra 2', 'Party mode: 2 vs 2'], new: [
+    ['Cartas de tipos y Voltorb travieso se pueden jugar 2 contra 2 (con 4 jugadores en la mesa, CPU incluidas): el anfitrión elige «2 contra 2» en la sala y puede rehacer los equipos. El compañero se sienta enfrente y los equipos se turnan. En Cartas de tipos, si uno de los dos se queda sin cartas gana el equipo (los dos se llevan los puntos) y no puedes pillar a tu compañero; en Voltorb travieso, el equipo cae cuando explotan los dos. Colores de equipo, «Compañero» y final de ronda por equipos.',
+     'Type Cards and Naughty Voltorb can be played 2 vs 2 (4 seats at the table, CPUs included): the host picks "2 vs 2" in the room and can reshuffle teams. Your partner sits opposite and teams alternate turns. In Type Cards, when either partner empties their hand the team wins (both get the points) and you can\'t catch your partner; in Naughty Voltorb, a team is out when both have exploded. Team colours, a "Partner" tag and team results.']
+  ] },
   { d: '2026-10-17', title: ['Modo fiesta: ajustes', 'Party mode: tweaks'], chg: [
     ['La CPU tarda un poco más en jugar (1,4-2,2 s) para que dé tiempo a ver qué ha echado cada una.', 'CPUs take a bit longer to play (1.4-2.2 s) so you can see what each one played.'],
     ['Voltorb travieso: con 2 jugadores el mazo es más corto (28 cartas de acción) y, si vas a dar tu única Goma aislante con Carantoña, se te avisa antes.', 'Naughty Voltorb: with 2 players the deck is shorter (28 action cards), and you get a warning before giving away your only Insulating Rubber.']
