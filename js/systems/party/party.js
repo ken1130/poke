@@ -40,7 +40,7 @@ G.Party = (() => {
   // ---------------- registro de juegos ----------------
   const B = () => G.BigTwo;
   register({
-    id: 'bigtwo', name: 'Big Two', minPlayers: 2, maxPlayers: 4, turnMs: 60000,
+    id: 'bigtwo', name: 'Big Two', minPlayers: 2, maxPlayers: 4, turnMs: 30000,
     desc: 'El clásico de cartas: echa sueltas, parejas o jugadas de 5 y quédate sin cartas el primero.',
     newRound: n => B().newRound(n),
     act: (st, seat, a) => B().act(st, seat, a),
@@ -174,7 +174,7 @@ G.Party = (() => {
       const seat = def.turn(st), s = S.seats[seat];
       const sid = S.sid, moves = st.moves;
       const still = () => S && S.sid === sid && S.st === st && st.moves === moves;
-      if (s.cpu || s.gone || s.afk) {
+      if (s.cpu || s.gone || s.afk || s.auto) {
         S.deadline = 0;
         S.timer = setTimeout(() => { if (still()) apply(seat, def.cpu(st, seat), true); }, 600 + Math.random() * 600 + (def.cpuDelay ? def.cpuDelay(st) : 0));
       } else {
@@ -192,6 +192,13 @@ G.Party = (() => {
 
   /** Aplica una jugada del asiento (validada por las reglas). */
   function apply(seat, a, auto) {
+    // Auto (2026-10-17, pedido del dueño): el jugador pide que la CPU juegue por él hasta que lo quite.
+    if (S && a && a.type === 'auto') {
+      const s = S.seats[seat];
+      s.auto = !!a.on; s.afkN = 0; if (!s.auto) s.afk = false;
+      step();
+      return { ok: true };
+    }
     if (!S || S.def.over(S.st)) return { ok: false, err: 'La ronda ya ha terminado.' };
     const r = S.def.act(S.st, seat, a);
     if (!r.ok) return r;
@@ -208,7 +215,7 @@ G.Party = (() => {
     return {
       k: 'pty', t: 'st', sid: S.sid, game: def.id, you: i, round: S.round, host: myUid(),
       priv: def.priv(st, i), pub: def.pub(st),
-      seats: S.seats.map((s, j) => ({ name: s.name, dex: s.dex, shiny: s.shiny, cpu: s.cpu, gone: s.gone, afk: s.afk, total: totalOf(j), me: j === i })),
+      seats: S.seats.map((s, j) => ({ name: s.name, dex: s.dex, shiny: s.shiny, cpu: s.cpu, gone: s.gone, afk: s.afk, auto: !!s.auto, total: totalOf(j), me: j === i })),
       left: S.deadline ? Math.max(0, S.deadline - Date.now()) : 0, turnMs: def.turnMs,
       res: over ? def.results(st) : null, note: S.note
     };
@@ -303,7 +310,7 @@ G.Party = (() => {
       return r;
     }
     const def = game(V.game);
-    if (def && def.precheck) { const r = def.precheck(V, a); if (!r.ok) return r; }
+    if (def && def.precheck && a.type !== 'auto') { const r = def.precheck(V, a); if (!r.ok) return r; }
     toHost({ t: 'act', sid: V.sid, a });
     return { ok: true, sent: true };
   }
