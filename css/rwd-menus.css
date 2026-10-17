@@ -1,3 +1,411 @@
 /* ============ rwd-menus.css — versión para móvil/tableta en horizontal (2026-10-17) ============
- * Se carga después de style.css. Sólo reglas de diseño adaptable para este grupo de pantallas.
+ * Se carga después de style.css. Sólo reglas de diseño adaptable para este grupo de pantallas:
+ * menú principal, barra de arriba, Pokémon (Pokédex), Mejoras, Gacha (y sus resultados),
+ * inicio de sesión, test de personalidad y elección de compañero.
+ *
+ * El móvil se juega en horizontal (en vertical sale el aviso de girar), así que «móvil» aquí es
+ * «poca altura»: (max-height: 520px) — de 300 px (iPhone con la barra de Safari) a 430 px.
+ * En el PC y la tableta (más de 520 px de alto) no cambia nada, salvo la cabecera de la ficha,
+ * que sólo existe en el móvil y por eso se esconde aquí abajo para todos.
+ *
+ * Idea general en el móvil: pantallas a pantalla completa (sin la caja flotante), una cabecera
+ * fija de 50 px con «Volver» a la izquierda, letra de 13–16 px, botones de 40 px o más, listas
+ * que se desplazan dentro de su zona y fichas a pantalla completa en vez de columnas apretadas.
  */
+
+/* La cabecera de la ficha a pantalla completa (menu.js sheetHead) sólo se usa en el móvil. */
+.dex-sheet-head { display: none; }
+.dex-bar:empty { display: none; }
+
+@media (max-height: 520px) {
+  /* ------------------------------------------------------------------------------------------
+   * Barra de arriba: más fina, botones cuadrados de 40 px (iconos) y el nombre recortado.
+   * ------------------------------------------------------------------------------------------ */
+  #topbar.topbar { top: max(4px, env(safe-area-inset-top)); gap: 4px; padding: 2px 3px; }
+  #topbar .pill { padding: 4px 8px; font-size: 14px; gap: 5px; min-height: 36px; }
+  #topbar .pill { padding: 4px 7px; }
+  #topbar .btn.small { min-width: 40px; height: 36px; padding: 0 6px; font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center; }
+  /* La cuenta: sólo el icono (con el punto de guardado); el nombre se ve en Ajustes. */
+  #user-pill { padding: 4px 6px !important; }
+  #user-pill > span[translate] { display: none; }
+  /* En el menú ya está la opción «Ajustes»: el engranaje de la barra sobra (y no cabría junto al título). */
+  body:has(#scr-menu:not(.hidden)):not(:has(.scr.dim:not(.hidden))) #btn-settings { display: none; }
+  /* En Pokémon no hace falta (y taparía la cabecera); en Mejoras y Gacha sólo el dinero y los tickets,
+     colocados dentro de la cabecera, a la derecha. */
+  body:has(#scr-dex:not(.hidden)) #topbar { display: none; }
+  body:has(#scr-upgrades:not(.hidden)) #topbar > :not(.pill),
+  body:has(#scr-gacha:not(.hidden)) #topbar > :not(.pill),
+  body:has(#scr-upgrades:not(.hidden)) #user-pill,
+  body:has(#scr-gacha:not(.hidden)) #user-pill { display: none !important; }
+  body:has(#scr-upgrades:not(.hidden)) #topbar,
+  body:has(#scr-gacha:not(.hidden)) #topbar { top: 5px; box-shadow: none; }
+  body:has(#scr-upgrades:not(.hidden)) #topbar .pill,
+  body:has(#scr-gacha:not(.hidden)) #topbar .pill { min-height: 32px; }
+  body:has(#scr-dex:not(.hidden), #scr-upgrades:not(.hidden), #scr-gacha:not(.hidden)) #credits-line { display: none !important; }
+
+  /* ------------------------------------------------------------------------------------------
+   * Pantallas a pantalla completa con cabecera fija (Pokémon, Mejoras, Gacha).
+   * ------------------------------------------------------------------------------------------ */
+  #scr-dex.scr, #scr-upgrades.scr, #scr-gacha.scr { padding: 0 !important; align-items: stretch; justify-content: stretch; }
+  #scr-dex > .box, #scr-upgrades > .box, #scr-gacha > .box {
+    width: 100%; height: 100%; max-height: none; padding: 0; overflow: hidden;
+    border: 0; border-radius: 0; box-shadow: none; animation: none;
+    display: grid; align-content: stretch;
+  }
+  /* Fondo de la cabecera: un pseudo-elemento que ocupa la primera fila de la rejilla. */
+  #scr-dex > .box::before, #scr-upgrades > .box::before, #scr-gacha > .box::before {
+    content: ''; grid-row: 1; grid-column: 1 / -1; z-index: 0;
+    background: rgba(15, 12, 22, .9); border-bottom: 3px solid var(--edge-out);
+    box-shadow: inset 0 -2px 0 var(--edge-in);
+  }
+  #scr-dex > .box > .row:first-child, #scr-upgrades > .box > .row:first-child, #scr-gacha > .box > .row:first-child {
+    grid-row: 1; grid-column: 1 / -1; position: relative; z-index: 1;
+    flex-wrap: nowrap; justify-content: flex-start; gap: 12px; min-width: 0; height: 52px;
+    padding: 0 12px 0 max(10px, env(safe-area-inset-left));
+  }
+  #scr-dex > .box > .row:first-child h2, #scr-upgrades > .box > .row:first-child h2, #scr-gacha > .box > .row:first-child h2 {
+    order: 1; margin: 0; font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  #scr-dex #dex-total { font-size: 14px !important; margin: 0; }
+  /* «Volver» a la izquierda, con flecha, de 40 px de alto. */
+  #scr-dex [data-back], #scr-upgrades [data-back], #scr-gacha [data-back], .dex-sheet-back {
+    order: 0; flex: 0 0 auto; height: 40px; padding: 0 14px 0 12px; font-size: 15px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  #scr-dex [data-back]::before, #scr-upgrades [data-back]::before, #scr-gacha [data-back]::before, .dex-sheet-back::before {
+    content: ''; width: 9px; height: 9px; border: solid currentColor; border-width: 0 0 3px 3px; transform: rotate(45deg); margin-left: 3px;
+  }
+  /* Mejoras y Gacha: a la derecha de la cabecera va la barra del dinero. */
+  #scr-upgrades > .box > .row:first-child, #scr-gacha > .box > .row:first-child { padding-right: 250px; }
+
+  /* ------------------------------------------------------------------------------------------
+   * Pokémon: cabecera (Volver · título · buscador), una barra de regiones y filtros que se
+   * desliza a los lados, y la rejilla a todo el ancho con casillas grandes.
+   * ------------------------------------------------------------------------------------------ */
+  #scr-dex > .box { grid-template-columns: minmax(0, 1fr) minmax(190px, 38%); grid-template-rows: 52px auto minmax(0, 1fr); }
+  #scr-dex .split, #scr-dex .split > div:first-child { display: contents; }
+  #scr-dex > .box > .row:first-child { grid-column: 1; padding-right: 8px; }
+  #scr-dex #dex-search { grid-row: 1; grid-column: 2; align-self: center; position: relative; z-index: 1;
+    width: auto !important; height: 40px; margin: 0 max(12px, env(safe-area-inset-right)) 0 0 !important; padding: 4px 12px; font-size: 16px; }
+  .dex-bar {
+    grid-row: 2; grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; min-width: 0;
+    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+    padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+    border-bottom: 2px solid rgba(0, 0, 0, .35);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+  }
+  .dex-bar::-webkit-scrollbar { display: none; }
+  .dex-bar .gen-tabs, .dex-bar .filters, .dex-bar .dex-types { display: contents; }
+  .dex-bar .gen-tabs.dim > .gen-tab { opacity: .45; }
+  /* Separador entre los grupos (regiones | filtros | tipos). */
+  .dex-bar .filters::before { content: ''; flex: 0 0 3px; align-self: stretch; margin: 4px 4px; border-radius: 2px; background: rgba(255, 255, 255, .18); }
+  .dex-bar .gen-tab, .dex-bar .chip {
+    flex: 0 0 auto; height: 40px; margin: 0; padding: 0 14px; border-radius: 20px;
+    display: inline-flex; flex-direction: row; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .dex-bar .gen-tab { border-radius: 8px; }
+  .dex-bar .gen-tab b { font-size: 15px; }
+  .dex-bar .gen-tab small { display: inline !important; font-size: 12px; }
+  .dex-bar .chip { font-size: 14px; }
+  .dex-bar .chip img { width: 16px; height: 16px; }
+  #scr-dex #dex-grid {
+    grid-row: 3; grid-column: 1 / -1; max-height: none; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; align-content: start;
+    padding: 10px max(12px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+  #scr-dex #dex-grid .cell { padding: 2px 4px 6px; }
+  #scr-dex #dex-grid .cell canvas { width: 92px; height: 80px; }
+  #scr-dex #dex-grid .cell b { font-size: 14px; margin-top: -2px; }
+  /* La rareza, debajo del número (arriba a la izquierda): la casilla es 20 px más baja y caben dos filas. */
+  #scr-dex #dex-grid .cell > .rarity-ball { position: absolute; top: 22px; left: 6px; margin: 0; line-height: 0; }
+  #scr-dex #dex-grid .cell .no { font-size: 12px; top: 4px; left: 7px; }
+  #scr-dex #dex-grid .cell .badge-team { font-size: 16px; top: 24px; }
+  #scr-dex #dex-grid > p.sub { font-size: 15px; padding: 10px 2px; }
+
+  /* La ficha: escondida hasta tocar un Pokémon; entonces ocupa toda la pantalla. */
+  #scr-dex #dex-detail { display: none; }
+  #scr-dex.sheet #dex-detail {
+    display: grid; position: fixed; inset: 0; z-index: 30;
+    grid-template-columns: minmax(200px, 36%) minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr);
+    padding: 0; margin: 0; border: 0; border-radius: 0; overflow: hidden;
+    background:
+      repeating-conic-gradient(var(--stone-grain) 0 25%, transparent 0 50%) 0 0 / 8px 8px,
+      linear-gradient(180deg, var(--box1), var(--box2));
+    animation: rwd-sheet .18s ease-out;
+  }
+  @keyframes rwd-sheet { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+  #scr-dex.sheet .dex-sheet-head {
+    grid-row: 1; grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; min-width: 0;
+    padding: 0 340px 0 max(10px, env(safe-area-inset-left));
+    background: rgba(15, 12, 22, .9); border-bottom: 3px solid var(--edge-out); box-shadow: inset 0 -2px 0 var(--edge-in);
+  }
+  /* (style.css pone a todos los «#dex-detail .btn» sticky y order 9: aquí no.) */
+  #scr-dex #dex-detail .dex-sheet-back { order: 0; position: static; margin: 0; height: 40px; padding: 0 14px 0 12px; font-size: 15px; box-shadow: none; }
+  #scr-dex.sheet .dex-sheet-head .ttl { order: 1; display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+  #scr-dex.sheet .dex-sheet-head .ttl b { font-size: 19px; color: var(--ember-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #scr-dex.sheet .dex-sheet-head .ttl small { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Columna izquierda: el dibujo grande, rareza, tipos y normal/shiny. */
+  #scr-dex .dex-hero {
+    grid-row: 2; grid-column: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 8px 10px 10px max(10px, env(safe-area-inset-left)); border-right: 2px solid rgba(0, 0, 0, .35);
+  }
+  #scr-dex #dex-detail .dex-hero .stage {
+    width: auto; height: min(190px, calc(100dvh - 160px)); min-height: 96px; margin: 0 auto 6px; flex: 0 0 auto;
+  }
+  #scr-dex .dex-hero .center > div:first-child, #scr-dex .dex-hero .center > h3 { display: none; }
+  #scr-dex .dex-hero .center { font-size: 15px; }
+  #scr-dex .dex-hero .center p { font-size: 14px !important; margin: 4px 0 0 !important; }
+  #scr-dex .dex-hero .type { font-size: 13px; padding: 3px 10px; }
+  #scr-dex .dex-hero .seg { margin: 0 auto 6px; }
+  #scr-dex .dex-hero .seg button { min-height: 36px; padding: 4px 14px; font-size: 14px; }
+  /* Columna derecha: estadísticas, movimientos, mascota y retos; se desplaza sola. */
+  #scr-dex .dex-info {
+    grid-row: 2; grid-column: 2; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    padding: 12px max(14px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) 16px;
+  }
+  #scr-dex #dex-detail .dex-info .stat { grid-template-columns: 72px 1fr 52px; gap: 8px; font-size: 14px; margin: 4px 0; }
+  #scr-dex #dex-detail .dex-info .stat .bar { height: 10px; }
+  #scr-dex #dex-detail .dex-info p { font-size: 14px !important; margin: 8px 0 4px !important; }
+  #scr-dex #dex-detail .dex-info .move-icons { gap: 6px; margin: 4px 0 10px !important; }
+  #scr-dex #dex-detail .dex-info .move-icons img { width: 26px; height: 26px; }
+  #scr-dex #dex-detail .dex-info > .center { margin-top: 24px !important; }
+  /* Botones principales («Elegir de compañero» y «Mi equipo»): arriba a la derecha, en la cabecera,
+     siempre a la vista. Un solo contenedor (no dos sticky, ver KNOWN-FAILURES 34). */
+  #scr-dex #dex-detail .dex-acts {
+    position: absolute; top: 6px; right: max(12px, env(safe-area-inset-right)); z-index: 2;
+    display: flex; gap: 8px; max-width: 330px;
+  }
+  #scr-dex #dex-detail .dex-acts .btn {
+    position: static; order: 0; width: auto !important; height: 40px; margin: 0 !important; padding: 0 14px;
+    font-size: 15px; white-space: nowrap; box-shadow: none; overflow: hidden; text-overflow: ellipsis;
+  }
+  #scr-dex #dex-detail #dex-team { position: static; padding: 0 12px; font-size: 14px; }
+  #scr-dex #dex-detail #dex-pet { position: static; width: auto !important; min-height: 40px; padding: 0 16px; margin-top: 6px; font-size: 15px; box-shadow: none; }
+  #scr-dex #dex-detail #dex-pet + p { text-align: left !important; font-size: 13px !important; margin: 4px 0 0 !important; }
+  /* Retos de este Pokémon. */
+  #scr-dex #dex-detail .dex-info > .panel { margin-top: 12px !important; padding: 10px 12px !important; }
+  #scr-dex #dex-detail .dq-row { font-size: 14px !important; margin: 8px 0 !important; }
+  #scr-dex #dex-detail .dq-row small { font-size: 12px; }
+  #scr-dex #dex-detail .dex-info > .panel > div:last-child { font-size: 14px !important; }
+  #scr-dex #dex-detail .dex-info > .panel .btn.small { min-height: 38px; padding: 0 12px; font-size: 14px; }
+
+  /* ------------------------------------------------------------------------------------------
+   * Mejoras: a la izquierda el Pokémon (dibujo, selector y «Mejorar todo»); a la derecha la
+   * lista de mejoras, que se desplaza.
+   * ------------------------------------------------------------------------------------------ */
+  #scr-upgrades > .box { grid-template-columns: minmax(210px, 30%) minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr); }
+  #scr-upgrades .upg-head {
+    grid-row: 2; grid-column: 1; min-height: 0; overflow-y: auto; margin: 0 !important;
+    display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+    padding: 10px 12px max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    border-right: 2px solid rgba(0, 0, 0, .35);
+  }
+  #scr-upgrades #upg-stage { width: auto; height: min(120px, calc(100dvh - 230px)); min-height: 64px; margin: 0 auto; flex: 0 0 auto; }
+  #scr-upgrades .upg-head .grow { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 0 0 auto; }
+  #scr-upgrades .upg-head .grow > .sub { order: 2; font-size: 13px; line-height: 1.35; }
+  #scr-upgrades .upg-head .grow > .row { order: 1; margin: 0 !important; display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+  #scr-upgrades .upg-head label { display: none; }
+  #scr-upgrades #upg-mon { width: 100% !important; min-width: 0 !important; height: 42px; padding: 4px 10px; }
+  #scr-upgrades #upg-all { margin: 0 !important; min-height: 42px; font-size: 15px; white-space: normal; line-height: 1.2; }
+  #scr-upgrades #upg-list {
+    grid-row: 2; grid-column: 2; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 !important;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; align-content: start;
+    padding: 10px max(12px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) 12px;
+  }
+  #scr-upgrades .upg-item { padding: 8px 10px; gap: 8px; grid-template-columns: 34px minmax(0, 1fr) auto; }
+  #scr-upgrades .upg-item b { font-size: 15px; }
+  #scr-upgrades .upg-item .ic img { width: 28px; height: 28px; }
+  #scr-upgrades .upg-item .btn.small { min-height: 40px; min-width: 72px; padding: 0 10px; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+  #scr-upgrades .pips { flex-wrap: nowrap; gap: 2px; }
+  #scr-upgrades .pips i { flex: 0 1 12px; min-width: 4px; }
+
+  /* ------------------------------------------------------------------------------------------
+   * Gacha: regiones en una barra deslizable; a la izquierda el cartel, a la derecha los botones
+   * de tirar (arriba, siempre a la vista), los tickets y las probabilidades.
+   * ------------------------------------------------------------------------------------------ */
+  #scr-gacha > .box { grid-template-columns: minmax(0, 1fr) minmax(220px, 34%); grid-template-rows: 52px auto auto auto auto minmax(0, 1fr); }
+  #scr-gacha .split, #scr-gacha .split > div:first-child { display: contents; }
+  #scr-gacha #gacha-gens {
+    grid-row: 2; grid-column: 1 / -1; margin: 0; gap: 6px; scrollbar-width: none;
+    padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+    border-bottom: 2px solid rgba(0, 0, 0, .35);
+  }
+  #scr-gacha #gacha-gens::-webkit-scrollbar { display: none; }
+  #scr-gacha #gacha-gens .gen-tab { height: 40px; padding: 0 14px; justify-content: center; }
+  #scr-gacha #gacha-gens .gen-tab b { font-size: 15px; }
+  #scr-gacha .banner {
+    grid-row: 3 / -1; grid-column: 1; min-height: 0; margin: 10px 6px max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    display: flex; flex-direction: column; padding: 10px 14px 0;
+  }
+  #scr-gacha .banner h3 { font-size: 22px; margin: 0 0 2px; }
+  #scr-gacha .banner p { font-size: 14px !important; margin: 2px 0 !important; }
+  #scr-gacha .banner .feat { flex: 1 1 auto; min-height: 60px; height: auto; margin: 4px -10px 0; align-items: flex-end; }
+  #scr-gacha .banner .feat canvas { height: 100%; max-height: 190px; width: auto; }
+  #scr-gacha .banner + .row {
+    grid-row: 3; grid-column: 2; position: static; z-index: auto; background: none; box-shadow: none;
+    flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 8px;
+    margin: 10px max(12px, env(safe-area-inset-right)) 0 6px !important; padding: 0;
+  }
+  #scr-gacha #pull-1, #scr-gacha #pull-10, #scr-gacha #pull-10b {
+    flex: 0 0 auto; min-height: 44px; padding: 4px 10px; font-size: 16px; margin: 0;
+    display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap;
+  }
+  #scr-gacha #cost-1, #scr-gacha #cost-10, #scr-gacha #cost-10b { display: inline-flex; align-items: center; gap: 4px; }
+  #scr-gacha #gacha-tickets { grid-row: 4; grid-column: 2; margin: 8px max(12px, env(safe-area-inset-right)) 0 6px; font-size: 13px; }
+  #scr-gacha #gacha-pity { grid-row: 5; grid-column: 2; margin: 4px max(12px, env(safe-area-inset-right)) 0 6px; font-size: 13px; }
+  #scr-gacha #gacha-rates {
+    grid-row: 6; grid-column: 2; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    margin: 8px max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) 6px; padding: 8px 10px; font-size: 13px;
+  }
+  #scr-gacha #gacha-rates h3 { font-size: 15px; }
+  #scr-gacha #gacha-rates .note { font-size: 12px; margin-top: 8px; }
+
+  /* Resultados de la tirada: las 10 cartas en una rejilla de 5 × 2 que cabe sin desplazar,
+     y «Continuar» abajo, a la vista. */
+  #pull-fx { gap: 8px; padding: 8px max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+  #pull-fx .pull-results { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 820px; }
+  #pull-fx .pull-results:has(> .pcard:only-child) { display: flex; justify-content: center; }
+  #pull-fx .pcard { width: auto; min-width: 0; padding: 4px 4px 6px; border-width: 2px; box-shadow: 0 0 12px var(--rc, #fff); }
+  #pull-fx .pcard:only-child { width: 180px; }
+  #pull-fx .pcard .stars { line-height: 0; }
+  #pull-fx .pcard .stars img { width: 16px; height: 16px; }
+  #pull-fx .pcard canvas { display: block; width: 100%; height: clamp(36px, calc((100dvh - 68px) / 2 - 78px), 100px); margin: 0 auto;
+    object-fit: cover; object-position: 50% 70%; }
+  #pull-fx .pcard:only-child canvas { width: 100%; height: min(130px, calc(100dvh - 200px)); object-position: 50% 80%; }
+  #pull-fx .pcard b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pull-fx .pcard .tag { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pull-fx .pcard .tag .coin { width: 13px; height: 13px; }
+  #pull-close { min-height: 44px; min-width: 180px; bottom: 0; }
+
+  /* ------------------------------------------------------------------------------------------
+   * Menú principal: compañero a la izquierda; a la derecha, debajo de la barra, las opciones en
+   * una rejilla de 3 columnas («Jugar» a todo el ancho) que cabe en 300 px de alto.
+   * ------------------------------------------------------------------------------------------ */
+  #scr-menu.scr { display: grid; grid-template-columns: minmax(210px, 33%) minmax(0, 1fr); }
+  #scr-menu .menu-left { justify-content: center; padding: 8px 6px max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); min-height: 0; }
+  #scr-menu .menu-left .logo { margin-bottom: 6px; padding: 0 28px; }
+  #scr-menu .menu-left .logo .t1 { font-size: clamp(18px, 2.7vw, 26px); white-space: nowrap; letter-spacing: 0; }
+  #scr-menu .menu-left .logo .t2 { font-size: 12px; letter-spacing: 3px; margin-top: 4px; }
+  #scr-menu .menu-left .logo::before { left: 2px; transform: scale(1.1); }
+  #scr-menu .menu-left .logo::after { right: 12px; transform: scale(1.1); }
+  #scr-menu .shrine { width: auto; }
+  #scr-menu #menu-partner { width: auto; height: min(150px, calc(100dvh - 200px)); min-height: 72px; margin: 0 auto 4px; }
+  #scr-menu .partner-card .nm { min-width: 150px; font-size: 18px; padding: 6px 18px 4px; margin-top: -8px; }
+  #scr-menu .partner-card .lv { font-size: 13px; margin-top: 2px; }
+  #scr-menu .partner-card .seg { margin-top: 4px; }
+  #scr-menu .partner-card .seg button { min-height: 34px; }
+  #scr-menu .menu-right {
+    width: auto; min-width: 0; gap: 8px; overflow-y: auto; overscroll-behavior: contain;
+    padding: 56px max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) 6px;
+    background: linear-gradient(90deg, transparent, rgba(14, 10, 20, .72) 12%);
+  }
+  #scr-menu .menu-right > :first-child { margin-top: 0; }
+  #scr-menu .menu-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px !important; }
+  #scr-menu .menu-item {
+    min-height: 44px; padding: 4px 8px; column-gap: 6px; grid-template-columns: 24px minmax(0, 1fr);
+    font-size: clamp(13px, 1.9vw, 15px); line-height: 1.15; white-space: normal;
+  }
+  #scr-menu .menu-item { align-content: center; }
+  #scr-menu .menu-item .mi-ico { grid-row: auto; }
+  #scr-menu .menu-item.play .mi-ico { grid-row: span 2; }
+  #scr-menu .menu-item .mi-ico img { width: 22px; height: 22px; }
+  #scr-menu .menu-item small { display: none; }
+  #scr-menu .menu-item.play { grid-column: 1 / -1; min-height: 48px; padding: 4px 14px; font-size: 21px; grid-template-columns: 30px minmax(0, 1fr); }
+  #scr-menu .menu-item.play small { display: block; font-size: 12px; }
+  #scr-menu .menu-item.play .mi-ico img { width: 28px; height: 28px; }
+  /* Las líneas con aviso (retos por recoger, misiones…) se ven aunque el resto de subtítulos no. */
+  #scr-menu .menu-item small.gold { display: block; grid-column: 2; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #scr-menu .menu-right > .box:last-child { font-size: 13px; }
+  #scr-menu #menu-stats { font-size: 13px !important; }
+
+  /* ------------------------------------------------------------------------------------------
+   * Inicio de sesión: logo y textos a la izquierda, formulario a la derecha (antes el logo quedaba
+   * cortado arriba y había que desplazar para llegar a «Entrar»).
+   * ------------------------------------------------------------------------------------------ */
+  #scr-login.scr { padding-top: max(6px, env(safe-area-inset-top)) !important; }
+  #scr-login > .box {
+    width: min(780px, 100%) !important; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    column-gap: 22px; align-items: start; padding: 14px 18px;
+  }
+  /* Izquierda (fila a fila): logo · lema · aviso del modo · enlaces. Derecha: pestañas y formulario,
+     o (con la nube) los dos botones de Google / invitado. Nunca se ven los dos grupos a la vez. */
+  #scr-login > .box > * { grid-column: 2; }
+  #scr-login > .box > .logo, #scr-login > .box > .login-tag, #scr-login > .box > p.note { grid-column: 1; }
+  #scr-login > .box > .logo { grid-row: 1; align-self: end; margin: 0; }
+  #scr-login > .box > .login-tag { grid-row: 2; align-self: start; margin: 6px 0 0; font-size: 14px; text-align: center; color: var(--muted); }
+  #scr-login > .box > #login-mode { grid-row: 3; align-self: start; margin: 6px 0 0; font-size: 13px; }
+  #scr-login > .box > p.note:last-child { grid-row: 4; align-self: start; margin: 4px 0 0; font-size: 13px; }
+  #scr-login > .box > p.note:empty { display: none; }
+  #scr-login > .box > #signup-closed { grid-column: 2; grid-row: 5; margin: 6px 0 0; }
+  #scr-login > .box > .tabs { grid-row: 1; align-self: end; }
+  #scr-login > .box > #login-form { grid-row: 2 / span 3; align-self: start; }
+  #scr-login > .box > .row:has(#btn-google) { grid-row: 2; }
+  #scr-login > .box > #guest-row { grid-row: 3; }
+  #scr-login > .box > .row:has(#btn-google.hidden) { display: none; }
+  /* Nombre y contraseña: la etiqueta a la izquierda del campo (ahorra dos líneas). */
+  #scr-login #login-form { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 8px; align-items: center; }
+  #scr-login #login-form > .err, #scr-login #login-form > .row { grid-column: 1 / -1; }
+  #scr-login .logo .t1 { font-size: clamp(24px, 3.6vw, 34px); }
+  #scr-login .logo .t2 { font-size: 13px; }
+  #scr-login .tabs { margin-bottom: 4px; }
+  #scr-login .tab { min-height: 40px; display: flex; align-items: center; justify-content: center; }
+  #scr-login label { margin: 0; font-size: 14px; }
+  #scr-login .field { height: 42px; padding: 6px 12px; }
+  #scr-login .err { min-height: 0; margin: 4px 0 0; }
+  #scr-login .err:empty { display: none; }
+  #scr-login form .row { margin-top: 2px; }
+  #scr-login > .box > .row { margin-top: 8px !important; }
+  #scr-login .btn { min-height: 44px; padding: 6px 16px; }
+
+  /* ------------------------------------------------------------------------------------------
+   * Test de personalidad: respuestas en dos columnas (cabían 3 de 4 y había que desplazar).
+   * ------------------------------------------------------------------------------------------ */
+  #scr-test > .test-box { width: min(820px, 100%); padding: 12px 16px; }
+  #scr-test .progress { margin-bottom: 8px; }
+  #scr-test .sub { margin: 0 0 4px; font-size: 13px; }
+  #scr-test .q { font-size: 19px; margin: 0 0 10px; min-height: 0; }
+  #scr-test .answers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  #scr-test .answer { min-height: 52px; padding: 8px 12px 8px 30px; font-size: 16px; display: flex; align-items: center; }
+
+  /* Resultado del test: el dibujo a la izquierda, el texto y los botones a la derecha. */
+  #scr-result > .result {
+    width: min(760px, 100%); display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 18px;
+    align-items: center; text-align: left; padding: 12px 16px;
+  }
+  #scr-result > .result > * { grid-column: 2; }
+  #scr-result > .result > #res-stage { grid-column: 1; grid-row: 1 / span 5; margin: 0; width: auto; height: min(190px, calc(100dvh - 60px)); }
+  #scr-result .trait { font-size: 24px; margin: 0; }
+  #scr-result #res-text { margin: 4px 0; font-size: 14px; }
+  #scr-result h3 { margin: 4px 0; }
+  #scr-result .row { justify-content: flex-start !important; margin-top: 8px !important; }
+  #scr-result .btn { min-height: 44px; }
+
+  /* Elegir compañero: a pantalla completa, rejilla que se desplaza y la barra de abajo siempre a la vista. */
+  #scr-starters > .box { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 8px 12px 8px; }
+  #scr-starters h2 { font-size: 20px; margin: 0; }
+  #scr-starters h2 + .sub { margin: 0 0 6px; font-size: 13px; }
+  #scr-starters .grid { flex: 1 1 auto; min-height: 0; max-height: none; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; align-content: start; }
+  #scr-starters .cell b { font-size: 14px; }
+  #scr-starters .box > .row { margin-top: 6px !important; flex-wrap: nowrap; flex: 0 0 auto; }
+  #scr-starters #starter-info { min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #scr-starters .btn { min-height: 44px; flex: 0 0 auto; }
+}
+
+/* Muy bajito (iPhone en horizontal con la barra de Safari, ~300–340 px): algo más compacto. */
+@media (max-height: 340px) {
+  #scr-menu .menu-item { min-height: 40px; }
+  #scr-menu .menu-item.play { min-height: 44px; font-size: 19px; }
+  #scr-menu .menu-item.play small { display: none; }
+  #scr-menu .menu-list { gap: 5px !important; }
+  #scr-dex > .box { grid-template-rows: 52px auto minmax(0, 1fr); }
+  .dex-bar { padding-top: 6px; padding-bottom: 6px; }
+  #scr-test .q { font-size: 17px; margin-bottom: 6px; }
+  #scr-test .answer { min-height: 46px; font-size: 15px; }
+  /* Elegir compañero: sin el subtítulo, para que se vean dos filas enteras. */
+  #scr-starters h2 + .sub { display: none; }
+  #scr-starters h2 { margin-bottom: 6px; }
+  #scr-starters .grid { gap: 6px; }
+  #scr-starters .cell { padding: 0 2px 4px; }
+}

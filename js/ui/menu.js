@@ -12,7 +12,7 @@ G.MenuUI = (() => {
       b.onclick = () => {
         const go = b.dataset.go;
         if (go === 'play') { if (G.Social.room) G.LobbyUI.open(); else G.Flow.play(); }
-        else if (go === 'dex') openDex();
+        else if (go === 'dex') openDex(true);
         else if (go === 'upgrades') openUpgrades();
         else if (go === 'gacha') G.GachaUI.open();
         else if (go === 'goals') G.GoalsUI.open();
@@ -125,8 +125,37 @@ G.MenuUI = (() => {
 
   // ---------------- colección ----------------
 
-  function openDex() {
+  /*
+   * Móvil en horizontal (2026-10-17, rwd-menus.css): las regiones y los filtros van en una sola
+   * barra que se desliza a los lados, y la ficha se abre a pantalla completa al tocar un Pokémon
+   * (clase «sheet» en #scr-dex). En el PC no cambia nada: la barra no existe y la ficha va al lado.
+   */
+  const PHONE = window.matchMedia ? matchMedia('(max-height: 520px)') : { matches: false };
+  function placeDexBar() {
+    const tabs = $('dex-gens'), fb = $('dex-filters');
+    let bar = $('dex-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'dex-bar'; bar.className = 'dex-bar';
+      tabs.before(bar);
+      if (PHONE.addEventListener) PHONE.addEventListener('change', placeDexBar);
+    }
+    if (PHONE.matches) { if (tabs.parentNode !== bar) bar.append(tabs, fb); }
+    else if (tabs.parentNode === bar) { bar.after(tabs); $('dex-grid').before(fb); }
+  }
+  const sheet = on => $('scr-dex').classList.toggle('sheet', on);
+  /** Cabecera de la ficha a pantalla completa (sólo se ve en el móvil). */
+  const sheetHead = (title, sub) => `<div class="dex-sheet-head"><button class="btn small ghost dex-sheet-back" data-sfx="back">Volver</button>
+      <div class="ttl"><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</div></div>`;
+  function wireSheet(box) {
+    const b = box.querySelector('.dex-sheet-back');
+    if (b) b.onclick = () => sheet(false);
+  }
+
+  function openDex(fresh) {
     G.UI.show('scr-dex', true);
+    if (fresh) sheet(false);
+    placeDexBar();
     const s = G.DB.save;
     // (2026-10-16: con un personaje original de compañero, se abría en Kanto mostrándolo como Pokémon: «undefined»)
     if (dexSel == null) { dexSel = s.partner; dexGen = G.CUSTOM_BY[s.partner] ? OTHER : G.DEX_BY[s.partner].gen; }
@@ -186,6 +215,15 @@ G.MenuUI = (() => {
     search.value = dexQuery;
     search.oninput = () => { dexQuery = search.value; tabs.classList.toggle('dim', !!dexQuery.trim()); renderGrid(); };
     tabs.classList.toggle('dim', !!dexQuery.trim() || !!dexType || dexFilter === 'team');
+    // Móvil: que se vea en la barra lo que está elegido (el tipo, el filtro o la región).
+    const bar = $('dex-bar');
+    if (PHONE.matches && bar) {
+      const on = tb.querySelector('.on') || (dexFilter !== 'all' && fb.querySelector('.chip.on')) || tabs.querySelector('.on');
+      if (on) {
+        const br = bar.getBoundingClientRect(), r = on.getBoundingClientRect();
+        if (r.left < br.left || r.right > br.right - 28) on.scrollIntoView({ inline: 'center', block: 'nearest' });
+      }
+    }
     renderGrid();
     if (dexGen === OTHER && !dexQuery.trim() && !dexType && dexFilter !== 'team') {
       const list = G.CUSTOM || [];
@@ -220,7 +258,7 @@ G.MenuUI = (() => {
       cell.className = 'cell custom';
       cell.innerHTML = `<span class="no">${G.T('Original')}</span><b>${G.T(c.name)}</b>` + (G.DB.save.petPick === c.dex ? PET_TAG() : '');
       cell.insertBefore(G.UI.spriteCanvas(c.dex, 92, 80, { scale: 2, shadow: true }), cell.querySelector('b'));
-      cell.onclick = () => { dexSel = c.dex; showCustom(c); };
+      cell.onclick = () => { dexSel = c.dex; showCustom(c); sheet(true); };
       grid.appendChild(cell);
     }
   }
@@ -252,22 +290,23 @@ G.MenuUI = (() => {
     const max = { hp: 183, atk: 1.55, spd: 137 };
     const bar = (label, v, m, txt) =>
       `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${Math.min(100, v / m * 100)}%"></i></div><span>${txt}</span></div>`;
-    box.innerHTML = `
+    box.innerHTML = sheetHead(G.T(c.name), G.T('Original')) + `<div class="dex-hero">
       <canvas id="dex-big" class="stage" width="220" height="190"></canvas>
       <div class="center">
         <div style="color:var(--muted);font-size:13px">${G.T('Personaje original · no cuenta para el Pokédex')}</div>
         <h3>${G.T(c.name)}</h3>
         <div style="margin:6px 0">${G.UI.typeChips(c.types || [])}</div>
         ${c.desc ? `<p>${G.T(c.desc)}</p>` : ''}
-      </div>
+      </div></div><div class="dex-info">
       ${bar('Vida', c.hp, max.hp, c.hp)}
       ${bar('Ataque', c.atk, max.atk, '×' + c.atk.toFixed(2))}
       ${bar('Velocidad', c.spd, max.spd, c.spd)}
       <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
-      ${usingThis
+      <div class="dex-acts">${usingThis
         ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
-        : '<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero</button>'}
-      ${petBtn(dex)}`;
+        : '<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero</button>'}</div>
+      ${petBtn(dex)}</div>`;
+    wireSheet(box);
     wirePet(dex, G.T(c.name), () => showCustom(c));
     $('dex-big').style.setProperty('--stage-c', G.U.TYPE_COLOR[(c.types || ['normal'])[0]]);
     G.UI.sprite($('dex-big'), dex, { lively: true, spin: true, scale: 3, hero: true });
@@ -313,6 +352,7 @@ G.MenuUI = (() => {
         grid.querySelectorAll('.cell').forEach(c => c.classList.remove('on'));
         cell.classList.add('on');
         showDetail(p.dex);
+        sheet(true);
       };
       grid.appendChild(cell);
     }
@@ -340,7 +380,7 @@ G.MenuUI = (() => {
     const usingThis = isPartner && (!hasSh || !!s.partnerShiny === viewShiny);
 
     const box = $('dex-detail');
-    box.innerHTML = `
+    box.innerHTML = sheetHead(own ? p.name : '???', `Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}`) + `<div class="dex-hero">
       <canvas id="dex-big" class="stage" width="220" height="190"></canvas>
       ${hasSh ? `<div class="seg">
           <button class="${viewShiny ? '' : 'on'}" data-v="0">Normal</button>
@@ -350,7 +390,7 @@ G.MenuUI = (() => {
         <h3>${own ? p.name : '???'}</h3>
         <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
-      </div>
+      </div></div><div class="dex-info">
       ${own ? `
         ${bar('Vida', p.hp, max.hp, p.hp)}
         ${bar('Ataque', p.atk, max.atk, '×' + p.atk.toFixed(2))}
@@ -358,15 +398,16 @@ G.MenuUI = (() => {
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
         <p class="move-icons" title="Movimientos que puede aprender">
           ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
-        ${usingThis
+        <div class="dex-acts">${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
-        <button id="dex-team" class="btn ghost" style="width:100%;margin-top:6px">${s.team && s.team[dex] ? '★ Quitar de Mi equipo' : '☆ Añadir a Mi equipo'}</button>
+        <button id="dex-team" class="btn ghost" style="width:100%;margin-top:6px">${s.team && s.team[dex] ? '★ Quitar de Mi equipo' : '☆ Añadir a Mi equipo'}</button></div>
         ${petBtn(dex)}
         ${G.DexQuests.html(dex)}
       ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
-    `;
+    </div>`;
+    wireSheet(box);
     $('dex-big').style.setProperty('--stage-c', !own ? '#5b83d6' : viewShiny ? '#9ae6ff' : G.U.TYPE_COLOR[p.types[0]]);
     $('dex-big').classList.toggle('shiny', own && viewShiny);
     G.UI.sprite($('dex-big'), dex, { lively: own, spin: own, silhouette: !own, scale: 3, hero: true, shiny: own && viewShiny });
