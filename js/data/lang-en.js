@@ -1252,6 +1252,9 @@ G.I18n.add({
   'Bonus de experiencia': 'XP bonus',
   'Bonus de monedas': 'Coin bonus',
   'Mi equipo': 'My team',
+  '¡Arceus llama a sus guardianes!': 'Arceus calls its guardians!',
+  '¡Arceus se enfurece! Llegan dos jefes más': 'Arceus is enraged! Two more bosses arrive',
+  '¡Sus guardianes huyen con él!': 'Its guardians fall with it!',
   'Gira la pantalla': 'Turn your screen sideways',
   // Revisión móvil (2026-10-16): aviso del objeto pendiente sin «pulsa I»
   '{x}: toca el icono que brilla para cambiarlo': '{x}: tap the glowing icon to swap it',

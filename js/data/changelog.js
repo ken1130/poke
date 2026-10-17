@@ -6,7 +6,12 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-17', title: ['Pantalla del iPhone sin aplastar', 'iPhone screen no longer squashed'], chg: [
+  { d: '2026-10-17', title: ['Arceus y el móvil rediseñado', 'Arceus and a redesigned mobile'], new: [
+    ['El jefe final de la mazmorra es siempre Arceus (y ya no sale en ningún otro sitio): al 66 % llama a guardianes élite (3, +2 por cada jugador más) y al 33 % a dos jefes menores y se enfurece; al caer él, caen todos.',
+     'The final dungeon boss is always Arceus (and no longer appears anywhere else): at 66% it calls elite guardians (3, +2 per extra player) and at 33% two lesser bosses and becomes enraged; when it falls, they all fall.'],
+    ['Rediseño completo para el móvil en horizontal: Pokédex con cuadrícula a todo el ancho y ficha a pantalla completa; menús, ajustes, sala, retos y entrenamiento con cabecera fija y dos columnas; cartas en fila dentro de la partida y la tienda como panel inferior con los 5 artículos a la vista.',
+     'Full landscape phone redesign: a full-width Pokédex grid with a full-screen detail sheet; menus, settings, lobby, challenges and training with sticky headers and two columns; in-run cards in a row and the shop as a bottom panel showing all 5 wares.']
+  ], chg: [
     ['Escudo de Llamas y Flecha Psíquica con efectos de píxeles: un aro de llamas que gira a tu alrededor y una flecha rosa con estela de cuadraditos.',
      'Fire Shield and Psy Arrow get pixel-art effects: a ring of flames orbiting you and a pink arrow with a blocky trail.']
   ], fix: [

@@ -50,7 +50,10 @@ G.Floors = (() => {
   const REMIND = 60;                                     // recordatorio de las escaleras
   const FARM_A = 180, FARM_B = 300;                      // quedarse: ×0,5 y ×0,25 de experiencia y monedas
   // Señor del Laberinto: legendarios grandes (el primero con sprite).
-  const LORDS = [150, 384, 487, 483, 484, 249, 250, 382, 383, 644, 643, 716, 717, 800, 890];
+  // Señor del Laberinto (2026-10-17, pedido del dueño): siempre Arceus, y Arceus no sale en ningún
+  // otro sitio de la run (rift.js lo quita de los legendarios). Antes, uno al azar de esta lista.
+  const LORD_DEX = 493;
+  const LORDS = [150, 384, 487, 483, 484, 249, 250, 382, 383, 644, 643, 716, 717, 800, 890];   // (por si faltara su sprite)
 
   /*
    * Temas de piso. safe: ruta segura. Multiplicadores (1 si no está):
@@ -88,7 +91,7 @@ G.Floors = (() => {
 
   function reset() {
     floor = 0; stairs = []; standT = [0, 0]; fadeT = 0; graceT = 0; combo = 0; comboFlash = 0;
-    theme = 'std'; route = null; arriveT = 0; bossAt = FIRST_BOSS; bossState = 'wait'; bossId = 0; bossDex = 0; warned = false; bossLord = false;
+    theme = 'std'; route = null; arriveT = 0; bossAt = FIRST_BOSS; bossState = 'wait'; bossId = 0; bossDex = 0; warned = false; bossLord = false; lordPh = 0;
     stairsAt = null; remindT = 0; farmTold = 0; promptT = 0; bossBanner = null; clearBanner = 0;
     cleared = false; endless = false; clearPending = false; clearT = 0; dangerRuns = 0; fireDefs = null;
     treasure = null; treasureT = 0; treasureUsed = false; treasureBanner = 0; treasureWarn = false; restPending = false;
@@ -113,6 +116,7 @@ G.Floors = (() => {
   function pickBossDex() {
     const lord = floor === LAST && !cleared;
     if (lord) {
+      if (G.SPRITE_META[LORD_DEX] && G.DEX_BY[LORD_DEX]) return LORD_DEX;
       const ok = LORDS.filter(d => G.SPRITE_META[d] && G.DEX_BY[d]);
       return ok.length ? G.U.pick(ok) : 150;
     }
@@ -139,9 +143,59 @@ G.Floors = (() => {
       e.floorBoss = floor + 1; e.lord = lord;
     });
     if (!e) return;
-    bossId = e.id; bossState = 'alive';
+    bossId = e.id; bossState = 'alive'; lordPh = 0;
     if (G.Coop.active) G.Coop.broadcast(['fbs', e.id, floor, lord ? 1 : 0]);
     announceBoss(e.id, lord);
+  }
+  /*
+   * Combate final por fases (2026-10-17): Arceus empieza solo; al 66 % de vida llama a unos élite
+   * (3 y +2 por cada jugador más); al 33 % a dos jefes menores (la mitad de vida que un jefe de
+   * piso) y se enfurece (más rápido y más fuerte). Al caer él, caen todos sus refuerzos.
+   */
+  let lordPh = 0;
+  function lordPhases(e, live) {
+    const f = e.hp / e.maxHp, t = T(), n = G.Game.everyone().length;
+    const ring = (k, i, r) => { const a = i / k * 6.2832 + Math.random() * 0.4; return [e.x + Math.cos(a) * r, e.y + Math.sin(a) * r * 0.7]; };
+    if (lordPh < 1 && f <= 0.66) {
+      lordPh = 1;
+      const k = 3 + 2 * Math.max(0, n - 1);
+      for (let i = 0; i < k; i++) {
+        const [x, y] = ring(k, i, 170);
+        const m = G.Spawner.spawnAt(x, y, t);
+        if (!m) continue;
+        m.lordMinion = true;
+        if (!m.elite) m.makeElite(G.Enemy.rollAffixes(t));
+      }
+      G.Spawner.say(G.T('¡Arceus llama a sus guardianes!'), 3.2);
+      G.Audio.sfx('boss'); G.Camera.kick(0.9);
+      G.FX.ring(e.x, e.y, 20, 260, '#f2e6b0', 0.7, 6);
+    }
+    if (lordPh < 2 && f <= 0.33) {
+      lordPh = 2;
+      const slots = G.Enemies.BOSS_SLOTS, slot = slots[Math.max(0, Math.min(slots.length - 1, floor - 1))];
+      const cand = (lo, hi) => G.DEX.filter(p => !p.leg && p.rarity < 5 && G.SPRITE_META[p.dex] && p.bst >= lo && p.bst <= hi);
+      let pool = cand(slot.bst[0], slot.bst[1]);
+      if (!pool.length) pool = cand(540, 600);           // (los de 580+ son casi todos ★5: no quedaba ninguno)
+      if (!pool.length) pool = cand(450, 700);
+      const near = live[0];
+      for (let i = 0; i < 2 && pool.length; i++) {
+        const def = G.Enemies.bossFor(G.U.pick(pool).dex, slot, 0.65);
+        const [x, y] = ring(2, i, 200);
+        G.Spawner.spawnBossNow(near, t, def, b => { b.lordMinion = true; b.x = x; b.y = y; b.maxHp = b.hp = Math.round(b.maxHp * 0.5); });
+      }
+      // Furia: más rápido y más fuerte.
+      e.spd *= 1.2; e.dmg *= 1.15;
+      G.Spawner.say(G.T('¡Arceus se enfurece! Llegan dos jefes más'), 3.4);
+      G.Audio.sfx('legend'); G.Camera.kick(1.4);
+      G.FX.ring(e.x, e.y, 20, 320, '#ffd23f', 0.8, 8);
+    }
+  }
+  /** Arceus ha caído: sus refuerzos también. */
+  function lordMinionsDown() {
+    let k = 0;
+    // (sin escudo y de un golpe: un élite con burbuja se quedaba vivo)
+    for (const m of G.EnemyMgr.all()) if (m.lordMinion && !m.dead) { m.shield = 0; m.shieldT = 0; m.hurt(m.maxHp * 10 + m.hp, '#ffffff'); k++; }
+    if (k) G.Spawner.say(G.T('¡Sus guardianes huyen con él!'), 2.6);
   }
   const cx = l => l.reduce((s, p) => s + p.x, 0) / l.length;
   const cy = l => l.reduce((s, p) => s + p.y, 0) / l.length;
@@ -286,7 +340,8 @@ G.Floors = (() => {
       if (T() >= bossAt && graceT <= 0) spawnFloorBoss(live);
     } else if (bossState === 'alive') {
       const e = G.EnemyMgr.get(bossId);
-      if (!e || e.dead) bossDown(live);
+      if (!e || e.dead) { if (bossLord) lordMinionsDown(); bossDown(live); }
+      else if (bossLord) lordPhases(e, live);
     }
     if (!stairs.length) return;
     // A más de 100 m de todos (te has ido lejos): se vuelven a poner cerca (2026-10-16:

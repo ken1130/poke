@@ -40,7 +40,7 @@
 
 <canvas id="game"></canvas>
 <!-- En móvil se juega en horizontal -->
-<div id="rotate" class="hidden"><div class="box center"><div id="rotate-ico"></div><h2>Gira el móvil</h2><p class="sub">Pokémon Dungeon Survivors se juega en horizontal.</p></div></div>
+<div id="rotate" class="hidden"><div class="box center"><div id="rotate-ico"></div><h2>Gira la pantalla</h2><p class="sub">Pokémon Dungeon Survivors se juega en horizontal.</p></div></div>
 
 <!-- ====== Inicio: login / registro / invitado ====== -->
 <section id="scr-login" class="scr hidden">
@@ -589,7 +589,7 @@
     <p id="shop-sub" class="sub"></p>
     <div id="shop-tabs" class="shop-tabs"></div>
     <div id="shop-list" class="shop-list"></div>
-    <div class="row" style="justify-content:center;margin-top:10px"><button id="shop-roul" class="btn gold">Ruleta de Kecleon</button></div>
+    <div class="row" style="justify-content:center;margin-top:10px"><button id="shop-roul" class="btn gold">Ruleta de Kecleon</button><button id="shop-min" class="btn small ghost" type="button" title="Recoger o desplegar la tienda" aria-label="Recoger o desplegar la tienda">▾</button></div>
     <p class="note">Estás dentro de la tienda: aquí no hay enemigos. Sales por la puerta del sur (o con «Salir de la tienda»). Lo que no gastes se suma a tus Pokémonedas al acabar.</p>
   </div>
 </section>
@@ -612,13 +612,18 @@
 
 <section id="scr-pause" class="scr dim hidden">
   <div class="box center" style="width:min(460px,100%)">
+    <div class="pause-l">
     <h2>Pausa</h2>
     <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>5</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
     <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo</p>
     <p id="pause-coop" class="note hidden">Partida en grupo: la partida está en pausa para todos hasta que continúes.</p>
+    </div>
+    <!-- (rwd-run.css: en el móvil, .pause-l y .pause-r son dos columnas; en el PC no cambian nada) -->
+    <div class="pause-r">
     <div id="pause-sound" class="sound-inline"></div>
     <h3 class="pause-stats-title">Tus estadísticas</h3>
     <div id="pause-stats" class="pause-stats"></div>
+    </div>
     <div class="row" style="justify-content:center">
       <button id="btn-resume" class="btn gold">Continuar</button>
       <button id="btn-pause-settings" class="btn">Ajustes</button>
@@ -638,6 +643,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=1cbe63fe2f"></script>
+<script defer src="js/app.min.js?v=83bc2ba554"></script>
 </body>
 </html>

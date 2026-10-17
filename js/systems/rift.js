@@ -112,7 +112,8 @@ G.Rift = (() => {
       return;
     }
     forceType = forceType || nextType; nextType = null;
-    let pool = G.DEX.filter(p => p.leg && G.SPRITE_META[p.dex]);
+    // (Arceus no: es el Señor del Laberinto y sólo sale al final, floors.js LORD_DEX.)
+    let pool = G.DEX.filter(p => p.leg && p.dex !== 493 && G.SPRITE_META[p.dex]);
     if (forceType && pool.some(p => p.types.includes(forceType))) pool = pool.filter(p => p.types.includes(forceType));
     // Los legendarios que aún no has vencido salen 4 veces más (menos repetidos).
     const beaten = (G.DB.save && G.DB.save.legends) || {};

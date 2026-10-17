@@ -4,6 +4,10 @@
  */
 G.MODNEWS = [
   { d: '2026-10-17', title: { zh: '修正 iPhone 畫面被壓扁、搖桿對不準；手機圖鑑版面', en: 'Fixed squashed iPhone screen and misaligned joystick; phone Pokédex layout' },
+    new: [
+      { zh: '迷宮最終頭目固定是阿爾宙斯（其他地方都不會再出現阿爾宙斯）：血量剩 66% 時召喚精英守護者（單人 3 隻、每多 1 人 +2 隻），剩 33% 時再召喚兩隻小頭目並暴怒加速；打倒阿爾宙斯後援軍全部一起倒下', en: 'The final dungeon boss is now always Arceus (it no longer appears anywhere else): at 66% HP it summons elite guardians (3 solo, +2 per extra player), at 33% two lesser bosses and it becomes enraged; when Arceus falls, all its reinforcements fall too' },
+      { zh: '手機橫向全面重新設計（RWD）：圖鑑改成全寬格子＋點擊開全螢幕介紹頁；扭蛋、強化、主選單、登入、任務、成就、設定、消息、排行、好友、組隊大廳、自訂規則、挑戰、冒險、練功房都改成手機版面（固定標題列、左右兩欄、可滑動的分頁）；遊戲中的選卡、換道具、光碟、暫停、結算改成橫排卡片，商店改成底部面板一次看到 5 樣商品；通知移到上方不再擋按鈕', en: 'Full landscape phone redesign (RWD): the Pokédex is a full-width grid with a full-screen detail sheet; gacha, upgrades, main menu, login, missions, achievements, settings, news, ranking, friends, lobby, custom rules, challenges, adventure and the training room get phone layouts (sticky headers, two panes, swipeable tabs); in-run cards, item swap, discs, pause and summary use horizontal cards, and the shop is a bottom panel showing all 5 wares; toasts moved to the top so they no longer cover buttons' }
+    ],
     chg: [
       { zh: '火焰盾、念力追噬箭的特效改成像素風：火焰盾是一圈繞著你轉、會跳動的像素小火焰；念力追噬箭是粉紅像素箭加一格一格的殘影', en: 'Fire Shield and Psy Arrow now have pixel-art effects: a ring of flickering pixel flames orbiting you, and a pink pixel arrow with a blocky trail' }
     ],

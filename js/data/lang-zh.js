@@ -2252,6 +2252,9 @@ G.I18n.add({
   'Bonus de experiencia': '經驗加成',
   'Bonus de monedas': '金幣加成',
   'Mi equipo': '我的戰隊',
+  '¡Arceus llama a sus guardianes!': '阿爾宙斯召喚了守護者！',
+  '¡Arceus se enfurece! Llegan dos jefes más': '阿爾宙斯暴怒了！又來了兩隻頭目',
+  '¡Sus guardianes huyen con él!': '守護者也跟著倒下了！',
   'Gira la pantalla': '請將螢幕轉為橫向',
   // Revisión móvil (2026-10-16): aviso del objeto pendiente sin «pulsa I»
   '{x}: toca el icono que brilla para cambiarlo': '{x}：點一下發光的圖示來更換',
