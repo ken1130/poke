@@ -14,7 +14,7 @@
  *     (eliges el tipo; el siguiente roba 4 y pierde el turno).
  *
  * Reglas:
- *   - 7 cartas a cada uno (2-4 jugadores). Se da la vuelta a la primera del mazo:
+ *   - 7 cartas por jugador (2-4 jugadores). Se da la vuelta a la primera del mazo:
  *     Poder de Mewtwo -> vuelve al mazo y se saca otra; Ditto -> el primero elige el tipo;
  *     Somnífero / Doble golpe / Ida y vuelta se aplican al primer jugador (ver newRound).
  *   - En tu turno echas una carta del tipo actual, o con el mismo número/símbolo, o un
@@ -22,8 +22,11 @@
  *   - No se acumulan los +2/+4 (reglas oficiales): quien los recibe roba y pierde el turno.
  *   - El Poder de Mewtwo se puede echar siempre (sin la regla del "desafío").
  *   - "¡Última carta!": al quedarte con 1 carta tienes que avisar (también antes, en tu turno
- *     con 2 cartas). Si no avisas y alguien pulsa "¡Te pillé!", o el siguiente hace su jugada
- *     sin que hayas avisado, robas 2.
+ *     con 2 cartas). En cuanto te quedas con 1 sin avisar (st.vuln), cualquier otro puede pulsar
+ *     "¡Te pillé!" hasta que el siguiente juegue o robe; vale lo primero que llegue al anfitrión
+ *     (avisar o pillar). Si te pillan, o el siguiente hace su jugada sin que hayas avisado,
+ *     robas 2. Cada aviso deja st.lastCall = { seat, seq } (la voz suena una vez en cada pantalla).
+ *     Las CPU avisan/pillan con retraso desde el registro (party.js, react).
  *   - Gana la ronda quien se queda sin cartas. Puntos para el ganador = las cartas de los
  *     demás (número = su valor, efecto = 20, comodín = 50). Se suman ronda tras ronda.
  *
@@ -100,7 +103,7 @@
     if (opts.first != null) { deck.splice(deck.indexOf(opts.first), 1); }
     const hands = Array.from({ length: n }, () => deck.splice(deck.length - 7, 7));
     const st = { n, hands, deck, discard: [], color: -1, dir: 1, turn: 0, phase: 'play', drawn: -1,
-                 called: Array(n).fill(false), vuln: -1, vulnSeq: 0, over: false, winner: -1, moves: 0, tseq: 0, ev: [], start: 0 };
+                 called: Array(n).fill(false), vuln: -1, vulnSeq: 0, lastCall: null, callSeq: 0, over: false, winner: -1, moves: 0, tseq: 0, ev: [], start: 0 };
     Object.defineProperty(st, 'rng', { value: rng, enumerable: false, writable: true });
     const start = opts.start != null ? opts.start : Math.floor(rng() * n);
     st.start = start;
@@ -179,6 +182,7 @@
       if (st.called[seat]) return { ok: false, err: 'Ya has avisado de tu última carta.' };
       st.called[seat] = true;
       if (st.vuln === seat) st.vuln = -1;
+      st.lastCall = { seat, seq: (st.callSeq = (st.callSeq || 0) + 1) };
       st.ev = [{ k: 'call', seat }];
       st.moves++;
       return { ok: true };
@@ -198,7 +202,7 @@
     if (t === 'color') {
       if (st.phase !== 'pick') return { ok: false, err: 'Ahora no hay que elegir tipo.' };
       const c = a.color | 0;
-      if (!(c >= 0 && c < 4) || a.color !== c) return { ok: false, err: 'Elige uno de los cuatro tipos.' };
+      if (!(c >= 0 && c < 4) || a.color !== c) return { ok: false, err: 'Elige un tipo de los cuatro.' };
       st.ev = [];
       penalize(st, -1);
       st.color = c; st.phase = 'play';
@@ -239,7 +243,7 @@
     let color = cd.c;
     if (cd.v >= WILD) {
       color = a.color;
-      if (!(Number.isInteger(color) && color >= 0 && color < 4)) return { ok: false, err: 'Elige uno de los cuatro tipos.' };
+      if (!(Number.isInteger(color) && color >= 0 && color < 4)) return { ok: false, err: 'Elige un tipo de los cuatro.' };
     }
     st.ev = [];
     penalize(st, -1);
@@ -249,7 +253,7 @@
     st.phase = 'play'; st.drawn = -1;
     st.moves++;
     st.ev.push({ k: 'play', seat, card: id, color });
-    if (a.call && hand.length === 1) st.called[seat] = true;
+    if (a.call && hand.length === 1 && !st.called[seat]) { st.called[seat] = true; st.lastCall = { seat, seq: (st.callSeq = (st.callSeq || 0) + 1) }; }
     if (hand.length !== 1) st.called[seat] = false;
     if (hand.length === 1 && !st.called[seat]) { st.vuln = seat; st.vulnSeq++; }
     // Efectos

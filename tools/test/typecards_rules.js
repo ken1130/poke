@@ -31,7 +31,7 @@ ok(T.points(id(FIRE, 7)) === 7 && T.points(id(WATER, T.SKIP)) === 20 && T.points
 // --- reparto ---
 {
   const st = T.newRound(4, rngOf(7));
-  ok(st.hands.every(h => h.length === 7), '7 cartas a cada uno');
+  ok(st.hands.every(h => h.length === 7), '7 cartas por jugador');
   const all = [...st.hands.flat(), ...st.deck, ...st.discard];
   ok(all.length === 108 && new Set(all).size === 108, 'todas las cartas una vez');
   ok(T.CARDS[st.discard[0]].v !== T.WILD4, 'la primera no es +4');
@@ -164,6 +164,32 @@ ok(T.playable(id(GRASS, 5), W(), GRASS) && !T.playable(id(WATER, 5), W(), GRASS)
   ok(T.act(s4, 2, { type: 'catch' }).ok && s4.hands[0].length === 3 && s4.turn === 1, 'pillado fuera de turno: roba 2, el turno sigue igual');
   ok(s4.ev.some(e => e.k === 'pen' && e.by === 2), 'consta quién pilló');
   ok(!T.act(s4, 2, { type: 'catch' }).ok, 'no se pilla dos veces');
+  // Carrera: quien pulsa primero. Aviso antes que «¡Te pillé!» -> a salvo; al revés -> roba 2 y ya no puede avisar.
+  const r1 = table([[id(FIRE, 1), id(FIRE, 2)], [id(FIRE, 3), id(FIRE, 4), id(FIRE, 5)]], id(FIRE, 8), FIRE);
+  T.act(r1, 0, { type: 'play', card: id(FIRE, 1) });
+  ok(T.act(r1, 0, { type: 'call' }).ok && !T.act(r1, 1, { type: 'catch' }).ok && r1.hands[0].length === 1, 'carrera: avisa primero');
+  ok(r1.lastCall && r1.lastCall.seat === 0 && r1.lastCall.seq === 1, 'aviso con número (para la voz)');
+  const r2 = table([[id(FIRE, 1), id(FIRE, 2)], [id(FIRE, 3), id(FIRE, 4), id(FIRE, 5)]], id(FIRE, 8), FIRE);
+  T.act(r2, 0, { type: 'play', card: id(FIRE, 1) });
+  ok(T.act(r2, 1, { type: 'catch' }).ok && !T.act(r2, 0, { type: 'call' }).ok && r2.hands[0].length === 3, 'carrera: pillado primero');
+  // Se puede pillar fuera de turno aunque aún no le haya tocado a nadie (en cuanto se queda con 1).
+  const r3 = table([[id(FIRE, 1), id(FIRE, 2)], [id(FIRE, 3), id(FIRE, 4)], [id(WATER, 3), id(WATER, 4)]], id(FIRE, 8), FIRE);
+  T.act(r3, 0, { type: 'play', card: id(FIRE, 1) });
+  ok(T.act(r3, 2, { type: 'catch' }).ok, 'pilla quien no tiene el turno');
+  // La ventana se cierra cuando el siguiente juega o roba: ya no se puede pillar (y se castiga solo).
+  const r4 = table([[id(FIRE, 1), id(FIRE, 2)], [id(FIRE, 3), id(FIRE, 4)], [id(WATER, 3), id(WATER, 4)]], id(FIRE, 8), FIRE);
+  T.act(r4, 0, { type: 'play', card: id(FIRE, 1) });
+  r4.deck.push(id(GRASS, 6));
+  T.act(r4, 1, { type: 'draw' });
+  ok(r4.vuln === -1 && r4.hands[0].length === 3, 'el siguiente roba: castigo automático');
+  ok(!T.act(r4, 2, { type: 'catch' }).ok, 'ventana cerrada: no se pilla otra vez');
+  // Tras robar el castigo no se puede avisar con 3 cartas.
+  ok(!T.act(r4, 0, { type: 'call' }).ok, 'con 3 cartas no se avisa');
+  // Aviso anticipado: también cuenta para la voz (una vez).
+  const r5 = table([[id(FIRE, 1), id(FIRE, 2)], [id(FIRE, 3), id(FIRE, 4)]], id(FIRE, 8), FIRE);
+  T.act(r5, 0, { type: 'call' });
+  T.act(r5, 0, { type: 'play', card: id(FIRE, 1), call: true });
+  ok(r5.callSeq === 1, 'aviso anticipado: una sola voz');
   // La CPU siempre avisa.
   const m = T.cpuMove([id(FIRE, 1), id(WATER, 9)], { top: id(FIRE, 8), color: FIRE, phase: 'play', drawn: -1, nextCount: 5, prevCount: 5, n: 2 });
   ok(m.type === 'play' && m.call === true, 'la CPU avisa');
@@ -219,6 +245,41 @@ ok(T.playable(id(GRASS, 5), W(), GRASS) && !T.playable(id(WATER, 5), W(), GRASS)
   ok(bad === 0, 'sin jugadas rechazadas ni cartas perdidas (' + bad + ')');
   ok(penEv > 0, 'hubo castigos por no avisar (' + penEv + ')');
   console.log('partidas CPU:', done, '· jugadas máx.', maxMoves, '· olvidos', pens, '· castigos', penEv);
+}
+// --- CPU fuera de turno (registro de party.js): avisa con retraso, a veces se olvida, y pilla a los humanos ---
+{
+  const vm = require('vm'), fs = require('fs'), path = require('path');
+  const noop = () => {};
+  const Gx = { TypeCards: T, BigTwo: require('../../js/systems/party/bigtwo.js'), Net: { on: noop, onPeer: noop, send: noop, toHost: noop, broadcast: noop, uid: 'H' } };
+  const sandbox = { G: Gx, console, setTimeout, clearTimeout, Math, Date, JSON, localStorage: { getItem: () => null, setItem: noop, removeItem: noop } };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../js/systems/party/party.js'), 'utf8'), sandbox);
+  const def = Gx.Party.game('types');
+  ok(def && !def.soon && def.turnMs === 30000, 'juego activo en el registro (30 s)');
+  const seatsCpu = [{ cpu: false }, { cpu: true }, { cpu: true }];
+  let calls = 0, catches = 0, forgot = 0, tries = 0, okDelay = true;
+  for (let i = 0; i < 2000; i++) {
+    // Una CPU (asiento 1) se queda con 1 carta sin avisar.
+    const st = table([[id(FIRE, 3), id(FIRE, 4)], [id(FIRE, 1), id(FIRE, 2)], [id(WATER, 3), id(WATER, 4)]], id(FIRE, 8), FIRE, 1);
+    T.act(st, 1, { type: 'play', card: id(FIRE, 1) });
+    const plan = def.react(st, seatsCpu) || [];
+    const c = plan.find(x => x.a.type === 'call'), k = plan.find(x => x.a.type === 'catch');
+    if (c) { calls++; if (c.seat !== 1 || c.delay < 600 || c.delay > 2500) okDelay = false; } else forgot++;
+    if (k) { catches++; if (k.seat !== 2 || k.delay < 1500 || k.delay > 3500) okDelay = false; }
+    ok(def.react(st, seatsCpu) === plan || JSON.stringify(def.react(st, seatsCpu)) === JSON.stringify(plan), 'el plan se decide una vez');
+    // Un humano (asiento 0) se queda con 1 carta: alguna CPU intenta pillarlo.
+    const s2 = table([[id(FIRE, 1), id(FIRE, 2)], [id(FIRE, 3), id(FIRE, 4)], [id(WATER, 3), id(WATER, 4)]], id(FIRE, 8), FIRE, 0);
+    T.act(s2, 0, { type: 'play', card: id(FIRE, 1) });
+    const p2 = def.react(s2, seatsCpu) || [];
+    if (p2.some(x => x.a.type === 'catch' && x.seat !== 0 && x.delay >= 1500 && x.delay <= 3500)) tries++;
+    if (p2.some(x => x.a.type === 'call')) okDelay = false;
+  }
+  ok(forgot > 250 && forgot < 550, 'la CPU se olvida ~20 % (' + forgot + '/2000)');
+  ok(catches === forgot, 'si se olvida, otra CPU intenta pillarla');
+  ok(tries === 2000, 'las CPU siempre intentan pillar al humano que no avisó');
+  ok(okDelay, 'retrasos dentro de lo pedido (avisar 0,6-2,5 s; pillar 1,5-3,5 s)');
+  ok(def.cpu(table([[id(FIRE, 3)], [id(FIRE, 1), id(FIRE, 2)]], id(FIRE, 8), FIRE, 1), 1).call === undefined, 'la CPU no avisa al echar (lo hace después)');
+  ok(def.cpuDelay({ vuln: 1 }) >= 2600, 'la siguiente CPU espera mientras la ventana está abierta');
+  console.log('CPU con 1 carta: avisa', calls, '· se olvida', forgot);
 }
 console.log(fails ? `${fails} FALLOS de ${n}` : `OK: ${n} comprobaciones`);
 process.exit(fails ? 1 : 0);

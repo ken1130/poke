@@ -8,6 +8,7 @@
  *   Cartas de tipos (typecards.js); los demás salen en la lista como "Próximamente".
  *   precheck(vista, a): validación en el jugador antes de enviar (el anfitrión vuelve a validar).
  *   cpuDelay(st): milisegundos de más antes de que juegue la CPU (p. ej. para dar tiempo a avisar).
+ *   react(st, seats): jugadas de CPU fuera de turno [{ key, seat, a, delay }] (cada clave se programa una vez).
  *
  * Red (los mismos canales que el cooperativo, G.Net; mensajes { k:'pty', t, ... }):
  *   El ANFITRIÓN manda: tiene la baraja y todo el estado, valida cada jugada, mueve a las
@@ -64,6 +65,7 @@ G.Party = (() => {
   });
   // Cartas de tipos (寶可夢屬性牌, typecards.js, 2026-10-17).
   const T = () => G.TypeCards;
+  const typesPlans = new WeakMap();   // estado de la ronda -> (vulnSeq -> lo que harán las CPU)
   register({
     id: 'types', name: 'Cartas de tipos', minPlayers: 2, maxPlayers: 4, turnMs: 30000,
     desc: 'Juega cartas del mismo tipo o número; cartas de efecto para fastidiar al siguiente.',
@@ -72,15 +74,34 @@ G.Party = (() => {
     turn: st => (st.over ? -1 : st.turn),
     over: st => st.over,
     cpu: (st, seat) => {
-      // A veces la CPU pilla primero a quien no avisó de su última carta (luego juega).
-      if (st.vuln >= 0 && st.vuln !== seat && !st.called[st.vuln] && st.hands[st.vuln].length === 1 && Math.random() < 0.5) return { type: 'catch' };
       const nx = T().nextSeat(st, seat), pv = T().nextSeat(st, seat, -1);
-      return T().cpuMove(st.hands[seat], { top: st.discard[st.discard.length - 1], color: st.color, phase: st.phase, drawn: st.drawn,
+      const m = T().cpuMove(st.hands[seat], { top: st.discard[st.discard.length - 1], color: st.color, phase: st.phase, drawn: st.drawn,
         nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n });
+      delete m.call;       // la CPU avisa después, con un poco de retraso (react), y a veces se le olvida
+      return m;
     },
     timeout: st => T().timeoutMove(st.phase),
-    // Si alguien acaba de quedarse con 1 carta sin avisar, la CPU espera un poco: da tiempo a pulsar "¡Última carta!".
-    cpuDelay: st => (st.vuln >= 0 ? 1600 : 0),
+    // Si alguien acaba de quedarse con 1 carta sin avisar, la siguiente CPU espera: da tiempo a avisar o a pillar.
+    cpuDelay: st => (st.vuln >= 0 ? 2800 : 0),
+    // Fuera de turno (2026-10-17, pedido del dueño): la CPU que se queda con 1 carta avisa tras 0,6-2,5 s
+    // (un 20 % de las veces se le olvida); otra CPU intenta pillar tras 1,5-3,5 s si sigue sin avisar.
+    react: (st, seats) => {
+      const v = st.vuln;
+      if (v < 0 || st.called[v] || st.hands[v].length !== 1) return null;
+      const bot = i => !!(seats[i].cpu || seats[i].gone || seats[i].afk || seats[i].auto);
+      let plans = typesPlans.get(st);
+      if (!plans) typesPlans.set(st, plans = new Map());
+      if (!plans.has(st.vulnSeq)) {
+        const out = [];
+        const calls = bot(v) && Math.random() >= 0.2;
+        if (calls) out.push({ seat: v, a: { type: 'call' }, delay: 600 + Math.random() * 1900 });
+        const others = seats.map((x, i) => i).filter(i => i !== v && bot(i));
+        if (others.length && !calls) out.push({ seat: others[Math.floor(Math.random() * others.length)], a: { type: 'catch' }, delay: 1500 + Math.random() * 2000 });
+        out.forEach((x, k) => { x.key = st.vulnSeq + ':' + k; });
+        plans.set(st.vulnSeq, out);
+      }
+      return plans.get(st.vulnSeq);
+    },
     precheck: (v, a) => {
       const p = v.pub;
       if (a.type === 'call' || a.type === 'catch') return { ok: true };
@@ -96,7 +117,7 @@ G.Party = (() => {
     priv: (st, seat) => ({ hand: st.hands[seat].slice(), drawn: st.turn === seat && st.phase === 'drawn' ? st.drawn : -1, called: !!st.called[seat] }),
     pub: st => ({ counts: st.hands.map(h => h.length), turn: st.over ? -1 : st.turn, top: st.discard[st.discard.length - 1],
                   under: st.discard.slice(-4, -1), color: st.color, dir: st.dir, phase: st.phase, deck: st.deck.length,
-                  called: st.called.map((c, i) => c && st.hands[i].length === 1), vuln: st.vuln >= 0 && !st.called[st.vuln] && st.hands[st.vuln].length === 1 ? st.vuln : -1,
+                  called: st.called.map((c, i) => c && st.hands[i].length === 1), lastCall: st.lastCall, vuln: st.vuln >= 0 && !st.called[st.vuln] && st.hands[st.vuln].length === 1 ? st.vuln : -1,
                   ev: st.ev, moves: st.moves, over: st.over, winner: st.winner }),
     results: st => T().results(st)
   });
@@ -187,7 +208,25 @@ G.Party = (() => {
         }, def.turnMs);
       }
     }
+    if (def.react) react(def, st);
     pushAll();
+  }
+
+  /** Jugadas de CPU fuera de turno (react del juego): cada una se programa una sola vez y se cancela si ya no toca. */
+  function react(def, st) {
+    if (!S.rx) { S.rx = new Map(); S.rxDone = new Set(); }
+    const want = (def.over(st) ? null : def.react(st, S.seats)) || [];
+    const key = w => S.sid + ':' + S.round + ':' + w.key;
+    for (const [k, t] of S.rx) if (!want.some(w => key(w) === k)) { clearTimeout(t); S.rx.delete(k); }
+    for (const w of want) {
+      const k = key(w);
+      if (S.rx.has(k) || S.rxDone.has(k)) continue;
+      S.rx.set(k, setTimeout(() => {
+        if (!S || S.st !== st || !S.rx.has(k)) return;
+        S.rx.delete(k); S.rxDone.add(k);
+        apply(w.seat, w.a, true);
+      }, w.delay));
+    }
   }
 
   /** Aplica una jugada del asiento (validada por las reglas). */
