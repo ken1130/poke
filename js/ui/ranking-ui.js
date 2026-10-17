@@ -91,6 +91,14 @@ G.RankingUI = (() => {
     const mon = dex ? G.DEX_BY[dex].name : '';
     const where = en ? (mode === 's' ? 'solo' : 'group') + (dex ? ' with ' + mon : '')
                      : (mode === 's' ? 'en solitario' : 'en grupo') + (dex ? ' con ' + mon : '');
+    // 繁中: la frase entera en chino (por trozos salía «你deesta semana 單人的…»).
+    if (G.I18n.lang === 'zh' && G.Social.me) {
+      const zp = { d: '今日', w: '本週', m: '本月', y: '今年', a: '歷來' }[period];
+      const zw = (mode === 's' ? '單人' : '組隊') + (dex ? '（' + esc(G.T(mon)) + '）' : '');
+      $('rk-me').innerHTML = '<span translate="no">' + (me && me.out ? `目前不在${zp}${zw}的前 50 名，確切名次請看「歷來」。`
+        : me ? `你${zp}${zw}的最佳名次：<b class="gold">#${me.pos}</b> · ${fmt(me.t)}` : `你${zp}還沒有${zw}的紀錄。`) + '</span>';
+      return;
+    }
     $('rk-me').innerHTML = !G.Social.me ? 'Elige un apodo (en Amigos) para salir en el ranking.'
       : me && me.out ? (en ? `<span translate="no">You're not in the top 50 ${where} ${pn} yet. Your exact rank is in All-time.</span>`
                            : `Aún no estás en el top 50 ${pn} ${where}. Tu puesto exacto está en Histórico.`)

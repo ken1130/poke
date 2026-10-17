@@ -245,9 +245,10 @@ G.Modes = (() => {
   /** Ventana con la clasificación de hoy. */
   async function openBoard() {
     const ov = document.createElement('div');
+    ov.className = 'pn-ov';
     ov.style.cssText = 'position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.7)';
-    ov.innerHTML = `<div class="box" style="width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
-      <div class="row between"><h3 style="margin:0">${G.T('Clasificación de hoy')} <small style="color:var(--muted)">${today()}</small></h3>
+    ov.innerHTML = `<div class="box pn-sheet pn-board" style="width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
+      <div class="row between pn-bar"><h3 style="margin:0">${G.T('Clasificación de hoy')} <small style="color:var(--muted)">${today()}</small></h3>
       <button class="btn small ghost" data-close>${G.T('Volver')}</button></div><div id="db-list" style="margin-top:10px">${G.T('Cargando…')}</div></div>`;
     ov.onclick = e => { if (e.target === ov) ov.remove(); };
     ov.querySelector('[data-close]').onclick = () => ov.remove();
@@ -297,6 +298,7 @@ G.Modes = (() => {
   function openPanel() {
     if (overlay) return;
     overlay = document.createElement('div');
+    overlay.className = 'pn-ov';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:66;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.7)';
     render();
     overlay.onclick = e => { if (e.target === overlay) closePanel(); };
@@ -307,9 +309,9 @@ G.Modes = (() => {
   function render() {
     const sw = k => S().get(k);
     overlay.innerHTML = `
-      <div class="box" style="width:min(560px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
-        <div class="row between"><h3 style="margin:0">Reglas a medida</h3><button class="btn small ghost" data-close>Volver</button></div>
-        <p class="sub" style="margin:6px 0 0">Sólo cambian «Jugar» (la run normal) y las partidas en grupo normales que crees tú. La aventura y los desafíos llevan sus propias reglas y no usan estas.</p>
+      <div class="box pn-sheet pn-modes" style="width:min(560px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:18px 20px">
+        <div class="row between pn-bar"><h3 style="margin:0">Reglas a medida</h3><button class="btn small ghost" data-close>Volver</button></div>
+        <div class="pn-col"><p class="sub" style="margin:6px 0 0">Sólo cambian «Jugar» (la run normal) y las partidas en grupo normales que crees tú. La aventura y los desafíos llevan sus propias reglas y no usan estas.</p>
 
         <div class="set-row" style="margin-top:10px"><div class="grow"><b>Sala de entrenamiento</b><small>Muñecos Pikachu que nunca caen: prueba cualquier movimiento y mira tu daño por segundo. Sin premios ni récords.</small></div>
           <button class="btn small gold" data-train ${G.Social.room ? 'disabled' : ''}>Entrar a la sala</button></div>
@@ -318,7 +320,7 @@ G.Modes = (() => {
         ${TOGGLES.map(([k, name, desc]) => `
           <div class="set-row"><div class="grow"><b>${name}</b><small>${desc}</small></div>
             <button class="btn small switch ${sw(k) ? 'gold' : ''}" data-k="${k}">${sw(k) ? 'Sí' : 'No'}</button></div>`).join('')}
-
+        </div><div class="pn-col">
         <h3 class="set-h" style="margin-top:14px">Escenario</h3>
         <p class="sub" style="margin:0 0 6px">Con uno elegido, toda la partida es en él (en grupo vale el del anfitrión).</p>
         <div class="scene-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px">
@@ -334,7 +336,7 @@ G.Modes = (() => {
             <input type="range" min="50" max="300" step="10" value="${sw(k) || 100}" data-s="${k}" style="width:160px">
             <span class="gold" style="width:52px;text-align:right" data-v="${k}">${sw(k) || 100}%</span></div>`).join('')}
         <div class="row" style="justify-content:flex-end;margin-top:6px"><button class="btn small ghost" data-reset>Restablecer (100%)</button></div>
-      </div>`;
+      </div></div>`;
     overlay.querySelector('[data-close]').onclick = closePanel;
     overlay.querySelectorAll('[data-k]').forEach(b => {
       b.onclick = () => { S().set(b.dataset.k, !S().get(b.dataset.k)); G.Audio.sfx('click'); render(); };

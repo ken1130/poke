@@ -11,7 +11,7 @@ G.Dialog = (() => {
   function open({ title = '', text = '', html = '', input = null, ok = 'Aceptar', cancel = null, danger = false, onOk = null }) {
     return new Promise(done => {
       const el = document.createElement('section');
-      el.className = 'scr dim';
+      el.className = 'scr dim dlg';
       el.style.zIndex = 80;
       el.innerHTML = `<div class="box center" style="width:min(380px,calc(100% - 32px))">
         ${title ? `<h3>${esc(G.T(title))}</h3>` : ''}

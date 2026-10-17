@@ -22,19 +22,20 @@ G.PartyUI = (() => {
     if (G.Social.room) { G.LobbyUI.open(); return; }
     close();
     overlay = document.createElement('div');
+    overlay.className = 'pn-ov';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:66;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.7)';
     overlay.innerHTML = `
-      <div class="box" style="width:min(420px,calc(100% - 24px));padding:18px 20px">
-        <div class="row between"><h3 style="margin:0">Jugar con amigos</h3><button class="btn small ghost" data-close>Volver</button></div>
+      <div class="box pn-party" style="width:min(420px,calc(100% - 24px));padding:18px 20px">
+        <div class="row between pn-bar"><h3 style="margin:0">Jugar con amigos</h3><button class="btn small ghost" data-close>Volver</button></div>
         <p class="sub">Equipo o PK, hasta 4 jugadores. Uno crea la sala y pasa el código a los demás.</p>
         <button class="btn gold" style="width:100%" data-create>Crear sala</button>
-        <h3 class="set-h" style="margin-top:16px">Entrar con un código</h3>
+        <div class="party-join"><h3 class="set-h" style="margin-top:16px">Entrar con un código</h3>
         <div class="row" style="gap:8px">
           <input class="field grow" id="party-code" maxlength="8" placeholder="ABC234" autocapitalize="characters" spellcheck="false" translate="no"
                  style="text-transform:uppercase;letter-spacing:4px;font:700 20px monospace;text-align:center">
           <button class="btn" data-join>Unirse</button>
         </div>
-        <p class="err" id="party-err"></p>
+        <p class="err" id="party-err"></p></div>
       </div>`;
     overlay.onclick = e => { if (e.target === overlay) close(); };
     overlay.querySelector('[data-close]').onclick = close;

@@ -148,9 +148,10 @@ G.Cheat = (() => {
   function openPrompt() {
     if (overlay) return;
     overlay = document.createElement('div');
+    overlay.className = 'pn-ov';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:66;display:flex;align-items:center;justify-content:center;background:rgba(5,9,20,.7)';
     overlay.innerHTML = `
-      <form class="box" style="width:min(440px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;padding:20px 22px" autocomplete="off">
+      <form class="box pn-sheet pn-cheat" style="width:min(440px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;padding:20px 22px" autocomplete="off">
         <h3>Trucos</h3>
         <div class="cheat-list" style="display:flex;flex-direction:column;gap:8px;margin:8px 0 14px">
           ${HELP.map(([code, what]) => `
@@ -162,13 +163,13 @@ G.Cheat = (() => {
             <button type="button" class="btn small" data-copy="${code}">Copiar</button>
           </div>`).join('')}
         </div>
-        <label for="cheat-code">Código</label>
+        <div class="cheat-use"><label for="cheat-code">Código</label>
         <input id="cheat-code" class="field" maxlength="32" spellcheck="false" autocapitalize="off" style="width:100%;margin:6px 0 4px">
         <p id="cheat-err" class="err"></p>
         <div class="row" style="gap:10px;margin-top:8px">
           <button type="button" class="btn ghost grow" data-cancel>Cancelar</button>
           <button type="submit" class="btn gold grow">Usar</button>
-        </div>
+        </div></div>
       </form>`;
     overlay.onclick = e => { if (e.target === overlay) closePrompt(); };
     overlay.querySelector('[data-cancel]').onclick = closePrompt;
