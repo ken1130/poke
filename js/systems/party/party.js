@@ -239,8 +239,14 @@ G.Party = (() => {
 
   function stopTimers() { if (S) { clearTimeout(S.timer); S.timer = 0; } }
 
-  /** Tras cada cambio: programa el siguiente turno y manda las vistas. */
-  function step() {
+  /** Lo que tarda la CPU en jugar (2026-10-17, pedido del dueño: antes 0,6-1,2 s y no daba tiempo a ver
+   *  qué había echado cada una): 1,4-2,2 s. */
+  const CPU_MS = 1400, CPU_RAND = 800;
+
+  /** Tras cada cambio: programa el siguiente turno y manda las vistas.
+   *  keep: el cambio no fue una jugada del que tiene el turno (otro avisa, pilla o anula): su reloj sigue
+   *  donde iba en vez de volver a 30 s (2026-10-17, pedido del dueño). */
+  function step(keep) {
     stopTimers();
     const def = S.def, st = S.st;
     if (def.over(st)) {
@@ -255,15 +261,17 @@ G.Party = (() => {
       const still = () => S && S.sid === sid && S.st === st && st.moves === moves;
       if (s.cpu || s.gone || s.afk || s.auto) {
         S.deadline = 0;
-        S.timer = setTimeout(() => { if (still()) apply(seat, def.cpu(st, seat), true); }, 600 + Math.random() * 600 + (def.cpuDelay ? def.cpuDelay(st) : 0));
+        S.timer = setTimeout(() => { if (still()) apply(seat, def.cpu(st, seat), true); }, CPU_MS + Math.random() * CPU_RAND + (def.cpuDelay ? def.cpuDelay(st) : 0));
       } else {
-        S.deadline = Date.now() + def.turnMs;
+        const goOn = keep && S.deadline && S.dlSeat === seat && S.deadline > Date.now() + 300;
+        if (!goOn) S.deadline = Date.now() + def.turnMs;
+        S.dlSeat = seat;
         S.timer = setTimeout(() => {
           if (!still()) return;
           s.afkN++;
           if (s.afkN >= 2 && !s.afk) { s.afk = true; note('{x} no responde: juega la CPU por ahora.', s.name); }
           apply(seat, def.timeout(st, seat), true);
-        }, def.turnMs);
+        }, S.deadline - Date.now());
       }
     }
     if (def.react) react(def, st);
@@ -282,13 +290,13 @@ G.Party = (() => {
       S.rx.set(k, setTimeout(() => {
         if (!S || S.st !== st || !S.rx.has(k)) return;
         S.rx.delete(k); S.rxDone.add(k);
-        apply(w.seat, w.a, true);
+        apply(w.seat, w.a, true, true);
       }, w.delay));
     }
   }
 
   /** Aplica una jugada del asiento (validada por las reglas). */
-  function apply(seat, a, auto) {
+  function apply(seat, a, auto, rx) {
     // Auto (2026-10-17, pedido del dueño): el jugador pide que la CPU juegue por él hasta que lo quite.
     if (S && a && a.type === 'auto') {
       const s = S.seats[seat];
@@ -297,11 +305,12 @@ G.Party = (() => {
       return { ok: true };
     }
     if (!S || S.def.over(S.st)) return { ok: false, err: 'La ronda ya ha terminado.' };
+    const onTurn = seat === S.def.turn(S.st);
     const r = S.def.act(S.st, seat, a);
     if (!r.ok) return r;
     const s = S.seats[seat];
     if (!auto) { s.afkN = 0; if (s.afk) { s.afk = false; note('{x} ha vuelto a la mesa.', s.name); } }
-    step();
+    step(rx || !onTurn);
     return r;
   }
 

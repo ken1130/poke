@@ -19,7 +19,12 @@
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const VB = () => G.Voltorb;
-  const seatName = s => (s.cpu ? G.I18n.f('{x} (jugador CPU)', G.T((G.DEX_BY[s.dex] || {}).name || 'CPU')) : s.name);
+  /** Textos con nombres: en chino no deja espacios entre dos caracteres chinos («你 給了 你» → «你給了你»;
+   *  2026-10-17, pedido del dueño). Los nombres en letras latinas conservan sus espacios. */
+  const CJK = '\u3000-\u303f\u3400-\u9fff\uff00-\uffef';
+  const TIDY = new RegExp('([' + CJK + ']) +(?=[' + CJK + '])', 'g');
+  const F = (...a) => G.I18n.f(...a).replace(TIDY, '$1');
+  const seatName = s => (s.cpu ? F('{x} (jugador CPU)', G.T((G.DEX_BY[s.dex] || {}).name || 'CPU')) : s.name);
   const body = () => $('pt-body');
   const q = s => body().querySelector(s);
 
@@ -106,27 +111,27 @@
   function evText(v, e) {
     const nm = j => (j === v.you ? G.T('Tú (en Voltorb travieso)') : seatName(v.seats[j]));
     switch (e.k) {
-      case 'start': return G.I18n.f('Empieza la ronda de Voltorb: sale {x}', nm(e.seat));
+      case 'start': return F('Empieza la ronda de Voltorb: sale {x}', nm(e.seat));
       case 'play': {
         const c = label(e.cards[0]);
-        return e.target >= 0 && (e.kind === 'favor' || e.kind === 'pair') ? G.I18n.f('{x} echa {x} contra {x}', nm(e.seat), c, nm(e.target)) : G.I18n.f('{x} echa la carta {x} en Voltorb', nm(e.seat), c);
+        return e.target >= 0 && (e.kind === 'favor' || e.kind === 'pair') ? F('{x} echa {x} contra {x}', nm(e.seat), c, nm(e.target)) : F('{x} echa la carta {x} en Voltorb', nm(e.seat), c);
       }
-      case 'nope': return e.n % 2 ? G.I18n.f('¡{x} lo ve venir y lo anula con Detección!', nm(e.seat)) : G.I18n.f('¡{x} anula la anulación con otra Detección!', nm(e.seat));
-      case 'cancel': return G.I18n.f('La carta de {x} queda anulada', nm(e.seat));
-      case 'attack': return G.I18n.f('{x} tendrá que jugar {x} turnos seguidos', nm(e.to), e.turns);
-      case 'skip': return G.I18n.f('{x} se echa la siesta y no roba', nm(e.seat));
-      case 'shuffle': return G.I18n.f('{x} baraja el mazo con Teletransporte', nm(e.seat));
-      case 'future': return G.I18n.f('{x} mira en secreto las 3 cartas de arriba', nm(e.seat));
-      case 'favor': return G.I18n.f('{x} tiene que darle una carta a {x}', nm(e.to), nm(e.seat));
-      case 'give': return G.I18n.f('{x} le da una carta a {x}', nm(e.seat), nm(e.to));
-      case 'steal': return G.I18n.f('{x} le quita una carta al azar a {x}', nm(e.seat), nm(e.to));
-      case 'nothing': return G.I18n.f('{x} no tiene cartas: no pasa nada', nm(e.to));
-      case 'draw': return G.I18n.f('{x} roba una carta del mazo de Voltorb', nm(e.seat));
-      case 'bomb': return G.I18n.f('¡{x} ha robado un Voltorb!', nm(e.seat));
-      case 'defuse': return G.I18n.f('¡{x} desactiva el Voltorb con la goma aislante!', nm(e.seat));
-      case 'insert': return G.I18n.f('{x} vuelve a meter el Voltorb en el mazo a escondidas', nm(e.seat));
-      case 'boom': return G.I18n.f('¡{x} ha explotado!', nm(e.seat));
-      case 'win': return G.I18n.f('¡{x} es el último en pie y gana!', nm(e.seat));
+      case 'nope': return e.n % 2 ? F('¡{x} lo ve venir y lo anula con Detección!', nm(e.seat)) : F('¡{x} anula la anulación con otra Detección!', nm(e.seat));
+      case 'cancel': return F('La carta de {x} queda anulada', nm(e.seat));
+      case 'attack': return F('{x} tendrá que jugar {x} turnos seguidos', nm(e.to), e.turns);
+      case 'skip': return F('{x} se echa la siesta y no roba', nm(e.seat));
+      case 'shuffle': return F('{x} baraja el mazo con Teletransporte', nm(e.seat));
+      case 'future': return F('{x} mira en secreto las 3 cartas de arriba', nm(e.seat));
+      case 'favor': return F('{x} tiene que darle una carta a {x}', nm(e.to), nm(e.seat));
+      case 'give': return F('{x} le da una carta a {x}', nm(e.seat), nm(e.to));
+      case 'steal': return F('{x} le quita una carta al azar a {x}', nm(e.seat), nm(e.to));
+      case 'nothing': return F('{x} no tiene cartas: no pasa nada', nm(e.to));
+      case 'draw': return F('{x} roba una carta del mazo de Voltorb', nm(e.seat));
+      case 'bomb': return F('¡{x} ha robado un Voltorb!', nm(e.seat));
+      case 'defuse': return F('¡{x} desactiva el Voltorb con la goma aislante!', nm(e.seat));
+      case 'insert': return F('{x} vuelve a meter el Voltorb en el mazo a escondidas', nm(e.seat));
+      case 'boom': return F('¡{x} ha explotado!', nm(e.seat));
+      case 'win': return F('¡{x} es el último en pie y gana!', nm(e.seat));
       default: return '';
     }
   }
@@ -138,6 +143,7 @@
         'En tu turno puedes echar todas las cartas de acción que quieras, una a una; para acabar, robas 1 carta del mazo.',
         'Si robas un Voltorb y tienes goma aislante, la usas y vuelves a meter el Voltorb en el mazo donde quieras, sin que nadie lo vea. Si no tienes, explotas: quedas fuera y tus cartas se descartan.',
         'Gana el último que quede sin explotar.',
+        'Con 2 jugadores el mazo es más corto: se quitan algunas cartas de acción y de cada pareja.',
         'Berrinche ×2: acabas tu turno sin robar y el siguiente juega 2 turnos. Si a ti te habían atacado, el siguiente juega los turnos que te quedaban más 2.',
         'Siesta zz: acabas un turno sin robar.',
         'Teletransporte ⇄: baraja el mazo.',
@@ -235,7 +241,7 @@
 
     send(a, quiet) {
       const r = G.Party.act(a);
-      if (!r.ok) { G.Audio.sfx('error'); UI.flash(G.I18n.f(r.err, r.x)); return false; }
+      if (!r.ok) { G.Audio.sfx('error'); UI.flash(F(r.err, r.x)); return false; }
       if (!quiet) G.Audio.sfx('click');
       const c = cur();
       if (c && a.type === 'play') { c.sel = []; c.handKey = ''; }
@@ -292,7 +298,7 @@
       box.innerHTML = `<div class="vb-ovbox"><h3>${esc(G.T(k === 'favor' ? '¿A quién le pides una carta?' : '¿A quién le robas una carta?'))}</h3>
         <div class="vb-cardrow">${cards.map(x => cardHTML(x)).join('')}</div>
         <div class="vb-tgs">${opts.map(j => `<button class="vb-tg" data-tg="${j}"><span class="vb-tgav"></span><b translate="no">${esc(seatName(v.seats[j]))}</b>
-          <small>${esc(G.I18n.f('Le quedan {x} cartas de Voltorb', p.counts[j]))}</small></button>`).join('')}</div>
+          <small>${esc(F('Le quedan {x} cartas de Voltorb', p.counts[j]))}</small></button>`).join('')}</div>
         <button class="btn ghost vb-btn" data-tx>${esc(G.T('Elegir otra carta'))}</button></div>`;
       box.querySelectorAll('[data-tg]').forEach(b => { const s = v.seats[+b.dataset.tg]; b.querySelector('.vb-tgav').appendChild(G.UI.spriteCanvas(s.dex, 96, 86, { scale: 3, hero: true, shiny: !!s.shiny })); });
       box.classList.remove('hidden');
@@ -308,7 +314,16 @@
     },
     closeTarget() { const box = q('.vb-target'); if (box) { box.classList.add('hidden'); box.innerHTML = ''; } const c = cur(); if (c) c.target = null; },
 
-    give(id) {
+    async give(id) {
+      // Dar tu única goma se puede, pero se avisa antes (2026-10-17, pedido del dueño).
+      const v = G.Party.view, hand = v && v.priv ? v.priv.hand : [];
+      if (VB().kind(id) === 'defuse' && hand.filter(x => VB().kind(x) === 'defuse').length <= 1) {
+        const ok = await G.Dialog.confirm('Es tu única Goma aislante: si la das y luego robas un Voltorb, explotarás. ¿La das de todos modos?',
+          { title: 'Dar la Goma aislante', ok: 'Darla igualmente', cancel: 'Elegir otra carta', danger: true });
+        if (!ok) return;
+        const v2 = G.Party.view;
+        if (!v2 || !v2.pub.favor || v2.pub.favor.to !== v2.you) return;   // ya se eligió sola (se acabó el tiempo)
+      }
       const c = cur();
       if (c) c.favorPick = id;
       R.send({ type: 'give', card: id });
@@ -351,14 +366,14 @@
         el.querySelector('.b2-name').textContent = isMe ? s.name : seatName(s);
         const away = !s.cpu && (s.gone || s.afk || s.auto);
         const tag = el.querySelector('.b2-tag');
-        tag.textContent = away ? G.T('Juega la CPU') : G.I18n.f('{x} pts de Voltorb', s.total);
+        tag.textContent = away ? G.T('Juega la CPU') : F('{x} pts de Voltorb', s.total);
         tag.classList.toggle('away', away);
         el.classList.toggle('on', acting === j && !v.res);
         el.classList.toggle('dead', dead);
         el.querySelector('.vb-dead').classList.toggle('hidden', !dead);
         const tb = el.querySelector('.vb-turns'), extra = p.turn === j && p.left > 1 && !v.res && !dead;
         tb.classList.toggle('hidden', !extra);
-        if (extra) tb.textContent = G.I18n.f('Turnos de Voltorb: {x}', p.left);
+        if (extra) tb.textContent = F('Turnos de Voltorb: {x}', p.left);
         if (isMe) return;
         const fan = el.querySelector('.vb-fan'), show = Math.min(nC, 12);
         if (fan.childElementCount !== show) fan.innerHTML = fanHTML(show);
@@ -377,11 +392,11 @@
       const knowTop = v.priv.know && v.priv.know.length ? v.priv.know[0] : -1;
       tbl.classList.toggle('danger', knowTop >= 0 && V.isBomb(knowTop));
       root.querySelector('.vb-pile').classList.toggle('can', mine);
-      root.querySelector('.vb-bombs span').textContent = G.I18n.f('Quedan {x} Voltorb en el mazo', p.bombs);
+      root.querySelector('.vb-bombs span').textContent = F('Quedan {x} Voltorb en el mazo', p.bombs);
       const lf = root.querySelector('.vb-left');
       const showLeft = p.turn >= 0 && p.left > 1 && !v.res;
       lf.classList.toggle('hidden', !showLeft);
-      if (showLeft) lf.textContent = G.I18n.f('{x}: le quedan {x} turnos', p.turn === v.you ? G.T('Tú (en Voltorb travieso)') : seatName(v.seats[p.turn]), p.left);
+      if (showLeft) lf.textContent = F('{x}: le quedan {x} turnos', p.turn === v.you ? G.T('Tú (en Voltorb travieso)') : seatName(v.seats[p.turn]), p.left);
       // Lo que sabes de arriba del mazo (sólo tú).
       const kn = root.querySelector('.vb-know'), known = (v.priv.know || []).slice(0, 3);
       const anyK = known.some(x => x >= 0);
@@ -410,10 +425,10 @@
       if (v.res) capT = '';
       else if (!alive) capT = G.T('Has explotado: esta ronda miras cómo juegan los demás.');
       else if (p.pend) capT = p.pend.last !== v.you && v.priv.hand.some(id => V.kind(id) === 'nope') ? G.T('¿Lo anulas? Echa una Detección antes de que se acabe la barra.') : G.T('Esperando por si alguien lo anula…');
-      else if ((p.phase === 'bomb' || p.phase === 'insert') && p.bomb) capT = p.bomb.seat === v.you ? G.T(p.phase === 'bomb' ? 'Has robado un Voltorb: usa la goma aislante.' : 'Elige dónde vuelves a meter el Voltorb.') : G.I18n.f('¡{x} ha robado un Voltorb!', seatName(v.seats[p.bomb.seat]));
-      else if (p.phase === 'favor' && p.favor) capT = p.favor.to === v.you ? G.I18n.f('Elige qué carta le das a {x}', seatName(v.seats[p.favor.from])) : G.I18n.f('Esperando a que {x} dé una carta', seatName(v.seats[p.favor.to]));
-      else if (mine) capT = p.left > 1 ? G.I18n.f('Te toca: echa cartas o roba (te quedan {x} turnos).', p.left) : G.T('Te toca: echa las cartas que quieras y acaba robando una.');
-      else capT = G.I18n.f('Es el turno de {x} en Voltorb travieso', seatName(v.seats[p.turn]));
+      else if ((p.phase === 'bomb' || p.phase === 'insert') && p.bomb) capT = p.bomb.seat === v.you ? G.T(p.phase === 'bomb' ? 'Has robado un Voltorb: usa la goma aislante.' : 'Elige dónde vuelves a meter el Voltorb.') : F('¡{x} ha robado un Voltorb!', seatName(v.seats[p.bomb.seat]));
+      else if (p.phase === 'favor' && p.favor) capT = p.favor.to === v.you ? F('Elige qué carta le das a {x}', seatName(v.seats[p.favor.from])) : F('Esperando a que {x} dé una carta', seatName(v.seats[p.favor.to]));
+      else if (mine) capT = p.left > 1 ? F('Te toca: echa cartas o roba (te quedan {x} turnos).', p.left) : G.T('Te toca: echa las cartas que quieras y acaba robando una.');
+      else capT = F('Es el turno de {x} en Voltorb travieso', seatName(v.seats[p.turn]));
       const lastTxt = (p.log || []).length ? evText(v, p.log[p.log.length - 1]) : '';
       cap.innerHTML = `<b>${esc(capT)}</b>${lastTxt && lastTxt !== capT && !v.res ? `<span>${esc(lastTxt)}</span>` : ''}`;
       cap.classList.toggle('mine', mine);
@@ -460,7 +475,7 @@
       if (!pd) return;
       const nm = j => (j === v.you ? G.T('Tú (en Voltorb travieso)') : seatName(v.seats[j]));
       const what = label(pd.cards[0]) + (pd.cards.length > 1 ? ' ×2' : '');
-      let t = pd.target >= 0 && pd.kind !== 'attack' ? G.I18n.f('{x} echa {x} contra {x}', nm(pd.seat), what, nm(pd.target)) : G.I18n.f('{x} echa la carta {x} en Voltorb', nm(pd.seat), what);
+      let t = pd.target >= 0 && pd.kind !== 'attack' ? F('{x} echa {x} contra {x}', nm(pd.seat), what, nm(pd.target)) : F('{x} echa la carta {x} en Voltorb', nm(pd.seat), what);
       if (pd.nopes) t += ' · ' + G.T(pd.nopes % 2 ? '¡ANULADA con Detección!' : '¡Vuelve a valer!');
       const pk = pd.seq + ':' + pd.nopes;
       if (box.dataset.k !== pk) {
@@ -481,7 +496,7 @@
         if (e.k === 'play') { G.Audio.sfx(e.seat === v.you ? 'confirm' : 'click'); R.badge(v, e.seat, label(e.cards[0]), 'play'); }
         else if (e.k === 'nope') { G.Audio.sfx('break'); R.badge(v, e.seat, G.T('¡Detección en Voltorb!'), 'nope'); R.stamp(); }
         else if (e.k === 'cancel') R.badge(v, e.seat, G.T('¡Carta anulada!'), 'bad');
-        else if (e.k === 'attack') { G.Audio.sfx('hurt'); R.badge(v, e.to, G.I18n.f('¡{x} turnos!', e.turns), 'bad'); }
+        else if (e.k === 'attack') { G.Audio.sfx('hurt'); R.badge(v, e.to, F('¡{x} turnos!', e.turns), 'bad'); }
         else if (e.k === 'skip') R.badge(v, e.seat, 'zz', 'skip');
         else if (e.k === 'shuffle') { G.Audio.sfx('surge'); R.kick('.vb-pile', 'shuf'); }
         else if (e.k === 'future') R.badge(v, e.seat, '◎', 'skip');
@@ -502,10 +517,10 @@
       for (const x of ns) {
         if (x.seq <= c.noteSeq) continue;
         if (x.k === 'drew') { c.newCard = x.card; c.handKey = ''; }
-        else if (x.k === 'got') { c.newCard = x.card; c.handKey = ''; G.UI.toast(G.I18n.f(x.how === 'favor' ? '{x} te da: {x}' : 'Le quitas a {x}: {x}', seatName(v.seats[x.from]), label(x.card)), 2600); }
-        else if (x.k === 'gave') G.UI.toast(G.I18n.f(x.how === 'favor' ? 'Le das a {x}: {x}' : '{x} te quita: {x}', seatName(v.seats[x.to]), label(x.card)), 2600);
+        else if (x.k === 'got') { c.newCard = x.card; c.handKey = ''; G.UI.toast(F(x.how === 'favor' ? '{x} te da: {x}' : 'Le quitas a {x}: {x}', seatName(v.seats[x.from]), label(x.card)), 2600); }
+        else if (x.k === 'gave') G.UI.toast(F(x.how === 'favor' ? 'Le das a {x}: {x}' : '{x} te quita: {x}', seatName(v.seats[x.to]), label(x.card)), 2600);
         else if (x.k === 'peek') R.showPeek(v, c, x);
-        else if (x.k === 'ins') G.UI.toast(G.I18n.f('Has metido el Voltorb en la posición {x} de {x}', x.pos + 1, x.len), 2600);
+        else if (x.k === 'ins') G.UI.toast(F('Has metido el Voltorb en la posición {x} de {x}', x.pos + 1, x.len), 2600);
       }
       c.noteSeq = Math.max(c.noteSeq, max);
     },
@@ -514,7 +529,7 @@
       const box = q('.vb-peek');
       if (!box) return;
       box.innerHTML = `<div class="vb-ovbox"><h3>${esc(G.T('Las 3 cartas de arriba (sólo las ves tú)'))}</h3>
-        <div class="vb-cardrow peek">${x.cards.map((id, i) => `<div class="vb-pk"><b>${esc(G.I18n.f('Carta {x} del mazo', i + 1))}</b>${cardHTML(id, VB().isBomb(id) ? 'bad' : '')}</div>`).join('') || esc(G.T('Descarte de Voltorb'))}</div>
+        <div class="vb-cardrow peek">${x.cards.map((id, i) => `<div class="vb-pk"><b>${esc(F('Carta {x} del mazo', i + 1))}</b>${cardHTML(id, VB().isBomb(id) ? 'bad' : '')}</div>`).join('') || esc(G.T('Descarte de Voltorb'))}</div>
         <button class="btn gold vb-btn" data-pk>${esc(G.T('Entendido'))}</button></div>`;
       box.classList.remove('hidden');
       G.Audio.sfx('reveal');
@@ -534,7 +549,7 @@
         const fk = p.favor.seq + ':' + v.priv.hand.join(',') + ':' + portraits.size;
         if (fbox.dataset.k !== fk) {
           fbox.dataset.k = fk;
-          fbox.innerHTML = `<div class="vb-ovbox"><h3>${esc(G.I18n.f('{x} te ha echado Encanto: elige qué carta le das', seatName(v.seats[p.favor.from])))}</h3>
+          fbox.innerHTML = `<div class="vb-ovbox"><h3>${esc(F('{x} te ha echado Encanto: elige qué carta le das', seatName(v.seats[p.favor.from])))}</h3>
             <div class="vb-cardrow give">${VB().sortHand(v.priv.hand).map(id => cardHTML(id)).join('')}</div>
             <div class="vb-bar vb-fbar"><i></i></div><p class="vb-sub">${esc(G.T('Si no eliges a tiempo, se da una al azar.'))}</p></div>`;
           fbox.querySelector('.vb-cardrow').onclick = e => { const el = e.target.closest('.vbc'); if (el) R.give(+el.dataset.c); };
@@ -579,7 +594,7 @@
           const rng = ib.querySelector('input'), lab = ib.querySelector('.vb-ipos');
           const show = () => {
             c.insPos = +rng.value;
-            lab.textContent = c.insPos === -1 ? G.T('Meterlo en un sitio al azar') : G.I18n.f('Carta {x} de {x} en el mazo', c.insPos + 1, len + 1);
+            lab.textContent = c.insPos === -1 ? G.T('Meterlo en un sitio al azar') : F('Carta {x} de {x} en el mazo', c.insPos + 1, len + 1);
             ib.querySelectorAll('[data-ip]').forEach(x => x.classList.toggle('on', +x.dataset.ip === c.insPos));
           };
           rng.oninput = show;
@@ -728,9 +743,9 @@
         const host = G.Party.isHost;
         box.innerHTML = `<div class="b2-rays ${won ? 'win' : 'lose'}"></div><div class="b2-confw">${confetti}</div><div class="b2-fx">${balls}</div>
           <div class="b2-banner ${won ? 'win' : 'lose'}">${stars}
-            <div class="b2-btw"><div class="b2-bt">${esc(won ? G.T('¡Victoria!') : G.I18n.f('Puesto {x}', String(mine.place)))}</div></div>
+            <div class="b2-btw"><div class="b2-bt">${esc(won ? G.T('¡Victoria!') : F('Puesto {x}', String(mine.place)))}</div></div>
             <div class="b2-rib"><div class="b2-ribbon"><span class="b2-num" translate="no">0</span></div></div>
-            <div class="b2-bsub">${esc(won ? G.T('¡Eres el último en pie!') : G.I18n.f('¡{x} es el último en pie y gana!', seatName(v.seats[v.pub.winner])))}</div>
+            <div class="b2-bsub">${esc(won ? G.T('¡Eres el último en pie!') : F('¡{x} es el último en pie y gana!', seatName(v.seats[v.pub.winner])))}</div>
           </div>
           <div class="b2-podium">${cards}</div>
           <div class="b2-rbtns">

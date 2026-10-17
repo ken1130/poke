@@ -3,6 +3,12 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-17', title: { zh: '派對模式小調整', en: 'Party mode tweaks' },
+    new: [
+      { zh: '電腦出牌變慢一點（每次約 1.4～2.2 秒），看得清楚每台電腦出了什麼', en: 'CPUs play a little slower (about 1.4-2.2 s each) so you can see what each one played' },
+      { zh: '有人在你的回合喊「最後一張」、抓人或出「看穿」時，你的 30 秒倒數不會再重新計時', en: 'Your 30 s turn timer no longer restarts when someone calls "Last card", catches someone or plays See Through during your turn' },
+      { zh: '頑皮雷彈：2 人玩時牌堆變短（功能牌 28 張），一局不會拖太久；撒嬌時要給出自己唯一的絕緣橡膠會先跳提醒；手機矮螢幕的看穿計時條不再壓到牌堆；中文提示裡「你」前後不再多出空格', en: 'Naughty Voltorb: shorter deck with 2 players (28 action cards); a warning before giving away your only Insulating Rubber; the See Through bar no longer covers the deck on short phones; no extra spaces around "你" in Chinese' }
+    ] },
   { d: '2026-10-17', title: { zh: '派對模式：頑皮雷彈', en: 'Party mode: Naughty Voltorb' },
     new: [
       { zh: '新派對遊戲「頑皮雷彈」：輪到你時可以出任意張功能牌，最後抽一張結束；抽到雷電球又沒有「絕緣橡膠」就會被炸飛出局！有橡膠就能拆掉，還能偷偷把雷電球放回牌堆任何位置。功能牌有大鬧一番（下一位連玩 2 回合）、呼呼大睡（跳過）、瞬間移動（洗牌）、預知未來（偷看最上面 3 張）、撒嬌（對方給你一張牌）、看穿（3 秒內取消別人的牌，也能看穿看穿），還有寶可夢對子可以偷牌。活到最後的人獲勝。一樣有電腦玩家、自動代打、30 秒倒數、斷線重連和手遊風格牌桌', en: 'New party game "Naughty Voltorb": on your turn play any number of action cards, then draw to end it; draw a Voltorb without an Insulating Rubber and you blow up! With a Rubber you defuse it and can secretly put it back anywhere in the deck. Actions: Rampage (next player takes 2 turns), Nap (skip), Teleport (shuffle), Premonition (peek top 3), Charm (they give you a card), See Through (cancel someone\'s card within 3 s, even another See Through), plus Pokémon pairs to steal cards. Last one standing wins. CPU players, auto-play, 30 s turns, reconnection and the mobile-game style table' }

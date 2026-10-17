@@ -49,6 +49,14 @@
   const N = CARDS.length;   // 56
   const BOMBS = [0, 1, 2], DEFUSES = [3, 4, 5, 6, 7, 8, 9];
   const ACTION_IDS = [...Array(N).keys()].filter(i => i >= 10);
+  /** Mazo más corto a 2 (2026-10-17, pedido del dueño: con las 46 la partida se alargaba): de cada acción
+   *  se quitan 1-2 y de cada pareja 2 → 28 cartas de acción. Con 3-4 jugadores, todas. */
+  const DROP2 = { attack: 1, skip: 1, shuffle: 1, future: 2, favor: 1, nope: 2, pair: 2 };
+  function actionsFor(n) {
+    if (n > 2) return ACTION_IDS;
+    const seen = {};
+    return ACTION_IDS.filter(id => { const c = CARDS[id], k = c.k === 'pair' ? 'p' + c.p : c.k; seen[k] = (seen[k] || 0) + 1; return seen[k] > DROP2[c.k]; });
+  }
   const WIN = 3000;        // ventana para «看穿» (ms)
   const FAVOR_MS = 15000;  // para elegir qué carta das
   const BOMB_MS = 12000;   // para pulsar «usar la goma» (si no, se usa sola)
@@ -79,7 +87,8 @@
 
   /** Cartas que hay en juego en una ronda de n jugadores (para la prueba y la regla). */
   function deckFor(n) {
-    return { bombs: n - 1, defuses: n + extraDefuses(n), actions: ACTION_IDS.length, total: ACTION_IDS.length + n + extraDefuses(n) + n - 1 };
+    const a = actionsFor(n).length;
+    return { bombs: n - 1, defuses: n + extraDefuses(n), actions: a, total: a + n + extraDefuses(n) + n - 1 };
   }
 
   function nextAlive(st, from) {
@@ -94,7 +103,7 @@
    * opts.start: quién empieza (si no, al azar).
    */
   function newRound(n, rng = Math.random, opts = {}) {
-    const acts = shuffle(ACTION_IDS.slice(), rng);
+    const acts = shuffle(actionsFor(n).slice(), rng);
     const hands = Array.from({ length: n }, (x, i) => [DEFUSES[i], ...acts.splice(0, HAND0)]);
     const deck = shuffle([...acts, ...DEFUSES.slice(n, n + extraDefuses(n)), ...BOMBS.slice(0, n - 1)], rng);
     const start = opts.start != null ? opts.start : Math.floor(rng() * n);
@@ -493,7 +502,7 @@
     };
   }
 
-  const VB = { KINDS, CARDS, N, PAIRS, BOMBS, DEFUSES, ACTION_IDS, COUNTS, WIN, FAVOR_MS, BOMB_MS, BOOM_MS, INSERT_MS, PTS, PLAYABLE, TARGETED,
+  const VB = { KINDS, CARDS, N, PAIRS, BOMBS, DEFUSES, ACTION_IDS, actionsFor, COUNTS, WIN, FAVOR_MS, BOMB_MS, BOOM_MS, INSERT_MS, PTS, PLAYABLE, TARGETED,
                card, kind, isBomb, sortHand, deckFor, extraDefuses, newRound, act, checkPlay, turnOf, results, nextAlive, targets, pairOf,
                cpuMove, cpuInsert, cpuNopeChance, worstCard, timeoutMove, priv, pub, bombsIn };
   if (typeof module !== 'undefined' && module.exports) module.exports = VB;

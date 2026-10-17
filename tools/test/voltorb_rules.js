@@ -44,6 +44,10 @@ for (const np of [2, 3, 4]) {
   }
 }
 
+ok(V.actionsFor(2).length === 28 && V.actionsFor(3).length === 46 && V.actionsFor(4).length === 46, 'a 2 jugadores, 28 cartas de acción; a 3-4, 46');
+ok(['attack', 'skip', 'shuffle', 'future', 'favor', 'nope', 'pair'].every(k => V.actionsFor(2).some(id => V.kind(id) === k)), 'a 2 jugadores siguen todas las clases de carta');
+for (let p = 0; p < V.PAIRS; p++) ok(V.actionsFor(2).filter(id => V.kind(id) === 'pair' && V.CARDS[id].p === p).length === 2, 'a 2: pareja ' + p + ' con 2 cartas');
+
 // --- robar normal ---
 {
   const st = table([[SKP[0]], [SKP[1]]], [FUT[0], BMB[0], ATT[0]]);

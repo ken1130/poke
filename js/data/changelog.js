@@ -6,6 +6,13 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-17', title: ['Modo fiesta: ajustes', 'Party mode: tweaks'], chg: [
+    ['La CPU tarda un poco más en jugar (1,4-2,2 s) para que dé tiempo a ver qué ha echado cada una.', 'CPUs take a bit longer to play (1.4-2.2 s) so you can see what each one played.'],
+    ['Voltorb travieso: con 2 jugadores el mazo es más corto (28 cartas de acción) y, si vas a dar tu única Goma aislante con Carantoña, se te avisa antes.', 'Naughty Voltorb: with 2 players the deck is shorter (28 action cards), and you get a warning before giving away your only Insulating Rubber.']
+  ], fix: [
+    ['Tu reloj del turno ya no vuelve a 30 s cuando otro jugador avisa, pilla o anula una carta.', 'Your turn timer no longer resets to 30 s when another player calls, catches or cancels a card.'],
+    ['Voltorb travieso: en móviles muy bajos la barra de Detección ya no tapa el mazo; en chino ya no salen espacios de más alrededor de «你».', 'Naughty Voltorb: on very short phones the See Through bar no longer covers the deck; no extra spaces around «你» in Chinese.']
+  ] },
   { d: '2026-10-17', title: ['Modo fiesta: Voltorb travieso', 'Party mode: Naughty Voltorb'], new: [
     ['Nuevo juego de fiesta: Voltorb travieso. Echa cartas de acción y termina robando; si robas un Voltorb sin Goma aislante, ¡explotas y quedas fuera! Con la Goma lo desactivas y lo vuelves a meter en secreto donde quieras. Cartas: Alboroto (el siguiente juega 2 turnos), Siesta, Teletransporte (barajar), Premonición (ver las 3 de arriba), Carantoña (te dan una carta), Calar (anula una acción en 3 s, también la de otro Calar) y parejas de Pokémon para robar. Gana el último que quede. Con CPU, juego automático, 30 s por turno y reconexión.',
      'New party game: Naughty Voltorb. Play action cards and end your turn by drawing; draw a Voltorb without an Insulating Rubber and you blow up and are out! With the Rubber you defuse it and secretly put it back wherever you like. Cards: Rampage (next player takes 2 turns), Nap, Teleport (shuffle), Premonition (peek the top 3), Charm (they give you a card), See Through (cancel an action within 3 s, even another See Through) and Pokémon pairs to steal. Last one standing wins. With CPUs, auto-play, 30 s turns and reconnection.']
