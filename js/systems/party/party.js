@@ -4,8 +4,8 @@
  * Al empezar NO se entra en el mundo: se abre la mesa (#scr-party, party-game-ui.js).
  *
  * Juegos (registro): { id, name, minPlayers, maxPlayers, soon?, turnMs, newRound, act, turn,
- *   cpu, timeout, priv, pub, results, precheck?, cpuDelay? }. Big Two (bigtwo.js) y
- *   Cartas de tipos (typecards.js); los demás salen en la lista como "Próximamente".
+ *   cpu, timeout, priv, pub, results, precheck?, cpuDelay? }. Big Two (bigtwo.js),
+ *   Cartas de tipos (typecards.js) y Voltorb travieso (voltorb.js); los demás salen en la lista como "Próximamente".
  *   precheck(vista, a): validación en el jugador antes de enviar (el anfitrión vuelve a validar).
  *   cpuDelay(st): milisegundos de más antes de que juegue la CPU (p. ej. para dar tiempo a avisar).
  *   react(st, seats): jugadas de CPU fuera de turno [{ key, seat, a, delay }] (cada clave se programa una vez).
@@ -121,8 +121,66 @@ G.Party = (() => {
                   ev: st.ev, moves: st.moves, over: st.over, winner: st.winner }),
     results: st => T().results(st)
   });
-  register({ id: 'voltorb', name: 'Voltorb travieso', minPlayers: 2, maxPlayers: 4, soon: true,
-             desc: 'Roba cartas y que no te explote el Voltorb.' });
+  // Voltorb travieso (頑皮雷彈, voltorb.js, 2026-10-17). El tiempo (ventana de «看穿», favor, Voltorb robado)
+  // lo llevan temporizadores de react: cada uno con su clave, y se cancelan solos si ya no tocan.
+  const VT = () => G.Voltorb;
+  const vbPlans = new WeakMap();   // estado de la ronda -> (clave -> ¿la CPU echa Detección?)
+  register({
+    id: 'voltorb', name: 'Voltorb travieso', minPlayers: 2, maxPlayers: 4, turnMs: 30000,
+    desc: 'Roba cartas y que no te explote el Voltorb.',
+    newRound: n => VT().newRound(n),
+    act: (st, seat, a) => VT().act(st, seat, a, Date.now()),
+    turn: st => VT().turnOf(st),
+    over: st => st.over,
+    cpu: (st, seat) => VT().cpuMove(st, seat),
+    timeout: (st, seat) => VT().timeoutMove(st, seat),
+    cpuDelay: st => (st.pend ? Math.max(0, st.pend.until - Date.now()) + 80 : st.phase === 'bomb' ? 1500 : 0),
+    react: (st, seats) => {
+      const V = VT(), out = [], now = Date.now();
+      const bot = i => !!(seats[i].cpu || seats[i].gone || seats[i].afk || seats[i].auto);
+      let plans = vbPlans.get(st);
+      if (!plans) vbPlans.set(st, plans = new Map());
+      const p = st.pend;
+      if (p) {
+        out.push({ key: 'r' + p.seq + '.' + p.nopes, seat: p.seat, a: { type: 'resolve' }, delay: Math.max(0, p.until - now) + 40 });
+        for (let i = 0; i < st.n; i++) {
+          if (!bot(i)) continue;
+          const k = 'n' + p.seq + '.' + p.nopes + '.' + i;
+          if (!plans.has(k)) plans.set(k, Math.random() < V.cpuNopeChance(st, i) ? 600 + Math.random() * 1400 : 0);
+          const d = plans.get(k);
+          if (d) out.push({ key: k, seat: i, a: { type: 'nope', at: p.nopes }, delay: d });
+        }
+      }
+      // Personas: si no eligen a tiempo, se elige solo (las CPU lo hacen en su turno, party.js cpu).
+      const f = st.favor;
+      if (st.phase === 'favor' && f && !bot(f.to)) out.push({ key: 'f' + f.seq, seat: f.to, a: { type: 'give', random: true }, delay: Math.max(0, f.until - now) });
+      const b = st.bomb;
+      if (b && !bot(b.seat)) {
+        const def = st.hands[b.seat].some(id => V.kind(id) === 'defuse');
+        if (st.phase === 'bomb') out.push(def ? { key: 'b' + b.seq, seat: b.seat, a: { type: 'defuse' }, delay: Math.max(0, b.at + V.BOMB_MS - now) }
+                                              : { key: 'x' + b.seq, seat: b.seat, a: { type: 'explode' }, delay: Math.max(0, b.at + V.BOOM_MS - now) });
+        else if (st.phase === 'insert') out.push({ key: 'i' + b.seq, seat: b.seat, a: { type: 'insert', pos: -1 }, delay: Math.max(0, (b.ins || now) + V.INSERT_MS - now) });
+      }
+      return out;
+    },
+    precheck: (v, a) => {
+      const p = v.pub, me = v.you;
+      if (!p.alive[me]) return { ok: false, err: 'Ya has explotado: esta ronda sólo miras.' };
+      if (a.type === 'nope') return p.pend ? { ok: true } : { ok: false, err: 'Ahora no hay nada que anular.' };
+      if (a.type === 'give') return p.favor && p.favor.to === me ? { ok: true } : { ok: false, err: 'Ahora no tienes que dar ninguna carta.' };
+      if (p.turn !== me) return { ok: false, err: 'No es tu turno.' };
+      if (a.type === 'play') {
+        if (p.pend) return { ok: false, err: 'Espera: aún se puede anular la última carta.' };
+        if (p.phase !== 'play') return { ok: false, err: 'Ahora no puedes echar cartas.' };
+        return VT().checkPlay(v.priv.hand, a.cards, a.target, { alive: p.alive, counts: p.counts, seat: me });
+      }
+      if (a.type === 'draw' && (p.pend || p.phase !== 'play')) return { ok: false, err: p.pend ? 'Espera: aún se puede anular la última carta.' : 'Ahora no puedes robar.' };
+      return { ok: true };
+    },
+    priv: (st, seat) => VT().priv(st, seat),
+    pub: st => VT().pub(st, Date.now()),
+    results: st => VT().results(st)
+  });
   register({ id: 'tennis', name: 'Tenis Pokémon', minPlayers: 2, maxPlayers: 4, soon: true,
              desc: 'Partidos de tenis con tu Pokémon.' });
 
