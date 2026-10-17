@@ -409,3 +409,18 @@
   .vb-nope { bottom: calc(-8px - var(--capH)); padding-top: 1px; padding-bottom: 1px; }
   .vb-nopeb { width: 40px; height: 40px; }
 }
+
+/* ---------- 2 contra 2 (2026-10-17) ---------- */
+/* ¿a quién? el compañero, con su insignia; el color del equipo en el borde */
+.vb-tg { position: relative; }
+.vb-tg.tm0 { border-color: #8fb3ff; } .vb-tg.tm1 { border-color: #ff8f7f; background: linear-gradient(#b8432f, #6e1d12); }
+.vb-tg .pt-tm { position: static; font-size: 13px; }
+/* dónde meter el Voltorb: quién robará cada una de las de arriba */
+.vb-ib { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; }
+.vb-iwho { display: block; font-size: 13px; font-weight: 700; margin-top: 2px; }
+.vb-iwho.foe { color: #ff9f8f; } .vb-iwho.mate { color: #8fe39a; } .vb-iwho.me { color: #ffd23f; }
+.vb-ib.on .vb-iwho { color: #6a2a00; }
+@media (max-height: 520px) {
+  .vb-iwho { font-size: 11px; margin-top: 0; }
+  .vb-tg .pt-tm { font-size: 11px; }
+}

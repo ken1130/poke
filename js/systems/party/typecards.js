@@ -29,6 +29,9 @@
  *     Las CPU avisan/pillan con retraso desde el registro (party.js, react).
  *   - Gana la ronda quien se queda sin cartas. Puntos para el ganador = las cartas de los
  *     demás (número = su valor, efecto = 20, comodín = 50). Se suman ronda tras ronda.
+ *   - 2 contra 2 (opts.teams = [0,1,0,1], compañeros enfrente; 2026-10-17): en cuanto alguien se
+ *     queda sin cartas gana su EQUIPO; los dos se llevan los mismos puntos = lo que suman las manos
+ *     de los dos rivales (la mano del compañero no cuenta). No se puede pillar al compañero.
  *
  * Estado (sólo lo tiene el anfitrión): { n, hands, deck, discard, color, dir, turn, phase,
  *   drawn, called[], vuln, over, winner, moves, tseq, ev[], start }.
@@ -103,7 +106,8 @@
     if (opts.first != null) { deck.splice(deck.indexOf(opts.first), 1); }
     const hands = Array.from({ length: n }, () => deck.splice(deck.length - 7, 7));
     const st = { n, hands, deck, discard: [], color: -1, dir: 1, turn: 0, phase: 'play', drawn: -1,
-                 called: Array(n).fill(false), vuln: -1, vulnSeq: 0, lastCall: null, callSeq: 0, over: false, winner: -1, moves: 0, tseq: 0, ev: [], start: 0 };
+                 called: Array(n).fill(false), vuln: -1, vulnSeq: 0, lastCall: null, callSeq: 0, over: false, winner: -1, moves: 0, tseq: 0, ev: [], start: 0,
+                 teams: Array.isArray(opts.teams) && opts.teams.length === n ? opts.teams.slice() : null, lastCol: Array(n).fill(-1) };
     Object.defineProperty(st, 'rng', { value: rng, enumerable: false, writable: true });
     const start = opts.start != null ? opts.start : Math.floor(rng() * n);
     st.start = start;
@@ -190,6 +194,7 @@
     if (t === 'catch') {
       const v = st.vuln;
       if (v < 0 || v === seat || st.hands[v].length !== 1 || st.called[v]) return { ok: false, err: 'No hay nadie a quien pillar ahora.' };
+      if (mates(st, v, seat)) return { ok: false, err: 'No puedes pillar a tu compañero de equipo.' };
       st.ev = [];
       penalize(st, seat);
       st.moves++;
@@ -253,6 +258,7 @@
     st.phase = 'play'; st.drawn = -1;
     st.moves++;
     st.ev.push({ k: 'play', seat, card: id, color });
+    if (st.lastCol) st.lastCol[seat] = color;
     if (a.call && hand.length === 1 && !st.called[seat]) { st.called[seat] = true; st.lastCall = { seat, seq: (st.callSeq = (st.callSeq || 0) + 1) }; }
     if (hand.length !== 1) st.called[seat] = false;
     if (hand.length === 1 && !st.called[seat]) { st.vuln = seat; st.vulnSeq++; }
@@ -272,6 +278,7 @@
     }
     if (!hand.length) {
       st.over = true; st.winner = seat; st.turn = -1; st.vuln = -1; st.tseq++;
+      if (st.teams) st.winTeam = st.teams[seat];
       st.ev.push({ k: 'win', seat });
       return { ok: true, win: true };
     }
@@ -281,18 +288,31 @@
 
   function endTurn(st, to) { st.turn = to; st.phase = 'play'; st.drawn = -1; st.tseq++; }
 
-  /** El tipo del que más cartas tienes (sin contar comodines); si no tienes ninguno, al azar. */
-  function mostColor(hand, rng = Math.random) {
+  /** El tipo del que más cartas tienes (sin contar comodines); si no tienes ninguno, al azar.
+   *  lean: tipo que se prefiere un poco si va casi empatado (2 contra 2: el último que echó tu compañero). */
+  function mostColor(hand, rng = Math.random, lean = -1) {
     const cnt = [0, 0, 0, 0];
     for (const id of hand) if (CARDS[id].c < 4) cnt[CARDS[id].c] += 1 + points(id) / 100;
+    if (lean >= 0 && lean < 4 && cnt[lean] > 0) cnt[lean] += 0.6;
     const best = Math.max(...cnt);
     if (best <= 0) return Math.floor(rng() * 4);
     return cnt.indexOf(best);
   }
 
-  /** Resultado: puesto, cartas que quedan, puntos (sólo el ganador: lo que suman las cartas de los demás). */
+  /** ¿Son del mismo equipo (2 contra 2)? */
+  const mates = (st, a, b) => !!(st.teams && a !== b && st.teams[a] === st.teams[b]);
+
+  /** Resultado: puesto, cartas que quedan, puntos (sólo el ganador: lo que suman las cartas de los demás).
+   *  2 contra 2: los dos del equipo ganador, puesto 1 y los mismos puntos (las manos de los rivales); los otros, puesto 2. */
   function results(st) {
     const rows = st.hands.map((h, seat) => ({ seat, left: h.length, val: h.reduce((s, id) => s + points(id), 0), pts: 0 }));
+    if (st.teams) {
+      const wt = st.winner >= 0 ? st.teams[st.winner] : -1;
+      const sum = rows.reduce((s, r) => s + (st.teams[r.seat] === wt ? 0 : r.val), 0);
+      rows.forEach(r => { r.team = st.teams[r.seat]; r.win = r.team === wt; r.pts = r.win ? sum : 0; r.place = r.win ? 1 : 2; });
+      rows.sort((a, b) => (a.place - b.place) || (b.seat === st.winner) - (a.seat === st.winner) || (a.val - b.val) || (a.seat - b.seat));
+      return rows;
+    }
     const sum = rows.reduce((s, r) => s + (r.seat === st.winner ? 0 : r.val), 0);
     rows.forEach(r => { if (r.seat === st.winner) r.pts = sum; });
     rows.sort((a, b) => (b.pts - a.pts) || (a.val - b.val) || (a.left - b.left));
@@ -306,16 +326,21 @@
   /**
    * La CPU elige (sólo ve su mano y lo público).
    * ctx: { top, color, phase, drawn, nextCount (cartas del siguiente), prevCount, n, minOpp }
+   *   2 contra 2 (teamCtx): duo, mateCount (cartas del compañero), mateColor (el último tipo que echó).
+   *   Con los compañeros enfrente, el siguiente y el anterior siempre son rivales.
    */
   function cpuMove(hand, ctx) {
-    if (ctx.phase === 'pick') return { type: 'color', color: mostColor(hand) };
+    const lean = ctx.duo ? ctx.mateColor : -1;
+    if (ctx.phase === 'pick') return { type: 'color', color: mostColor(hand, Math.random, lean) };
     const ok = ctx.phase === 'drawn'
       ? (playable(ctx.drawn, ctx.top, ctx.color) ? [ctx.drawn] : [])
       : hand.filter(id => playable(id, ctx.top, ctx.color));
     if (!ok.length) return ctx.phase === 'drawn' ? { type: 'keep' } : { type: 'draw' };
     const rest = id => hand.filter(x => x !== id);
     const call = hand.length === 2;
-    const danger = (ctx.nextCount || 7) <= 2;
+    // 2 contra 2: más agresivo con el rival que va justo después (un rival con 3 ya es peligro).
+    const danger = (ctx.nextCount || 7) <= (ctx.duo ? 3 : 2);
+    const mateNear = ctx.duo && ctx.mateCount > 0 && ctx.mateCount <= 2;
     const score = id => {
       const c = CARDS[id];
       let s = points(id);                                   // soltar lo que más vale
@@ -328,21 +353,34 @@
         if (c.v === SKIP) s += 90;
         if (c.v === REV) s += ctx.n === 2 ? 90 : ((ctx.prevCount || 7) > (ctx.nextCount || 7) ? 70 : 0);
       } else if (c.v >= SKIP && c.v <= DRAW2 && hand.length > 3) s -= 4;   // efectos guardados un poco si no corre prisa
+      if (mateNear && c.v === SKIP) s += 60;                  // saltar al rival: le toca antes a mi compañero, que casi gana
+      if (mateNear && c.v === DRAW2) s += 40;
       if (hand.length <= 2 && c.v < WILD) s += 15;          // casi gano: lo que no sea comodín primero
       return s;
     };
     const best = ok.slice().sort((a, b) => score(b) - score(a))[0];
     const out = { type: 'play', card: best };
-    if (CARDS[best].v >= WILD) out.color = mostColor(rest(best));
+    if (CARDS[best].v >= WILD) out.color = mostColor(rest(best), Math.random, lean);
     if (call) out.call = true;
     return out;
+  }
+
+  /** Lo que la CPU (o la pista) sabe de su equipo: { duo, mateCount, mateColor } (vacío si es todos contra todos).
+   *  st puede ser el estado o la vista ({ teams, counts, lastCol? }). */
+  function teamCtx(st, seat) {
+    const t = st.teams;
+    if (!t) return {};
+    const m = t.findIndex((x, i) => i !== seat && x === t[seat]);
+    if (m < 0) return {};
+    const cnt = st.hands ? st.hands[m].length : (st.counts || [])[m];
+    return { duo: true, mateCount: cnt, mateColor: st.lastCol ? st.lastCol[m] : -1 };
   }
 
   /** Se acabó el tiempo: con la carta robada, quedársela; si no, robar 1 y pasar. */
   function timeoutMove(phase) { return phase === 'drawn' ? { type: 'keep' } : { type: 'draw', pass: true }; }
 
   const TC = { TYPES, CARDS, N, SKIP, REV, DRAW2, WILD, WILD4, SYM, card, isWild, isAction, points, sym, playable, sortHand,
-               newRound, act, legal, legalView, results, cpuMove, timeoutMove, mostColor, nextSeat };
+               newRound, act, legal, legalView, results, cpuMove, timeoutMove, mostColor, nextSeat, teamCtx, mates };
   if (typeof module !== 'undefined' && module.exports) module.exports = TC;
   if (root && root.G) root.G.TypeCards = TC;
 })(typeof window !== 'undefined' ? window : globalThis);

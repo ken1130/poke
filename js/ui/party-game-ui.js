@@ -101,7 +101,70 @@ G.PartyGameUI = (() => {
     $('pt-round').textContent = G.I18n.f('Ronda de cartas {x}', String(v.round));
     $('pt-leave').textContent = G.T(v.res ? 'Volver a la sala' : 'Salir de la mesa');
     if (!cur || cur.sid !== v.sid) { cur = { sid: v.sid, game: v.game }; R.build($('pt-body'), v, cur); }
+    teamBar(v);
     R.update(v, cur);
+    decorTeams(v);
+  }
+
+  // ---------------- 2 contra 2 (2026-10-17): lo común a los juegos con equipos ----------------
+  // v.teams = equipo de cada asiento (0 azul, 1 rojo) o null. Los compañeros se sientan enfrente
+  // (party.js), así que tu compañero sale arriba.
+  const TEAM_NAMES = ['Equipo azul', 'Equipo rojo'];
+  const teamName = t => G.T(TEAM_NAMES[t] || '');
+  const mateOf = (v, a, b) => !!(v.teams && a !== b && v.teams[a] === v.teams[b]);
+
+  /** En la barra de arriba: «2 對 2» y tu equipo (con su color). */
+  function teamBar(v) {
+    let el = $('pt-team');
+    if (!el) {
+      el = document.createElement('span');
+      el.id = 'pt-team';
+      $('pt-round').after(el);
+    }
+    const on = !!v.teams;
+    el.classList.toggle('hidden', !on);
+    if (!on) return;
+    const t = v.teams[v.you];
+    el.className = 'pt-team t' + t;
+    el.innerHTML = `<b>${esc(G.T('2 contra 2'))}</b><span>${esc(teamName(t))}</span>`;
+  }
+
+  /** Color del equipo en el cuadro de cada jugador y la insignia «隊友» / «紅隊» (los demás juegos, nada). */
+  function decorTeams(v) {
+    const root = $('pt-body');
+    root.classList.toggle('pt-duo', !!v.teams);
+    if (!v.teams) return;
+    root.querySelectorAll('[data-seat]').forEach(el => {
+      const j = +el.dataset.seat, t = v.teams[j], who = el.querySelector('.b2-who');
+      if (!who || !(t >= 0)) return;
+      const mate = mateOf(v, v.you, j);
+      who.classList.toggle('tm0', t === 0); who.classList.toggle('tm1', t === 1); who.classList.toggle('mate', mate);
+      let b = who.querySelector('.pt-tm');
+      if (j === v.you) { if (b) b.remove(); return; }
+      if (!b) { b = document.createElement('span'); who.appendChild(b); }
+      b.className = 'pt-tm t' + t + (mate ? ' mate' : '');
+      b.textContent = mate ? G.T('Tu compañero de equipo') : teamName(t);
+    });
+  }
+
+  /**
+   * Final de ronda con equipos: título y subtítulo del cartel y el podio agrupado por equipos
+   * (primero el ganador). card(r) = el HTML de la ficha de cada fila. null si no hay equipos.
+   */
+  function teamResults(v, card) {
+    if (!v.teams || !v.res) return null;
+    const wt = v.teams[v.pub.winner];
+    const won = v.teams[v.you] === wt;
+    const group = t => {
+      const rows = v.res.filter(r => v.teams[r.seat] === t);
+      return `<div class="pt-tg t${t}${t === wt ? ' win' : ''}"><div class="pt-tgh">${esc(teamName(t))}${t === wt ? ' ★' : ''}</div><div class="pt-tgc">${rows.map(card).join('')}</div></div>`;
+    };
+    return {
+      won, team: wt,
+      title: G.T(won ? '¡Hemos ganado en equipo!' : 'Esta ronda la ha perdido tu equipo'),
+      sub: G.T(wt === 0 ? '¡Victoria del equipo azul!' : '¡Victoria del equipo rojo!'),
+      podium: group(wt) + group(1 - wt)
+    };
   }
 
   function tick() {
@@ -503,5 +566,5 @@ G.PartyGameUI = (() => {
   // Se engancha al cargar (G.Party ya existe: se carga antes).
   wire();
 
-  return { open, close, flash, rules, RENDER };
+  return { open, close, flash, rules, RENDER, teamResults, mateOf, teamName };
 })();

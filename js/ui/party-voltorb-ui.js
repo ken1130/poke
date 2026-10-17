@@ -131,7 +131,7 @@
       case 'defuse': return F('¡{x} desactiva el Voltorb con la goma aislante!', nm(e.seat));
       case 'insert': return F('{x} vuelve a meter el Voltorb en el mazo a escondidas', nm(e.seat));
       case 'boom': return F('¡{x} ha explotado!', nm(e.seat));
-      case 'win': return F('¡{x} es el último en pie y gana!', nm(e.seat));
+      case 'win': return e.team != null ? G.T(e.team === 0 ? '¡Victoria del equipo azul!' : '¡Victoria del equipo rojo!') : F('¡{x} es el último en pie y gana!', nm(e.seat));
       default: return '';
     }
   }
@@ -154,8 +154,13 @@
         'Tienes 30 segundos por turno; si se acaba el tiempo, robas una carta (y si es un Voltorb y tienes goma, se usa sola y se mete en un sitio al azar).',
         'Puntos por ronda según el puesto: con 4 jugadores 3/2/1/0, con 3 jugadores 3/1/0 y con 2 jugadores 3/0. Se acumulan ronda tras ronda.',
         'Con «Juego automático» la CPU juega por ti hasta que lo quites.'];
+      // 2 contra 2 (2026-10-17).
+      const L2 = ['2 contra 2 (con 4 en la mesa): los compañeros se sientan enfrente, así que después de ti juega siempre un rival.',
+        'En 2 contra 2, un equipo queda fuera cuando explotan sus dos jugadores; gana el último equipo en pie.',
+        'En 2 contra 2, cada uno del equipo ganador se lleva 3 puntos (también el que explotó) y los del otro equipo, 0.',
+        'En 2 contra 2, Encanto y las parejas pueden ir contra cualquiera, también contra tu compañero (por ejemplo, para que te pase una goma). Las CPU nunca van contra su compañero ni anulan sus cartas.'];
       const cards = Object.keys(NAMES).map(k => `<b>${esc(G.T(NAMES[k]))}</b>`).join(' · ');
-      return `<ul class="b2-rules vb-rules">${L.map(t => `<li>${esc(G.T(t))}</li>`).join('')}</ul><p class="b2-rules-s">${cards}</p>`;
+      return `<ul class="b2-rules vb-rules">${L.map(t => `<li>${esc(G.T(t))}</li>`).join('')}${L2.map(t => `<li class="pt-r2">${esc(G.T(t))}</li>`).join('')}</ul><p class="b2-rules-s">${cards}</p>`;
     },
 
     build(root, v, c) {
@@ -297,7 +302,8 @@
       const k = VB().kind(cards[0]);
       box.innerHTML = `<div class="vb-ovbox"><h3>${esc(G.T(k === 'favor' ? '¿A quién le pides una carta?' : '¿A quién le robas una carta?'))}</h3>
         <div class="vb-cardrow">${cards.map(x => cardHTML(x)).join('')}</div>
-        <div class="vb-tgs">${opts.map(j => `<button class="vb-tg" data-tg="${j}"><span class="vb-tgav"></span><b translate="no">${esc(seatName(v.seats[j]))}</b>
+        <div class="vb-tgs">${opts.map(j => `<button class="vb-tg${v.teams ? ' tm' + v.teams[j] : ''}" data-tg="${j}"><span class="vb-tgav"></span><b translate="no">${esc(seatName(v.seats[j]))}</b>
+          ${UI.mateOf(v, v.you, j) ? `<em class="pt-tm t${v.teams[j]} mate">${esc(G.T('Tu compañero de equipo'))}</em>` : v.teams ? `<em class="pt-tm t${v.teams[j]}">${esc(UI.teamName(v.teams[j]))}</em>` : ''}
           <small>${esc(F('Le quedan {x} cartas de Voltorb', p.counts[j]))}</small></button>`).join('')}</div>
         <button class="btn ghost vb-btn" data-tx>${esc(G.T('Elegir otra carta'))}</button></div>`;
       box.querySelectorAll('[data-tg]').forEach(b => { const s = v.seats[+b.dataset.tg]; b.querySelector('.vb-tgav').appendChild(G.UI.spriteCanvas(s.dex, 96, 86, { scale: 3, hero: true, shiny: !!s.shiny })); });
@@ -541,7 +547,7 @@
 
     /** Pantallas encima de la mesa: dar carta (Encanto), Voltorb robado, dónde meterlo. */
     overlays(v, c) {
-      const p = v.pub, me = v.you, auto = !!(v.seats[me].auto || v.seats[me].afk);
+      const p = v.pub, me = v.you, auto = !!(v.seats[me].auto || v.seats[me].afk), n = v.seats.length;
       // Encanto: te toca dar una carta.
       const fbox = q('.vb-favor');
       const fv = p.phase === 'favor' && p.favor && p.favor.to === me && !v.res && !auto;
@@ -585,7 +591,10 @@
         const ik = b.seq + ':' + len + ':' + auto;
         if (ib.dataset.k !== ik) {
           ib.dataset.k = ik;
-          const btn = (pos, t) => `<button class="vb-ib" data-ip="${pos}">${esc(t)}</button>`;
+          // 2 contra 2: debajo de cada botón de arriba, quién robará esa carta si nadie echa nada.
+          const ord = v.teams ? VB().drawOrder({ left: p.left, alive: p.alive, n }, me, 3) : [];
+          const who = pos => (pos >= 0 && pos < ord.length && pos < len + 1 ? `<small class="vb-iwho${UI.mateOf(v, me, ord[pos]) ? ' mate' : ord[pos] === me ? ' me' : ' foe'}">${esc(F('Esa carta del mazo de Voltorb la robará {x}', ord[pos] === me ? G.T('Tú (en Voltorb travieso)') : seatName(v.seats[ord[pos]])))}</small>` : '');
+          const btn = (pos, t) => `<button class="vb-ib" data-ip="${pos}">${esc(t)}${pos < 3 ? who(pos) : ''}</button>`;
           ib.innerHTML = `<div class="vb-ovbox ins"><h3>${esc(G.T('Vuelve a meter el Voltorb en el mazo, a escondidas'))}</h3>
             <div class="vb-ibs">${btn(0, G.T('Meterlo arriba del todo'))}${len >= 1 ? btn(1, G.T('Meterlo de 2ª carta')) : ''}${len >= 2 ? btn(2, G.T('Meterlo de 3ª carta')) : ''}${btn(len, G.T('Meterlo abajo del todo'))}${btn(-1, G.T('Meterlo en un sitio al azar'))}</div>
             <div class="vb-slide"><input type="range" min="0" max="${len}" step="1" value="${Math.min(c.insPos, len)}" aria-label="${esc(G.T('Posición en el mazo'))}"><b class="vb-ipos"></b></div>
@@ -714,9 +723,11 @@
       c.resKey = key;
       R.closeTarget();
       ['.vb-favor', '.vb-boom', '.vb-insert', '.vb-peek', '.vb-alert'].forEach(s => { const e = q(s); if (e) { e.classList.add('hidden'); e.innerHTML = ''; e.dataset.k = ''; } });
-      const won = v.pub.winner === v.you;
+      const duo = !!v.teams;
+      // 2 contra 2: gana (o pierde) el equipo; el número son los puntos de cada ganador.
+      const won = duo ? v.teams[v.you] === v.teams[v.pub.winner] : v.pub.winner === v.you;
       const mine = v.res.find(r => r.seat === v.you) || { place: 1, pts: 0 };
-      const target = mine.pts;
+      const target = duo ? (v.res.find(r => r.win) || { pts: 0 }).pts : mine.pts;
       // Al final de la explosión, no encima.
       const delay = c.blastT ? 900 : 0;
       setTimeout(() => {
@@ -730,24 +741,28 @@
           for (let i = 0; i < 36; i++) confetti += `<i class="b2-conf" style="left:${Rn(0, 100)}%;--c:${COL[i % COL.length]};--d:${Rn(0, 1.6)}s;--t:${Rn(2.2, 3.6)}s;--s:${Rn(-1, 1)}"></i>`;
         }
         for (let i = 0; i < 8; i++) stars += `<i class="b2-star" style="left:${Rn(-8, 108)}%;top:${Rn(-10, 100)}%;--d:${Rn(0, 1.4)}s"></i>`;
-        const cards = v.res.slice().sort((a, b) => a.place - b.place).map(r => {
+        const card = (r, i) => {
           const s = v.seats[r.seat];
-          return `<div class="b2-pc p${r.place}${r.seat === v.you ? ' me' : ''}${r.alive ? '' : ' boom'}" data-ps="${r.seat}" style="--i:${r.place}">
+          return `<div class="b2-pc p${r.place}${r.seat === v.you ? ' me' : ''}${r.alive ? '' : ' boom'}${duo ? ' tm' + r.team : ''}" data-ps="${r.seat}" style="--i:${r.place}">
             ${r.place === 1 ? '<i class="b2-crown"></i>' : ''}<span class="b2-medal">${r.place}</span><div class="b2-pav"></div>
             <b class="b2-pn" translate="no">${esc(r.seat === v.you ? s.name : seatName(s))}</b>
             <div class="b2-pr"><span>${esc(G.T('Al final de la ronda'))}</span><b class="${r.alive ? 'good' : 'bad'}">${esc(G.T(r.alive ? 'Sigue en pie en Voltorb' : '¡Fuera por explosión!'))}</b></div>
             <div class="b2-pr"><span>${esc(G.T('Esta ronda'))}</span><b class="${r.pts ? 'good' : ''}">${r.pts ? '+' + r.pts : '0'}</b></div>
             <div class="b2-pr"><span>${esc(G.T('Puntos acumulados de Voltorb'))}</span><b>${s.total}</b></div>
           </div>`;
-        }).join('');
+        };
+        const tr = UI.teamResults(v, card);
+        const cards = tr ? tr.podium : v.res.slice().sort((a, b) => a.place - b.place).map(card).join('');
+        const title = tr ? tr.title : won ? G.T('¡Victoria!') : F('Puesto {x}', String(mine.place));
+        const sub = tr ? tr.sub + ' · ' + G.T('Puntos para cada uno del equipo ganador') : won ? G.T('¡Eres el último en pie!') : F('¡{x} es el último en pie y gana!', seatName(v.seats[v.pub.winner]));
         const host = G.Party.isHost;
         box.innerHTML = `<div class="b2-rays ${won ? 'win' : 'lose'}"></div><div class="b2-confw">${confetti}</div><div class="b2-fx">${balls}</div>
-          <div class="b2-banner ${won ? 'win' : 'lose'}">${stars}
-            <div class="b2-btw"><div class="b2-bt">${esc(won ? G.T('¡Victoria!') : F('Puesto {x}', String(mine.place)))}</div></div>
+          <div class="b2-banner ${won ? 'win' : 'lose'}${duo ? ' duo t' + tr.team : ''}">${stars}
+            <div class="b2-btw"><div class="b2-bt">${esc(title)}</div></div>
             <div class="b2-rib"><div class="b2-ribbon"><span class="b2-num" translate="no">0</span></div></div>
-            <div class="b2-bsub">${esc(won ? G.T('¡Eres el último en pie!') : F('¡{x} es el último en pie y gana!', seatName(v.seats[v.pub.winner])))}</div>
+            <div class="b2-bsub">${esc(sub)}</div>
           </div>
-          <div class="b2-podium">${cards}</div>
+          <div class="b2-podium${duo ? ' duo' : ''}">${cards}</div>
           <div class="b2-rbtns">
             ${host ? `<button class="btn gold" data-r="again">${esc(G.T('Otra ronda'))}</button>` : `<span class="sub" style="margin:0">${esc(G.T('Esperando al anfitrión…'))}</span>`}
             <button class="btn ghost" data-r="room">${esc(G.T('Volver a la sala'))}</button>

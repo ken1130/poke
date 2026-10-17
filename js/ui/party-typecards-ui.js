@@ -136,8 +136,12 @@
         'Con «Juego automático» la CPU juega por ti hasta que lo quites.',
         'Primera carta: si es Poder de Mewtwo vuelve al mazo; si es Ditto, el primero elige el tipo; Somnífero, Ida y vuelta y Doble golpe afectan al primer jugador.',
         'Puntos: el ganador suma las cartas que les quedan a los demás (número = su valor, efecto = 20, comodín = 50). Se acumulan ronda tras ronda: más es mejor.'];
+      // 2 contra 2 (2026-10-17).
+      const L2 = ['2 contra 2 (con 4 en la mesa): los compañeros se sientan enfrente, así que el siguiente y el anterior siempre son rivales.',
+        'En 2 contra 2, en cuanto uno se queda sin cartas gana su equipo, y los dos compañeros se llevan los mismos puntos: lo que suman las manos de los dos rivales.',
+        'En 2 contra 2 no puedes pillar a tu compañero, sólo a los rivales.'];
       const types = TYPE_DEX.map((d, c) => `<span class="tc-rs t${c}">${esc(typeName(c))}</span> ${esc(G.T((G.DEX_BY[d] || {}).name || ''))}`).join(' · ');
-      return `<ul class="b2-rules tc-rules">${L.map(t => `<li>${esc(G.T(t))}</li>`).join('')}<li>${esc(G.I18n.f('Tienes {x} segundos por turno en las cartas de tipos; si se acaba el tiempo, robas una carta y pasas.', secs))}</li></ul>` +
+      return `<ul class="b2-rules tc-rules">${L.map(t => `<li>${esc(G.T(t))}</li>`).join('')}${L2.map(t => `<li class="pt-r2">${esc(G.T(t))}</li>`).join('')}<li>${esc(G.I18n.f('Tienes {x} segundos por turno en las cartas de tipos; si se acaba el tiempo, robas una carta y pasas.', secs))}</li></ul>` +
         `<p class="b2-rules-s">${esc(G.T('Tipos y mascotas'))}: ${types}</p>`;
     },
 
@@ -288,7 +292,8 @@
       if (p.phase === 'pick') { R.openPick(-1); return; }
       const hand = v.priv.hand, n = v.seats.length;
       const nx = TC().nextSeat({ n, dir: p.dir }, v.you), pv = TC().nextSeat({ n, dir: p.dir }, v.you, -1);
-      const m = TC().cpuMove(hand, { top: p.top, color: p.color, phase: p.phase, drawn: v.priv.drawn, nextCount: p.counts[nx], prevCount: p.counts[pv], n });
+      const m = TC().cpuMove(hand, Object.assign({ top: p.top, color: p.color, phase: p.phase, drawn: v.priv.drawn, nextCount: p.counts[nx], prevCount: p.counts[pv], n },
+        TC().teamCtx({ teams: v.teams, counts: p.counts, lastCol: p.lastCol }, v.you)));
       if (m.type !== 'play') {
         G.Audio.sfx('error');
         UI.flash(G.T(p.phase === 'drawn' ? 'La carta robada no te conviene: quédatela.' : 'No tienes ninguna carta que valga: roba una.'));
@@ -354,7 +359,7 @@
         el.querySelector('.tc-cnt').textContent = nC;
         el.classList.toggle('few', nC <= 2 && !v.res);
         el.classList.toggle('vuln', p.vuln === j && !v.res);
-        el.querySelector('.tc-catch').classList.toggle('hidden', p.vuln !== j || !!v.res);
+        el.querySelector('.tc-catch').classList.toggle('hidden', p.vuln !== j || !!v.res || UI.mateOf(v, v.you, j));   // al compañero no se le pilla
       });
       const auto = !!(meS.auto || meS.afk);
       root.querySelector('.tc-me').classList.toggle('mine', mine);
@@ -520,34 +525,40 @@
       if (key === c.resKey) return;
       c.resKey = key;
       R.closePick();
-      const won = v.pub.winner === v.you;
       const mine = v.res.find(r => r.seat === v.you) || { place: 1, pts: 0, val: 0 };
-      const target = won ? mine.pts : mine.val;
+      const duo = !!v.teams;
+      // 2 contra 2: gana (o pierde) el equipo; el número son los puntos de cada ganador.
+      const won = duo ? v.teams[v.you] === v.teams[v.pub.winner] : v.pub.winner === v.you;
+      const target = duo ? (v.res.find(r => r.win) || { pts: 0 }).pts : won ? mine.pts : mine.val;
       G.Audio.sfx(won ? 'levelup' : 'gameover');
       let fx = '';
       if (won) for (let i = 0; i < 22; i++) {
         const a = Math.random() * 6.283, d = 38 + Math.random() * 30;
         fx += `<i class="${i % 3 ? 'b2-ball tc-coin' : 'b2-ball'}" style="--x:${(Math.cos(a) * d).toFixed(1)}vw;--y:${(Math.sin(a) * d * 0.7).toFixed(1)}vh;--d:${(Math.random() * 0.9).toFixed(2)}s"></i>`;
       }
-      const cards = v.res.slice().sort((a, b) => a.place - b.place).map(r => {
+      const card = r => {
         const s = v.seats[r.seat];
-        return `<div class="b2-pc p${r.place}${r.seat === v.you ? ' me' : ''}" data-ps="${r.seat}">
+        return `<div class="b2-pc p${r.place}${r.seat === v.you ? ' me' : ''}${duo ? ' tm' + r.team : ''}" data-ps="${r.seat}">
           <span class="b2-medal">${r.place}</span><div class="b2-pav"></div>
           <b class="b2-pn" translate="no">${esc(r.seat === v.you ? s.name : seatName(s))}</b>
           <div class="b2-pr"><span>${esc(G.T('Cartas que quedan'))}</span><b>${r.left}</b></div>
           <div class="b2-pr"><span>${esc(G.T('Esta ronda'))}</span><b class="${r.pts ? 'good' : ''}">${r.pts ? '+' + r.pts : '0'}</b></div>
           <div class="b2-pr"><span>${esc(G.T('Puntos acumulados de cartas de tipos'))}</span><b>${s.total}</b></div>
         </div>`;
-      }).join('');
+      };
+      const tr = UI.teamResults(v, card);
+      const cards = tr ? tr.podium : v.res.slice().sort((a, b) => a.place - b.place).map(card).join('');
+      const title = tr ? tr.title : won ? G.T('¡Victoria!') : G.I18n.f('¡{x} gana esta ronda de cartas de tipos!', seatName(v.seats[v.pub.winner]));
+      const sub = tr ? tr.sub + ' · ' + G.T('Puntos para cada uno del equipo ganador') : G.T(won ? 'puntos de la ronda' : 'Puntos que te quedaban en la mano');
       const host = G.Party.isHost;
       box.innerHTML = `<div class="b2-fx">${fx}</div>
-        <div class="b2-banner ${won ? 'win' : 'lose'}">
-          <div class="b2-bt">${esc(won ? G.T('¡Victoria!') : G.I18n.f('¡{x} gana esta ronda de cartas de tipos!', seatName(v.seats[v.pub.winner])))}</div>
+        <div class="b2-banner ${won ? 'win' : 'lose'}${duo ? ' duo t' + tr.team : ''}">
+          <div class="b2-bt">${esc(title)}</div>
           <div class="b2-ribbon"><span class="b2-num" translate="no">0</span></div>
-          <div class="b2-bsub">${esc(won ? G.T('puntos de la ronda') : G.T('Puntos que te quedaban en la mano'))}</div>
+          <div class="b2-bsub">${esc(sub)}</div>
         </div>
-        <div class="b2-podium">${cards}</div>
-        <p class="tc-rnote">${esc(G.T('El ganador se lleva los puntos de las cartas de los demás. Más es mejor.'))}</p>
+        <div class="b2-podium${duo ? ' duo' : ''}">${cards}</div>
+        <p class="tc-rnote">${esc(G.T(duo ? 'En 2 contra 2, los dos del equipo ganador se llevan los puntos de las manos de los rivales. Más es mejor.' : 'El ganador se lleva los puntos de las cartas de los demás. Más es mejor.'))}</p>
         <div class="b2-rbtns">
           ${host ? `<button class="btn gold" data-r="again">${esc(G.T('Otra ronda'))}</button>` : `<span class="sub" style="margin:0">${esc(G.T('Esperando al anfitrión…'))}</span>`}
           <button class="btn ghost" data-r="room">${esc(G.T('Volver a la sala'))}</button>

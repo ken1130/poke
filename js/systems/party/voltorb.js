@@ -27,6 +27,12 @@
  * goma, la usas y lo vuelves a meter donde quieras (en secreto); sin goma, explotas (tu mano
  * se descarta). Puntos por ronda según el puesto (PTS).
  *
+ * 2 contra 2 (opts.teams = [0,1,0,1], compañeros enfrente; 2026-10-17): un equipo queda fuera
+ * cuando explotan sus dos jugadores; gana el último equipo en pie. Puntos: 3 a cada uno del
+ * equipo ganador (también al que explotó), 0 a los otros. Encanto y parejas pueden ir contra
+ * cualquiera vivo, también contra tu compañero; las CPU nunca van contra el suyo ni le anulan
+ * sus cartas, y anulan más lo que va contra su compañero.
+ *
  * Estado (sólo lo tiene el anfitrión): { n, hands, deck, discard, alive, out, turn, left,
  *   attacked, phase, pend, favor, bomb, know, notes, tacts, moves, tseq, seq, ev, log, over, winner }.
  *   phase: 'play' | 'bomb' (acaba de robar un Voltorb) | 'insert' (ha usado la goma: dónde lo mete)
@@ -65,6 +71,8 @@
   const HAND0 = 7;
   /** Puntos de la ronda por puesto (1º, 2º...). */
   const PTS = { 2: [3, 0], 3: [3, 1, 0], 4: [3, 2, 1, 0] };
+  /** 2 contra 2: puntos para cada uno del equipo ganador (los otros, 0). */
+  const TEAM_PTS = 3;
   /** Cartas de acción que se echan en tu turno (abren la ventana de «看穿»). */
   const PLAYABLE = ['attack', 'skip', 'shuffle', 'future', 'favor', 'pair'];
   const TARGETED = ['favor', 'pair'];
@@ -109,7 +117,8 @@
     const start = opts.start != null ? opts.start : Math.floor(rng() * n);
     const st = { n, hands, deck, discard: [], alive: Array(n).fill(true), out: [], turn: start, left: 1, attacked: false,
                  phase: 'play', pend: null, favor: null, bomb: null, know: hands.map(() => []), notes: hands.map(() => []),
-                 tacts: 0, moves: 0, tseq: 0, seq: 0, ev: [{ k: 'start', seat: start }], log: [], over: false, winner: -1 };
+                 tacts: 0, moves: 0, tseq: 0, seq: 0, ev: [{ k: 'start', seat: start }], log: [], over: false, winner: -1,
+                 teams: Array.isArray(opts.teams) && opts.teams.length === n ? opts.teams.slice() : null, winTeam: -1 };
     Object.defineProperty(st, 'rng', { value: rng, enumerable: false, writable: true });
     return st;
   }
@@ -359,7 +368,15 @@
     st.know[seat] = [];
     st.bomb = null; st.phase = 'play';
     logEv(st, { k: 'boom', seat, card: b });
-    if (aliveCount(st) <= 1) {
+    if (st.teams) {
+      // 2 contra 2: se acaba cuando sólo queda gente de un equipo.
+      const left = new Set(st.alive.map((a, i) => (a ? st.teams[i] : -1)).filter(t => t >= 0));
+      if (left.size <= 1) {
+        st.over = true; st.winner = st.alive.indexOf(true); st.winTeam = st.teams[st.winner]; st.turn = -1; st.tseq++;
+        logEv(st, { k: 'win', seat: st.winner, team: st.winTeam });
+        return;
+      }
+    } else if (aliveCount(st) <= 1) {
       st.over = true; st.winner = st.alive.indexOf(true); st.turn = -1; st.tseq++;
       logEv(st, { k: 'win', seat: st.winner });
       return;
@@ -380,11 +397,20 @@
     if (st.winner >= 0) order.push(st.winner);
     for (let i = st.out.length - 1; i >= 0; i--) order.push(st.out[i]);
     for (let j = 0; j < st.n; j++) if (!order.includes(j)) order.push(j);
+    if (st.teams) {
+      // 2 contra 2: primero los del equipo ganador (los vivos delante), luego los otros; puesto 1 y 2 por equipo.
+      const wt = st.winTeam;
+      const ord = order.filter(j => st.teams[j] === wt).concat(order.filter(j => st.teams[j] !== wt));
+      return ord.map(seat => ({ seat, team: st.teams[seat], win: st.teams[seat] === wt, place: st.teams[seat] === wt ? 1 : 2,
+        pts: st.teams[seat] === wt ? TEAM_PTS : 0, left: st.hands[seat].length, alive: !!st.alive[seat] }));
+    }
     const pts = PTS[st.n] || PTS[4];
     return order.map((seat, i) => ({ seat, place: i + 1, pts: pts[i] || 0, left: st.hands[seat].length, alive: !!st.alive[seat] }));
   }
 
   // ---------------- CPU ----------------
+  /** ¿Son compañeros (2 contra 2)? */
+  const mates = (st, a, b) => !!(st.teams && a !== b && a >= 0 && b >= 0 && st.teams[a] === st.teams[b]);
   const has = (h, k) => h.some(id => kind(id) === k);
   const pick = (h, k) => h.find(id => kind(id) === k);
   /** Una pareja de la mano (dos del mismo Pokémon), o null. */
@@ -409,7 +435,7 @@
     const risk = bombsIn(st) / Math.max(1, st.deck.length);
     const defuse = has(h, 'defuse');
     const play = (k, extra) => Object.assign({ type: 'play', cards: [pick(h, k)] }, extra || {});
-    const tg = targets(st, seat);
+    const tg = targets(st, seat).filter(j => !mates(st, seat, j));   // la CPU nunca va contra su compañero
     const richest = () => tg.slice().sort((a, b) => st.hands[b].length - st.hands[a].length)[0];
     if (topBomb) {
       if (has(h, 'attack') && (rng() < 0.7 || !has(h, 'skip'))) return play('attack');
@@ -431,10 +457,26 @@
     return { type: 'draw' };
   }
 
-  /** Dónde mete la CPU el Voltorb: arriba si el siguiente lo va a robar; abajo si le toca a ella otra vez. */
+  /** Quién roba cada carta de arriba si nadie echa nada (lo que queda de tus turnos, luego los demás en orden). */
+  function drawOrder(st, seat, k) {
+    const out = [];
+    for (let i = 1; i < (st.left || 1) && out.length < k; i++) out.push(seat);
+    let j = seat;
+    while (out.length < k) { j = nextAlive(st, j); out.push(j); if (aliveCount(st) <= 0) break; }
+    return out;
+  }
+
+  /** Dónde mete la CPU el Voltorb: arriba si el siguiente lo va a robar; abajo si le toca a ella otra vez.
+   *  2 contra 2: donde lo robe el primer rival (nunca arriba si el siguiente es su compañero). */
   function cpuInsert(st, seat) {
     const rng = rngOf(st), len = st.deck.length;
     if (st.left > 1) return len - Math.floor(rng() * Math.min(3, len + 1));   // aún te quedan turnos: lejos
+    if (st.teams) {
+      const ord = drawOrder(st, seat, Math.min(len + 1, 4));
+      const k = ord.findIndex(j => j !== seat && !mates(st, seat, j));
+      if (k < 0) return len;   // en las de arriba no hay ningún rival: abajo del todo
+      if (rng() < 0.75 || mates(st, seat, ord[0])) return Math.min(len, k);
+    }
     const nx = nextAlive(st, seat);
     const weak = st.hands[nx].length <= 3;
     const r = rng();
@@ -462,6 +504,20 @@
     const p = st.pend;
     if (!p || !st.alive[seat] || p.last === seat || !has(st.hands[seat], 'nope')) return 0;
     const active = p.nopes % 2 === 0;   // la carta va a hacer efecto si nadie hace nada
+    if (st.teams) {
+      // 2 contra 2: nunca se anula lo de tu compañero (ni su carta ni su Detección).
+      if (mates(st, seat, p.last)) return 0;
+      if (active) {
+        if (p.seat === seat || mates(st, seat, p.seat)) return 0;
+        if (p.target === seat) return p.kind === 'attack' ? 0.6 : 0.7;
+        if (mates(st, seat, p.target)) return p.kind === 'attack' ? 0.45 : 0.55;   // va contra mi compañero
+        return p.kind === 'skip' || p.kind === 'future' ? 0.08 : 0.12;
+      }
+      // Un rival ha anulado algo: si era mío o de mi compañero, a veces lo recupero.
+      if (p.seat === seat) return 0.55;
+      if (mates(st, seat, p.seat)) return 0.45;
+      return 0;
+    }
     if (active) {
       if (p.seat === seat) return 0;
       if (p.kind === 'attack' && p.target === seat) return 0.6;
@@ -504,7 +560,7 @@
 
   const VB = { KINDS, CARDS, N, PAIRS, BOMBS, DEFUSES, ACTION_IDS, actionsFor, COUNTS, WIN, FAVOR_MS, BOMB_MS, BOOM_MS, INSERT_MS, PTS, PLAYABLE, TARGETED,
                card, kind, isBomb, sortHand, deckFor, extraDefuses, newRound, act, checkPlay, turnOf, results, nextAlive, targets, pairOf,
-               cpuMove, cpuInsert, cpuNopeChance, worstCard, timeoutMove, priv, pub, bombsIn };
+               cpuMove, cpuInsert, cpuNopeChance, worstCard, timeoutMove, priv, pub, bombsIn, mates, drawOrder, TEAM_PTS };
   if (typeof module !== 'undefined' && module.exports) module.exports = VB;
   if (root && root.G) root.G.Voltorb = VB;
 })(typeof window !== 'undefined' ? window : globalThis);

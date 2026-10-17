@@ -405,3 +405,68 @@
   .b2-rbtns .btn { min-height: 44px; font-size: 15px; padding: 4px 18px; }
 }
 @media (max-height: 340px) { .b2-pav { display: none; } }
+
+/* ---------- 2 contra 2 (2026-10-17): sala, barra, colores de equipo y final por equipos ---------- */
+.lp-mode { gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center; }
+.lp-mode .chip { padding: 6px 14px; font-size: 14px; }
+.lp-mode .chip[disabled] { opacity: .8; }
+.lp-teams { gap: 10px; justify-content: center; align-items: stretch; flex-wrap: wrap; }
+.lp-team { min-width: 150px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 14px; border-radius: 12px;
+  border: 2px solid; font-size: 15px; }
+.lp-team b { font-size: 15px; }
+.lp-team.t0 { background: rgba(60, 110, 240, .22); border-color: #6f9dff; } .lp-team.t0 b { color: #9fc0ff; }
+.lp-team.t1 { background: rgba(230, 70, 60, .22); border-color: #ff7a6a; } .lp-team.t1 b { color: #ffab9f; }
+.lp-team span { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-vs { align-self: center; font: 900 18px var(--font); color: var(--gold); }
+.lp-tnote { gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center; text-align: center; }
+.lp-warn { color: #ffc46a; }
+
+.pt-team { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 14px; color: #fff;
+  border: 2px solid; white-space: nowrap; }
+.pt-team b { font-size: 14px; }
+.pt-team.t0 { background: linear-gradient(#4d7cf0, #2a4fc2); border-color: #cfdcff; }
+.pt-team.t1 { background: linear-gradient(#e8603f, #b9361f); border-color: #ffd9c4; }
+.pt-team.hidden { display: none; }
+
+/* placas y aros del color del equipo; el tuyo con borde dorado */
+.pt-duo .b2-who.tm0 .b2-plate { background: linear-gradient(#4d7cf0, #2a4fc2); border-color: #cfdcff; }
+.pt-duo .b2-who.tm1 .b2-plate { background: linear-gradient(#e8603f, #b9361f); border-color: #ffd9c4; }
+.pt-duo .b2-who.me .b2-plate { border-color: var(--gold); }
+.pt-duo .b2-who.tm0 .b2-av { border-color: #8fb3ff; }
+.pt-duo .b2-who.tm1 .b2-av { border-color: #ff8f7f; }
+.pt-duo .b2-who.mate .b2-av { box-shadow: 0 5px 0 rgba(0,0,0,.35), 0 0 0 3px #8fb3ff, 0 0 14px 3px rgba(120, 170, 255, .5); }
+.pt-duo .b2-who.mate.tm1 .b2-av { box-shadow: 0 5px 0 rgba(0,0,0,.35), 0 0 0 3px #ff8f7f, 0 0 14px 3px rgba(255, 120, 100, .5); }
+.pt-tm { position: absolute; z-index: 3; top: -10px; left: -10px; padding: 1px 8px; border-radius: 999px; font: 800 13px var(--font); color: #fff; white-space: nowrap;
+  border: 2px solid #fff; box-shadow: 0 2px 0 rgba(0,0,0,.4); pointer-events: none; }
+.pt-tm.t0 { background: #2f62e0; } .pt-tm.t1 { background: #d2432c; }
+.pt-tm.mate { background: linear-gradient(#5fcb6a, #2d9a3c); }
+.b2-rules .pt-r2 { color: #bfe3ff; }
+
+/* final de ronda: el podio agrupado por equipos (primero el que gana) */
+.b2-podium.duo { gap: 16px; align-items: flex-end; }
+.pt-tg { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 10px 10px; border-radius: 18px; border: 2px solid; }
+.pt-tg.t0 { background: rgba(60, 110, 240, .2); border-color: rgba(143, 179, 255, .7); }
+.pt-tg.t1 { background: rgba(230, 70, 60, .2); border-color: rgba(255, 143, 127, .7); }
+.pt-tg.win { border-color: var(--gold); box-shadow: 0 0 22px rgba(255, 210, 63, .45); }
+.pt-tgh { font: 900 16px var(--font); color: #fff; text-shadow: 0 1px 0 #000; }
+.pt-tg.win .pt-tgh { color: var(--gold); }
+.pt-tgc { display: flex; gap: 12px; padding-top: 10px; }
+.b2-banner.duo.t1 .b2-ribbon { background: linear-gradient(#ff6a52, #c8321e); }
+.b2-banner.duo.t0 .b2-ribbon { background: linear-gradient(#4a88ff, #1f4fd1); }
+
+@media (max-height: 520px) {
+  .pt-team { font-size: 12px; padding: 1px 8px; gap: 4px; border-width: 1px; }
+  .pt-team b { font-size: 12px; }
+  .pt-tm { font-size: 11px; top: -8px; left: -8px; padding: 0 6px; border-width: 1px; }
+  .b2-podium.duo { gap: 8px; }
+  .pt-tg { padding: 2px 6px 6px; gap: 2px; border-radius: 12px; }
+  .pt-tgh { font-size: 13px; }
+  .pt-tgc { gap: 8px; padding-top: 6px; }
+  .lp-team { min-width: 120px; padding: 4px 10px; font-size: 14px; }
+}
+/* móviles muy bajos: el nombre del equipo ya sale en el cartel; el grupo sólo con su color (si no, los botones se salían por abajo) */
+@media (max-height: 340px) {
+  .pt-tgh { display: none; }
+  .pt-tg { padding: 3px 6px 5px; }
+  .b2-res:has(.b2-podium.duo) { gap: 6px; }
+}

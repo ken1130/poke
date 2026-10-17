@@ -346,13 +346,16 @@
       const connecting = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'connecting');
       const failed = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'failed');
       if (room.mode === 'party') {
-        const pg = G.Party.game(G.Social.partyOf(room).game), seats = ms.length + nCpu;
+        const po = G.Social.partyOf(room), pg = G.Party.game(po.game), seats = ms.length + nCpu;
         const okN = !!pg && seats >= pg.minPlayers && seats <= pg.maxPlayers;
-        btn.disabled = !room.isHost || !okN || connecting || failed || G.Party.active;
+        // 2 contra 2 con otro número de jugadores: no se empieza (2026-10-17: mejor que empezar sin avisar todos contra todos).
+        const duoBad = !!pg && pg.teams && po.teams && seats !== 4;
+        btn.disabled = !room.isHost || !okN || duoBad || connecting || failed || G.Party.active;
         btn.textContent = G.I18n.f('Empezar la fiesta ({x})', seats + '/' + G.Social.MAX_PLAYERS);
         $('lobby-note').textContent = G.T(!room.isHost ? (G.Party.left ? 'Tu plaza la juega la CPU. Puedes volver a la mesa.' : 'Cuando el anfitrión empiece, entraréis todos a la vez.')
           : !pg ? 'Ese juego aún no está disponible.'
           : !okN ? 'Añade jugadores CPU: hacen falta al menos 2 jugadores.'
+          : duoBad ? 'Para jugar 2 contra 2 hacen falta exactamente 4 jugadores en la mesa: añade o quita jugadores CPU, o elige «Cada uno por su cuenta».'
           : failed ? 'No se puede conectar con algún amigo: su red (o la tuya) no deja jugar en grupo. Probad con otra wifi o datos móviles; se reintenta solo.'
           : connecting ? 'Conectando con tus amigos…' : 'La partida empieza para todos a la vez.');
         return;
@@ -416,7 +419,7 @@
         <div class="row lp-cpu"><span>${G.T('Jugadores CPU')}</span>
           <button class="btn small" data-pcpu="-1" ${host && cpu > 0 ? '' : 'disabled'}>−</button><b translate="no">${cpu}</b>
           <button class="btn small" data-pcpu="1" ${host && cpu < maxCpu ? '' : 'disabled'}>+</button>
-          <span class="sub" style="margin:0">${G.I18n.f('En la mesa: {x}', (ms.length + cpu) + '/' + G.Social.MAX_PLAYERS)}</span>${back}</div>`;
+          <span class="sub" style="margin:0">${G.I18n.f('En la mesa: {x}', (ms.length + cpu) + '/' + G.Social.MAX_PLAYERS)}</span>${back}</div>${teamsHTML(o, g, ms, cpu, host)}`;
       if (box.dataset.html !== h) {
         box.innerHTML = h; box.dataset.html = h;
         box.querySelectorAll('[data-pg]').forEach(b => { b.onclick = () => { const r = G.Social.room; if (r && r.isHost) { G.Audio.sfx('click'); G.Social.setParty(Object.assign(G.Social.partyOf(r), { game: b.dataset.pg })); } }; });
@@ -430,7 +433,40 @@
         });
         const pb = box.querySelector('[data-pback]');
         if (pb) pb.onclick = () => G.Party.hello(true);
+        box.querySelectorAll('[data-pteams]').forEach(b => {
+          b.onclick = () => { const r = G.Social.room; if (r && r.isHost) { G.Audio.sfx('click'); G.Social.setParty(Object.assign(G.Social.partyOf(r), { teams: b.dataset.pteams === '1' })); } };
+        });
+        const mx = box.querySelector('[data-pmix]');
+        if (mx) mx.onclick = () => {
+          const r = G.Social.room;
+          if (!r || !r.isHost) return;
+          const c = G.Social.partyOf(r);
+          G.Audio.sfx('select');
+          G.Social.setParty(Object.assign(c, { mix: (c.mix + 1 + Math.floor(Math.random() * 2)) % 3 }));   // siempre otra pareja
+        };
       }
+    }
+
+    /**
+     * Fiesta, 2 contra 2 (2026-10-17): si el juego lo admite y sois 4 en la mesa, el anfitrión elige
+     * «Cada uno por su cuenta» o «2 contra 2». Con equipos se ven el azul y el rojo (los compañeros
+     * se sientan enfrente) y «Rehacer los equipos» cambia quién va con quién (party.js teamSlots).
+     */
+    function teamsHTML(o, g, ms, cpu, host) {
+      const seats = ms.length + cpu;
+      if (!g || !g.teams || (seats !== 4 && !o.teams)) return '';
+      const sw = `<div class="row lp-mode"><span>${G.T('Modo de juego de la fiesta')}</span>
+        <button class="chip ${o.teams ? '' : 'on'}" data-pteams="0" ${host ? '' : 'disabled'}>${G.T('Cada uno por su cuenta')}</button>
+        <button class="chip ${o.teams ? 'on' : ''}" data-pteams="1" ${host ? '' : 'disabled'}>${G.T('2 contra 2')}</button></div>`;
+      if (!o.teams) return sw;
+      if (seats !== 4) return sw + `<div class="sub lp-desc lp-warn">${G.T('Para jugar 2 contra 2 hacen falta exactamente 4 jugadores en la mesa: añade o quita jugadores CPU, o elige «Cada uno por su cuenta».')}</div>`;
+      const cdex = G.Party.cpuDexes(ms, cpu);
+      const nameAt = k => (k < ms.length ? ms[k].name : G.I18n.f('{x} (jugador CPU)', G.T((G.DEX_BY[cdex[k - ms.length]] || {}).name || 'CPU')));
+      const slots = G.Party.teamSlots(o.mix);
+      const team = t => `<div class="lp-team t${t}"><b>${G.T(t ? 'Equipo rojo' : 'Equipo azul')}</b>${[0, 1, 2, 3].filter(k => slots[k] === t).map(k => `<span translate="no">${esc(nameAt(k))}</span>`).join('')}</div>`;
+      return sw + `<div class="row lp-teams">${team(0)}<span class="lp-vs">VS</span>${team(1)}</div>
+        <div class="row lp-tnote"><span class="sub" style="margin:0">${G.T('Los compañeros se sientan enfrente y los turnos van alternando entre los equipos.')}</span>
+        ${host ? `<button class="btn small" data-pmix>${G.T('Rehacer los equipos')}</button>` : ''}</div>`;
     }
 
     function renderPlay(room, md, cur) {
@@ -480,7 +516,7 @@
         // Fiesta: no se entra en el mundo; se abre la mesa para todos (la sala sigue abierta
         // para que quien se corte pueda volver a entrar y recuperar su plaza).
         const o = G.Social.partyOf(room);
-        const r = G.Party.hostStart({ game: o.game, cpu: Math.min(o.cpu, G.Social.MAX_PLAYERS - room.members.length), roomId: room.id,
+        const r = G.Party.hostStart({ game: o.game, cpu: Math.min(o.cpu, G.Social.MAX_PLAYERS - room.members.length), roomId: room.id, teams: o.teams, mix: o.mix,
           members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny })) });
         if (!r.ok) G.UI.toast(G.I18n.f(r.error, r.x || ''), 2600);
         return;

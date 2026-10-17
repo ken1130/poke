@@ -281,5 +281,130 @@ ok(T.playable(id(GRASS, 5), W(), GRASS) && !T.playable(id(WATER, 5), W(), GRASS)
   ok(def.cpuDelay({ vuln: 1 }) >= 2600, 'la siguiente CPU espera mientras la ventana está abierta');
   console.log('CPU con 1 carta: avisa', calls, '· se olvida', forgot);
 }
+// ======================= 2 contra 2 (2026-10-17) =======================
+const TEAMS = [0, 1, 0, 1];
+{
+  const st = T.newRound(4, rngOf(5), { teams: TEAMS });
+  ok(JSON.stringify(st.teams) === '[0,1,0,1]', '2v2: el estado guarda los equipos');
+  ok(T.newRound(4, rngOf(5)).teams === null && T.newRound(3, rngOf(5), { teams: TEAMS }).teams === null, '2v2: sin equipos (o con otro número) = todos contra todos');
+  // Gana el equipo: el asiento 2 echa su última carta; puntos = manos de los rivales (1 y 3), para 0 y 2.
+  const h1 = [id(WATER, 9), id(GRASS, T.SKIP)], h3 = [W(), id(ELEC, 4)], h0 = [id(GRASS, 7), id(WATER, 2), id(ELEC, 1)];
+  const t = table([h0, h1, [id(FIRE, 3)], h3], id(FIRE, 8), FIRE, 2, { teams: TEAMS.slice(), lastCol: [-1, -1, -1, -1] });
+  ok(T.act(t, 2, { type: 'play', card: id(FIRE, 3) }).ok && t.over && t.winner === 2 && t.winTeam === 0, '2v2: al quedarse sin cartas gana su equipo');
+  const res = T.results(t), opp = 9 + 20 + 50 + 4;
+  const r = s => res.find(x => x.seat === s);
+  ok(r(0).pts === opp && r(2).pts === opp, '2v2: los dos ganadores se llevan las manos de los rivales (' + r(0).pts + '/' + r(2).pts + ', esperado ' + opp + ')');
+  ok(r(1).pts === 0 && r(3).pts === 0, '2v2: los rivales, 0');
+  ok(r(0).place === 1 && r(2).place === 1 && r(1).place === 2 && r(3).place === 2, '2v2: puesto 1 el equipo ganador, 2 el otro');
+  ok(res[0].seat === 2 && res[1].seat === 0 && res.every(x => x.team === TEAMS[x.seat]) && r(0).win && !r(1).win, '2v2: el que acabó primero, luego su compañero; filas con team/win');
+  // La mano del compañero no cuenta.
+  ok(r(0).val === T.points(id(GRASS, 7)) + 2 + 1 && r(0).pts === opp, '2v2: la mano del compañero no suma');
+}
+{
+  // No se pilla al compañero.
+  const t = table([[id(FIRE, 3), id(FIRE, 4)], [id(FIRE, 1), id(FIRE, 2)], [id(WATER, 3), id(WATER, 4)], [id(GRASS, 3), id(GRASS, 4)]], id(FIRE, 8), FIRE, 1, { teams: TEAMS.slice() });
+  T.act(t, 1, { type: 'play', card: id(FIRE, 1) });
+  ok(t.vuln === 1, '2v2: el asiento 1 se queda con 1 sin avisar');
+  const bad = T.act(t, 3, { type: 'catch' });
+  ok(!bad.ok && /compañero/.test(bad.err) && t.hands[1].length === 1, '2v2: el compañero no puede pillar');
+  ok(T.act(t, 2, { type: 'catch' }).ok && t.hands[1].length === 3, '2v2: un rival sí puede pillar');
+}
+{
+  // CPU con equipos: la siguiente siempre es rival; con compañero casi sin cartas, prefiere saltar.
+  const ctx = { top: id(FIRE, 8), color: FIRE, phase: 'play', drawn: -1, nextCount: 6, prevCount: 6, n: 4 };
+  const hand = [id(WATER, 8), id(WATER, 3), id(WATER, 4), id(FIRE, T.SKIP)];
+  const solo = T.cpuMove(hand, ctx), duo = T.cpuMove(hand, Object.assign({ duo: true, mateCount: 1, mateColor: -1 }, ctx));
+  ok(solo.card === id(WATER, 8) && duo.card === id(FIRE, T.SKIP), '2v2: con el compañero a 1 carta, la CPU salta al rival (' + solo.card + ' / ' + duo.card + ')');
+  const d3 = T.cpuMove([id(FIRE, 9), id(FIRE, T.DRAW2), id(WATER, 3), id(GRASS, 4)], Object.assign({}, ctx, { nextCount: 3, duo: true, mateCount: 6 }));
+  ok(d3.card === id(FIRE, T.DRAW2), '2v2: rival siguiente con 3 cartas: +2');
+  const wc = T.cpuMove([W(), id(WATER, 3), id(GRASS, 4)], Object.assign({}, ctx, { top: id(ELEC, 8), color: ELEC, duo: true, mateCount: 5, mateColor: GRASS }));
+  ok(wc.card === W() && wc.color === GRASS, '2v2: comodín casi empatado: el tipo del compañero');
+  ok(JSON.stringify(T.teamCtx({ teams: TEAMS, hands: [[1], [2, 3], [4, 5, 6], [7]], lastCol: [0, 1, 2, 3] }, 0)) === '{"duo":true,"mateCount":3,"mateColor":2}', '2v2: teamCtx');
+  ok(JSON.stringify(T.teamCtx({ teams: null }, 0)) === '{}', 'sin equipos: teamCtx vacío');
+}
+{
+  // 300+ partidas 2v2 sólo de CPU: terminan, sin cartas perdidas, puntos bien repartidos.
+  let done = 0, bad = 0, pens = 0, wins = [0, 0];
+  for (let g = 0; g < 360; g++) {
+    const rng = rngOf(5000 + g);
+    const st = T.newRound(4, rng, { teams: TEAMS });
+    let guard = 0;
+    while (!st.over && guard++ < 6000) {
+      const seat = st.turn, nx = T.nextSeat(st, seat), pv = T.nextSeat(st, seat, -1);
+      if (guard === 5999) console.log('2v2 sin acabar', g, st.hands.map(h => h.length).join('/'), 'mazo', st.deck.length, 'desc', st.discard.length);
+      if (st.teams[nx] === st.teams[seat] || st.teams[pv] === st.teams[seat]) { bad++; break; }   // compañeros enfrente
+      const a = T.cpuMove(st.hands[seat], Object.assign({ top: st.discard[st.discard.length - 1], color: st.color, phase: st.phase, drawn: st.drawn,
+        nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n }, T.teamCtx(st, seat)));
+      if (g % 6 === 0 && seat === 1 && a.call) delete a.call;   // el asiento 1 "se olvida" de avisar
+      const r = T.act(st, seat, a);
+      if (!r.ok) { bad++; break; }
+      // De vez en cuando alguien intenta pillar: el compañero nunca puede.
+      if (st.vuln >= 0) {
+        const v = st.vuln, mate = (v + 2) % 4, foe = (v + 1) % 4;
+        if (T.act(st, mate, { type: 'catch' }).ok) { bad++; break; }
+        if (rng() < 0.5 && T.act(st, foe, { type: 'catch' }).ok) pens++;
+      }
+      if (st.hands.flat().length + st.deck.length + st.discard.length !== 108) { bad++; break; }
+    }
+    if (!st.over) continue;
+    done++;
+    wins[st.winTeam]++;
+    const res = T.results(st), w = res.filter(x => x.win), l = res.filter(x => !x.win);
+    const want = l.reduce((s, x) => s + x.val, 0);
+    if (w.length !== 2 || l.length !== 2 || w.some(x => x.pts !== want || x.place !== 1 || x.team !== st.winTeam) || l.some(x => x.pts || x.place !== 2)) bad++;
+    if (st.teams[st.winner] !== st.winTeam || st.hands[st.winner].length) bad++;
+  }
+  ok(done === 360, '2v2: las 360 partidas de CPU terminan (' + done + ')');
+  ok(bad === 0, '2v2: sin jugadas rechazadas, cartas perdidas, pillar al compañero ni puntos mal (' + bad + ')');
+  ok(pens > 20 && wins[0] > 60 && wins[1] > 60, '2v2: hay pilladas y ganan los dos equipos (' + pens + ', ' + wins.join('/') + ')');
+  console.log('2v2 partidas CPU:', done, '· gana azul/rojo', wins.join('/'), '· pilladas', pens);
+}
+{
+  // Registro de party.js: react no hace pillar al compañero; precheck; hostStart reparte A,B,A,B.
+  const vm = require('vm'), fs = require('fs'), path = require('path');
+  const noop = () => {};
+  const Gx = { TypeCards: T, BigTwo: require('../../js/systems/party/bigtwo.js'), Voltorb: require('../../js/systems/party/voltorb.js'),
+               Net: { on: noop, onPeer: noop, send: noop, toHost: noop, broadcast: noop, uid: 'H' }, UI: { toast: noop } };
+  const sandbox = { G: Gx, console, setTimeout, clearTimeout, Math, Date, JSON, localStorage: { getItem: () => null, setItem: noop, removeItem: noop } };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../js/systems/party/party.js'), 'utf8'), sandbox);
+  const P = Gx.Party, def = P.game('types');
+  ok(def.teams === true && P.game('voltorb').teams === true && !P.game('bigtwo').teams, '2v2: registro (types y voltorb sí, Big Two no)');
+  const cpus = [{ cpu: true }, { cpu: true }, { cpu: true }, { cpu: true }];
+  let mateCatch = 0, foeCatch = 0;
+  for (let i = 0; i < 1500; i++) {
+    const t = table([[id(FIRE, 3), id(FIRE, 4)], [id(FIRE, 1), id(FIRE, 2)], [id(WATER, 3), id(WATER, 4)], [id(GRASS, 3), id(GRASS, 4)]], id(FIRE, 8), FIRE, 1, { teams: TEAMS.slice() });
+    T.act(t, 1, { type: 'play', card: id(FIRE, 1) });
+    for (const x of def.react(t, cpus) || []) if (x.a.type === 'catch') { if (x.seat === 3) mateCatch++; else foeCatch++; }
+  }
+  ok(mateCatch === 0 && foeCatch > 150, '2v2: la CPU nunca pilla a su compañero (' + mateCatch + ' / rivales ' + foeCatch + ')');
+  const view = { you: 3, teams: TEAMS, pub: { vuln: 1, turn: 2 }, priv: { hand: [] } };
+  ok(!def.precheck(view, { type: 'catch' }).ok && def.precheck(Object.assign({}, view, { you: 0 }), { type: 'catch' }).ok, '2v2: precheck no deja pillar al compañero');
+  ok(def.precheck(Object.assign({}, view, { teams: null }), { type: 'catch' }).ok, 'sin equipos: precheck como antes');
+  // Reparto: plaza 0 con 1 + mix % 3.
+  ok(JSON.stringify(P.teamSlots(0)) === '[0,0,1,1]' && JSON.stringify(P.teamSlots(1)) === '[0,1,0,1]' && JSON.stringify(P.teamSlots(2)) === '[0,1,1,0]', '2v2: teamSlots');
+  for (let mix = 0; mix < 3; mix++) {
+    const o = P.seatOrder(mix), ts = P.teamSlots(mix);
+    ok(o.slice().sort().join() === '0,1,2,3' && o.map(k => ts[k]).join() === '0,1,0,1', '2v2: seatOrder alterna equipos (mix ' + mix + ')');
+  }
+  const mem = [{ uid: 'H', name: 'Ken', dex: 25 }, { uid: 'A', name: 'Peter', dex: 4 }];
+  ok(P.hostStart({ game: 'types', members: mem, cpu: 2, teams: true, mix: 0 }).ok, '2v2: hostStart');
+  let S = P._host();
+  ok(JSON.stringify(S.teams) === '[0,1,0,1]' && JSON.stringify(S.st.teams) === '[0,1,0,1]', '2v2: la mesa y la ronda tienen equipos');
+  ok(S.seats[0].uid === 'H' && S.seats[2].uid === 'A' && S.seats[1].cpu && S.seats[3].cpu, '2v2 mix 0: Ken y Peter enfrente');
+  ok(P.view && JSON.stringify(P.view.teams) === '[0,1,0,1]', '2v2: la vista lleva los equipos');
+  P.endAll();
+  P.hostStart({ game: 'types', members: mem, cpu: 2, teams: true, mix: 1 });
+  S = P._host();
+  ok(S.seats[0].uid === 'H' && S.seats[1].uid === 'A' && S.seats[2].cpu, '2v2 mix 1: Peter es rival');
+  P.endAll();
+  P.hostStart({ game: 'types', members: mem, cpu: 1, teams: true, mix: 0 });
+  S = P._host();
+  ok(S.teams === null && S.st.teams === null && P.view.teams === null && S.seats.map(s => s.uid || 'cpu').join() === 'H,A,cpu', '2v2 con 3 en la mesa: todos contra todos');
+  P.endAll();
+  P.hostStart({ game: 'bigtwo', members: mem, cpu: 2, teams: true, mix: 1 });
+  S = P._host();
+  ok(S.teams === null && S.seats.map(s => s.uid || 'cpu').join() === 'H,A,cpu,cpu', 'Big Two no tiene 2v2: orden de siempre');
+  P.endAll();
+}
 console.log(fails ? `${fails} FALLOS de ${n}` : `OK: ${n} comprobaciones`);
 process.exit(fails ? 1 : 0);

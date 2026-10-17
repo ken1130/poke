@@ -435,14 +435,16 @@ G.Social = (() => {
     if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mode').set(mode === 'pvp' || mode === 'party' ? mode : 'coop').catch(() => {});
   }
 
-  /** Fiesta: el juego elegido y cuántas CPU (lo que falta: Big Two y ninguna CPU). */
+  /** Fiesta: el juego elegido, cuántas CPU y el «2 contra 2» (teams; mix 0-2 = quién va con quién,
+   *  party.js teamSlots). Lo que falta: Big Two, ninguna CPU, todos contra todos. */
   function partyOf(r) {
     const x = (r && r.party) || {};
-    return { game: typeof x.game === 'string' ? x.game : 'bigtwo', cpu: Math.max(0, Math.min(3, x.cpu | 0)) };
+    return { game: typeof x.game === 'string' ? x.game : 'bigtwo', cpu: Math.max(0, Math.min(3, x.cpu | 0)), teams: x.teams === true, mix: Math.max(0, Math.min(2, x.mix | 0)) };
   }
-  /** El anfitrión cambia el juego o las CPU de la fiesta. */
+  /** El anfitrión cambia el juego, las CPU o los equipos de la fiesta. */
   function setParty(o) {
-    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/party').set({ game: String(o.game || 'bigtwo').slice(0, 16), cpu: Math.max(0, Math.min(3, o.cpu | 0)) }).catch(() => {});
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/party').set({ game: String(o.game || 'bigtwo').slice(0, 16), cpu: Math.max(0, Math.min(3, o.cpu | 0)),
+      teams: o.teams === true, mix: Math.max(0, Math.min(2, o.mix | 0)) }).catch(() => {});
   }
 
   /** PK por equipos: el equipo de cada uno (el que eligió, o 1.º/3.º rojo y 2.º/4.º azul). */

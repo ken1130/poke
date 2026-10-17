@@ -318,5 +318,132 @@ for (const [pos, want] of [[0, 0], [1, 1], [2, 2], ['bottom', 3], [-1, null]]) {
   console.log('  ganadores por asiento:', winners.join(' / '), '· nope', nopes, '· favor', favors, '· parejas', steals, '· gomas', defused, '· ataques', attacks, '· máx pasos', maxSteps);
 }
 
+// ======================= 2 contra 2 (2026-10-17) =======================
+const TEAMS = [0, 1, 0, 1];
+const PR = p => pairIds(p);
+{
+  const st = V.newRound(4, rngOf(3), { teams: TEAMS });
+  ok(JSON.stringify(st.teams) === '[0,1,0,1]' && st.winTeam === -1, '2v2: el estado guarda los equipos');
+  ok(V.newRound(4, rngOf(3)).teams === null && V.newRound(3, rngOf(3), { teams: TEAMS }).teams === null, '2v2: sin equipos = todos contra todos');
+  // Explota el asiento 1 (rojo): sigue la ronda; explota el 3 (rojo): gana el azul.
+  const t = table([[SKP[0]], [SKP[1]], [SKP[2]], [SKP[3]]], [BMB[0], FUT[0], BMB[1], FUT[1], FUT[2]], 1, { teams: TEAMS.slice() });
+  V.act(t, 1, { type: 'draw' }); V.act(t, 1, { type: 'explode' });
+  ok(!t.over && !t.alive[1] && t.turn === 2, '2v2: cae uno del rojo, la ronda sigue');
+  V.act(t, 2, { type: 'draw' });
+  ok(t.turn === 3, '2v2: turno del otro del rojo');
+  V.act(t, 3, { type: 'draw' }); V.act(t, 3, { type: 'explode' });
+  ok(t.over && t.winTeam === 0 && TEAMS[t.winner] === 0 && t.alive[t.winner], '2v2: sin nadie del rojo, gana el azul (' + t.winner + ')');
+  const res = V.results(t), r = s => res.find(x => x.seat === s);
+  ok(r(0).pts === 3 && r(2).pts === 3 && r(1).pts === 0 && r(3).pts === 0, '2v2: 3 puntos a cada uno del equipo ganador, 0 a los otros');
+  ok(r(0).place === 1 && r(2).place === 1 && r(1).place === 2 && r(3).place === 2 && res[0].win && res[1].win && !res[2].win, '2v2: puestos por equipo, ganadores delante');
+  ok(res[2].seat === 3 && res[3].seat === 1, '2v2: los que perdieron, el último en caer delante');
+}
+{
+  // Si cae uno de cada equipo no se acaba; el que explota de un equipo que gana también se lleva los 3.
+  const t = table([[SKP[0]], [SKP[1]], [SKP[2]], [SKP[3]]], [BMB[0], BMB[1], FUT[0], FUT[1], FUT[2]], 0, { teams: TEAMS.slice() });
+  V.act(t, 0, { type: 'draw' }); V.act(t, 0, { type: 'explode' });
+  V.act(t, 1, { type: 'draw' }); V.act(t, 1, { type: 'explode' });
+  ok(!t.over && t.alive[2] && t.alive[3] && t.turn === 2, '2v2: cae uno de cada equipo: siguen los otros dos');
+  t.deck.unshift(BMB[2]);
+  V.act(t, 2, { type: 'draw' }); V.act(t, 2, { type: 'explode' });
+  ok(t.over && t.winTeam === 1 && t.winner === 3, '2v2: gana el rojo');
+  const res = V.results(t);
+  ok(res.find(x => x.seat === 1).pts === 3 && res.find(x => x.seat === 1).place === 1 && !res.find(x => x.seat === 1).alive, '2v2: el compañero que explotó también gana');
+}
+{
+  // Personas: Encanto y parejas pueden ir contra el compañero.
+  ok(V.checkPlay([FAV[0]], [FAV[0]], 2, { alive: [true, true, true, true], counts: [1, 3, 3, 3], seat: 0 }).ok, '2v2: una persona puede pedirle a su compañero');
+  // CPU: nunca contra su compañero.
+  let toMate = 0, plays = 0;
+  for (let i = 0; i < 400; i++) {
+    const t = table([[FAV[0], PR(0)[0], PR(0)[1], DEF[0]], [], [FUT[0], FUT[1], FUT[2], FUT[3], SHF[0]], [SKP[0]]], [FUT[4], SHF[1], SHF[2]], 0,
+      { teams: TEAMS.slice(), rng: rngOf(77 + i) });
+    t.hands[1] = [SKP[1]];
+    if (i % 2) t.hands[3] = [];   // a veces el único rival con cartas no tiene: no hay a quién
+    const m = V.cpuMove(t, 0);
+    if (m.type === 'play' && V.TARGETED.includes(V.kind(m.cards[0]))) { plays++; if (m.target === 2) toMate++; }
+  }
+  ok(toMate === 0 && plays > 50, '2v2: la CPU nunca pide ni roba a su compañero (' + toMate + ' de ' + plays + ')');
+}
+{
+  // Detección: nunca a lo del compañero; más contra lo que va a por él.
+  const t = table([[NOP[0]], [NOP[1]], [NOP[2]], [NOP[3]]], [FUT[0]], 0, { teams: TEAMS.slice() });
+  t.pend = { seq: 1, seat: 2, kind: 'favor', cards: [FAV[0]], target: 1, nopes: 0, last: 2, until: 5000 };
+  ok(V.cpuNopeChance(t, 0) === 0 && V.cpuNopeChance(t, 1) > 0.5 && V.cpuNopeChance(t, 3) > 0.4, '2v2: no se anula la carta del compañero; sí la que va contra ti o tu compañero');
+  t.pend = { seq: 1, seat: 1, kind: 'favor', cards: [FAV[0]], target: 0, nopes: 1, last: 2, until: 5000 };
+  ok(V.cpuNopeChance(t, 0) === 0, '2v2: no se anula la Detección del compañero');
+  ok(V.cpuNopeChance(t, 3) > 0.3 && V.cpuNopeChance(t, 1) > 0.3, '2v2: el equipo anulado intenta recuperar su carta');
+  t.pend = { seq: 1, seat: 1, kind: 'skip', cards: [SKP[0]], target: -1, nopes: 0, last: 1, until: 5000 };
+  ok(V.cpuNopeChance(t, 3) === 0 && V.cpuNopeChance(t, 0) > 0 && V.cpuNopeChance(t, 0) < 0.2, '2v2: Siesta del rival: poco');
+  t.pend = { seq: 1, seat: 1, kind: 'pair', cards: PR(1).slice(0, 2), target: 2, nopes: 0, last: 1, until: 5000 };
+  const s0 = V.cpuNopeChance(t, 0);
+  t.teams = null;
+  ok(s0 > V.cpuNopeChance(t, 0), '2v2: más ganas de anular lo que va contra el compañero que sin equipos (' + s0 + ')');
+}
+{
+  // Dónde mete el Voltorb: si el siguiente vivo es su compañero, nunca arriba del todo.
+  let top = 0, tries = 0;
+  for (let i = 0; i < 300; i++) {
+    const t = table([[DEF[0], SKP[0]], [], [FUT[0], FUT[1]], [SKP[1], SKP[2]]], [FUT[2], FUT[3], FUT[4], SHF[0], SHF[1]], 0, { teams: TEAMS.slice(), rng: rngOf(400 + i) });
+    t.alive[1] = false; t.out = [1];
+    t.deck.unshift(BMB[0]);
+    V.act(t, 0, { type: 'draw' }); V.act(t, 0, { type: 'defuse' });
+    const p = V.cpuInsert(t, 0);
+    tries++;
+    if (p === 0) top++;
+  }
+  ok(top === 0, '2v2: con el compañero después, la CPU no deja el Voltorb arriba (' + top + '/' + tries + ')');
+  const t = table([[SKP[0]], [SKP[1]], [SKP[2]], [SKP[3]]], [FUT[0], FUT[1], FUT[2]], 0, { teams: TEAMS.slice() });
+  t.alive[1] = false;
+  ok(V.drawOrder(t, 0, 3).join() === '2,3,0', '2v2: orden de quién roba (sin el que explotó)');
+  t.left = 2;
+  ok(V.drawOrder(t, 0, 3).join() === '0,2,3', 'con turnos pendientes, la de arriba es tuya');
+}
+{
+  // 300+ partidas 2v2 de CPU: terminan, cartas conservadas, nunca contra el compañero, nunca anulan al compañero.
+  let games = 0, bad = 0, nopes = 0, mateT = 0, mateN = 0, targeted = 0;
+  const wins = [0, 0];
+  for (let g = 0; g < 360; g++) {
+    const rng = rngOf(7000 + g);
+    const st = V.newRound(4, rng, { teams: TEAMS });
+    const total = V.deckFor(4).total;
+    let now = 0, steps = 0;
+    while (!st.over && steps < 4000) {
+      steps++; now += 700;
+      if (st.pend) {
+        let did = false;
+        for (let s = 0; s < 4 && !did; s++) {
+          if (rng() < V.cpuNopeChance(st, s)) {
+            const last = st.pend.last;
+            const r = V.act(st, s, { type: 'nope', at: st.pend.nopes }, now + 600 + rng() * 1400);
+            if (r.ok) { did = true; nopes++; now += 1500; if (V.mates(st, s, last)) mateN++; }
+          }
+        }
+        if (!did) { const r = V.act(st, st.pend.seat, { type: 'resolve' }, st.pend.until); if (!r.ok) { bad++; break; } now = st.pend ? now : now + W; }
+        continue;
+      }
+      const seat = V.turnOf(st);
+      const m = V.cpuMove(st, seat);
+      const r = V.act(st, seat, m, now);
+      if (!r.ok) { bad++; console.log('2v2 jugada rechazada', JSON.stringify(m), r.err); break; }
+      if (m.type === 'play' && m.target != null) { targeted++; if (V.mates(st, seat, m.target)) mateT++; }
+      const all = allCards(st);
+      if (all.length !== total || new Set(all).size !== total) { bad++; console.log('2v2 cartas perdidas', g); break; }
+    }
+    if (!st.over) { bad++; continue; }
+    games++;
+    wins[st.winTeam]++;
+    const res = V.results(st);
+    const aliveTeams = new Set(st.alive.map((a, i) => (a ? TEAMS[i] : -1)).filter(x => x >= 0));
+    if (aliveTeams.size !== 1 || !aliveTeams.has(st.winTeam)) bad++;
+    if (res.length !== 4 || res.filter(x => x.win).length !== 2 || res.some(x => x.pts !== (x.team === st.winTeam ? 3 : 0))) bad++;
+    if (st.out.some(j => TEAMS[j] === st.winTeam) && st.out.filter(j => TEAMS[j] !== st.winTeam).length !== 2) bad++;
+  }
+  ok(games === 360 && bad === 0, '2v2: 360 partidas CPU terminan bien (' + games + ' acabadas, ' + bad + ' errores)');
+  ok(mateT === 0 && targeted > 100, '2v2: la CPU nunca va contra su compañero (' + mateT + ' de ' + targeted + ')');
+  ok(mateN === 0 && nopes > 50, '2v2: la CPU nunca anula a su compañero (' + mateN + ' de ' + nopes + ')');
+  ok(wins[0] > 100 && wins[1] > 100, '2v2: ganan los dos equipos (' + wins.join('/') + ')');
+  console.log('  2v2: gana azul/rojo', wins.join('/'), '· anulaciones', nopes, '· jugadas con objetivo', targeted);
+}
 console.log(fails ? `${fails} FALLOS de ${n}` : `OK: ${n} comprobaciones`);
 process.exit(fails ? 1 : 0);

@@ -9,6 +9,10 @@
  *   precheck(vista, a): validación en el jugador antes de enviar (el anfitrión vuelve a validar).
  *   cpuDelay(st): milisegundos de más antes de que juegue la CPU (p. ej. para dar tiempo a avisar).
  *   react(st, seats): jugadas de CPU fuera de turno [{ key, seat, a, delay }] (cada clave se programa una vez).
+ *   teams: true = admite «2 contra 2» (2026-10-17): con 4 plazas, los compañeros se sientan enfrente
+ *   (orden A,B,A,B: los turnos alternan entre equipos). newRound(n, { teams }) recibe teams = [0,1,0,1]
+ *   (equipo de cada asiento) o null; el juego guarda st.teams y calcula quién gana (results con
+ *   `team`). Los puntos siguen siendo de cada jugador. La vista lleva `teams` (null = todos contra todos).
  *
  * Red (los mismos canales que el cooperativo, G.Net; mensajes { k:'pty', t, ... }):
  *   El ANFITRIÓN manda: tiene la baraja y todo el estado, valida cada jugada, mueve a las
@@ -69,14 +73,15 @@ G.Party = (() => {
   register({
     id: 'types', name: 'Cartas de tipos', minPlayers: 2, maxPlayers: 4, turnMs: 30000,
     desc: 'Juega cartas del mismo tipo o número; cartas de efecto para fastidiar al siguiente.',
-    newRound: n => T().newRound(n),
+    teams: true,
+    newRound: (n, o) => T().newRound(n, Math.random, { teams: o && o.teams }),
     act: (st, seat, a) => T().act(st, seat, a),
     turn: st => (st.over ? -1 : st.turn),
     over: st => st.over,
     cpu: (st, seat) => {
       const nx = T().nextSeat(st, seat), pv = T().nextSeat(st, seat, -1);
-      const m = T().cpuMove(st.hands[seat], { top: st.discard[st.discard.length - 1], color: st.color, phase: st.phase, drawn: st.drawn,
-        nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n });
+      const m = T().cpuMove(st.hands[seat], Object.assign({ top: st.discard[st.discard.length - 1], color: st.color, phase: st.phase, drawn: st.drawn,
+        nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n }, T().teamCtx(st, seat)));
       delete m.call;       // la CPU avisa después, con un poco de retraso (react), y a veces se le olvida
       return m;
     },
@@ -95,7 +100,8 @@ G.Party = (() => {
         const out = [];
         const calls = bot(v) && Math.random() >= 0.2;
         if (calls) out.push({ seat: v, a: { type: 'call' }, delay: 600 + Math.random() * 1900 });
-        const others = seats.map((x, i) => i).filter(i => i !== v && bot(i));
+        // 2 contra 2: nadie pilla a su compañero.
+        const others = seats.map((x, i) => i).filter(i => i !== v && bot(i) && !(st.teams && st.teams[i] === st.teams[v]));
         if (others.length && !calls) out.push({ seat: others[Math.floor(Math.random() * others.length)], a: { type: 'catch' }, delay: 1500 + Math.random() * 2000 });
         out.forEach((x, k) => { x.key = st.vulnSeq + ':' + k; });
         plans.set(st.vulnSeq, out);
@@ -104,7 +110,8 @@ G.Party = (() => {
     },
     precheck: (v, a) => {
       const p = v.pub;
-      if (a.type === 'call' || a.type === 'catch') return { ok: true };
+      if (a.type === 'call') return { ok: true };
+      if (a.type === 'catch') return v.teams && p.vuln >= 0 && v.teams[p.vuln] === v.teams[v.you] ? { ok: false, err: 'No puedes pillar a tu compañero de equipo.' } : { ok: true };
       if (p.turn !== v.you) return { ok: false, err: 'No es tu turno.' };
       if (a.type === 'play') {
         if (p.phase === 'pick') return { ok: false, err: 'Primero elige el tipo de la mesa.' };
@@ -118,7 +125,8 @@ G.Party = (() => {
     pub: st => ({ counts: st.hands.map(h => h.length), turn: st.over ? -1 : st.turn, top: st.discard[st.discard.length - 1],
                   under: st.discard.slice(-4, -1), color: st.color, dir: st.dir, phase: st.phase, deck: st.deck.length,
                   called: st.called.map((c, i) => c && st.hands[i].length === 1), lastCall: st.lastCall, vuln: st.vuln >= 0 && !st.called[st.vuln] && st.hands[st.vuln].length === 1 ? st.vuln : -1,
-                  ev: st.ev, moves: st.moves, over: st.over, winner: st.winner }),
+                  ev: st.ev, moves: st.moves, over: st.over, winner: st.winner,
+                  lastCol: st.teams && st.lastCol ? st.lastCol.slice() : undefined }),
     results: st => T().results(st)
   });
   // Voltorb travieso (頑皮雷彈, voltorb.js, 2026-10-17). El tiempo (ventana de «看穿», favor, Voltorb robado)
@@ -128,7 +136,8 @@ G.Party = (() => {
   register({
     id: 'voltorb', name: 'Voltorb travieso', minPlayers: 2, maxPlayers: 4, turnMs: 30000,
     desc: 'Roba cartas y que no te explote el Voltorb.',
-    newRound: n => VT().newRound(n),
+    teams: true,
+    newRound: (n, o) => VT().newRound(n, Math.random, { teams: o && o.teams }),
     act: (st, seat, a) => VT().act(st, seat, a, Date.now()),
     turn: st => VT().turnOf(st),
     over: st => st.over,
@@ -202,7 +211,9 @@ G.Party = (() => {
 
   /**
    * Empieza una partida (anfitrión).
-   * cfg = { game, members:[{uid,name,dex,shiny}], cpu: n, roomId }
+   * cfg = { game, members:[{uid,name,dex,shiny}], cpu: n, roomId, teams?, mix? }
+   * teams: «2 contra 2» (sólo si el juego lo admite y sois 4 en la mesa; si no, todos contra todos).
+   * mix: 0-2, quién va con quién (teamSlots); las plazas se reordenan A,B,A,B (compañeros enfrente).
    */
   function hostStart(cfg) {
     const def = game(cfg.game);
@@ -212,19 +223,36 @@ G.Party = (() => {
     const n = humans.length + nCpu;
     if (n < def.minPlayers || n > def.maxPlayers) return { ok: false, error: 'Hacen falta entre {x} jugadores.', x: def.minPlayers + '-' + def.maxPlayers };
     stopTimers();
-    const used = new Set(humans.map(m => m.dex));
     const seats = humans.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny, cpu: false, gone: false, afk: false, afkN: 0 }));
-    for (let i = 0; i < nCpu; i++) {
-      const dex = CPU_DEX.find(d => !used.has(d) && G.SPRITE_META && G.SPRITE_META[d]) || 25;
-      used.add(dex);
-      seats.push({ uid: null, name: 'CPU ' + (i + 1), dex, shiny: false, cpu: true, gone: false, afk: false, afkN: 0 });
-    }
+    cpuDexes(humans, nCpu).forEach((dex, i) => seats.push({ uid: null, name: 'CPU ' + (i + 1), dex, shiny: false, cpu: true, gone: false, afk: false, afkN: 0 }));
+    // 2 contra 2: las plazas de la sala (personas y luego CPU) se reparten según mix y se sientan A,B,A,B.
+    const duo = !!(cfg.teams && def.teams && n === 4);
+    const ord = duo ? seatOrder(cfg.mix) : null;
+    const seated = duo ? ord.map(k => seats[k]) : seats;
     // Puntos acumulados: se siguen sumando mientras sea la misma sala y el mismo juego.
-    if (totalsKeep.room !== (cfg.roomId || null) || totalsKeep.game !== def.id) { totalsKeep.room = cfg.roomId || null; totalsKeep.game = def.id; totalsKeep.map.clear(); }
-    S = { sid: Math.random().toString(36).slice(2, 10), def, seats, st: null, round: 0, timer: 0, deadline: 0, note: null, noteSeq: 0, roomId: cfg.roomId || null };
+    // (2 contra 2 lleva su propia cuenta: «types:2v2».)
+    const gk = def.id + (duo ? ':2v2' : '');
+    if (totalsKeep.room !== (cfg.roomId || null) || totalsKeep.game !== gk) { totalsKeep.room = cfg.roomId || null; totalsKeep.game = gk; totalsKeep.map.clear(); }
+    S = { sid: Math.random().toString(36).slice(2, 10), def, seats: seated, teams: duo ? [0, 1, 0, 1] : null, st: null, round: 0, timer: 0, deadline: 0, note: null, noteSeq: 0, roomId: cfg.roomId || null };
     leftSid = null;
     newRound();
     return { ok: true };
+  }
+
+  /** 2 contra 2: equipo (0 azul, 1 rojo) de cada plaza de la sala (0-3: personas y luego CPU).
+   *  La plaza 0 (el anfitrión) es del azul con la plaza 1 + mix % 3; las otras dos, del rojo. */
+  function teamSlots(mix) { const p = 1 + ((mix | 0) % 3 + 3) % 3; return [0, 1, 2, 3].map(k => (k === 0 || k === p ? 0 : 1)); }
+  /** Orden en la mesa (plazas de la sala) para que los compañeros queden enfrente: azul, rojo, azul, rojo. */
+  function seatOrder(mix) { const t = teamSlots(mix), a = [0, 1, 2, 3].filter(k => t[k] === 0), b = [0, 1, 2, 3].filter(k => t[k] === 1); return [a[0], b[0], a[1], b[1]]; }
+
+  /** El Pokémon de cada CPU (distinto de los de las personas; también lo usa la sala para enseñar los equipos). */
+  function cpuDexes(humans, nCpu) {
+    const used = new Set(humans.map(m => m.dex)), out = [];
+    for (let i = 0; i < nCpu; i++) {
+      const dex = CPU_DEX.find(d => !used.has(d) && G.SPRITE_META && G.SPRITE_META[d]) || 25;
+      used.add(dex); out.push(dex);
+    }
+    return out;
   }
 
   const keyOf = (s, i) => s.uid || 'cpu' + i;
@@ -232,7 +260,7 @@ G.Party = (() => {
 
   function newRound() {
     S.round++;
-    S.st = S.def.newRound(S.seats.length);
+    S.st = S.def.newRound(S.seats.length, { teams: S.teams ? S.teams.slice() : null });
     S.scored = false;
     step();
   }
@@ -319,7 +347,7 @@ G.Party = (() => {
   function viewFor(i) {
     const def = S.def, st = S.st, over = def.over(st);
     return {
-      k: 'pty', t: 'st', sid: S.sid, game: def.id, you: i, round: S.round, host: myUid(),
+      k: 'pty', t: 'st', sid: S.sid, game: def.id, you: i, round: S.round, host: myUid(), teams: S.teams ? S.teams.slice() : null,
       priv: def.priv(st, i), pub: def.pub(st),
       seats: S.seats.map((s, j) => ({ name: s.name, dex: s.dex, shiny: s.shiny, cpu: s.cpu, gone: s.gone, afk: s.afk, auto: !!s.auto, total: totalOf(j), me: j === i })),
       left: S.deadline ? Math.max(0, S.deadline - Date.now()) : 0, turnMs: def.turnMs,
@@ -500,7 +528,7 @@ G.Party = (() => {
   initSocial();
 
   return {
-    register, games: () => games.slice(), game, hostStart, again, endAll, act, leave, hello, rejoinCode,
+    register, games: () => games.slice(), game, hostStart, teamSlots, seatOrder, cpuDexes, again, endAll, act, leave, hello, rejoinCode,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get view() { return V; }, get active() { return active; }, get isHost() { return amHost(); },
     get left() { return leftSid; }, MAX_SEATS,
