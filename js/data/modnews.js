@@ -3,6 +3,10 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-17', title: { zh: '派對模式：大老二', en: 'Party mode: Big Two' },
+    new: [
+      { zh: '新增派對模式：在「和朋友一起玩」的房間選「派對」，房主選遊戲、人不夠可以加電腦玩家（最多 4 人）。第一個遊戲是大老二（台灣規則、寶可夢花色卡牌）：每人只看得到自己的牌、25 秒倒數、提示和排序按鈕、再來一局與累計罰分；有人斷線會由電腦代打，同一個帳號回到房間就能拿回座位繼續打。寶可夢屬性牌、頑皮雷彈、寶可夢網球即將推出', en: 'New Party mode: pick "Party" in a friends room; the host chooses the game and can add CPU players (up to 4). The first game is Big Two (Taiwan rules, Pokémon suit cards): you only see your own hand, 25 s turns, hint and sort buttons, play again with cumulative penalties; a disconnected player is replaced by the CPU and gets the seat back when the same account rejoins. Pokémon Type Cards, Electrode Bomb and Pokémon Tennis are coming soon' }
+    ] },
   { d: '2026-10-17', title: { zh: '修正 iPhone 畫面被壓扁、搖桿對不準；手機圖鑑版面', en: 'Fixed squashed iPhone screen and misaligned joystick; phone Pokédex layout' },
     new: [
       { zh: '迷宮最終頭目固定是阿爾宙斯（其他地方都不會再出現阿爾宙斯）：血量剩 66% 時召喚精英守護者（單人 3 隻、每多 1 人 +2 隻），剩 33% 時再召喚兩隻小頭目並暴怒加速；打倒阿爾宙斯後援軍全部一起倒下', en: 'The final dungeon boss is now always Arceus (it no longer appears anywhere else): at 66% HP it summons elite guardians (3 solo, +2 per extra player), at 33% two lesser bosses and it becomes enraged; when Arceus falls, all its reinforcements fall too' },

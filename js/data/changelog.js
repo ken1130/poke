@@ -6,6 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-17', title: ['Modo fiesta: Big Two', 'Party mode: Big Two'], new: [
+    ['Modo fiesta en las salas con amigos: el anfitrión elige el juego y puede añadir jugadores de la CPU (hasta 4). El primero es el Big Two (reglas de Taiwán, cartas con Pokémon): cada uno sólo ve sus cartas, turnos de 25 s, pistas, ordenar, otra ronda y puntos acumulados; si alguien se desconecta juega la CPU por él y recupera su sitio al volver con la misma cuenta.',
+     'Party mode in friends rooms: the host picks the game and can add CPU players (up to 4). The first one is Big Two (Taiwan rules, Pokémon cards): everyone only sees their own hand, 25 s turns, hints, sorting, play again and cumulative points; if someone disconnects the CPU plays for them and they get their seat back by rejoining with the same account.']
+  ] },
   { d: '2026-10-17', title: ['Arceus y el móvil rediseñado', 'Arceus and a redesigned mobile'], new: [
     ['El jefe final de la mazmorra es siempre Arceus (y ya no sale en ningún otro sitio): al 66 % llama a guardianes élite (3, +2 por cada jugador más) y al 33 % a dos jefes menores y se enfurece; al caer él, caen todos.',
      'The final dungeon boss is always Arceus (and no longer appears anywhere else): at 66% it calls elite guardians (3, +2 per extra player) and at 33% two lesser bosses and becomes enraged; when it falls, they all fall.'],

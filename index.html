@@ -35,6 +35,7 @@
 <link rel="stylesheet" href="css/rwd-menus.css?v=20261017">
 <link rel="stylesheet" href="css/rwd-panels.css?v=20261017">
 <link rel="stylesheet" href="css/rwd-run.css?v=20261017">
+<link rel="stylesheet" href="css/party.css?v=20261017">
 </head>
 <body>
 
@@ -335,6 +336,7 @@
     <div class="row" id="lobby-mode" style="gap:8px">
       <button class="btn small" data-mode="coop">Equipo</button>
       <button class="btn small" data-mode="pvp">PK</button>
+      <button class="btn small" data-mode="party">Fiesta</button>
       <span class="sub" id="lobby-mode-desc" style="margin:0"></span>
     </div>
     <div class="hidden" id="lobby-stage">
@@ -365,6 +367,8 @@
       <button class="btn small switch" id="lobby-rand-btn">No</button>
       <span class="sub" style="margin:0">Cada uno juega con un Pokémon al azar, sin mejoras.</span>
     </div>
+    <!-- Modo fiesta (party.js): juego y jugadores CPU (los rellena social-ui.js) -->
+    <div class="hidden" id="lobby-party"></div>
     <!-- Extras del PK (pvp-extra.js): rondas y lo que sale según cuántos sois (los rellena social-ui.js) -->
     <div class="hidden" id="lobby-pkx" style="display:flex;flex-direction:column;gap:6px;align-items:center"></div>
       </div>
@@ -376,6 +380,13 @@
     </div>
     <p class="note" id="lobby-note"></p>
   </div>
+</section>
+
+<!-- ====== Mesa del modo fiesta (party-game-ui.js) ====== -->
+<section id="scr-party" class="scr hidden" translate="no">
+  <div class="pt-bar"><b id="pt-title"></b><span id="pt-round"></span><span class="grow"></span>
+    <button id="pt-rules" class="btn small ghost"></button><button id="pt-leave" class="btn small ghost"></button></div>
+  <div id="pt-body"></div>
 </section>
 
 <!-- ====== Ranking ====== -->
@@ -643,6 +654,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=2473e34114"></script>
+<script defer src="js/app.min.js?v=862c085e01"></script>
 </body>
 </html>
