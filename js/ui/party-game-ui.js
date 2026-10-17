@@ -376,7 +376,8 @@ G.PartyGameUI = (() => {
       else if (p.first && p.must >= 0) capT = p.turn === v.you ? G.I18n.f('Abres tú: tu jugada tiene que llevar el {x}.', B.label(p.must)) : G.I18n.f('Abre la mesa {x} (con el {x})', name(p.turn), B.label(p.must));
       else capT = p.turn === v.you ? G.T('Abres tú: echa lo que quieras.') : G.I18n.f('Abre la mesa {x}', name(p.turn));
       cap.textContent = capT;
-      const tKey = p.lead ? p.lead.cards.join(',') + '/' + seq : 'none';
+      // Sólo cuando cambian las cartas de la mesa (pasar no las vuelve a animar: 2026-10-17, pedido del dueño).
+      const tKey = p.lead ? v.round + '/' + p.lead.seat + '/' + p.lead.cards.join(',') : 'none';
       if (tKey !== c.trickKey) {
         c.trickKey = tKey;
         const from = p.lead ? (p.lead.seat === v.you ? 'bottom' : places(n)[(p.lead.seat - v.you + n) % n - 1]) : '';
