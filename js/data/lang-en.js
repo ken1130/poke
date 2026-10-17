@@ -1246,6 +1246,8 @@ G.I18n.add({
   'Crítico': 'Crit chance',
   'Daño crítico': 'Crit damage',
   'Reducción de daño': 'Damage reduction',
+  // RWD tienda (2026-10-17): botón para recoger la hoja de la tienda en el móvil
+  'Recoger o desplegar la tienda': 'Hide / show the shop',
   'Alcance de recogida': 'Pickup range',
   'Bonus de experiencia': 'XP bonus',
   'Bonus de monedas': 'Coin bonus',

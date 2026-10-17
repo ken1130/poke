@@ -1,3 +1,347 @@
 /* ============ rwd-run.css — versión para móvil/tableta en horizontal (2026-10-17) ============
- * Se carga después de style.css. Sólo reglas de diseño adaptable para este grupo de pantallas.
+ * Se carga después de style.css. Sólo reglas de diseño adaptable para este grupo de pantallas:
+ * las ventanas de la partida (cartas de nivel, bendición, reliquia, descanso, objeto, disco,
+ * vínculo, PK, mazmorra superada), la pausa, el resumen, la tienda de Kecleon y la ruleta.
+ *
+ * Idea (el juego es sólo horizontal en el móvil): la pantalla es baja y ancha, así que las cartas
+ * van EN FILA (una columna cada una) en vez de una encima de otra; los paneles largos (pausa,
+ * resumen) en dos columnas; la tienda es una hoja abajo con los artículos en fila, sin tapar el
+ * minimapa ni la pausa. El escritorio no cambia: todo va dentro de dos consultas:
+ *   --m  móvil horizontal          (max-height: 520px)
+ *   --t  tableta (táctil, ≤1400 px) (pointer: coarse) and (min-height: 521px) and (max-width: 1400px)
  */
+
+/* El resumen tapa la partida entera: la tienda abierta no debe verse detrás (se quedaba a la derecha). */
+body:has(#scr-over:not(.hidden)) #scr-shop { display: none !important; }
+/* Botón para recoger la hoja de la tienda: sólo en móvil y tableta. */
+#shop-min { display: none; }
+
+/* =====================================================================================
+ * 1. VENTANAS DE CARTAS — en fila
+ * ===================================================================================== */
+@media (max-height: 520px), (pointer: coarse) and (max-width: 1400px) {
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box {
+    width: max-content; max-width: 100%; min-width: min(560px, 100%);
+    max-height: 100%; display: flex; flex-direction: column; overflow: hidden;
+  }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) {
+    display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: minmax(0, 300px);
+    justify-content: center; align-items: stretch; gap: 10px;
+    width: 100%; max-width: 100%; flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    padding: 3px; margin: 0 auto;
+  }
+  /* Carta en columna: icono + nombre arriba, descripción debajo (la .txt "desaparece" para colocar sus hijos). */
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card {
+    position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr); grid-template-rows: auto 1fr;
+    align-items: center; column-gap: 10px; row-gap: 8px; padding: 12px 12px 14px; min-width: 0; min-height: 0;
+  }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .txt { display: contents; }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .ico {
+    grid-column: 1; grid-row: 1; width: 44px; height: 44px; flex: none;
+  }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .nm {
+    grid-column: 2; grid-row: 1; font-size: 16px; line-height: 1.25; gap: 4px 6px; min-width: 0; overflow-wrap: anywhere;
+  }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .ds {
+    grid-column: 1 / -1; grid-row: 2; align-self: start; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere;
+  }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .key {
+    position: absolute; top: 6px; right: 8px; padding: 0 6px; font-size: 12px;
+  }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card:hover { transform: translateY(-2px); }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card:active { transform: scale(.98); }
+  .card .tag-chip { font-size: 12px; padding: 1px 6px; }
+  /* Cambiar objeto: «pierdes» / «ganas» en dos bloques separados. */
+  #item-cards .card .ds .swap-lose, #item-cards .card .ds .swap-gain { display: block; }
+  #item-cards .card .ds br { display: none; }
+  #item-cards .card .ds .swap-gain { margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(244,248,255,.18); }
+  /* Botones de abajo (cambiar opciones, elegir solo, ¡lo quiero!, ¡a luchar!): siempre a la vista. */
+  :is(#scr-levelup, #scr-sbox, #scr-pkpick, #scr-bond) > .box > .row { flex: none; margin-top: 10px !important; }
+  :is(#scr-levelup, #scr-sbox, #scr-pkpick, #scr-bond, #scr-boon) > .box .btn { min-height: 44px; padding-top: 6px; padding-bottom: 6px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > :is(h2, .sub, .note, #sbox-chest, #sbox-banner) { flex: none; }
+  #rest-keys, #lvl-wait { margin: 8px 0 0; }
+}
+
+/* Tableta: letra y huecos más grandes (la pantalla es grande y se mira de lejos). */
+@media (pointer: coarse) and (min-height: 521px) and (max-width: 1400px) {
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box { min-width: min(640px, 100%); padding: 22px 26px 24px; }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) { grid-auto-columns: minmax(0, 320px); gap: 14px; }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card { padding: 16px 16px 18px; grid-template-columns: 52px minmax(0, 1fr); }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .ico { width: 52px; height: 52px; }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .nm { font-size: 19px; }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .ds { font-size: 16px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) .sub { font-size: 16px; }
+  /* 5 movimientos del PK en una fila de 1024 px: más estrechas. */
+  #pk-cards { grid-auto-columns: minmax(0, 220px); }
+}
+
+/* Móvil horizontal: cabecera compacta para que las cartas tengan todo el alto. */
+@media (max-height: 520px) {
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) { padding: 6px 10px !important; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box { padding: 10px 14px 12px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > h2 { font-size: 20px; margin: 0 0 2px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > .sub { font-size: 13px; margin: 0 0 10px; }
+  #sbox-chest.on { height: 64px; }
+  #sbox-chest .sb-disc { width: 60px; height: 60px; }
+  #sbox-banner { font-size: 20px; margin: 0 0 4px; }
+}
+@media (max-height: 340px) {
+  #sbox-banner { font-size: 16px; margin: 0 0 2px; }
+  #scr-sbox > .box > .sub { margin-bottom: 4px !important; }
+}
+/* Muy bajo (iPhone con barras, 300–340 px): letra de la descripción un poco menor y menos aire. */
+@media (max-height: 340px) {
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card {
+    padding: 9px 10px 10px; row-gap: 6px; grid-template-columns: 38px minmax(0, 1fr);
+  }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .ico { width: 38px; height: 38px; }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .nm { font-size: 15px; }
+  :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .ds { font-size: 13px; line-height: 1.4; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box { padding: 8px 12px 10px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > .sub { margin-bottom: 8px; }
+  #item-cards .card .ds { font-size: 12.5px; }
+}
+/* Móvil estrecho (≤ 760 px): con 4–5 cartas, el icono encima del nombre para que quepa el texto. */
+@media (max-height: 520px) and (max-width: 760px) {
+  :is(#pk-cards, #sbox-cards, #bond-cards):has(> .card:nth-child(4)) > .card { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; row-gap: 4px; }
+  :is(#pk-cards, #sbox-cards, #bond-cards):has(> .card:nth-child(4)) > .card .ico { grid-column: 1; grid-row: 1; width: 34px; height: 34px; }
+  :is(#pk-cards, #sbox-cards, #bond-cards):has(> .card:nth-child(4)) > .card .nm { grid-column: 1; grid-row: 2; font-size: 14px; }
+  :is(#pk-cards, #sbox-cards, #bond-cards):has(> .card:nth-child(4)) > .card .ds { grid-row: 3; font-size: 12.5px; }
+}
+
+/* =====================================================================================
+ * 2. PAUSA — dos columnas: a la izquierda qué hacer, a la derecha sonido y estadísticas
+ *    (dev.html: .pause-l / .pause-r; en el PC son display: contents y todo queda como antes)
+ * ===================================================================================== */
+.pause-l, .pause-r { display: contents; }
+@media (max-height: 520px), (pointer: coarse) and (max-width: 1400px) {
+  #scr-pause > .box {
+    width: min(880px, 100%) !important; display: grid; grid-template-columns: minmax(220px, 290px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr); column-gap: 20px; text-align: left;
+  }
+  #scr-pause .pause-l { display: block; grid-column: 1; grid-row: 1; }
+  #scr-pause .pause-l > h2 { margin: 0 0 4px; }
+  #scr-pause .pause-l > .sub, #scr-pause .pause-l > .note { margin: 0 0 6px; }
+  #scr-pause > .box > .row {
+    grid-column: 1; grid-row: 2; align-self: start;
+    display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 0;
+    position: static !important; padding: 0 !important; background: none !important; box-shadow: none !important;
+  }
+  #scr-pause > .box > .row .btn { min-height: 44px; padding: 6px 8px; font-size: 15px; margin: 0; }
+  #scr-pause #btn-resume { grid-column: 1 / -1; min-height: 50px; font-size: 18px; }
+  #scr-pause #btn-quit { grid-column: 1 / -1; }
+  /* Derecha: sonido y estadísticas (se desplazan solas si no caben). */
+  #scr-pause .pause-r { display: flex; flex-direction: column; grid-column: 2; grid-row: 1 / 3; min-height: 0; }
+  #scr-pause .pause-r > #pause-sound { margin: 0 0 6px; max-width: none; flex: none; }
+  #scr-pause .pause-r > .pause-stats-title { margin: 2px 0 4px; flex: none; }
+  #scr-pause .pause-r > #pause-stats { margin: 0; flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; align-content: start; }
+  .pause-stats > div { font-size: 13px; padding: 5px 8px; align-items: baseline; }
+}
+@media (pointer: coarse) and (min-height: 521px) and (max-width: 1400px) {
+  #scr-pause > .box { padding: 22px 26px; }
+  .pause-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
+  .pause-stats > div { font-size: 15px; padding: 7px 10px; }
+  #scr-pause .touch-hint, #scr-pause .sub { font-size: 15px; }
+}
+@media (max-height: 520px) {
+  #scr-pause { padding: 6px 10px !important; }
+  /* Altura = la pantalla: la columna de estadísticas se desplaza sola y los botones no se van. */
+  #scr-pause > .box { height: 100%; max-height: 100% !important; overflow: hidden !important; padding: 10px 14px 12px !important; }
+  #scr-pause .pause-l > h2 { font-size: 22px; }
+  #scr-pause .sub { font-size: 13px; }
+  .pause-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 8px; }
+  .pause-stats > div { font-size: 12.5px; padding: 4px 8px; }
+  .pause-stats-title { font-size: 14px; }
+}
+
+/* =====================================================================================
+ * 3. RESUMEN DE LA RUN — cifras en una fila, detalles debajo, botón fijo abajo
+ * ===================================================================================== */
+@media (max-height: 520px), (pointer: coarse) and (max-width: 1400px) {
+  #scr-over > .box { width: min(900px, 100%) !important; display: flex; flex-direction: column; overflow: hidden; }
+  #scr-over #over-title { flex: none; }
+  #over-stats {
+    flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 8px; margin: 8px 0 10px; text-align: left;
+  }
+  #over-stats > div { grid-column: span 6 !important; min-width: 0; }
+  #over-stats > .ov-tile { grid-column: span 3 !important; text-align: center; }
+  #over-stats:has(> .ov-tile:nth-child(5)) > .ov-tile { grid-column: span 2 !important; }
+  #over-stats > :is(.ov-moves, .ov-caught, .ov-rec) { grid-column: 1 / -1 !important; }
+  /* Retos, monedas y tickets de dos en dos; si sobra uno, los movimientos se ponen a su lado. */
+  #over-stats:not(:has(> .ov-goals)):not(:has(> .ov-tix)) > .ov-moves, #over-stats:has(> .ov-goals):has(> .ov-tix) > .ov-moves { grid-column: span 6 !important; }
+  #over-stats b { font-size: 20px; }
+  #over-stats > div > span:first-child { font-size: 12px; }
+  #scr-over #btn-again { flex: none; align-self: center; min-width: min(320px, 100%); min-height: 48px; position: static !important; width: auto !important; margin: 0 !important; }
+}
+@media (max-height: 520px) {
+  #scr-over { padding: 6px 10px !important; }
+  #scr-over > .box { max-height: 100%; padding: 10px 14px 12px; }
+  #over-stats { margin: 6px 0 8px; gap: 6px; }
+  #over-stats > div { padding: 6px 10px; }
+  #over-stats b { font-size: 18px; }
+}
+
+/* =====================================================================================
+ * 4. TIENDA DE KECLEON — hoja abajo, los artículos en fila (todos a la vista)
+ *    Arriba quedan libres el minimapa, la pausa, la vida y la sala; el botón ▾ la recoge.
+ * ===================================================================================== */
+@keyframes rwdSheetUp { from { transform: translateY(40%); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-height: 520px), (pointer: coarse) and (max-width: 1400px) {
+  #scr-shop {
+    align-items: flex-end !important; justify-content: center !important;
+    padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left)) !important;
+  }
+  #scr-shop > .box {
+    width: 100%; max-width: 1180px; margin: 0; max-height: 66dvh; overflow: hidden;
+    border-bottom-width: 0; border-radius: 14px 14px 0 0;
+    padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+    display: grid; grid-template-columns: minmax(0, max-content) minmax(220px, 1fr) auto auto auto;
+    grid-template-rows: auto auto auto; column-gap: 10px; align-items: center;
+    animation: rwdSheetUp .22s ease-out;
+  }
+  #scr-shop > .box > .row { display: contents; }
+  #scr-shop > .box h2 { grid-column: 1; grid-row: 1; font-size: 17px; margin: 0; white-space: nowrap; }
+  #scr-shop #shop-sub { grid-column: 1; grid-row: 2; margin: 0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+  #scr-shop #shop-tabs { grid-column: 2; grid-row: 1 / 3; margin: 0; }
+  #scr-shop .shop-tab { min-height: 42px; border-radius: 10px; font-size: 14px; padding: 4px 8px; white-space: nowrap; }
+  #scr-shop #shop-roul { grid-column: 3; grid-row: 1 / 3; min-height: 42px; padding: 4px 12px; font-size: 13px; line-height: 1.15; max-width: 150px; white-space: normal; margin: 0; }
+  #scr-shop #shop-min { grid-column: 4; grid-row: 1 / 3; display: inline-grid; place-items: center; width: 44px; min-height: 42px; padding: 0; font-size: 18px; margin: 0; }
+  #scr-shop #shop-leave { grid-column: 5; grid-row: 1 / 3; min-height: 42px; padding: 4px 12px; font-size: 14px; margin: 0; }
+  #scr-shop > .box > .note { display: none; }
+  /* Recogida: sólo la cabecera (para pasear por la tienda, ir a la ruleta o a la puerta). */
+  #scr-shop > .box.min #shop-list { display: none; }
+  #scr-shop > .box.min #shop-min { transform: rotate(180deg); }
+
+  /* Los artículos: una fila; con muchos, se desliza a los lados (el borde se difumina). */
+  #scr-shop #shop-list {
+    grid-column: 1 / -1; grid-row: 3; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(124px, 1fr);
+    gap: 8px; margin: 8px -4px 0; padding: 10px 4px 2px; overflow-x: auto; overflow-y: hidden; overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  #scr-shop #shop-list::-webkit-scrollbar { display: none; }
+  #shop-list .shop-card {
+    display: grid; grid-template-columns: 36px minmax(0, 1fr); grid-template-rows: auto auto 1fr; align-items: center;
+    column-gap: 8px; row-gap: 2px; padding: 12px 8px 8px; min-width: 0;
+    border-left-width: 2px; border-top: 4px solid var(--tc);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 18%, transparent), rgba(0,0,0,.3) 70%);
+  }
+  #shop-list .shop-card .ico { width: 36px; height: 36px; grid-column: 1; grid-row: 1; }
+  #shop-list .shop-card .ico img, #shop-list .shop-card .ico canvas { width: 30px !important; height: 30px !important; }
+  #shop-list .shop-card .txt { display: contents; }
+  #shop-list .shop-card .txt b { grid-column: 2; grid-row: 1; font-size: 14px; line-height: 1.2; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #shop-list .shop-card .txt small { display: -webkit-box !important; grid-column: 1 / -1; grid-row: 2; margin-top: 4px; align-self: start; font-size: 12px; line-height: 1.35;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Rango / especial: etiqueta encima del borde, a la izquierda; el precio, a la derecha. */
+  #shop-list .shop-card .chips { position: absolute; top: -10px; left: 6px; flex-wrap: nowrap; }
+  #shop-list .shop-card .chips .tier-chip, #shop-list .shop-card .chips .tag-chip { font-size: 12px; padding: 0 6px; margin: 0; line-height: 18px; }
+  #shop-list .shop-card .chips .pet-chip, #shop-list .shop-card .chips .feat-chip ~ .tier-chip { display: none; }
+  #shop-list .shop-card .act { grid-column: 1 / -1; grid-row: 3; align-self: end; display: block; margin-top: 6px; }
+  #shop-list .shop-card .price { position: absolute; top: -10px; right: 6px; font-size: 12px; line-height: 18px; padding: 0 7px;
+    background: #1b1528; border: 1px solid color-mix(in srgb, var(--tc) 60%, #000); }
+  #shop-list .shop-card .act .row { display: flex; gap: 5px; }
+  #shop-list .shop-card .act .btn { flex: 1 1 auto; min-height: 40px; padding: 2px 6px; font-size: 14px; margin: 0; }
+  #shop-list .shop-card .act .btn.steal { flex: 0 1 auto; font-size: 13px; }
+  #shop-list .shop-card .owned { display: block; text-align: center; line-height: 40px; font-size: 13px; }
+  #shop-list .shop-card .stamp { grid-column: 1 / -1; grid-row: 3; justify-self: center; align-self: end; margin-bottom: 6px; }
+  /* Mascotas: la ficha de tu compañero es la primera columna. */
+  #shop-list .shop-pet { flex-direction: column; align-items: stretch; justify-content: space-between; padding: 8px; min-width: 0; }
+  #shop-list .shop-pet .txt b { font-size: 13px; }
+  #shop-list .shop-pet .txt small { font-size: 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  #shop-list .shop-pet .gear { max-width: none; justify-content: flex-start; }
+  #shop-list .shop-pet .txt small { -webkit-line-clamp: 2; }
+  /* Fusión: ocupa la fila entera, materiales a la izquierda y el botón a la derecha. */
+  #shop-list .shop-fuse { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: center; column-gap: 14px; row-gap: 6px; padding: 10px 12px; }
+  #shop-list .shop-fuse .fuse-row { grid-column: 1; grid-row: 1 / span 3; }
+  #shop-list .shop-fuse .fuse-note { grid-column: 2; font-size: 13px; text-align: left; }
+  #shop-list .shop-fuse .fuse-act { grid-column: 2; }
+  #shop-list .shop-fuse .fuse-act .btn { min-height: 44px; }
+  #shop-list .shop-fuse .fuse-help { grid-column: 2; display: block; font-size: 12px; }
+  #shop-list .shop-fuse .mat small { font-size: 12px; }
+  #scr-shop button[disabled] { opacity: .45; }
+}
+/* Tableta: todo un poco más grande. */
+@media (pointer: coarse) and (min-height: 521px) and (max-width: 1400px) {
+  #scr-shop > .box { padding: 12px 18px 16px; max-height: 46dvh; }
+  #scr-shop > .box h2 { font-size: 22px; }
+  #scr-shop #shop-sub { font-size: 14px; max-width: 340px; }
+  #scr-shop #shop-list { grid-auto-columns: minmax(170px, 1fr); }
+  #shop-list .shop-card { grid-template-columns: 46px minmax(0, 1fr); padding: 14px 10px 10px; }
+  #shop-list .shop-card .ico { width: 46px; height: 46px; }
+  #shop-list .shop-card .ico img, #shop-list .shop-card .ico canvas { width: 40px !important; height: 40px !important; }
+  #shop-list .shop-card .txt b { font-size: 16px; }
+  #shop-list .shop-card .txt small { font-size: 14px; -webkit-line-clamp: 3; }
+  #shop-list .shop-card .act .btn { min-height: 44px; font-size: 15px; }
+}
+@media (max-height: 520px) {
+  #scr-shop { padding-top: 0 !important; padding-bottom: 0 !important; }
+}
+/* Muy bajo (≤ 340 px): la descripción en una línea, para dejar la sala a la vista. */
+@media (max-height: 340px) {
+  #scr-shop > .box { padding-top: 5px; padding-bottom: max(5px, env(safe-area-inset-bottom)); }
+  #scr-shop #shop-list { margin-top: 3px; padding-top: 10px; }
+  #shop-list .shop-card { row-gap: 4px; padding-top: 11px; }
+  /* (icono a la izquierda del nombre y de la descripción, una línea cada uno) */
+  #shop-list .shop-card .ico { grid-row: 1 / 3; align-self: start; }
+  #shop-list .shop-card .txt small { -webkit-line-clamp: 1; grid-column: 2; margin-top: 0; }
+  #shop-list .shop-card .txt b { -webkit-line-clamp: 1; }
+  #shop-list .shop-pet .pet-skill { display: none !important; }
+}
+@media (max-height: 520px) and (max-width: 760px) {
+  #scr-shop > .box h2 { font-size: 15px; }
+  #scr-shop #shop-sub { max-width: 130px; }
+  #scr-shop .shop-tab { font-size: 13px; padding: 4px 5px; }
+  #scr-shop .shop-tab small { margin-left: 2px; }
+  #scr-shop #shop-roul { max-width: 104px; padding: 2px 8px; font-size: 12px; }
+  #scr-shop #shop-leave { padding: 2px 8px; font-size: 13px; }
+  #scr-shop #shop-list { grid-auto-columns: minmax(116px, 1fr); }
+}
+/* Móvil pequeño y bajo (667×300): no cabe nombre + descripción al lado del icono; el nombre entero en dos líneas. */
+@media (max-height: 340px) and (max-width: 760px) {
+  #shop-list .shop-card { grid-template-columns: 30px minmax(0, 1fr); column-gap: 6px; }
+  #shop-list .shop-card .ico { width: 30px; height: 30px; grid-row: 1; align-self: center; }
+  #shop-list .shop-card .ico img, #shop-list .shop-card .ico canvas { width: 26px !important; height: 26px !important; }
+  #shop-list .shop-card .txt b { font-size: 13px; -webkit-line-clamp: 2; }
+  #shop-list .shop-card .txt small { display: none !important; }
+}
+
+/* =====================================================================================
+ * 5. RULETA y la ruleta de otro jugador
+ * ===================================================================================== */
+@media (max-height: 520px), (pointer: coarse) and (max-width: 1400px) {
+  #scr-roul [data-frac] { min-height: 48px; min-width: 96px; }
+  #scr-roul [data-frac] small { font-size: 12px; }
+  #scr-roul #roul-leave { min-height: 44px; min-width: 120px; }
+  #scr-roul .note { font-size: 12px; }
+}
+@media (max-height: 520px) {
+  #scr-roul > .box { width: min(720px, 100%); padding: 12px 18px; column-gap: 20px; }
+  #scr-roul > .box > #roul-wheel { width: min(64vh, 40vw); height: min(64vh, 40vw); }
+  #scr-roul .roul-res { font-size: 16px; }
+  /* La ruleta de otro: arriba en el centro, más pequeña y por encima de la hoja de la tienda. */
+  /* En fila (rueda a la izquierda, quién gira y el resultado a la derecha): no llega a la hoja de la tienda. */
+  #roul-watch { top: 6px; z-index: 19; padding: 5px 12px 5px 6px; border-radius: 12px;
+    display: grid; grid-template-columns: auto minmax(0, max-content); grid-template-rows: 1fr 1fr; column-gap: 10px; align-items: center; text-align: left; }
+  #roul-watch.hidden { display: none; }
+  #roul-watch canvas { width: 92px; height: 92px; grid-column: 1; grid-row: 1 / 3; margin: 0; }
+  #roul-watch .who { font-size: 13px; grid-column: 2; grid-row: 1; align-self: end; margin: 0; max-width: 180px; }
+  #roul-watch .res { font-size: 15px; min-height: 20px; grid-column: 2; grid-row: 2; align-self: start; margin: 0; }
+}
+@media (pointer: coarse) and (min-height: 521px) and (max-width: 1400px) {
+  #roul-watch { z-index: 19; top: 12px; }
+  #roul-watch canvas { width: 200px; height: 200px; }
+}
+
+/* Letra mínima de 12 px en el móvil y la tableta (las etiquetas de rango y los contadores tenían 11). */
+@media (max-height: 520px), (pointer: coarse) and (max-width: 1400px) {
+  .tier-chip, .art-chip, .shop-tab small, #item-pending .n, .shop-pet .gear small, .shop-pet .txt small { font-size: 12px; }
+  #scr-pause #pause-sound .btn { min-height: 40px; }
+}
+
+/* =====================================================================================
+ * 6. OBJETO PENDIENTE (botón flotante): zona de toque de 40 px
+ * ===================================================================================== */
+@media (pointer: coarse) {
+  #item-pending { min-height: 40px; padding: 4px 12px 4px 6px; font-size: 14px; }
+}

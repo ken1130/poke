@@ -177,24 +177,24 @@ G.RunUI = (() => {
     $('over-title').classList.toggle('gold', !!r.clear);
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     $('over-stats').innerHTML = `
-      <div><span>Tiempo</span><b>${G.U.mmss(r.time)}</b></div>
-      <div><span>Nivel</span><b>${r.level}</b></div>
-      <div><span>Derrotados</span><b>${r.kills}</b></div>
-      <div><span>Jefes</span><b>${r.bosses}</b></div>
-      ${r.floor ? `<div><span>Piso más hondo</span><b>B${r.floor + 1}F</b></div>` : ''}
-      ${r.clearTime != null ? `<div><span>Mazmorra superada</span><b class="gold">${G.U.mmss(r.clearTime)}</b></div>` : ''}
-      ${r.goals && r.goals.length ? `<div style="grid-column:1/-1"><span>Retos de la run</span><b style="font-size:14px">
+      <div class="ov-tile"><span>Tiempo</span><b>${G.U.mmss(r.time)}</b></div>
+      <div class="ov-tile"><span>Nivel</span><b>${r.level}</b></div>
+      <div class="ov-tile"><span>Derrotados</span><b>${r.kills}</b></div>
+      <div class="ov-tile"><span>Jefes</span><b>${r.bosses}</b></div>
+      ${r.floor ? `<div class="ov-tile"><span>Piso más hondo</span><b>B${r.floor + 1}F</b></div>` : ''}
+      ${r.clearTime != null ? `<div class="ov-tile"><span>Mazmorra superada</span><b class="gold">${G.U.mmss(r.clearTime)}</b></div>` : ''}
+      ${r.goals && r.goals.length ? `<div class="ov-goals" style="grid-column:1/-1"><span>Retos de la run</span><b style="font-size:14px">
         ${r.goals.map(g => `<span style="color:${g.done ? '#7dffb0' : '#ff8a96'}">${g.done ? '✔' : '✘'} ${esc(G.T(g.name))}</span>`).join(' · ')}</b></div>` : ''}
-      <div style="grid-column:1/-1"><span>Pokémonedas ganadas</span>
+      <div class="ov-coins" style="grid-column:1/-1"><span>Pokémonedas ganadas</span>
         <b class="gold"><span class="coin"></span> +${r.coins}</b>
         <div style="font-size:12px;color:var(--muted)">${r.breakdown}</div></div>
-      ${r.t1 || r.t10 ? `<div style="grid-column:1/-1"><span>Tickets del gacha</span><b>
+      ${r.t1 || r.t10 ? `<div class="ov-tix" style="grid-column:1/-1"><span>Tickets del gacha</span><b>
         ${r.t1 ? G.Icons.html('ticket', 22) + ' +' + r.t1 + ' ' : ''}${r.t10 ? G.Icons.html('ticket10', 22) + ' +' + r.t10 + ' ×10' : ''}</b></div>` : ''}
-      <div style="grid-column:1/-1"><span>Movimientos</span><b style="font-size:15px">
+      <div class="ov-moves" style="grid-column:1/-1"><span>Movimientos</span><b style="font-size:15px">
         ${r.moves.map(m => `${G.Icons.html('move:' + m.id, 16)} ${m.name} Lv.${m.lvl}`).join(' · ') || '—'}</b></div>
-      ${r.caught && r.caught.length ? `<div style="grid-column:1/-1" class="caught"><span>${G.Icons.html('shiny', 12)} Shinies conseguidos</span>
+      ${r.caught && r.caught.length ? `<div style="grid-column:1/-1" class="caught ov-caught"><span>${G.Icons.html('shiny', 12)} Shinies conseguidos</span>
         <div class="caught-row" id="over-caught"></div></div>` : ''}
-      ${r.record ? '<div style="grid-column:1/-1;text-align:center" class="gold">¡Nuevo récord de tiempo!</div>' : ''}
+      ${r.record ? '<div style="grid-column:1/-1;text-align:center" class="gold ov-rec">¡Nuevo récord de tiempo!</div>' : ''}
       ${askSupport(r) ? `<div class="support-ask" id="over-ask" style="grid-column:1/-1">
         <button class="x" type="button" aria-label="Cerrar">×</button>
         <p>¿Te está gustando Pokémon Dungeon Survivors? Lo hago yo solo y los servidores cuestan dinero. Si quieres, puedes ayudarme a mantenerlo en línea.</p>

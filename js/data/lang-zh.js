@@ -2245,6 +2245,8 @@ G.I18n.add({
   'Recarga': '冷卻縮短',
   'Crítico': '暴擊率',
   'Daño crítico': '暴擊傷害',
+  // RWD tienda (2026-10-17): botón para recoger la hoja de la tienda en el móvil
+  'Recoger o desplegar la tienda': '收起／展開商店',
   'Reducción de daño': '減傷',
   'Alcance de recogida': '拾取範圍',
   'Bonus de experiencia': '經驗加成',
