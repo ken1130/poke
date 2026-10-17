@@ -177,9 +177,7 @@ G.Combat = (() => {
       hit(pl, e, row.dps * 0.5 * pl.atk, col, 0, 0, 0, m);
       if (Math.random() < 0.5 && G.Camera.sees(e.x, e.y, 20)) G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#ff8a3d', 2, 40);
     }
-    // El aro de fuego a tu alrededor, de vez en cuando.
-    pl.fsRing = (pl.fsRing || 0) + 1;
-    if (pl.fsRing % 3 === 0) G.FX.ring(pl.x, pl.y, R * 0.55, R, col, 0.4, 2);
+    // (El aro de llamas de píxeles lo dibuja player.js, siguiéndote: antes era un círculo liso.)
   }
 
   /** Un rayo que cae del cielo en (x, y). */
@@ -255,6 +253,7 @@ G.Combat = (() => {
     f.x = tx; f.y = ty;
     if (!f.ghost) hit(f.owner, e, (f.first ? f.d1 : f.d2) * f.owner.atk, f.col, Math.cos(f.ang), Math.sin(f.ang), 0, f.m);
     G.FX.burst(tx, ty, f.col, 6, 90);
+    if (G.Camera.sees(tx, ty, 20)) G.FX.sp('impact', 'psychic', tx, ty, { life: 0.14, scale: 1.3 });
     f.hit.add(e.id); f.first = false;
     if (f.hops-- <= 0) return false;
     f.target = nextArrowTarget(f, e.x, e.y, e);
@@ -1714,20 +1713,16 @@ G.Combat = (() => {
     for (const f of fields) {
       if (!G.Camera.sees(f.x, f.y, 200)) continue;
       if (f.kind === 'arrow') {
-        // Flecha rosa con estela.
+        // Flecha de píxeles con estela de cuadraditos (2026-10-17: antes, líneas lisas).
         ctx.save();
-        ctx.strokeStyle = f.col; ctx.lineCap = 'round';
         f.trail.forEach(([x, y], k) => {
-          const [nx, ny] = f.trail[k + 1] || [f.x, f.y];
-          ctx.globalAlpha = 0.15 + 0.6 * (k / f.trail.length); ctx.lineWidth = 2 + k * 0.5;
-          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(nx, ny); ctx.stroke();
+          const s = 2 + Math.round(k / 2) * 2;
+          ctx.globalAlpha = 0.15 + 0.55 * (k / f.trail.length);
+          ctx.fillStyle = k % 2 ? '#ff9fcf' : f.col;
+          ctx.fillRect(Math.round(x - s / 2), Math.round(y - s / 2), s, s);
         });
-        ctx.globalAlpha = 1;
-        ctx.translate(f.x, f.y); ctx.rotate(f.ang);
-        ctx.fillStyle = '#ffe8f3'; ctx.strokeStyle = f.col; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-8, -6); ctx.lineTo(-4, 0); ctx.lineTo(-8, 6); ctx.closePath();
-        ctx.fill(); ctx.stroke();
         ctx.restore();
+        G.VFX.draw(ctx, 'psyarrow', 'psychic', f.x, f.y, { angle: f.ang, scale: 1.2 });
         continue;
       }
       if (f.kind === 'shade') {

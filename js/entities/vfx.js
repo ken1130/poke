@@ -233,6 +233,21 @@ G.VFX = (() => {
       }
       P.outline();
     } },
+    // Llama pequeña del Escudo de Llamas (2026-10-17): 3 fotogramas que tiemblan.
+    flame: { w: 7, h: 10, frames: 3, gen(P, f) {
+      const F = [
+        ['...l...', '..lml..', '..mlm..', '.mlwlm.', '.mlwwm.', 'dmlwwld', 'dmlwlmd', '.dmmmd.', '..ddd..', '.......'],
+        ['....l..', '...lm..', '..mlm..', '.mlwlm.', '.mlwwlm', 'dmlwwld', 'dmlwlmd', '.dmmmd.', '..ddd..', '.......'],
+        ['..l....', '..ml...', '..mlm..', '.mlwlm.', 'mlwwlm.', 'dmlwwld', 'dmlwlmd', '.dmmmd.', '..ddd..', '.......']
+      ];
+      rows(P, F[f % 3]);
+      P.outline();
+    } },
+    // Flecha de Flecha Psíquica (2026-10-17): asta, punta brillante y plumas.
+    psyarrow: { w: 15, h: 7, dir: true, gen(P) {
+      rows(P, ['mm........d....', '.mm.......dld..', '..mmmmmmmmdlwl.', '..lllllllllwwwd', '..mmmmmmmmdlwl.', '.mm.......dld..', 'mm........d....']);
+      P.outline();
+    } },
     arrow: { w: 7, h: 9, gen(P) {
       for (let y = 0; y < 4; y++) for (let x = 3 - y; x <= 3 + y; x++) P.set(x, y, x === 3 - y ? 'w' : 'l');
       for (let y = 4; y < 9; y++) for (let x = 2; x <= 4; x++) P.set(x, y, x === 2 ? 'w' : 'm');

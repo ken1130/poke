@@ -6,7 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-17', title: ['Pantalla del iPhone sin aplastar', 'iPhone screen no longer squashed'], fix: [
+  { d: '2026-10-17', title: ['Pantalla del iPhone sin aplastar', 'iPhone screen no longer squashed'], chg: [
+    ['Escudo de Llamas y Flecha Psíquica con efectos de píxeles: un aro de llamas que gira a tu alrededor y una flecha rosa con estela de cuadraditos.',
+     'Fire Shield and Psy Arrow get pixel-art effects: a ring of flames orbiting you and a pink arrow with a blocky trail.']
+  ], fix: [
     ['En el iPhone, al girarlo a horizontal (o al esconderse la barra de direcciones) el juego se veía aplastado y el joystick salía lejos del dedo: ahora el lienzo se vuelve a medir cada vez que cambia de tamaño.',
      'On iPhone, after rotating to landscape (or when the address bar hid) the game looked squashed and the joystick appeared away from your finger: the canvas now re-measures whenever its size changes.'],
     ['Pokédex en el móvil en horizontal: los botones de «Mi equipo» y de elegir compañero se montaban y tapaban el Pokémon; en pantallas muy bajas todo es más compacto.',

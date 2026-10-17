@@ -656,6 +656,19 @@ G.Player = class Player {
       ctx.restore();
     }
 
+    // Escudo de Llamas (2026-10-17): aro de llamas de píxeles a tu alrededor (antes un círculo liso
+    // que salía de vez en cuando). Sólo se dibuja; el daño lo hace combat.js.
+    if (!this.dead && !this.remote) {
+      const fs = this.moves.find(m => m.kind === 'flameshield');
+      if (fs) {
+        const st = G.Moves.stat(fs), R = (st ? st.r : 2.5) * 32 * 0.8, t = performance.now() / 1000;
+        const n = 10, fr = Math.floor(t * 10);
+        for (let i = 0; i < n; i++) {
+          const a = i / n * 6.2832 + t * 1.6;
+          G.VFX.draw(ctx, 'flame', 'fire', this.x + Math.cos(a) * R, this.y + Math.sin(a) * R * 0.55 - 8, { frame: fr + i, scale: 1.2, alpha: 0.9 });
+        }
+      }
+    }
     // Apoyo (2026-10-15): pantalla de luz (anillo de bloques dorados), protección (cúpula
     // verde), concentración (orbes rosas) y dormido (Zzz).
     if (!this.dead) {
