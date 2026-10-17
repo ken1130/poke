@@ -217,7 +217,7 @@
       };
 
       // Equipo: modo jefes / shiny de la sala (no los de los ajustes de cada uno).
-      $('lobby-mods').classList.toggle('hidden', room.mode === 'pvp');
+      $('lobby-mods').classList.toggle('hidden', room.mode !== 'coop');
       $('lobby-mods').querySelectorAll('[data-mod]').forEach(b => {
         const on = !!(room.mods || {})[b.dataset.mod];
         b.textContent = G.T(on ? 'Sí' : 'No');
@@ -229,15 +229,15 @@
       // grupo (con su clasificación de grupo), legendarios o una fase de la Aventura
       // (las que tiene desbloqueadas el anfitrión). Los modos jefes/shiny y el escenario, sólo en la normal.
       // Venías de la Aventura con "Con amigos": la fase ya elegida.
-      if (room.isHost && room.mode !== 'pvp') {
+      if (room.isHost && room.mode === 'coop') {
         const ps = G.Stages.takePartyStage();
         if (ps != null && G.Stages.unlocked(ps)) G.Social.setMods(Object.assign({}, room.mods, { stage: ps, ch: null, rush: false }));
       }
       const md = room.mods || {};
       const cur = Number.isInteger(md.stage) ? 'stage' : md.ch ? md.ch : md.rush ? 'legend' : 'n';
-      $('lobby-stage').classList.toggle('hidden', room.mode === 'pvp');
-      $('lobby-mods').classList.toggle('hidden', room.mode === 'pvp' || cur !== 'n');
-      $('lobby-scene-row').classList.toggle('hidden', room.mode !== 'pvp' && cur !== 'n');
+      $('lobby-stage').classList.toggle('hidden', room.mode !== 'coop');
+      $('lobby-mods').classList.toggle('hidden', room.mode !== 'coop' || cur !== 'n');
+      $('lobby-scene-row').classList.toggle('hidden', room.mode === 'party' || (room.mode !== 'pvp' && cur !== 'n'));
       renderPlay(room, md, cur);
 
       // PK por equipos: cada uno elige el suyo (si no, 1.º y 3.º rojo, 2.º y 4.º azul).
@@ -277,8 +277,10 @@
       rb.disabled = !room.isHost;
       rb.onclick = () => { if (room.isHost) G.Social.setRand(!room.rand); };
       renderPkx(room, ms.length);
+      renderParty(room, ms);
       $('lobby-mode-desc').textContent = G.T(room.mode === 'pvp'
         ? 'PK: os podéis atacar entre vosotros. Gana el último en pie.'
+        : room.mode === 'party' ? 'Fiesta: juegos de mesa por turnos, con CPU si faltan jugadores.'
         : 'Equipo: jugáis juntos contra los Pokémon salvajes.');
       $('lobby-copy').onclick = () => G.Modes.copy(room.id);
       // Enlace: el amigo lo abre y entra directamente en la sala.
@@ -288,7 +290,8 @@
         : 'Estás en la sala de ' + ((ms.find(m => m.uid === room.host) || {}).name || '…') + '. El anfitrión empezará la partida.';
 
       // Las tarjetas sólo se rehacen si cambian los miembros (los sprites no parpadean).
-      const key = ms.map(m => m.uid + ':' + m.dex + ':' + (m.shiny ? 1 : 0)).join('|');
+      const nCpu = room.mode === 'party' ? Math.min(G.Social.partyOf(room).cpu, G.Social.MAX_PLAYERS - ms.length) : 0;
+      const key = ms.map(m => m.uid + ':' + m.dex + ':' + (m.shiny ? 1 : 0)).join('|') + '#' + nCpu;
       const box = $('lobby-members');
       if (key !== membersKey) {
         membersKey = key;
@@ -301,6 +304,9 @@
             c.style.setProperty('--pc', G.Coop.COLORS[i]);
             c.appendChild(G.UI.spriteCanvas(m.dex, 120, 96, { scale: 2, lively: true, shiny: !!m.shiny }));
             c.insertAdjacentHTML('beforeend', `<b translate="no">${esc(m.name)}</b><small>${esc((G.DEX_BY[m.dex] || {}).name || '')}</small><span class="conn" data-u="${m.uid}"></span>`);
+          } else if (i < ms.length + nCpu) {
+            c.classList.add('cpu');
+            c.innerHTML = `<span class="lob-cpu">${G.T('Jugador CPU')}</span><small>${G.T('Lo controla el juego')}</small>`;
           } else c.innerHTML = '<span>Libre</span>';
           box.appendChild(c);
         }
@@ -339,6 +345,18 @@
       btn.parentElement.classList.toggle('hidden', !room.isHost);     // (el invitado no tiene botón: sin barra)
       const connecting = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'connecting');
       const failed = ms.some(m => m.uid !== room.host && G.Net.mode(m.uid) === 'failed');
+      if (room.mode === 'party') {
+        const pg = G.Party.game(G.Social.partyOf(room).game), seats = ms.length + nCpu;
+        const okN = !!pg && seats >= pg.minPlayers && seats <= pg.maxPlayers;
+        btn.disabled = !room.isHost || !okN || connecting || failed || G.Party.active;
+        btn.textContent = G.I18n.f('Empezar la fiesta ({x})', seats + '/' + G.Social.MAX_PLAYERS);
+        $('lobby-note').textContent = G.T(!room.isHost ? (G.Party.left ? 'Tu plaza la juega la CPU. Puedes volver a la mesa.' : 'Cuando el anfitrión empiece, entraréis todos a la vez.')
+          : !pg ? 'Ese juego aún no está disponible.'
+          : !okN ? 'Añade jugadores CPU: hacen falta al menos 2 jugadores.'
+          : failed ? 'No se puede conectar con algún amigo: su red (o la tuya) no deja jugar en grupo. Probad con otra wifi o datos móviles; se reintenta solo.'
+          : connecting ? 'Conectando con tus amigos…' : 'La partida empieza para todos a la vez.');
+        return;
+      }
       btn.disabled = !room.isHost || ms.length < 2 || connecting || failed || !teamsOk;
       btn.textContent = 'Empezar partida (' + ms.length + '/' + G.Social.MAX_PLAYERS + ')';
       $('lobby-note').textContent = !room.isHost ? 'Cuando el anfitrión empiece, entraréis todos a la vez.'
@@ -375,6 +393,43 @@
         box.querySelectorAll('[data-pkx]').forEach(b => {
           b.onclick = () => { const r = G.Social.room; if (r && r.isHost) { const c = G.Social.pkxOf(r); c[b.dataset.pkx] = !c[b.dataset.pkx]; G.Social.setPkx(c); } };
         });
+      }
+    }
+
+    /**
+     * Fiesta (party.js): el juego (los que aún no están, "Próximamente") y cuántas CPU
+     * rellenan plazas (máximo 4 en la mesa). El anfitrión lo cambia; los demás lo ven.
+     * Un invitado que dejó la mesa (o se cortó) puede volver con "Volver a la mesa".
+     */
+    function renderParty(room, ms) {
+      const box = $('lobby-party');
+      box.classList.toggle('hidden', room.mode !== 'party');
+      if (room.mode !== 'party') return;
+      const o = G.Social.partyOf(room), host = room.isHost;
+      const maxCpu = Math.max(0, G.Social.MAX_PLAYERS - ms.length), cpu = Math.min(o.cpu, maxCpu);
+      const g = G.Party.game(o.game);
+      const chips = G.Party.games().map(d => `<button class="chip lp-game ${d.id === o.game && !d.soon ? 'on' : ''}" data-pg="${d.id}" ${host && !d.soon ? '' : 'disabled'}>
+          ${G.T(d.name)}${d.soon ? ` <small class="lp-soon">${G.T('Próximamente')}</small>` : ''}</button>`).join('');
+      const back = !host && G.Party.left ? `<button class="btn small gold" data-pback>${G.T('Volver a la mesa')}</button>` : '';
+      const h = `<div class="chips lp-games">${chips}</div>
+        <div class="sub lp-desc">${g ? G.T(g.desc) : ''}</div>
+        <div class="row lp-cpu"><span>${G.T('Jugadores CPU')}</span>
+          <button class="btn small" data-pcpu="-1" ${host && cpu > 0 ? '' : 'disabled'}>−</button><b translate="no">${cpu}</b>
+          <button class="btn small" data-pcpu="1" ${host && cpu < maxCpu ? '' : 'disabled'}>+</button>
+          <span class="sub" style="margin:0">${G.I18n.f('En la mesa: {x}', (ms.length + cpu) + '/' + G.Social.MAX_PLAYERS)}</span>${back}</div>`;
+      if (box.dataset.html !== h) {
+        box.innerHTML = h; box.dataset.html = h;
+        box.querySelectorAll('[data-pg]').forEach(b => { b.onclick = () => { const r = G.Social.room; if (r && r.isHost) { G.Audio.sfx('click'); G.Social.setParty(Object.assign(G.Social.partyOf(r), { game: b.dataset.pg })); } }; });
+        box.querySelectorAll('[data-pcpu]').forEach(b => {
+          b.onclick = () => {
+            const r = G.Social.room;
+            if (!r || !r.isHost) return;
+            const c = G.Social.partyOf(r), mx = Math.max(0, G.Social.MAX_PLAYERS - r.members.length);
+            G.Social.setParty(Object.assign(c, { cpu: Math.max(0, Math.min(mx, Math.min(c.cpu, mx) + +b.dataset.pcpu)) }));
+          };
+        });
+        const pb = box.querySelector('[data-pback]');
+        if (pb) pb.onclick = () => G.Party.hello(true);
       }
     }
 
@@ -421,6 +476,15 @@
 
     function start() {
       const room = G.Social.room;
+      if (room && room.isHost && room.mode === 'party') {
+        // Fiesta: no se entra en el mundo; se abre la mesa para todos (la sala sigue abierta
+        // para que quien se corte pueda volver a entrar y recuperar su plaza).
+        const o = G.Social.partyOf(room);
+        const r = G.Party.hostStart({ game: o.game, cpu: Math.min(o.cpu, G.Social.MAX_PLAYERS - room.members.length), roomId: room.id,
+          members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny })) });
+        if (!r.ok) G.UI.toast(G.I18n.f(r.error, r.x || ''), 2600);
+        return;
+      }
       if (!room || !room.isHost || room.members.length < 2) return;
       // PK con personaje al azar: a cada uno un Pokémon distinto (no legendario, con sprites).
       const rand = room.mode === 'pvp' && !!room.rand;

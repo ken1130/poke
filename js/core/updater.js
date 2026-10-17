@@ -7,7 +7,8 @@
  *   - Si NO está en partida: aviso "actualizando en 5 s…" y se recarga.
  *     Si está en el gacha, la tienda de mejoras, los ajustes o escribiendo en
  *     un campo, espera a que termine. En una sala de cooperativo, se recarga
- *     igual (decisión del 12-10-2026).
+ *     igual (decisión del 12-10-2026). En la mesa del modo fiesta (#scr-party,
+ *     una partida de cartas en marcha) se espera a que se vuelva a la sala.
  *   - Si está EN PARTIDA: no se toca. Al acabar, la run se guarda como
  *     siempre (récords, monedas, tickets, ranking) y, al volver al menú, se
  *     recarga.
@@ -37,7 +38,7 @@ G.Updater = (() => {
   /** ¿Se puede recargar ahora sin cortar nada? */
   function safe() {
     if (!G.Game || G.Game.state !== 'ui') return false;                   // en partida o en el resumen
-    if (['scr-gacha', 'scr-upgrades', 'scr-settings'].some(id => document.getElementById(id) && G.UI.isOpen(id))) return false;
+    if (['scr-gacha', 'scr-upgrades', 'scr-settings', 'scr-party'].some(id => document.getElementById(id) && G.UI.isOpen(id))) return false;
     const fx = document.getElementById('pull-fx');
     if (fx && !fx.classList.contains('hidden')) return false;             // tirada del gacha en marcha
     const a = document.activeElement;

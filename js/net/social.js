@@ -365,9 +365,12 @@ G.Social = (() => {
     href.on('value', s => { if (room && room.id === id && !s.val()) closedRoom(); }, () => closedRoom());
     const oref = fb.rtdb.ref('rooms/' + id + '/open');
     oref.on('value', s => { if (room && room.id === id) { room.open = s.val() === true; emit('room'); } }, () => {});
-    // Modo de la sala: 'coop' (equipo) o 'pvp' (PK). Lo elige el anfitrión.
+    // Modo de la sala: 'coop' (equipo), 'pvp' (PK) o 'party' (fiesta: juegos por turnos, party.js). Lo elige el anfitrión.
     const dref = fb.rtdb.ref('rooms/' + id + '/mode');
-    dref.on('value', s => { if (room && room.id === id) { room.mode = s.val() === 'pvp' ? 'pvp' : 'coop'; emit('room'); } }, () => {});
+    dref.on('value', s => { if (room && room.id === id) { const v = s.val(); room.mode = v === 'pvp' || v === 'party' ? v : 'coop'; emit('room'); } }, () => {});
+    // Fiesta: { game, cpu } (lo elige el anfitrión).
+    const yref = fb.rtdb.ref('rooms/' + id + '/party');
+    yref.on('value', s => { if (room && room.id === id) { room.party = s.val() || {}; emit('room'); } }, () => {});
     // PK con personaje al azar (lo elige el anfitrión).
     const rref = fb.rtdb.ref('rooms/' + id + '/rand');
     rref.on('value', s => { if (room && room.id === id) { room.rand = s.val() === true; emit('room'); } }, () => {});
@@ -386,7 +389,7 @@ G.Social = (() => {
     // Extras del PK (pvp-extra.js): { bo3, treasure, traps, reroll, ghosts, streak, duel }; lo que falta = sí.
     const pref = fb.rtdb.ref('rooms/' + id + '/pkx');
     pref.on('value', s => { if (room && room.id === id) { room.pkx = s.val() || {}; emit('room'); } }, () => {});
-    roomRefs = [mref, href, oref, dref, rref, sref, xref, tref, aref, pref];
+    roomRefs = [mref, href, oref, dref, rref, sref, xref, tref, aref, pref, yref];
     writeStatus();
     emit('room');
   }
@@ -427,9 +430,19 @@ G.Social = (() => {
     emit('room');
   }
 
-  /** El anfitrión elige el modo de la sala: 'coop' o 'pvp'. */
+  /** El anfitrión elige el modo de la sala: 'coop', 'pvp' o 'party'. */
   function setMode(mode) {
-    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mode').set(mode === 'pvp' ? 'pvp' : 'coop').catch(() => {});
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/mode').set(mode === 'pvp' || mode === 'party' ? mode : 'coop').catch(() => {});
+  }
+
+  /** Fiesta: el juego elegido y cuántas CPU (lo que falta: Big Two y ninguna CPU). */
+  function partyOf(r) {
+    const x = (r && r.party) || {};
+    return { game: typeof x.game === 'string' ? x.game : 'bigtwo', cpu: Math.max(0, Math.min(3, x.cpu | 0)) };
+  }
+  /** El anfitrión cambia el juego o las CPU de la fiesta. */
+  function setParty(o) {
+    if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/party').set({ game: String(o.game || 'bigtwo').slice(0, 16), cpu: Math.max(0, Math.min(3, o.cpu | 0)) }).catch(() => {});
   }
 
   /** PK por equipos: el equipo de cada uno (el que eligió, o 1.º/3.º rojo y 2.º/4.º azul). */
@@ -597,7 +610,7 @@ G.Social = (() => {
   return {
     start, startLite, joinByCode, stop, claimNick, request, accept, remove, publishProfile, getProfile, profileData,
     createRoom, joinRoom, leaveRoom, setOpen, setMode, setRand, setArena, setScene, setMods, setTeams, setTeam, teamOf, refreshMember, setPlaying, refreshPresence,
-    setPkx, pkxOf,
+    setPkx, pkxOf, setParty, partyOf,
     invite, acceptInvite, declineInvite,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get me() { return me; },

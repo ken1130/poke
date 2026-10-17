@@ -67,7 +67,10 @@ G.PartyUI = (() => {
   function checkLink() {
     if (checked) return;
     checked = true;
-    const code = new URLSearchParams(location.search).get('sala');
+    let code = new URLSearchParams(location.search).get('sala');
+    // Recargaste (o se cerró la app) en plena mesa del modo fiesta: se vuelve a esa sala
+    // y el anfitrión te devuelve tu plaza (party.js).
+    if (!code && G.Party) code = G.Party.rejoinCode();
     if (!code || !/^[A-Za-z0-9]{4,8}$/.test(code)) return;
     try { history.replaceState(null, '', location.pathname); } catch (e) { /* nada */ }
     setTimeout(() => open(code), 300);
