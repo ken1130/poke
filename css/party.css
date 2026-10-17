@@ -21,7 +21,6 @@
 /* ---------- mesa (2026-10-17: estilo de los juegos de cartas del móvil) ---------- */
 #scr-party {
   z-index: 30; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 0 !important;
-  background: radial-gradient(ellipse at 50% 45%, #2f7a4f 0%, #1d5a39 45%, #0f3322 100%);
   --cw: 80px; --ch: 112px; --bw: 34px; --bh: 48px; --av: 84px;
 }
 #scr-party.hidden { display: none; }
@@ -98,6 +97,8 @@
 .b2-hand .b2c { cursor: pointer; transition: transform .12s; }
 .b2-hand .b2c + .b2c { margin-left: var(--step); }
 .b2-hand .b2c.up { transform: translateY(-24px); box-shadow: 0 0 0 3px var(--gold), 0 0 14px rgba(255, 210, 63, .8), 0 4px 0 rgba(0,0,0,.35); }
+/* Mano solapada: de cada carta se ve la columna izquierda (número, palo y Pokémon impreso); el resto lo tapa la siguiente. */
+.b2-hand .b2c:not(:last-child) .b2i2 { display: none; }
 .b2c.dim::after { content: ''; position: absolute; inset: 0; background: rgba(10, 16, 30, .45); z-index: 2; }
 .b2-hpill { position: absolute; z-index: 3; top: -8px; left: 50%; transform: translateX(-50%); padding: 4px 16px; border-radius: 999px; white-space: nowrap;
   background: var(--gold); color: #3a2400; font: 800 17px var(--font); box-shadow: 0 3px 0 rgba(0,0,0,.35); pointer-events: none; }
@@ -128,7 +129,7 @@
 .b2c { position: relative; flex: 0 0 auto; width: var(--cw); height: var(--ch); border-radius: 8px; background: #fff8e6;
   border: 2px solid var(--sc); box-shadow: 0 3px 0 rgba(0,0,0,.35), -2px 0 4px rgba(0,0,0,.25), inset 0 0 0 2px #fff; color: var(--sk); overflow: hidden;
   --sc: #3f9b3a; --sk: #1f6d1d; --sb: rgba(95, 203, 106, .22); }
-.b2c::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 45%; background: var(--sb); }
+.b2c::before { content: ''; position: absolute; inset: 4px; border-radius: 5px; background: var(--sb); border: 1px solid var(--sc); opacity: .9; }
 .b2c.s1 { --sc: #e8642c; --sk: #c2410c; --sb: rgba(255, 123, 61, .2); }
 .b2c.s2 { --sc: #e05a9c; --sk: #c0266f; --sb: rgba(255, 158, 216, .28); }
 .b2c.s3 { --sc: #6a4bb0; --sk: #3d2a78; --sb: rgba(122, 107, 196, .25); }
@@ -136,8 +137,11 @@
 .b2i b { font: 800 26px var(--font); letter-spacing: -1px; }
 .b2i i { font-style: normal; font-size: 20px; }
 .b2i2 { left: auto; top: auto; right: 4px; bottom: 3px; transform: rotate(180deg); }
-.b2m { position: absolute; right: 4px; bottom: 8px; width: 60%; height: 52%; object-fit: contain; object-position: center bottom; image-rendering: pixelated; z-index: 1; }
-.b2ms { display: flex; align-items: center; justify-content: center; font-size: 30px; }
+/* El Pokémon va impreso en la carta, plano, debajo del número (2026-10-17, pedido del dueño): así se ve
+   entero aunque las cartas de la mano se solapen. A la derecha, el palo grande en marca de agua. */
+.b2m { position: absolute; left: 5px; top: 47%; width: 44%; height: 40%; object-fit: contain; object-position: left top; image-rendering: pixelated; z-index: 1; }
+.b2w { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: calc(var(--cw) * .55); line-height: 1; color: var(--sc); opacity: .22; z-index: 1; font-style: normal; }
+.b2ms { display: flex; align-items: flex-start; justify-content: flex-start; font-size: 22px; }
 .b2c.in { animation: b2in .28s ease-out both; }
 .b2c.in.from-top { --fx: 0; --fy: -80px; }
 .b2c.in.from-left { --fx: -120px; --fy: 0; }
@@ -238,7 +242,7 @@
   .b2i b { font-size: 21px; }
   .b2i i { font-size: 16px; }
   .b2i2 { display: none; }
-  .b2m { width: 66%; height: 50%; right: 2px; bottom: 4px; }
+  .b2m { left: 4px; top: 49%; width: 46%; height: 38%; }
   .b2-flash { font-size: 14px; }
   .b2-res { gap: 8px; padding: 6px; }
   .b2-bt { font-size: 40px; }
@@ -261,15 +265,143 @@
   .b2-bt { font-size: 32px; }
 }
 
-/* ---------- fondos de la mesa (2026-10-17, botón «Fondo» de la barra) ---------- */
-#scr-party.bg-blue   { background: radial-gradient(ellipse at 50% 45%, #2f5f9a 0%, #1d3f6e 48%, #0d2140 100%); }
-#scr-party.bg-wine   { background: radial-gradient(ellipse at 50% 45%, #8a2b3c 0%, #5e1a28 48%, #300c14 100%); }
-#scr-party.bg-wood   { background: repeating-linear-gradient(92deg, #7a4a24 0 14px, #6c3f1e 14px 26px, #84522a 26px 44px), #6c3f1e; }
-#scr-party.bg-night  { background: radial-gradient(1px 1px at 12% 20%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 40% 70%, #fff 50%, transparent 51%),
-  radial-gradient(1.5px 1.5px at 70% 30%, #ffe9a0 50%, transparent 51%), radial-gradient(1px 1px at 85% 80%, #fff 50%, transparent 51%),
-  radial-gradient(1px 1px at 25% 85%, #cfe0ff 50%, transparent 51%), radial-gradient(ellipse at 50% 40%, #27305e 0%, #151a3a 55%, #070a1c 100%); }
-#scr-party.bg-center { background: linear-gradient(#f4d2da 0 50%, #e8eef6 50% 100%); }
-#scr-party.bg-center .pt-bar { background: rgba(170, 40, 70, .85); }
-#scr-party.bg-grass  { background: repeating-conic-gradient(#3f8a3a 0 25%, #47963f 0 50%) 0 0 / 32px 32px; }
-#scr-party.bg-center .b2-cap, #scr-party.bg-center .b2-meinfo { color: #4a2030; }
-#scr-party.bg-center .b2-cap { background: rgba(255,255,255,.5); }
+/* ---------- fondos de la mesa (2026-10-17, rehechos: botón «Fondo» de la barra) ----------
+ * Cada fondo = la sala (#scr-party) + la mesa ovalada con su borde (#pt-body::before) + adornos (::after).
+ * Todo con degradados quietos (nada que se anime ni se recalcule por fotograma).
+ */
+#scr-party { --felt: #2f8a55; --felt2: #1c6a3e; --felt3: #0f4527; --rim: #8a5428; --rim2: #4e2a10; --rimhi: #c48a4e; --emb: rgba(255,255,255,.07);
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 9px, rgba(255,255,255,.035) 10px 12px, transparent 13px) 0 0 / 56px 56px,
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 28px 28px,
+    radial-gradient(ellipse at 50% 40%, #173a2a 0%, #0c2219 55%, #050f0a 100%); }
+#pt-body { isolation: isolate; }
+#pt-body::before { content: ''; position: absolute; z-index: -1; left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); top: 6px; bottom: 6px;
+  border-radius: 46% / 50%; pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 46%, transparent 0 13%, var(--emb) 13.2% 14.4%, transparent 14.6%),
+    radial-gradient(circle at 50% 46%, var(--emb) 0 3.2%, transparent 3.4%),
+    linear-gradient(transparent calc(46% - 1px), var(--emb) calc(46% - 1px) calc(46% + 1px), transparent calc(46% + 1px)) 50% 0 / 27% 100% no-repeat,
+    repeating-radial-gradient(circle at 30% 30%, rgba(255,255,255,.018) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 42%, var(--felt) 0%, var(--felt2) 55%, var(--felt3) 100%);
+  border: 12px solid var(--rim);
+  box-shadow: 0 0 0 3px var(--rim2), inset 0 0 0 2px var(--rimhi), inset 0 0 0 5px rgba(0,0,0,.25), inset 0 18px 50px rgba(0,0,0,.45), inset 0 -10px 40px rgba(0,0,0,.35), 0 18px 40px rgba(0,0,0,.6); }
+/* brillo del borde */
+#pt-body::after { content: ''; position: absolute; z-index: -1; left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); top: 6px; bottom: 6px;
+  border-radius: 46% / 50%; pointer-events: none; border: 12px solid transparent;
+  background: linear-gradient(180deg, rgba(255,255,255,.22), transparent 30%, transparent 70%, rgba(0,0,0,.25)) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); }
+
+/* azul: mar profundo, borde plateado */
+#scr-party.bg-blue { --felt: #2f6fb8; --felt2: #1d4b8a; --felt3: #0d2650; --rim: #9aa7b8; --rim2: #3f4a5c; --rimhi: #e6edf6;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(160,210,255,.10) 0 3px, transparent 4px) 0 0 / 90px 70px,
+    radial-gradient(circle at 70% 80%, rgba(160,210,255,.08) 0 2px, transparent 3px) 0 0 / 60px 50px,
+    radial-gradient(ellipse at 50% 0%, #1f4a7c 0%, #0d2240 55%, #050c1c 100%); }
+/* granate: casino real, borde dorado y damasco */
+#scr-party.bg-wine { --felt: #9a2f45; --felt2: #6e1a2c; --felt3: #3a0a16; --rim: #c9a24a; --rim2: #5e4310; --rimhi: #fff0b8; --emb: rgba(255,220,140,.10);
+  background:
+    linear-gradient(45deg, rgba(255,210,120,.05) 25%, transparent 25% 75%, rgba(255,210,120,.05) 75%) 0 0 / 34px 34px,
+    linear-gradient(-45deg, rgba(255,210,120,.05) 25%, transparent 25% 75%, rgba(255,210,120,.05) 75%) 0 0 / 34px 34px,
+    radial-gradient(ellipse at 50% 40%, #3a0d18 0%, #22060e 60%, #0e0206 100%); }
+/* madera: la mesa es de tablas, sala con suelo de parqué */
+#scr-party.bg-wood { --rim: #5a3214; --rim2: #2a1406; --rimhi: #a8703c; --emb: rgba(255,230,190,.10);
+  background: repeating-linear-gradient(90deg, #3a2414 0 60px, #33200f 60px 62px, #43291a 62px 122px, #2e1c0e 122px 124px),
+    #3a2414; }
+#scr-party.bg-wood #pt-body::before {
+  background:
+    radial-gradient(circle at 50% 46%, transparent 0 13%, var(--emb) 13.2% 14.4%, transparent 14.6%),
+    radial-gradient(ellipse at 50% 42%, rgba(255,220,170,.18) 0%, transparent 60%, rgba(0,0,0,.35) 100%),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.10) 0 2px, transparent 2px 46px),
+    repeating-linear-gradient(90deg, #a8693a 0 3px, #9a5e32 3px 9px, #b0723f 9px 14px, #94592e 14px 21px); }
+/* noche estrellada: mesa de cristal oscuro, borde violeta brillante */
+#scr-party.bg-night { --felt: #2c3170; --felt2: #1a1d4a; --felt3: #0a0b24; --rim: #6a4bc8; --rim2: #241650; --rimhi: #c8b8ff; --emb: rgba(200,190,255,.12);
+  background:
+    radial-gradient(1px 1px at 12% 20%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 40% 70%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 70% 30%, #ffe9a0 50%, transparent 51%), radial-gradient(1px 1px at 85% 80%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 25% 85%, #cfe0ff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 92% 12%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 6% 60%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 55% 8%, #cfe0ff 50%, transparent 51%),
+    radial-gradient(ellipse at 80% 0%, rgba(120,80,220,.35), transparent 50%),
+    radial-gradient(ellipse at 50% 40%, #1d2150 0%, #0f1230 55%, #04050f 100%); }
+#scr-party.bg-night #pt-body::before { box-shadow: 0 0 0 3px var(--rim2), inset 0 0 0 2px var(--rimhi), inset 0 18px 50px rgba(0,0,0,.45), 0 0 30px rgba(140,110,255,.55), 0 18px 40px rgba(0,0,0,.6); }
+/* Centro Pokémon: sala de baldosas, la mesa es una Poké Ball */
+#scr-party.bg-center { --rim: #2a2a2a; --rim2: #0e0e0e; --rimhi: #6a6a6a; --emb: rgba(0,0,0,.08);
+  background: repeating-conic-gradient(#f6dbe2 0 25%, #fbeef1 0 50%) 0 0 / 44px 44px; }
+#scr-party.bg-center #pt-body::before {
+  background:
+    radial-gradient(circle at 50% 50%, #fff 0 4%, #2a2a2a 4.2% 6.4%, transparent 6.6%),
+    linear-gradient(transparent calc(50% - 7px), #2a2a2a calc(50% - 7px) calc(50% + 7px), transparent calc(50% + 7px)),
+    linear-gradient(180deg, #e8473f 0%, #c92a24 50%, #f4f4f4 50%, #d8dde4 100%); }
+#scr-party.bg-center .pt-bar { background: rgba(170, 40, 70, .9); }
+/* pradera: estadio de césped con líneas */
+#scr-party.bg-grass { --felt: #4aa84a; --felt2: #3a8e3c; --felt3: #23662a; --rim: #e8e2c8; --rim2: #8a7a4a; --rimhi: #fff; --emb: rgba(255,255,255,.35);
+  background: linear-gradient(#8fd0ff 0%, #c8ecff 38%, #6cbf5a 38.2%, #3f8f3a 100%); }
+#scr-party.bg-grass #pt-body::before {
+  background:
+    radial-gradient(circle at 50% 46%, transparent 0 13%, var(--emb) 13.2% 14.4%, transparent 14.6%),
+    linear-gradient(90deg, transparent calc(50% - 1.5px), var(--emb) calc(50% - 1.5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 8%, transparent 8% 16%),
+    radial-gradient(ellipse at 50% 42%, var(--felt) 0%, var(--felt2) 60%, var(--felt3) 100%); }
+
+@media (max-height: 520px) {
+  #pt-body::before, #pt-body::after { border-width: 7px; top: 2px; bottom: 2px; left: max(4px, env(safe-area-inset-left)); right: max(4px, env(safe-area-inset-right)); }
+}
+#scr-party.bg-center .b2-cap { background: rgba(0,0,0,.55); }
+
+/* ---------- final de ronda, versión vistosa (2026-10-17): rayos, letras doradas, cinta con colas, confeti, corona ---------- */
+.b2-rays { position: absolute; left: 50%; top: 30%; width: 170vmax; height: 170vmax; margin: -85vmax 0 0 -85vmax; pointer-events: none;
+  background: repeating-conic-gradient(rgba(255, 214, 110, .17) 0 7deg, transparent 7deg 18deg);
+  -webkit-mask: radial-gradient(circle, #000 0 10%, transparent 42%); mask: radial-gradient(circle, #000 0 10%, transparent 42%);
+  animation: b2spin 30s linear infinite; }
+.b2-rays.lose { background: repeating-conic-gradient(rgba(150, 185, 255, .11) 0 7deg, transparent 7deg 18deg); }
+@keyframes b2spin { to { transform: rotate(1turn); } }
+.b2-confw { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.b2-conf { position: absolute; top: -20px; width: 9px; height: 14px; border-radius: 2px; background: var(--c);
+  animation: b2fall var(--t, 3s) var(--d, 0s) cubic-bezier(.3, .2, .6, 1) both; }
+@keyframes b2fall { from { transform: translate(0, 0) rotate(0); opacity: 1; } 85% { opacity: 1; }
+  to { transform: translate(calc(var(--s) * 80px), 110vh) rotate(calc(var(--s) * 900deg)); opacity: 0; } }
+.b2-coin { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fff6c0 0 12%, transparent 13%), radial-gradient(circle, #ffd23f 0 52%, #c88a10 53% 60%, #ffcf3a 61% 100%);
+  border: 2px solid #8a5a00; animation: b2fly 1.5s var(--d, 0s) cubic-bezier(.3, .7, .4, 1) both; }
+.b2-star { position: absolute; width: 22px; height: 22px; pointer-events: none; background: #fff6c0;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+  animation: b2tw 1.6s var(--d, 0s) ease-in-out infinite both; }
+.b2-banner.lose .b2-star { background: #cfe0ff; }
+@keyframes b2tw { 0%, 100% { transform: scale(.2) rotate(0); opacity: 0; } 50% { transform: scale(1) rotate(45deg); opacity: 1; } }
+.b2-btw { filter: drop-shadow(0 4px 0 #7a3b00) drop-shadow(0 -2px 0 #7a3b00) drop-shadow(2px 0 0 #7a3b00) drop-shadow(-2px 0 0 #7a3b00) drop-shadow(0 10px 14px rgba(0,0,0,.55)); }
+.b2-banner.lose .b2-btw { filter: drop-shadow(0 4px 0 #22346e) drop-shadow(0 -2px 0 #22346e) drop-shadow(2px 0 0 #22346e) drop-shadow(-2px 0 0 #22346e) drop-shadow(0 10px 14px rgba(0,0,0,.55)); }
+.b2-btw .b2-bt { text-shadow: none; color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: linear-gradient(180deg, #fffbe0 0%, #ffe066 38%, #ffb21a 62%, #ff8a00 100%); }
+.b2-banner.lose .b2-btw .b2-bt { background-image: linear-gradient(180deg, #ffffff 0%, #dbe7ff 45%, #9fb8ee 100%); }
+.b2-rib { position: relative; display: inline-block; isolation: isolate; margin-top: 2px; }
+.b2-rib::before, .b2-rib::after { content: ''; position: absolute; z-index: -1; top: 12px; bottom: -10px; width: 64px; background: #1636a0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 26% 50%); }
+.b2-rib::before { left: -40px; }
+.b2-rib::after { right: -40px; transform: scaleX(-1); }
+.b2-banner.lose .b2-rib::before, .b2-banner.lose .b2-rib::after { background: #3d1c7a; }
+.b2-rib .b2-ribbon { clip-path: none; margin-top: 0; border-radius: 4px; padding: 2px 56px 6px;
+  box-shadow: inset 0 3px 0 rgba(255,255,255,.35), inset 0 -4px 0 rgba(0,0,0,.25), 0 4px 0 rgba(0,0,0,.3); }
+.b2-crown { position: absolute; z-index: 2; top: -24px; left: 50%; width: 40px; height: 26px; transform: translateX(-50%);
+  background: linear-gradient(#fff3a0, #f5b81c 60%, #c8891a); filter: drop-shadow(0 2px 0 #7a3b00);
+  clip-path: polygon(0 100%, 0 18%, 25% 58%, 50% 0, 75% 58%, 100% 18%, 100% 100%); }
+.b2-pc { border: 3px solid transparent; background: linear-gradient(#1a2850, #0c1430) padding-box, linear-gradient(#aab4c8, #5a6478) border-box; }
+.b2-pc.p1 { background: linear-gradient(#2a3a78, #121c48) padding-box, linear-gradient(#fff0a0, #f5b81c 50%, #b07010) border-box; transform: scale(1.06); }
+.b2-pc.me:not(.p1) { background: linear-gradient(#24407a, #122450) padding-box, linear-gradient(#9fc0ff, #3a64c8) border-box; }
+.b2-pav { width: 78px; height: 78px; margin: 0 auto 2px; border-radius: 50%; align-items: center;
+  background: radial-gradient(circle at 50% 35%, #ffe08a, #f39a2c 70%); border: 3px solid #fff4d6; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+.b2-pav canvas { width: 68px; height: 60px; }
+.b2-res.done .b2-pc { animation: b2up .45s calc(var(--i, 1) * .09s) cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes b2up { from { transform: translateY(30px) scale(.8); opacity: 0; } }
+.b2-res.done .b2-pc.p1 { animation-name: b2up1; }
+@keyframes b2up1 { from { transform: translateY(30px) scale(.8); opacity: 0; } to { transform: scale(1.06); opacity: 1; } }
+.b2-rbtns .btn { min-height: 52px; font-size: 18px; padding: 6px 28px; }
+@media (max-height: 520px) {
+  .b2-rib::before, .b2-rib::after { width: 40px; top: 8px; bottom: -6px; }
+  .b2-rib::before { left: -26px; } .b2-rib::after { right: -26px; }
+  .b2-rib .b2-ribbon { padding: 0 36px 3px; }
+  .b2-pav { width: 50px; height: 50px; border-width: 2px; }
+  .b2-pav canvas { width: 44px; height: 39px; }
+  .b2-crown { width: 30px; height: 19px; top: -17px; }
+  .b2-star { width: 14px; height: 14px; }
+  .b2-rbtns .btn { min-height: 44px; font-size: 15px; padding: 4px 18px; }
+}
+@media (max-height: 340px) { .b2-pav { display: none; } }
