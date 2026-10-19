@@ -1,0 +1,43 @@
+/* ============ plaza.css — Zona de fiesta (plaza.js, 2026-10-19) ============
+ * Una tarjeta arriba en el centro (ahí no hay HUD: ni reloj ni jefe en la plaza) con lo que se
+ * puede hacer donde estás. Móvil en horizontal: más compacta y botones de 40 px.
+ */
+#plaza-hud {
+  position: fixed; top: 40px; left: 50%; transform: translateX(-50%); z-index: 18;
+  width: min(460px, calc(100% - 420px)); min-width: 280px;
+  display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+  font-size: 13px; color: var(--ink, #f6ead2);
+}
+#plaza-hud > * { pointer-events: auto; }
+#plaza-hud .pz-top { display: flex; align-items: center; justify-content: center; gap: 8px; }
+#plaza-hud .pz-top b { color: var(--gold, #ffbf5a); text-shadow: 2px 2px 0 #0f0c16; font-size: 15px; }
+#plaza-hud .pz-card {
+  display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center;
+  padding: 8px 12px; border-radius: 4px;
+  background: repeating-conic-gradient(rgba(255,255,255,.035) 0 25%, transparent 0 50%) 0 0 / 8px 8px, linear-gradient(180deg, rgba(58,51,80,.94), rgba(36,31,51,.94));
+  border: 3px solid #0f0c16; box-shadow: inset 0 0 0 2px #4d4466, 0 4px 0 #0f0c16;
+}
+#plaza-hud .pz-card b { font-size: 15px; color: #ffd88a; }
+#plaza-hud .pz-sub { color: var(--muted, #b9adc9); font-size: 12px; line-height: 1.35; }
+#plaza-hud .pz-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+#plaza-hud .pz-score { font-size: 22px; font-weight: 900; color: #ffe14d; text-shadow: 2px 2px 0 #0f0c16; letter-spacing: 2px; }
+#plaza-hud .pz-hot { color: #ff8a95 !important; animation: pzHot .5s steps(2) infinite; }
+#plaza-hud .pz-big { font-size: 17px; padding: 10px 22px; }
+#plaza-hud .pz-hint { color: var(--muted, #b9adc9); font-size: 12px; padding: 6px 10px; }
+@keyframes pzHot { 50% { color: #ffe14d; } }
+
+@media (max-width: 900px) { #plaza-hud { width: calc(100% - 300px); min-width: 240px; } }
+/* Móvil en horizontal: arriba en el centro, entre el bloque de la izquierda y el minimapa. */
+@media (max-height: 520px) {
+  /* Una sola tira baja: el Pokémon está en el centro de la pantalla y no se puede tapar. */
+  #plaza-hud { top: 34px; width: calc(100% - 340px); min-width: 230px; gap: 3px; flex-direction: row; align-items: flex-start; }
+  #plaza-hud .pz-top { order: 2; flex: none; }
+  #plaza-hud .pz-top b { display: none; }
+  #plaza-hud .pz-card { flex: 1; flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 3px 6px; gap: 4px 8px; }
+  #plaza-hud .pz-card b { font-size: 13px; }
+  #plaza-hud .pz-sub, #plaza-hud .pz-tip { display: none; }
+  #plaza-hud .pz-score { font-size: 17px; }
+  #plaza-hud .pz-row { flex-wrap: nowrap; gap: 6px; }
+  #plaza-hud .btn { min-height: 40px; padding: 4px 10px; }
+  #plaza-hud .pz-big { font-size: 14px; padding: 6px 12px; }
+}

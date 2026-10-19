@@ -230,9 +230,16 @@ G.Game = (() => {
     keepAwake(true);
     G.PvP.arenaStart(pl);
     if (G.Modes.run === 'training') G.Training.begin(pl);     // sala de entrenamiento (training.js)                 // arena de PK: elegir 3 de 5 movimientos
+    if (G.Modes.run === 'plaza') G.Plaza.begin(pl, coop);         // zona de fiesta (plaza.js)
   }
 
   function quitRun() {
+    // Zona de fiesta en grupo: el anfitrión avisa a todos antes de irse (vuelven a la sala).
+    if (G.Modes.run === 'plaza' && G.Coop.isHost) {
+      G.Plaza.closeAll('');
+      setTimeout(() => { if (G.Coop.active) G.Coop.leave(); endRun(false); }, 300);
+      return;
+    }
     if (G.Coop.active) G.Coop.leave();
     endRun(false);
   }
@@ -437,6 +444,7 @@ G.Game = (() => {
   function endRun(dead = true) {
     if (state === 'over' || !pl) return;
     if (G.Modes.run === 'training') { endTraining(); return; }
+    if (G.Modes.run === 'plaza') { endPlaza(); return; }
     const el = document.getElementById('scr-fclear');
     if (el) el.classList.add('hidden');
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
@@ -530,6 +538,24 @@ G.Game = (() => {
     G.Audio.music(null);
     G.Audio.sfx('back');
     G.Training.end();
+    G.EnemyMgr.clear(); G.Projectiles.clear(); G.Combat.clearFields(); G.Pickups.clear(); G.FX.clear();
+    G.Modes.reset();
+    pl = null;
+    G.UI.hideAll();
+    G.Flow.afterRun();
+  }
+
+  /** Zona de fiesta (plaza.js): como la sala de entrenamiento, al salir no se guarda nada. */
+  function endPlaza() {
+    state = 'over';
+    keepAwake(false);
+    G.Tips.reset();
+    if (G.Coop.active) G.Coop.end();
+    G.Social.setPlaying(false);
+    G.Audio.music(null);
+    G.Audio.sfx('back');
+    G.Plaza.end();
+    G.World.setArena(null);
     G.EnemyMgr.clear(); G.Projectiles.clear(); G.Combat.clearFields(); G.Pickups.clear(); G.FX.clear();
     G.Modes.reset();
     pl = null;
@@ -1005,6 +1031,7 @@ G.Game = (() => {
     }
     time += dt;
     if (G.Modes.run === 'training') { trainingUpdate(dt); return; }
+    if (G.Modes.run === 'plaza') { plazaUpdate(dt); return; }
 
     const b = G.Floors.biomeAt(Math.floor(time / 240) + G.Floors.floor);      // cada piso, el bioma siguiente (floors.js; «en llamas»: el volcán)
     if (b !== biome && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom) && fixedScene == null) {
@@ -1109,6 +1136,22 @@ G.Game = (() => {
     G.Training.update(dt, pl);
     G.FX.update(dt);
     G.Audio.music(G.BIOME_MUSIC[0]);
+  }
+
+  /**
+   * Zona de fiesta (plaza.js): moverse y jugar a los juegos de la plaza. Sin ataques, enemigos,
+   * eventos ni premios; en grupo, las posiciones de los demás como siempre.
+   */
+  function plazaUpdate(dt) {
+    pl.frozen = G.UI.isOpen('scr-pause');
+    pl.picking = false;
+    pl.update(dt);
+    if (G.Coop.active) for (const p of G.Coop.puppets()) p.netUpdate(dt);
+    G.Plaza.update(dt, pl);
+    G.Camera.follow(pl.x, pl.y, dt);
+    G.World.update(dt, G.Camera);
+    G.FX.update(dt);
+    G.Audio.music('village');
   }
 
   /** Caído en grupo: un compañero a tu lado te va levantando. */
@@ -1246,6 +1289,7 @@ G.Game = (() => {
     G.Combat.drawGroundFields(ctx);
     G.Arts.draw(ctx);
     G.Dungeon.drawGround(ctx);
+    G.Plaza.drawGround(ctx);             // zona de fiesta: pistas, círculo de la patata (plaza.js)
     G.Pickups.draw(ctx);
     G.PvPX.drawGround(ctx);              // PK: trampas y tesoro (pvp-extra.js)
 
@@ -1257,6 +1301,7 @@ G.Game = (() => {
     for (const e of extra) items.push({ y: e.y, ent: e });
     for (const c of G.Companion.drawables()) items.push({ y: c.y, ent: c });
     for (const f of G.Dungeon.drawables()) items.push({ y: f.y, ent: f });      // muebles de la tienda
+    for (const f of G.Plaza.drawables()) items.push({ y: f.y, ent: f });        // zona de fiesta: caseta y CPU
     for (const f of G.Funny.drawables()) items.push({ y: f.y, ent: f });       // Snorlax
     for (const f of G.Encounters.drawables()) items.push({ y: f.y, ent: f });  // encuentros (Clefairy, Gyarados, Mew…)
     const rift = G.Rift.drawable();
@@ -1286,6 +1331,7 @@ G.Game = (() => {
     G.Projectiles.draw(ctx);
     G.Combat.drawAirFields(ctx);
     G.Dungeon.drawAir(ctx);
+    G.Plaza.drawAir(ctx);                // zona de fiesta: pelotas, bomba, marcadores
     G.Floors.drawAir(ctx);               // carteles de las escaleras y corona del jefe del piso
     G.PvP.drawWorld(ctx);                // PK: zona segura y punto de mira
     G.FX.draw(ctx);

@@ -160,7 +160,7 @@ G.Spawner = (() => {
     // En el Desafío legendario, nunca: todo pasa en la arena.
     // (Tampoco con el grupo dentro de la tienda o de una sala: dungeon.js.)
     if (G.Rift.inArena || (G.Dungeon && G.Dungeon.inRoom) || G.Modes.run === 'legend' || G.PvP.arena) return;   // arena de PK: nada
-    if (G.Modes.run === 'training') return;      // sala de entrenamiento: sólo los muñecos (training.js)
+    if (G.Modes.run === 'training' || G.Modes.run === 'plaza') return;      // sala de entrenamiento / zona de fiesta: nada sale
 
     // Precarga lo que va a salir en el próximo minuto.
     preloadT -= dt;

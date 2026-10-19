@@ -13,6 +13,7 @@
  *   'weekly' / 'tower' / 'stage'   reto semanal, torre sin fin y aventura
  *             (challenges.js y stages.js): cada uno trae sus propias reglas
  *   'training'  sala de entrenamiento (training.js): muñecos que no caen, sin enemigos ni premios
+ *   'plaza'     zona de fiesta (plaza.js, 2026-10-19): tenis, voleibol, patata caliente y la caseta de cartas
  *
  * Los ajustes de arriba (modos, escenario y dificultad a medida) SÓLO valen en la
  * run normal. Los retos, la torre, la aventura y los legendarios no los usan:
@@ -187,6 +188,7 @@ G.Modes = (() => {
       // Desafío en grupo (con su clasificación de grupo, challenges.js).
       run = roomMods.ch; roomMods.boss = roomMods.shiny = roomMods.rush = false;
     } else if (roomMods.rush) run = 'legend';   // Desafío legendario en grupo
+    else if (roomMods.plaza) run = 'plaza';     // Fiesta en el mundo: zona de fiesta / patata caliente (plaza.js)
   }
 
   /** Tras el resumen de la run: el resultado del reto o de los legendarios. */
@@ -315,6 +317,8 @@ G.Modes = (() => {
 
         <div class="set-row" style="margin-top:10px"><div class="grow"><b>Sala de entrenamiento</b><small>Muñecos Pikachu que nunca caen: prueba cualquier movimiento y mira tu daño por segundo. Sin premios ni récords.</small></div>
           <button class="btn small gold" data-train ${G.Social.room ? 'disabled' : ''}>Entrar a la sala</button></div>
+        <div class="set-row"><div class="grow"><b>Zona de fiesta</b><small>Tenis, voleibol y patata caliente contra la CPU. Con amigos, desde la sala (Fiesta).</small></div>
+          <button class="btn small gold" data-plaza ${G.Social.room ? 'disabled' : ''}>Entrar en la zona</button></div>
 
         <h3 class="set-h" style="margin-top:14px">Modos</h3>
         ${TOGGLES.map(([k, name, desc]) => `
@@ -345,6 +349,7 @@ G.Modes = (() => {
       inp.oninput = () => { S().set(inp.dataset.s, +inp.value); overlay.querySelector(`[data-v="${inp.dataset.s}"]`).textContent = inp.value + '%'; };
     });
     overlay.querySelector('[data-train]').onclick = () => { if (!G.Social.room) start('training'); };
+    overlay.querySelector('[data-plaza]').onclick = () => { if (!G.Social.room) G.Plaza.soloStart('plaza', 3); };
     overlay.querySelector('[data-reset]').onclick = () => { for (const [k] of SLIDERS) S().set(k, 100); render(); };
     overlay.querySelectorAll('[data-scene]').forEach(b => {
       b.onclick = () => { S().set('scene', b.dataset.scene === '' ? null : +b.dataset.scene); G.Audio.sfx('click'); render(); };
