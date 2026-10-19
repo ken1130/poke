@@ -13,6 +13,7 @@
  *   'weekly' / 'tower' / 'stage'   reto semanal, torre sin fin y aventura
  *             (challenges.js y stages.js): cada uno trae sus propias reglas
  *   'training'  sala de entrenamiento (training.js): muñecos que no caen, sin enemigos ni premios
+ *   'guard'     «Proteger a Dazhuang» (guard.js): 50 oleadas contra Dazhuang, con puestos alrededor
  *
  * Los ajustes de arriba (modos, escenario y dificultad a medida) SÓLO valen en la
  * run normal. Los retos, la torre, la aventura y los legendarios no los usan:
@@ -183,7 +184,7 @@ G.Modes = (() => {
       // Aventura en grupo: la fase que eligió el anfitrión (sin modo jefes / shiny).
       run = 'stage'; G.Stages.select(roomMods.stage, !!roomMods.hard);
       roomMods.boss = roomMods.shiny = roomMods.rush = false;
-    } else if (['daily', 'weekly', 'tower'].includes(roomMods.ch)) {
+    } else if (['daily', 'weekly', 'tower', 'guard'].includes(roomMods.ch)) {
       // Desafío en grupo (con su clasificación de grupo, challenges.js).
       run = roomMods.ch; roomMods.boss = roomMods.shiny = roomMods.rush = false;
     } else if (roomMods.rush) run = 'legend';   // Desafío legendario en grupo

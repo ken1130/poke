@@ -165,6 +165,7 @@ G.Game = (() => {
     G.Floors.reset();
     G.RunGoals.reset();
     G.Companion.reset();
+    G.Guard.reset();
     if (coop) { G.Modes.reset(); G.Modes.setRoom(coop.mods || {}); }
     // Desafíos / aventura: sus reglas (las "Reglas a medida" sólo valen en la run normal).
     G.Challenges.prepare();
@@ -229,7 +230,8 @@ G.Game = (() => {
     state = 'playing';
     keepAwake(true);
     G.PvP.arenaStart(pl);
-    if (G.Modes.run === 'training') G.Training.begin(pl);     // sala de entrenamiento (training.js)                 // arena de PK: elegir 3 de 5 movimientos
+    if (G.Modes.run === 'training') G.Training.begin(pl);     // sala de entrenamiento (training.js)
+    if (G.Modes.run === 'guard') G.Guard.begin(pl);           // «Proteger a Dazhuang» (guard.js)                 // arena de PK: elegir 3 de 5 movimientos
   }
 
   function quitRun() {
@@ -337,6 +339,7 @@ G.Game = (() => {
       if (d && d.t) time = d.t;
       if (d && d.why === 'host') G.UI.toast('El anfitrión ha terminado la partida', 3200);
       if (d && d.clear) clearWin = true;                 // mazmorra superada: victoria para todos
+      if (d && d.gw) G.Guard.setWave(d.gw);              // «Proteger a Dazhuang»: la oleada a la que se llegó
       // Sonido de derrota sólo si de verdad lo es (fase superada o PK ganado: no).
       endRun(!(d && d.why === 'host') && !(d && d.clear) && !(d && d.stage && d.stage.win) && !(d && 'pvpWin' in d && G.PvP.wonByMe()));
     },
@@ -437,6 +440,7 @@ G.Game = (() => {
   function endRun(dead = true) {
     if (state === 'over' || !pl) return;
     if (G.Modes.run === 'training') { endTraining(); return; }
+    const guardSm = G.Modes.run === 'guard' ? G.Guard.end() : null;      // «Proteger a Dazhuang»: hasta qué oleada
     const el = document.getElementById('scr-fclear');
     if (el) el.classList.add('hidden');
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
@@ -502,7 +506,7 @@ G.Game = (() => {
     G.RunUI.showOver({
       dead: dead && !clearWin, clear: clearWin, clearTime: G.Floors.cleared ? G.Floors.clearTime : null, goals: G.RunGoals.summary(),
       time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, floor: G.Floors.floor,
-      moves: pl.moves, caught,
+      moves: pl.moves, caught, guard: guardSm,
       breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
@@ -1079,7 +1083,13 @@ G.Game = (() => {
     G.World.update(dt, G.Camera);
 
     const all = everyone();
-    if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, time + G.Stages.tOffset()); }
+    // «Proteger a Dazhuang» (guard.js): las oleadas las pone él (nada del goteo normal, jefes por tiempo ni mareas).
+    const guard = G.Modes.run === 'guard';
+    if (!coop || G.Coop.isHost) {
+      G.Path.update(dt, all);
+      if (guard) { G.Spawner.tickBanner(dt); G.Guard.tick(dt, all); }
+      else G.Spawner.update(dt, all, time + G.Stages.tOffset());
+    }
     else G.Spawner.tickBanner(dt);
     G.EnemyMgr.update(dt, all);
     if (coop && G.Coop.isHost) shieldPickers(all);               // los que eligen cartas apartan a los enemigos
@@ -1092,7 +1102,7 @@ G.Game = (() => {
     G.Combat.updateFields(dt);
     G.Pickups.update(dt, all, onCollect);
     if (!coop || G.Coop.isHost) G.Loot.tick(dt, time, all);      // discos de movimientos y pociones
-    if (!coop || G.Coop.isHost) G.Dungeon.tick(dt, all);          // casa de monstruos, tienda de Kecleon, estatua
+    if ((!coop || G.Coop.isHost) && !guard) G.Dungeon.tick(dt, all);          // casa de monstruos, tienda de Kecleon, estatua
     G.Dungeon.update(dt, pl);
     G.Relics.tick(dt, pl);                                       // reliquias de la torre
     G.Floors.update(dt, all);                                    // escaleras y ataque combinado
@@ -1100,18 +1110,19 @@ G.Game = (() => {
     G.PvPX.update(dt, pl);                                       // extras del PK: rondas, tesoro, trampas, fantasmas (pvp-extra.js)
     G.Boons.update(dt, pl);                                      // bendición inicial (modo normal)
     if (!coop || G.Coop.isHost) G.Boons.tick(time, all);         // hitos de 10/20/30 min
-    if (!coop || G.Coop.isHost) G.Companion.tick(dt, time, all); // huevo Pokémon
+    if ((!coop || G.Coop.isHost) && !guard) G.Companion.tick(dt, time, all); // huevo Pokémon (en guard, se compra)
     G.Companion.update(dt, pl);
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
-    G.Rift.update(dt, pl, time);
+    if (!guard) G.Rift.update(dt, pl, time);
+    G.Guard.update(dt, pl);                                      // Dazhuang, puestos y su panel (guard.js)
     G.Challenges.update(dt, time, pl);
     G.RunGoals.update(dt, time, pl);                             // retos de la run (modo normal)
-    if (coop) G.Raid.update(dt, time);
+    if (coop && !guard) G.Raid.update(dt, time);
     G.Evo.check(pl);
     G.Tips.tick(dt);
     G.Stages.update(dt, time, pl);
-    G.Events.update(dt, all, time);
+    if (!guard) G.Events.update(dt, all, time);
     G.Weather.update(dt, time, pl);
     G.FX.update(dt);
 
@@ -1293,6 +1304,7 @@ G.Game = (() => {
     for (const e of extra) items.push({ y: e.y, ent: e });
     for (const c of G.Companion.drawables()) items.push({ y: c.y, ent: c });
     for (const d of G.Arts.drawables()) items.push({ y: d.y, ent: d });          // pescados de la Caña y hielo del Fantasma
+    for (const f of G.Guard.drawables()) items.push({ y: f.y, ent: f });         // Dazhuang, sus ayudantes y los puestos
     for (const f of G.Dungeon.drawables()) items.push({ y: f.y, ent: f });      // muebles de la tienda
     for (const f of G.Funny.drawables()) items.push({ y: f.y, ent: f });       // Snorlax
     for (const f of G.Encounters.drawables()) items.push({ y: f.y, ent: f });  // encuentros (Clefairy, Gyarados, Mew…)
@@ -1488,6 +1500,15 @@ G.Game = (() => {
       clearWin = true;
       if (G.Coop.active) { const sm = summary(); lastTeam = sm.team; G.Coop.over(Object.assign(sm, { clear: 1 })); }
       endRun(false);
+    },
+    /** «Proteger a Dazhuang» (guard.js): 50 oleadas superadas (win) o Dazhuang ha caído. En grupo, el anfitrión para todos. */
+    guardEnd(win) {
+      if (state === 'ui' || state === 'over' || !pl) return;
+      if (G.Coop.active && !G.Coop.isHost) return;
+      clearWin = !!win;
+      const sm0 = G.Guard.summary();
+      if (G.Coop.active) { const sm = summary(); lastTeam = sm.team; G.Coop.over(Object.assign(sm, { gw: sm0 ? sm0.wave : 0 }, win ? { clear: 1 } : {})); }
+      endRun(!win);
     },
     /** Acaba la run como si hubieras caído (Desafío legendario: pierdes en la arena). */
     end() { if (state !== 'ui' && state !== 'over') endRun(true); },

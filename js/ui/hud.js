@@ -436,6 +436,9 @@ G.HUD = (() => {
       }
       const en = G.Encounters.marker();        // encuentro (encounters.js)
       if (en && !en.noArrow) edgeArrow(ctx, w, h, pl, en.x, en.y - 20, en.col, '#ffffff', '#1a1a2a', en.col, en.name);
+      // «Proteger a Dazhuang» (guard.js): hacia él si no se ve.
+      const gm = G.Guard && G.Guard.markers();
+      if (gm && !gm.dz.dead) edgeArrow(ctx, w, h, pl, gm.dz.x, gm.dz.y - 30, '#ffb44a', '#fff0c8', '#3a2008', '#ffe0a0', G.T('Dazhuang'));
       // Dos escaleras (2026-10-16): la segura en azul, la peligrosa en rojo.
       for (const st of G.Floors.stairsAll) {
         if (st.route === 'danger') edgeArrow(ctx, w, h, pl, st.x, st.y, '#ff7a5a', '#ffe2d8', '#3a0f0a', '#ffc4b0', G.T('Ruta peligrosa') + '・' + G.T(G.Floors.THEMES[st.theme].name));
@@ -451,7 +454,7 @@ G.HUD = (() => {
     }
 
     // Desafíos y aventura: piso de la torre, regla de la semana, objetivo de la fase.
-    const ch = (G.Stages && G.Stages.hudLine()) || G.Challenges.hudLine();
+    const ch = (G.Stages && G.Stages.hudLine()) || (G.Guard && G.Guard.hudLine()) || G.Challenges.hudLine();
     if (ch && !G.Rift.inArena) {
       ctx.textAlign = 'center';
       const y0 = boss ? 98 : 76;
@@ -946,6 +949,15 @@ G.HUD = (() => {
     statue(ctx, x, y) { G.Pickups.sprite(ctx, 'statue', Math.floor(performance.now() / 600) % 6, x, y, 0.45); },
     elite(ctx, x, y, on) { G.Pickups.sprite(ctx, 'mmicon', 3, x, y + (on ? -1 : 0), 1); },
     mate(ctx, x, y, dead) { G.Pickups.sprite(ctx, 'mmicon', dead ? 5 : 4, x, y, 1); },
+    // Dazhuang (guard.js): círculo dorado con su vida alrededor (verde → rojo), en píxeles.
+    guard(ctx, x, y, k) {
+      if (typeof k !== 'number') k = 1;           // (en la lista, sin vida)
+      x = Math.round(x); y = Math.round(y);
+      ctx.fillStyle = '#1b1528'; ctx.fillRect(x - 6, y - 6, 12, 12);
+      ctx.fillStyle = k > 0.35 ? '#5fe08a' : '#ff5f6d'; ctx.fillRect(x - 5, y - 5, Math.max(1, Math.round(10 * Math.max(0, Math.min(1, k)))), 2);
+      ctx.fillStyle = '#ffd27a'; ctx.fillRect(x - 4, y - 2, 8, 6);
+      ctx.fillStyle = '#6b4220'; ctx.fillRect(x - 2, y, 1, 1); ctx.fillRect(x + 1, y, 1, 1);
+    },
     // Encuentro (encounters.js): estrella de su color que late.
     enc(ctx, x, y, on, col) {
       const r = on ? 6.5 : 5.5;
@@ -1029,6 +1041,8 @@ G.HUD = (() => {
     for (const s of G.Dungeon.sites) icon(s.type, s.x, s.y, true, blink);
     { const en = G.Encounters.marker(); if (en) { const q = at(en.x, en.y, !inside); if (q) MM_ICON.enc(ctx, q[0], q[1], blink, en.col); } }
     for (const st of G.Floors.stairsAll) icon(st.route === 'danger' ? 'stairsD' : 'stairs', st.x, st.y, true);
+    { const gm = G.Guard && G.Guard.markers();          // «Proteger a Dazhuang»: él (siempre, en el borde si hace falta) y sus puestos
+      if (gm) { for (const st of gm.stalls) icon('shop', st.x, st.y, false); icon('guard', gm.dz.x, gm.dz.y, true, gm.dz.hp / Math.max(1, gm.dz.mhp)); } }
     for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) icon('boss', e.x, e.y, true);
     for (const e of G.EnemyMgr.all()) if (e.elite && !e.boss && !e.dead) icon('elite', e.x, e.y, false, blink);
     if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl && !G.PvPX.hidden(o)) icon('mate', o.x, o.y, true, o.dead);   // (PK: el invisible no sale)
@@ -1147,6 +1161,8 @@ G.HUD = (() => {
       else add(st, G.T('Ruta segura') + '・' + G.T(G.Floors.THEMES[st.theme].name), '#9fc8ff', 'stairs');
     }
     { const en = G.Encounters.marker(); if (en) add(en, en.name, en.col, 'enc'); }
+    { const gm = G.Guard && G.Guard.markers();
+      if (gm) { add(gm.dz, 'Dazhuang', '#ffd27a', 'guard'); add(near(gm.stalls, () => true), 'Puestos', '#9fe0b0', 'shop'); } }
     add(near(G.EnemyMgr.all(), e => e.boss && !e.dead), 'Jefe', '#ff5f6d', 'boss');
     add(near(G.EnemyMgr.all(), e => e.elite && !e.boss && !e.dead), 'Élite', '#ffb84d', 'elite');
     if (!rows.length) return 0;
