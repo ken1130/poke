@@ -20,7 +20,7 @@ body:has(#scr-over:not(.hidden)) #scr-shop { display: none !important; }
  * 1. VENTANAS DE CARTAS — en fila
  * ===================================================================================== */
 @media (max-height: 520px), (pointer: coarse) and (max-width: 1400px) {
-  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box {
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-evo, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box {
     width: max-content; max-width: 100%; min-width: min(560px, 100%);
     max-height: 100%; display: flex; flex-direction: column; overflow: hidden;
   }
@@ -58,29 +58,29 @@ body:has(#scr-over:not(.hidden)) #scr-shop { display: none !important; }
   /* Botones de abajo (cambiar opciones, elegir solo, ¡lo quiero!, ¡a luchar!): siempre a la vista. */
   :is(#scr-levelup, #scr-sbox, #scr-pkpick, #scr-bond) > .box > .row { flex: none; margin-top: 10px !important; }
   :is(#scr-levelup, #scr-sbox, #scr-pkpick, #scr-bond, #scr-boon) > .box .btn { min-height: 44px; padding-top: 6px; padding-bottom: 6px; }
-  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > :is(h2, .sub, .note, #sbox-chest, #sbox-banner) { flex: none; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-evo, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > :is(h2, .sub, .note, #sbox-chest, #sbox-banner) { flex: none; }
   #rest-keys, #lvl-wait { margin: 8px 0 0; }
 }
 
 /* Tableta: letra y huecos más grandes (la pantalla es grande y se mira de lejos). */
 @media (pointer: coarse) and (min-height: 521px) and (max-width: 1400px) {
-  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box { min-width: min(640px, 100%); padding: 22px 26px 24px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-evo, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box { min-width: min(640px, 100%); padding: 22px 26px 24px; }
   :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) { grid-auto-columns: minmax(0, 320px); gap: 14px; }
   :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card { padding: 16px 16px 18px; grid-template-columns: 52px minmax(0, 1fr); }
   :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .ico { width: 52px; height: 52px; }
   :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .nm { font-size: 19px; }
   :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .ds { font-size: 16px; }
-  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) .sub { font-size: 16px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-evo, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) .sub { font-size: 16px; }
   /* 5 movimientos del PK en una fila de 1024 px: más estrechas. */
   #pk-cards { grid-auto-columns: minmax(0, 220px); }
 }
 
 /* Móvil horizontal: cabecera compacta para que las cartas tengan todo el alto. */
 @media (max-height: 520px) {
-  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) { padding: 6px 10px !important; }
-  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box { padding: 10px 14px 12px; }
-  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > h2 { font-size: 20px; margin: 0 0 2px; }
-  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > .sub { font-size: 13px; margin: 0 0 10px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-evo, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) { padding: 6px 10px !important; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-evo, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box { padding: 10px 14px 12px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-evo, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > h2 { font-size: 20px; margin: 0 0 2px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-evo, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > .sub { font-size: 13px; margin: 0 0 10px; }
   #sbox-chest.on { height: 64px; }
   #sbox-chest .sb-disc { width: 60px; height: 60px; }
   #sbox-banner { font-size: 20px; margin: 0 0 4px; }
@@ -97,8 +97,8 @@ body:has(#scr-over:not(.hidden)) #scr-shop { display: none !important; }
   :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .ico { width: 38px; height: 38px; }
   :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .nm { font-size: 15px; }
   :is(#cards, #boon-cards, #relic-cards, #rest-cards, #fclear-cards, #item-cards, #sbox-cards, #bond-cards, #pk-cards) > .card .ds { font-size: 13px; line-height: 1.4; }
-  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box { padding: 8px 12px 10px; }
-  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > .sub { margin-bottom: 8px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-evo, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box { padding: 8px 12px 10px; }
+  :is(#scr-levelup, #scr-boon, #scr-relic, #scr-rest, #scr-evo, #scr-fclear, #scr-item, #scr-sbox, #scr-bond, #scr-pkpick) > .box > .sub { margin-bottom: 8px; }
   #item-cards .card .ds { font-size: 12.5px; }
 }
 /* Móvil estrecho (≤ 760 px): con 4–5 cartas, el icono encima del nombre para que quepa el texto. */

@@ -1397,3 +1397,30 @@ body.touch .keys kbd { display: inline-block !important; }
 .bag-lock { color: #ffc8f4; font-size: 13px; margin-right: auto; }
 .bag-foot { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
 .bag-foot .btn.danger { background: linear-gradient(180deg, #e0505e, #a8283a); color: #fff; }
+
+/* Evolución elegible y Megaevolución (2026-10-19, evo.js): tarjetas con el sprite del resultado. */
+#evo-cards .evo-card { align-items: center; gap: 12px; }
+#evo-cards .evo-pic { flex: none; width: 96px; height: 84px; border-radius: 4px; background: radial-gradient(ellipse at 50% 85%, rgba(255,159,67,.25), rgba(0,0,0,.25) 60%); }
+#evo-cards .evo-card.mega .evo-pic { background: radial-gradient(ellipse at 50% 80%, rgba(255,138,216,.35), rgba(127,224,255,.12) 55%, rgba(0,0,0,.25)); }
+#evo-cards .evo-types { margin: 4px 0; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+#evo-cards .evo-stats { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+#evo-cards .evo-stats b { color: #9fe0b0; }
+#evo-cards .tag-chip { text-shadow: none; }
+.evo-tag { background: #fff6c0; color: #3a2a08; }
+.evo-tag-mega { background: linear-gradient(90deg, #ff8ad8, #ffd23f, #7fe0ff); color: #1b1528; }
+.evo-later { background: rgba(196,123,255,.35); color: #f0e0ff; }
+#evo-cards .evo-skip { opacity: .85; }
+#evo-auto { display: flex; gap: 8px; align-items: center; justify-content: center; }
+.dex-mega { margin: 8px 0; padding: 8px 10px; border-radius: 4px; border: 2px solid rgba(255,138,216,.45);
+  background: linear-gradient(90deg, rgba(255,138,216,.12), rgba(127,224,255,.10)); display: flex; flex-direction: column; gap: 4px; }
+.dex-mega b { color: #ffc4ec; } .dex-mega small { color: var(--muted); font-size: 12px; }
+.dex-mega-pics { display: flex; gap: 8px; flex-wrap: wrap; }
+.dex-mega-pics span { display: flex; flex-direction: column; align-items: center; }
+@media (max-height: 520px) { #evo-cards .evo-pic { width: 72px; height: 62px; } }
+/* Muchos caminos (Eevee: 8): dos columnas y cartas más bajas. */
+#scr-evo .box:has(#evo-cards.many) { width: min(920px, 100%); max-width: 920px; }
+#evo-cards.many { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+#evo-cards.many .evo-card { padding-top: 6px; padding-bottom: 6px; }
+#evo-cards.many .evo-pic { width: 72px; height: 62px; }
+#evo-cards.many .evo-stats { gap: 6px; font-size: 12px; }
+@media (max-width: 600px) { #evo-cards.many { grid-template-columns: 1fr; } }

@@ -241,7 +241,7 @@ G.Dungeon = (() => {
   // ---------------- menú de la tienda ----------------
   let openShop = null, shopKey = '', shopSkip = null, shopTab = 'gen';
   /** ¿Hay una elección abierta? (mientras, nada de tienda ni ruleta) */
-  const CHOICE_SCR = ['scr-levelup', 'scr-item', 'scr-bond', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick', 'scr-fclear', 'scr-rest'];
+  const CHOICE_SCR = ['scr-levelup', 'scr-item', 'scr-bond', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick', 'scr-fclear', 'scr-rest', 'scr-evo'];
   const choosing = () => CHOICE_SCR.some(id => document.getElementById(id) && G.UI.isOpen(id));
   const WARE_DESC = { potion: 'Una poción al azar.', upgrade: 'Una mejora de las cartas de nivel (sobre todo movimientos).', heal: 'Recuperas el 60 % de la vida.',
                       rerolls: '+3 cambios de cartas de nivel.', disc: 'Un disco de movimientos: de 1 a 4 mejoras.', tm: 'Aprendes un movimiento nuevo (o una mejora si no caben más).',
