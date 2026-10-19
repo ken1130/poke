@@ -56,7 +56,22 @@ G.Sprites = (() => {
       const cv = document.createElement('canvas');
       cv.width = img.width; cv.height = img.height;
       const x = cv.getContext('2d');
-      if (x && 'filter' in x) { x.filter = filter; x.drawImage(img, 0, 0); c = cv; }
+      if (filter === 'dark-body' && x) {
+        // «Negro» (2026-10-19, Dazhuang = Machamp negro): sólo los colores apagados (el cuerpo gris)
+        // pasan a carbón; los vivos (boca roja, cinturón dorado, ojos) se quedan. Píxel a píxel, una vez.
+        x.drawImage(img, 0, 0);
+        const d = x.getImageData(0, 0, cv.width, cv.height), p = d.data;
+        for (let i = 0; i < p.length; i += 4) {
+          if (!p[i + 3]) continue;
+          const r = p[i], g = p[i + 1], b = p[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+          const sat = mx ? (mx - mn) / mx : 0;
+          if (sat > 0.42 && mx > 90) continue;                  // color vivo: se queda
+          const l = (r * 0.3 + g * 0.59 + b * 0.11) / 255;
+          const v = 14 + l * 70;                                // carbón con un poco de azul
+          p[i] = v; p[i + 1] = v + 2; p[i + 2] = v + 10;
+        }
+        x.putImageData(d, 0, 0); c = cv;
+      } else if (x && 'filter' in x) { x.filter = filter; x.drawImage(img, 0, 0); c = cv; }
     } catch (e) { c = null; }
     m.set(img, c);
     return c;

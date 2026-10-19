@@ -1,5 +1,5 @@
 /* ============ guard.js — modo «Proteger a Dazhuang» (2026-10-16, tabla V3.1 del dueño) ============
- * G.Modes.run === 'guard'. Dazhuang (un Snorlax, DZ_DEX: cambiar aquí si el dueño quiere otro) está
+ * G.Modes.run === 'guard'. Dazhuang (un Machamp, DZ_DEX: cambiar aquí si el dueño quiere otro) está
  * en el centro y hay que protegerlo de 50 oleadas:
  *   - Cada oleada: una cantidad fija de un solo Pokémon (cada 3 oleadas, dos) que viene de lejos
  *     a por Dazhuang (enemy.js: `e.goal`; si un jugador se le pone muy cerca, va a por el jugador).
@@ -24,7 +24,8 @@ G.Guard = (() => {
   const PREP = 60, FIRST_PREP = 25;   // s de preparación (la primera, más corta)
   const BOSS_EVERY = 5, AMBUSH_EVERY = 10;
   const AMBUSH_AT = 12;          // s después de empezar la oleada
-  const DZ_DEX = 143;            // Snorlax
+  const DZ_DEX = 68;             // Machamp (怪力; 2026-10-19 el dueño: antes Snorlax)
+  const DZ_K = 1.6;              // escala del sprite (Machamp es más pequeño que Snorlax)
   const DZ_HP = 1500;            // vida base; × (1 + 0,2 × oleada) × mejoras × grupo
   const DZ_GROW = 0.2;
   const HIT_K = 0.6, HIT_CD = 1.0;  // a Dazhuang le pegan ×0,6 y cada 1 s (sin nadie defendiendo aguanta 12-17 s rodeado)
@@ -76,7 +77,7 @@ G.Guard = (() => {
           up: { hp: 0, sh: 0, atk: 0 }, helpers: [], items: [], gear: [], art: null, artT: ART_EVERY };
     stalls();
     G.Sprites.preload([DZ_DEX]);
-    dzAnim = new G.Sprites.Animator(DZ_DEX, 1.3, false);
+    dzAnim = new G.Sprites.Animator(DZ_DEX, DZ_K, false);
     if (authority()) {
       recalc(true);
       rollWares();
@@ -671,8 +672,8 @@ G.Guard = (() => {
     const out = [];
     const dz = S.dz;
     out.push({ y: dz.y, draw(ctx) {
-      G.Sprites.drawShadow(ctx, DZ_DEX, dz.x, dz.y, 1.3);
-      if (dzAnim) dzAnim.draw(ctx, dz.x, dz.y, { flash: flashT > 0, softFlash: true });
+      G.Sprites.drawShadow(ctx, DZ_DEX, dz.x, dz.y, DZ_K);
+      if (dzAnim) dzAnim.draw(ctx, dz.x, dz.y, { flash: flashT > 0, softFlash: true, tint: 'dark-body' });   // Machamp negro (sprites.js)
       const top = dz.y - dz.bodyH - 26;
       label(ctx, G.T('Dazhuang'), dz.x, top - 8, '#ffd27a', 13);
       bar(ctx, dz.x - 40, top, 80, 7, dz.hp / Math.max(1, dz.mhp), dz.hp / dz.mhp > 0.35 ? '#5fe08a' : '#ff5f6d', dz.msh ? dz.sh / Math.max(1, dz.mhp) : 0, '#7fe0ff');
