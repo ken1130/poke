@@ -121,6 +121,7 @@ G.Plaza = (() => {
   }
 
   function end() {
+    for (const p of G.Game.everyone()) p.spectK = 1;
     if (hud) { hud.remove(); hud = null; }
     games = {}; views = {}; opts = null;
   }
@@ -525,7 +526,12 @@ G.Plaza = (() => {
     for (const p of g.parts) {
       if (!p.cpu) continue;
       const c = g.cpus[p.id];
-      if (!g.alive.includes(p.id)) { c.mv = 0; continue; }
+      if (!g.alive.includes(p.id)) {
+        // Fuera: se va al borde de fuera del círculo y se queda mirando.
+        const r = Math.hypot(c.x - z.cx, c.y - z.cy) || 1, min = z.r + 34;
+        if (r < min) { const sp = 190 * dt, k = Math.min(sp, min - r) / r; c.x += (c.x - z.cx) * k; c.y += (c.y - z.cy) * k; c.ang = Math.atan2(c.y - z.cy, c.x - z.cx); c.mv = 1; } else c.mv = 0;
+        continue;
+      }
       let tx = c.x, ty = c.y, sp = 165;
       if (g.phase === 'play' && g.holder === p.id) {
         let best = null, bd = Infinity;
@@ -591,6 +597,9 @@ G.Plaza = (() => {
         if (g.bomb && g.bomb.ft > 0) { g.bomb.x += g.bomb.vx * dt; g.bomb.y += g.bomb.vy * dt; g.bomb.ft -= dt; }
       }
     }
+    // Los que han quedado fuera de la patata: medio transparentes en todas las pantallas.
+    const pg0 = games.potato, outIds = pg0 && pg0.phase !== 'over' ? pg0.out || [] : [];
+    for (const p of G.Game.everyone()) p.spectK = outIds.includes(idOf(p)) ? 0.4 : 1;
     // Tu Pokémon: en tu campo o dentro del círculo mientras juegas.
     keepInside(pl);
     // Lanzar la bomba (F o el botón).
@@ -617,8 +626,19 @@ G.Plaza = (() => {
       if (!p) continue;
       const z = zone(k);
       if (k === 'potato') {
-        if (!g.alive || !g.alive.includes(me)) continue;
-        const r = Math.hypot(pl.x - z.cx, pl.y - z.cy), max = z.r - 14;
+        const r = Math.hypot(pl.x - z.cx, pl.y - z.cy) || 1;
+        // (2026-10-19, el dueño: «he quedado fuera y sigo en medio») Fuera: al borde de fuera del círculo, sin poder volver a entrar.
+        if (!g.alive || !g.alive.includes(me)) {
+          const min = z.r + 34;
+          if (r < min) {
+            let dx = pl.x - z.cx, dy = pl.y - z.cy;
+            if (Math.abs(dx) + Math.abs(dy) < 1) { dx = 0; dy = 1; }          // justo en el centro: hacia abajo
+            const d = Math.hypot(dx, dy);
+            pl.x = z.cx + dx / d * min; pl.y = z.cy + dy / d * min;
+          }
+          continue;
+        }
+        const max = z.r - 14;
         if (r > max) { pl.x = z.cx + (pl.x - z.cx) / r * max; pl.y = z.cy + (pl.y - z.cy) / r * max; }
       } else {
         const minX = p.side ? z.cx + 14 : z.cx - z.hw - 30, maxX = p.side ? z.cx + z.hw + 30 : z.cx - 14;

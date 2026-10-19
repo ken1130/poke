@@ -770,7 +770,8 @@ G.Player = class Player {
       ctx.fillStyle = '#bff3ff'; ctx.fillText(G.T('Eligiendo…'), this.x, this.y - this.bodyH - 26);
       ctx.restore();
     }
-    const alpha = this.invuln > 0 && !this.dead && !starOn ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
+    // spectK: fuera de un minijuego (plaza.js), medio transparente.
+    const alpha = (this.invuln > 0 && !this.dead && !starOn ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1) * (this.spectK == null ? 1 : this.spectK);
     const starFlash = starOn && Math.floor(now / 120) % 3 !== 2;
     const evoK = this.evoAnim ? G.Evo.progress(this) : null;
     if (evoK != null) {
