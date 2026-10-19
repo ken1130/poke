@@ -565,6 +565,11 @@ G.HUD = (() => {
       // Vínculo: borde rosa. Evolucionado: dorado.
       ctx.strokeStyle = fused ? BOND : m && m.evolved ? '#ffd23f' : on ? col : 'rgba(140,170,210,.22)';
       ctx.stroke();
+      // Gigamax (maxmoves.js): borde rojo que late en los de ataque (cada uno lanza su «Maxi»).
+      if (m && pl.gmaxT > 0 && !G.Moves.isPassive(m)) {
+        ctx.lineWidth = 3; ctx.strokeStyle = Math.sin(performance.now() / 140) > 0 ? '#ff3a4a' : '#ff8a95';
+        ctx.stroke();
+      }
 
       if (!m) {
         // Hueco libre: su número, apagado.
@@ -638,12 +643,13 @@ G.HUD = (() => {
         const fs = touch ? Math.min(14, Math.round(11 * K)) : 11, lh = fs + 5;
         ctx.font = F(800, fs);
         ctx.textAlign = 'center';
-        const label = G.T(fused ? m.name + ' +' + (g.length - 1) : m.name);
+        const gmx = pl.gmaxT > 0 && !G.Moves.isPassive(m);
+        const label = (gmx ? G.T('Máx. (prefijo de Gigamax)') + ' ' : '') + G.T(fused ? m.name + ' +' + (g.length - 1) : m.name);
         const lw = ctx.measureText(label).width + 12;
         roundRect(ctx, x + S / 2 - lw / 2, y - 5 - lh, lw, lh, 7);
         ctx.fillStyle = 'rgba(8,12,24,.85)'; ctx.fill();
-        ctx.lineWidth = 1.5; ctx.strokeStyle = fused ? BOND : col; ctx.stroke();
-        ctx.fillStyle = fused ? '#ffd0f0' : lighten(col);
+          ctx.lineWidth = 1.5; ctx.strokeStyle = gmx ? '#ff3a4a' : fused ? BOND : col; ctx.stroke();
+        ctx.fillStyle = gmx ? '#ffb0b8' : fused ? '#ffd0f0' : lighten(col);
         ctx.fillText(label, x + S / 2, y - 5 - Math.round(lh * 0.28));
       }
     }
@@ -835,6 +841,8 @@ G.HUD = (() => {
       rows.push([G.T(m.def.desc), '#dfe8ff']);
       for (let k = 0; k < m.lvl - 1 && m.def.ups[k]; k++) rows.push(['✓ ' + G.T(m.def.ups[k].t), '#9fe0b0']);
       if (m.evolved && G.Moves.EVO_MODS[m.kind]) rows.push(['★ ' + G.T(m.name) + ': ' + G.T(m.def.evoText || G.Moves.EVO_MODS[m.kind].t), '#ffd23f']);
+      if (!passive) { const [mn, md] = G.MaxMoves.info(m.type);   // Gigamax: su «Maxi» (al pegar, cada 1,4 s)
+        rows.push(['◆ ' + G.I18n.f('Gigamax: {x}', G.T(mn)) + ' — ' + G.T(md), pl.gmaxT > 0 ? '#ff8a95' : '#b07a80']); }
       const next = G.Moves.nextUpText(m);
       if (next) rows.push(['→ ' + G.I18n.f('Siguiente nivel: {x}', G.T(next)), '#8fa3c4']);
     }

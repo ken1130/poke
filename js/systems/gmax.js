@@ -12,7 +12,7 @@ G.Gmax = (() => {
 
   const allowed = pl => !!pl && !G.PvP.on && G.Modes.run !== 'plaza' && G.Modes.run !== 'training';
   /** Al empezar la run. */
-  function begin(pl) { if (pl) { pl.gmaxUses = 0; pl.gmaxK0 = pl.kills || 0; pl.gmaxT = 0; pl.gmaxK = 1; } }
+  function begin(pl) { G.MaxMoves.reset(); if (pl) { pl.gmaxUses = 0; pl.gmaxK0 = pl.kills || 0; pl.gmaxT = 0; pl.gmaxK = 1; } }
   const need = pl => Math.round(CHARGE_KILLS * (pl.gmaxUses ? 1.5 : 1));
   /** 0..1 de la carga (1 = listo). */
   function charge(pl) {
@@ -53,6 +53,7 @@ G.Gmax = (() => {
   }
   /** Cada fotograma (tu Pokémon). */
   function update(dt, pl) {
+    G.MaxMoves.update(dt);
     if (!pl) return;
     if (pl.gmaxT > 0) {
       pl.gmaxT -= dt;

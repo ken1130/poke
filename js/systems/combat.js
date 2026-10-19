@@ -2319,6 +2319,7 @@ G.Combat = (() => {
     if (m.slow) e.applySlow(m.slow);
     if (!ghost && (m.rootCh || m.weakCh)) extraFx(e, m.rootCh, m.rootT, m.weakCh);
     if (!ghost) G.Arts.onHit(pl, e);               // Equipo de Shixin: quema
+    if (!ghost && pl.gmaxT > 0) G.MaxMoves.onHit(pl, e, m);   // Gigamax: su «Maxi» del tipo (maxmoves.js)
   }
 
   /**
@@ -2541,6 +2542,9 @@ G.Combat = (() => {
     }
   }
 
-  return { artDot, supportHeal, beamImmune, netFx, tick, resolve, ghostCast, ghostOrbit, updateFields, drawGroundFields, drawAirFields, clearFields,
+  /** Golpe de un efecto de fuera (maxmoves.js), con el tipo, objetos y críticos de siempre. */
+  const hitBy = (pl, e, dmg, m, knock = 0, fx = pl.x, fy = pl.y) => hit(pl, e, dmg, G.U.TYPE_COLOR[m.type], e.x - fx, e.y - fy, knock, m);
+
+  return { hitBy, artDot, supportHeal, beamImmune, netFx, tick, resolve, ghostCast, ghostOrbit, updateFields, drawGroundFields, drawAirFields, clearFields,
            get fieldCount() { return fields.length; } };
 })();

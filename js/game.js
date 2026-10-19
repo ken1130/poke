@@ -1343,6 +1343,7 @@ G.Game = (() => {
     G.World.drawLiquid(ctx, cam, t);
     G.Hazards.draw(ctx);
     G.Combat.drawGroundFields(ctx);
+    G.MaxMoves.draw(ctx);                     // Gigamax: zonas y rayos de los «Maxi» (maxmoves.js)
     G.Arts.draw(ctx);
     G.Dungeon.drawGround(ctx);
     G.Plaza.drawGround(ctx);             // zona de fiesta: pistas, círculo de la patata (plaza.js)
