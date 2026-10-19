@@ -8,7 +8,7 @@
  * Grupo: myState [24] = 1 mientras dura (los demás ven el aura); el tamaño ya va en [17].
  */
 G.Gmax = (() => {
-  const CHARGE_KILLS = 150, USES = 2, DUR = 18, SIZE = 1.8, ATK = 1.5, HP = 1.5;
+  const REMIND = 45, CHARGE_KILLS = 150, USES = 2, DUR = 20, SIZE = 1.8, ATK = 1.5, HP = 1.5;
 
   const allowed = pl => !!pl && !G.PvP.on && G.Modes.run !== 'plaza' && G.Modes.run !== 'training';
   /** Al empezar la run. */
@@ -60,6 +60,15 @@ G.Gmax = (() => {
       if (pl.dead || pl.gmaxT <= 0 || !allowed(pl)) end(pl);
       else if (Math.random() < dt * 14) G.FX.px(pl.x + G.U.rand(-pl.r * 1.4, pl.r * 1.4), pl.y - G.U.rand(0, pl.bodyH), Math.random() < 0.5 ? '#ff3a4a' : '#ff9a8a', { vy: -50, life: 0.5 });
     }
+    // Aviso al tenerlo listo (2026-10-19, el dueño: «hay que avisar que se pulsa G»): grande al
+    // llenarse y, si no se usa, otra vez cada REMIND s.
+    if (ready(pl) && !pl.remote) {
+      if (pl.gmaxRemind == null || (pl.gmaxRemind -= dt) <= 0) {
+        pl.gmaxRemind = REMIND;
+        G.Spawner.say(G.T(G.Touch.active ? '¡Gigamax listo! Toca el botón «Gigamax» de la pantalla' : '¡Gigamax listo! Pulsa G'), 3.5, true);
+        G.Audio.sfx('surge');
+      }
+    } else pl.gmaxRemind = null;
     if (G.Input.tap('keyg') && !G.UI.isOpen('scr-pause')) activate(pl);
   }
   /** Para myState [24]. */

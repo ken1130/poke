@@ -1,6 +1,8 @@
 /* ============ lang-v31-maxmoves.js — Movimientos Dinamax (maxmoves.js, 2026-10-19) ============ */
 G.I18n.add({
   'Máx. (prefijo de Gigamax)': '極巨',
+  '¡Gigamax listo! Pulsa G': '極巨化準備好了！按 G 極巨化',
+  '¡Gigamax listo! Toca el botón «Gigamax» de la pantalla': '極巨化準備好了！點畫面上的「極巨化」按鈕',
   'Gigamax: {x}': '極巨化時：{x}',
   'Maxiataque': '極巨攻擊', 'Maxignición': '極巨火爆', 'Maxichorro': '極巨水流', 'Maxitormenta': '極巨閃電',
   'Maxiflora': '極巨草原', 'Maxihelada': '極巨寒冰', 'Maxipuño': '極巨拳擊', 'Maxiácido': '極巨酸毒',
@@ -28,6 +30,8 @@ G.I18n.add({
 }, 'zh');
 G.I18n.add({
   'Máx. (prefijo de Gigamax)': 'Max',
+  '¡Gigamax listo! Pulsa G': 'Gigantamax ready! Press G',
+  '¡Gigamax listo! Toca el botón «Gigamax» de la pantalla': 'Gigantamax ready! Tap the "Gigantamax" button on screen',
   'Gigamax: {x}': 'Gigantamax: {x}',
   'Maxiataque': 'Max Strike', 'Maxignición': 'Max Flare', 'Maxichorro': 'Max Geyser', 'Maxitormenta': 'Max Lightning',
   'Maxiflora': 'Max Overgrowth', 'Maxihelada': 'Max Hailstorm', 'Maxipuño': 'Max Knuckle', 'Maxiácido': 'Max Ooze',
