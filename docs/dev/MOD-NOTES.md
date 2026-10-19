@@ -65,6 +65,13 @@
 | 成就外觀（2026-10-16） | `cosmetic.js`：AURAS 6／NAMES 5，存 `save.profile.aura／nameCol`；組隊 myState **[22]**（[21] 是寵物技能次數）= 光環 + 16×顏色，0 = 無 |
 | 介面主題「營火石窟」（2026-10-16） | 主人不要跟原作一樣：`css/style.css` 最後的「Tema propio」區塊（換 :root 變數＋.box/.btn/.menu-item/.topbar/.stage 覆寫、火炬 `--torch-a/b`、角色石龕、手機直式/橫式規則）；要退回就刪那一段 |
 | 上一局墓碑（2026-10-16） | `game.js endRun` 存 `save.lastRun`；`menu.js grave()` 畫在石龕旁（手機直式在名牌下、橫式不顯示），點擊用 `G.Dialog.alertHtml`（`G.T` 會把換行壓掉，所以排好版的內容不要再經過 G.T） |
+| V3.1 五招（2026-10-19） | kind `clay`／`rockfist`／`windwall`／`icebolt`／`dragonorb`（combat.js，數值在 TABLE，表格 ×2）；敵人新狀態 `applyConfuse`／`applyFreeze`／`e.grab`（enemy.js 的 `disabled` 不能動也不攻擊，頭目只緩速），組隊狀態事件 `'c'`/`'f'`、房主狀態位元 16/32/64；混亂爆炸同步 `['mfx','conf',x,y,r]`；風牆抓人只在單人／房主有效 |
+| 神器第二批（2026-10-19） | `items.js` 的 `ART.iceghost/cleaver/socks/fishrod/goat`；寒冰幽靈穿牆（房間／裂縫裡不行，脫下 `G.Arts.unstick`）；殺豬刀／襪子走 `G.Combat.artDot`（無屬性用 `type:'none'`）；釣竿幫手組隊 myState **[23]**；王冠：傷害 ×1.6、冷卻 −25%、回復 ×2、血量 ×1.5、速度 ×1.3；坦克 `setArtSize` ×1.3（血量仍 +500，表格寫 2000 待主人決定） |
+| V3.1 難度與頭目（2026-10-19） | `floors.js` 的 `NORMAL`（血 1.15、傷 1.1、生怪 1.12、上限 1.1、經驗 0.75×`sizeXp`）、`LORD`（阿爾宙斯血 1.5／下限 3.0、神聖護盾 25%＋每階段 15%、審判／連環天罰、詛咒 slow/weak/noheal）；`enemy.js` 的 `lordShield`（破盾無效）；`spawner.js` 遊蕩頭目（240 秒起每 150 秒、血 0.75）；`rift.js` 的 `RIFT_K`；組隊事件 `'lst'`、`'ldb'` |
+| 背包／狀態圖示／練功房（2026-10-19） | 背包沿用 `#scr-item`（`bagmode`）；燃燒 `BURN_TINT` 快取每 140 ms 閃；`enemy.drawStatus` 狀態圖示；練功房 `cfg.items`、連結上一招（`pl.fuse`）、搜尋組字中不重畫；`legal/` 也載入 `guard.js`、拿掉回遊戲連結 |
+| 守護大壯（2026-10-19） | `guard.js`（run 'guard'）：大壯＝卡比獸 `DZ_DEX`（主人可換），敵人帶 `e.goal`；攤位重用 `#scr-shop`；組隊 `['gd',…]`；所有數字在檔頭；最佳紀錄只存本機 |
+| 派對座位／牌桌（2026-10-19） | `party.js` 的 `seatSlots／seatPlan`、`mateHand`（隊友手牌只給同隊）；大老二 `isBomb`（鐵支、同花順壓任何牌，其他只壓同牌型，沒有三條和同花） |
+| 派對遊戲區（2026-10-19） | `plaza.js`（run 'plaza'）：網球、排球、燙手山芋由房主判定，事件 `'plz'`；用 `G.Party.register({ world: true })` 登記，`social-ui start()` 遇到 world 遊戲就開即時對局 |
 | 自動選取升級卡（2026-10-16） | `run-ui.js` 的 `autoChoice`：存檔 `save.autoPick` = off／stats／all；能力順序 `STAT_ORDER`（攻擊>冷卻>血量>減傷>經驗>速度>回復>磁力，血 <35% 先回血）；綠框標示 0.7 秒後才拿（`planAuto`），可以取消 |
 | 道具等級（2026-10-16） | `items.js` 的 `TIER`：1 普通／2 稀有／3 史詩、神器＝4 傳說；掉落權重 4/3/2。兩格滿時只能換同級或更低（`game.js offerItem`），全部比較高級就直接賣 `6+6×等級` 金幣、不跳視窗；HUD 框線＝等級色 |
 | 寵物裝備（2026-10-16） | `companion.js` 的 `GEAR`（8 件，每件一局一次，存在 `pl.petGear`，蛋的時候也能買）；只有商店「寵物專區」賣；夥伴糖果 +3 級、進化石到下次進化等級（蛋的時候存在 `pl.petLv`）。效果只在擁有者的電腦算（跟夥伴傷害一樣） |

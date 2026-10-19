@@ -3,6 +3,22 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-19', title: { zh: '守護大壯、派對遊戲區、新招式與新神器', en: 'Guard Dazhuang, Party Plaza, new moves and artifacts' },
+    new: [
+      { zh: '新模式「守護大壯」：50 波敵人衝向大壯，每 5 波有頭目、每 10 波有偷襲；波與波之間 60 秒整裝（可提早開始），大壯回滿血、掉落自動收集。大壯身邊有五個攤位：道具、神器（每 5 分鐘換）、藥水、寵物與幫手、大壯升級；大壯會踩踏反擊。在挑戰面板或組隊房間選', en: 'New mode “Guard Dazhuang”: 50 waves charge at Dazhuang, with a boss every 5 waves and an ambush every 10. Between waves you get 60 s (or start early), Dazhuang heals fully and loot flies to you. Five stalls sell items, an artifact (changes every 5 min), potions, pets and helpers, and upgrades for him; he stomps nearby enemies. From the Challenges panel or a co-op room' },
+      { zh: '新增派對遊戲區（可走動的廣場：網球、排球 1 對 1／2 對 2，電腦補位；牌桌小屋，房主走進去直接開大老二、屬性牌、頑皮雷彈）與新派對遊戲「燙手山芋」（碰到人就傳、也能丟出去，5～10 秒隨機爆炸，最後留下的人獲勝）', en: 'New Party Plaza (tennis and volleyball 1v1/2v2 with CPU fill-ins, plus a card hut where the host starts Big Two, Type Cards or Voltorb) and a new party game, Hot Potato (pass the bomb by touch or throw it; it blows after a random 5–10 s; last one standing wins)' },
+      { zh: '新增 5 個招式：不穩定元素（黏土黏住後爆炸）、石拳（地面升起石柱擊飛）、行星之風（風牆擋投射物＋隱形攻擊）、寒冰術（緩速；進化凍成冰塊）、龍靈彈（穿透；進化變大並讓敵人混亂），都有進化型態', en: '5 new moves: Unstable Element (sticky clay that explodes), Stone Fist (a rock pillar launches enemies), Planetary Wind (a wind wall blocks projectiles, plus invisible strikes), Frost Art (slows; evolved, freezes in ice blocks) and Dragon Orb (piercing; evolved, grows and confuses), each with an evolution' },
+      { zh: '新增 5 個神器：寒冰幽靈（穿越地形、碰到的敵人凍住 1 秒）、殺豬刀（攻擊附帶流血）、奧提斯的襪子（攻擊附帶中毒與緩速）、本哥西蒙斯的神奇釣竿（每 15 秒釣出水屬性幫手作戰）、雷霸龍的山羊王冠（傷害、回復、血量、冷卻、速度全面提升）；六四坦克現在體型也會變大', en: '5 new artifacts: Ice Ghost, Butcher’s Cleaver, Otis’s Socks, Ben Simmons’s Magic Rod and LeBron’s GOAT Crown; Tank 64 now also makes you bigger' },
+      { zh: '撿到道具按 I（或點浮動圖示）改成背包：可以選要換掉哪一個、丟掉（換金幣）或全部丟棄，被換掉的直接消失；練功房可以輸入中文搜尋、依屬性篩選、設定技能連結、選擇攜帶道具（含神器）', en: 'Pressing I (or the floating icon) now opens a backpack: swap any item, drop it for coins or drop all; the training room supports Chinese search, a type filter, move bonds and held items (artifacts too)' },
+      { zh: '派對牌桌：大老二改新規則（三條、同花不能出；順子只壓順子、葫蘆只壓葫蘆；鐵支、同花順是炸彈，可以壓任何牌）；手牌間距加大，不能出的牌點了沒反應；大廳可以自己選座位（2 對 2 時隊友坐對面）；2 對 2 的屬性牌和頑皮雷彈看得到隊友的手牌', en: 'Party tables: new Big Two rules (no triples or flushes; straights only beat straights, full houses only full houses; four of a kind and straight flush are bombs that beat anything); wider hand spacing, unplayable cards no longer react; pick your seat in the lobby (teammates sit opposite in 2v2); in 2v2 Type Cards and Voltorb you can see your teammate’s hand' }
+    ],
+    chg: [
+      { zh: '一般模式變難：怪物更硬、更痛、出得更多，經驗減少約 25%，小怪給得少、大怪給得多，第 4 分鐘起每 2 分半出現一隻遊蕩頭目；裂縫的傳說寶可夢變強；迷宮之主阿爾宙斯血更多，還有只能用攻擊打掉的神聖護盾（破盾無效），會蓄力放「審判」和「連環天罰」（期間無敵，看地上的光圈躲），並施加變慢、攻擊下降、無法回復三種詛咒', en: 'Normal mode is harder: tougher, harder-hitting and more numerous enemies, about 25% less XP (small ones give little, big ones a lot) and a roaming boss every 2:30 from minute 4; rift legendaries are stronger; Arceus has more HP, a Divine Shield only attacks can wear down, charged Judgment and Chain Punishment attacks (invulnerable meanwhile) and three curses: slow, weakened attack and no healing' },
+      { zh: '燃燒中的敵人會紅色閃爍，頭上也會顯示燃燒／中毒／流血圖示', en: 'Burning enemies flash red and show burn/poison/bleed icons' }
+    ],
+    fix: [
+      { zh: '修正道具稀有度字樣疊字；使用條款頁不能再用來開啟開發者工具', en: 'Fixed doubled rank labels; the terms page can no longer be used to open the developer tools' }
+    ] },
   { d: '2026-10-17', title: { zh: '派對模式：2 對 2 組隊', en: 'Party mode: 2 vs 2 teams' },
     new: [
       { zh: '寶可夢屬性牌和頑皮雷彈可以 2 對 2：牌桌剛好 4 人（含電腦）時，房主在房間選「2 對 2」，會顯示藍隊和紅隊，也可以按「重新分隊」。隊友坐對面，兩隊輪流出牌。屬性牌：任何一個人出完牌全隊獲勝，兩人拿一樣的分數，而且不能抓隊友沒喊「最後一張」。頑皮雷彈：兩個人都被炸飛才算整隊出局，勝隊每人 3 分；放回雷電球時會顯示每個位置會被誰抽到。電腦不會對隊友出手。名牌有隊伍顏色和「隊友」標記，結算畫面依隊伍分組顯示「我們贏了！」', en: 'Pokémon Type Cards and Naughty Voltorb can be played 2 vs 2: with exactly 4 seats (CPUs included) the host picks "2 vs 2" in the room, sees Blue and Red teams and can reshuffle them. Partners sit opposite and teams alternate turns. Type Cards: when either partner empties their hand the team wins, both score the same, and you can\'t catch your partner. Naughty Voltorb: a team is out only when both explode, each winner scores 3; when putting a Voltorb back you see who would draw each spot. CPUs never target their partner. Team colours, a "Partner" tag and team-grouped results ("We won!")' }
