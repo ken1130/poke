@@ -1,0 +1,33 @@
+/* ============ lang-v31-party.js — modo fiesta (2026-10-19): asientos, mano del compañero, reglas nuevas del Big Two ============ */
+G.I18n.add({
+  'Jugadas: suelta, pareja, escalera, full, póker (4 iguales + 1) y escalera de color. No valen el trío ni el color.': '可以出：單張、對子、順子、葫蘆、鐵支（四張一樣＋一張）、同花順。三條和同花不能出。',
+  'Sólo se gana a una jugada del mismo tipo: suelta a suelta, pareja a pareja, escalera a escalera, full a full. O pasas.': '只能壓同一種牌型：單張壓單張、對子壓對子、順子壓順子、葫蘆壓葫蘆。壓不了就 Pass。',
+  'Bombas: el póker y la escalera de color ganan a cualquier jugada (también a sueltas y parejas). Entre bombas, la escalera de color gana al póker.': '炸彈：鐵支和同花順可以無視牌型壓任何牌（單張、對子也可以）。炸彈之間，同花順比鐵支大。',
+  'En la mesa hay una bomba: sólo la gana una bomba más alta.': '桌上是炸彈：只有更大的炸彈壓得過。',
+  'Tiene que ser una jugada del mismo tipo ({x}) o una bomba.': '要出同一種牌型（{x}），或是炸彈。',
+  'Asiento libre en la mesa': '空位',
+  'Tú (tu asiento)': '你',
+  'sin elegir asiento': '還沒選位',
+  'Asiento {x} de la mesa de fiesta': '{x} 號位',
+  'Mesa de la fiesta': '牌桌',
+  'Toca un asiento para sentarte. Los compañeros se sientan enfrente y los turnos van alternando entre los equipos.': '點座位就能坐下。隊友坐在對面，兩隊輪流出牌。',
+  'Toca un asiento para sentarte; los turnos siguen el orden de los asientos.': '點座位就能坐下，出牌順序照座位順序。',
+  'Mezclar asientos': '打亂座位',
+  'Mano de tu compañero': '隊友的手牌',
+}, 'zh');
+G.I18n.add({
+  'Jugadas: suelta, pareja, escalera, full, póker (4 iguales + 1) y escalera de color. No valen el trío ni el color.': 'Plays: single, pair, straight, full house, four of a kind (4 + 1) and straight flush. Triples and flushes are not allowed.',
+  'Sólo se gana a una jugada del mismo tipo: suelta a suelta, pareja a pareja, escalera a escalera, full a full. O pasas.': 'You can only beat the same kind of play: single on single, pair on pair, straight on straight, full house on full house. Or pass.',
+  'Bombas: el póker y la escalera de color ganan a cualquier jugada (también a sueltas y parejas). Entre bombas, la escalera de color gana al póker.': 'Bombs: four of a kind and straight flush beat any play (singles and pairs too). Between bombs, a straight flush beats four of a kind.',
+  'En la mesa hay una bomba: sólo la gana una bomba más alta.': 'There is a bomb on the table: only a higher bomb beats it.',
+  'Tiene que ser una jugada del mismo tipo ({x}) o una bomba.': 'It has to be the same kind of play ({x}) or a bomb.',
+  'Asiento libre en la mesa': 'Free seat',
+  'Tú (tu asiento)': 'You',
+  'sin elegir asiento': 'not chosen',
+  'Asiento {x} de la mesa de fiesta': 'Seat {x}',
+  'Mesa de la fiesta': 'Table',
+  'Toca un asiento para sentarte. Los compañeros se sientan enfrente y los turnos van alternando entre los equipos.': 'Tap a seat to sit down. Teammates sit opposite each other and turns alternate between the teams.',
+  'Toca un asiento para sentarte; los turnos siguen el orden de los asientos.': 'Tap a seat to sit down; turns follow the seat order.',
+  'Mezclar asientos': 'Shuffle seats',
+  'Mano de tu compañero': 'Your teammate’s hand',
+});

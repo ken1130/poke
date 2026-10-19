@@ -15,7 +15,7 @@ const beats = (a, b) => B.beats(cl(a), cl(b));
 ok(type('3c') === 'single', 'suelta');
 ok(type('3c 3s') === 'pair', 'pareja');
 ok(type('3c 4c') === null, 'pareja mala');
-ok(type('Kc Kd Kh') === 'triple', 'trío');
+ok(type('Kc Kd Kh') === null, 'trío: ya no vale (reglas del dueño 2026-10-19)');
 ok(type('Kc Kd Ah') === null, 'trío malo');
 ok(type('3c 4d 5h 6s 7c') === 'straight', 'escalera 34567');
 ok(type('10c Jd Qh Ks Ac') === 'straight', 'escalera 10JQKA');
@@ -24,7 +24,7 @@ ok(type('2c 3d 4h 5s 6c') === 'straight', 'escalera 23456');
 ok(type('Jc Qd Kh As 2c') === null, 'JQKA2 no vale');
 ok(type('Qc Kd Ah 2s 3c') === null, 'QKA23 no vale');
 ok(type('Kc Ad 2h 3s 4c') === null, 'KA234 no vale');
-ok(type('3h 7h 9h Jh Kh') === 'flush', 'color');
+ok(type('3h 7h 9h Jh Kh') === null, 'color: ya no vale (reglas del dueño 2026-10-19)');
 ok(type('3h 3c 3d 9h 9s') === 'full', 'full');
 ok(type('9c 9d 9h 9s 3c') === 'four', 'póker');
 ok(type('5s 6s 7s 8s 9s') === 'sflush', 'escalera de color');
@@ -43,24 +43,26 @@ ok(beats('3d', '3c'), 'diamantes gana a tréboles');
 ok(beats('5c 5s', '5d 5h'), 'pareja con picas gana');
 ok(!beats('5c 5h', '5d 5s'), 'pareja de 5 sin picas pierde');
 ok(beats('6c 6d', '5h 5s'), 'pareja de 6 gana a la de 5');
-ok(beats('4c 4d 4h', '3c 3d 3s'), 'trío');
-ok(!beats('4c 4d', '3c 3d 3s'), 'distinto número de cartas');
+ok(!beats('4c 4d', '3c'), 'distinto tipo: pareja no gana a suelta');
 ok(beats('3c 4d 5h 6s 8c 8d 8h'.split(' ').slice(0, 1).join(' '), '3c') === false, 'misma carta no gana');
-// 5 cartas: tipo
-ok(beats('3h 7h 9h Jh Kh', '10c Jd Qh Ks As'), 'color gana a escalera');
-ok(beats('3h 3c 3d 9h 9s', '4s 7s 9s Js As'), 'full gana a color');
-ok(beats('3c 3d 3h 3s 4c', 'Ac Ad Ah 2c 2d'), 'póker gana a full');
+// 5 cartas: cada tipo sólo gana a su tipo; las bombas (póker, escalera de color) a todo
+ok(!beats('3h 3c 3d 9h 9s', '10c Jd Qh Ks As'), 'full NO gana a escalera (tipos distintos)');
+ok(!beats('10c Jd Qh Ks As', '3h 3c 3d 9h 9s'), 'escalera NO gana a full');
+ok(beats('3c 3d 3h 3s 4c', 'Ac Ad Ah 2c 2d'), 'póker (bomba) gana a full');
+ok(beats('3c 3d 3h 3s 4c', '10c Jd Qh Ks As'), 'póker (bomba) gana a escalera');
+ok(beats('3c 3d 3h 3s 4c', '2s'), 'póker (bomba) gana a una suelta');
+ok(beats('3c 3d 3h 3s 4c', '2h 2s'), 'póker (bomba) gana a una pareja');
 ok(beats('3c 4c 5c 6c 7c', '2c 2d 2h 2s 3d'), 'escalera de color gana a póker');
+ok(beats('3c 4c 5c 6c 7c', 'Ad'), 'escalera de color (bomba) gana a una suelta');
+ok(!beats('2s', '3c 3d 3h 3s 4c'), 'una suelta no gana a una bomba');
+ok(!beats('10c Jd Qh Ks As', '3c 3d 3h 3s 4c'), 'escalera no gana a póker');
+ok(!beats('2c 2d 2h 2s 3d', '3c 4c 5c 6c 7c'), 'póker no gana a escalera de color');
 // escaleras entre sí
 ok(beats('3c 4d 5h 6s 7c', '2c 3d 4h 5s 6h'), '34567 gana a 23456');
 ok(beats('2c 3d 4h 5s 6c', 'Ac 2d 3h 4s 5s'), '23456 gana a A2345');
 ok(beats('10c Jd Qh Ks Ac', '9c 10d Jh Qs Ks'), '10JQKA la más alta');
 ok(beats('3c 4d 5h 6s 7s', '3d 4c 5h 6s 7h'), 'misma escalera: palo de la de arriba');
 ok(!beats('3s 4s 5s 6s 7h', '3c 4c 5c 6c 7s'), 'misma escalera: la de arriba con picas gana');
-// color entre sí
-ok(beats('3c 5c 7c 9c 2c', '4s 6s 8s 10s As'), 'color: la carta más alta (2)');
-ok(beats('3s 5s 7s 9s Ks', '3h 5h 7h 9h Kh'), 'color igual: palo');
-ok(beats('4c 5c 7c 9c Kc', '3s 5s 7s 9s Ks'), 'color: misma más alta, compara la siguiente... hasta la última');
 // full y póker
 ok(beats('4c 4d 4h 3c 3d', '3h 3s 3d 2c 2d'.replace('3d', '3c')), 'full por el trío');
 ok(beats('5c 5d 5h 5s 3c', '4c 4d 4h 4s 2s'), 'póker por las cuatro');
@@ -73,7 +75,16 @@ ok(!B.check(hand, H('3d'), null, C('3c')).ok, 'primera sin 3♣ no vale');
 ok(B.check(hand, H('3c 4h 5s 6c 7d'), null, C('3c')).ok, 'primera escalera con 3♣');
 ok(!B.check(hand, H('3c 4h'), null, -1).ok, 'pareja mala');
 ok(!B.check(hand, H('Kh'), null, -1).ok, 'carta que no es tuya');
-ok(!B.check(hand, H('9h 9s'), { cards: H('5c') }, -1).ok, 'distinto número que la mesa');
+ok(!B.check(hand, H('9h 9s'), { cards: H('5c') }, -1).ok, 'distinto tipo que la mesa');
+{
+  const h2 = H('5c 5d 5h 5s 9c 3d 4h 6s 7c 8d Jh Qs Kc');
+  ok(B.check(h2, H('5c 5d 5h 5s 9c'), { cards: H('2s') }, -1).ok, 'bomba (póker) sobre una suelta');
+  ok(B.check(h2, H('5c 5d 5h 5s 9c'), { cards: H('Ah As') }, -1).ok, 'bomba (póker) sobre una pareja');
+  ok(!B.check(h2, H('3d 4h 5c 6s 7c'), { cards: H('4c 4d 4h 9h 9s') }, -1).ok, 'escalera sobre full: no');
+  ok(!B.check(h2, H('Kc'), { cards: H('3c 3d 3h 3s 4c') }, -1).ok, 'suelta sobre bomba: no');
+  ok(B.legalPlays(h2, { cards: H('2s') }, -1).some(p => p.c.type === 'four'), 'jugadas legales sobre una suelta incluyen la bomba');
+  ok(B.allPlays(h2).every(p => p.c.type !== 'triple' && p.c.type !== 'flush'), 'ni tríos ni colores entre las jugadas');
+}
 ok(!B.check(hand, H('9h'), { cards: H('10c') }, -1).ok, 'no gana a la mesa');
 ok(B.check(hand, H('2s'), { cards: H('Ac') }, -1).ok, 'gana a la mesa');
 const lp = B.legalPlays(hand, { cards: H('9c 9d') }, -1);

@@ -261,6 +261,9 @@
       const fv = v.pub.favor;
       if (fv && fv.to === v.you) { R.give(id); return; }
       const V = VB(), k = V.kind(id);
+      // (2026-10-19, pedido del dueño) En tu turno, las que no se pueden echar (oscurecidas) no responden.
+      const playable = V.PLAYABLE.includes(k) && (k !== 'pair' || V.pairOf(v.priv.hand.filter(x => V.kind(x) === 'pair' && V.card(x).p === V.card(id).p)));
+      if (R.mine(v) && !playable && !c.sel.includes(id)) return;
       if (c.sel.includes(id)) {
         if (R.mine(v) && R.selOk(v, c)) { R.playSel(); return; }
         c.sel = [];
@@ -342,7 +345,7 @@
       const k = hand.children.length;
       const cw = hand.firstElementChild.offsetWidth || 64;
       const room = wrap.clientWidth - 12;
-      const min = cw * 0.42;
+      const min = cw * 0.62;          // (2026-10-19: antes 0,42; las cartas iban demasiado juntas)
       let step = k > 1 ? Math.min(cw + 6, (room - cw) / (k - 1)) : cw;
       const scroll = step < min;
       if (scroll) step = min;
@@ -383,6 +386,7 @@
         if (isMe) return;
         const fan = el.querySelector('.vb-fan'), show = Math.min(nC, 12);
         if (fan.childElementCount !== show) fan.innerHTML = fanHTML(show);
+        UI.mateHand(el, fan, v, j, cardHTML);       // 2 contra 2: la mano del compañero, de cara
         el.querySelector('.vb-cnt').textContent = nC;
         el.querySelector('.vb-cnt').classList.toggle('hidden', dead);
       });
