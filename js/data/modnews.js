@@ -25,6 +25,8 @@ G.MODNEWS = [
       { zh: '燃燒中的敵人會紅色閃爍，頭上也會顯示燃燒／中毒／流血圖示', en: 'Burning enemies flash red and show burn/poison/bleed icons' }
     ],
     fix: [
+      { zh: '組隊時隊友也看得到你的極巨招式（火海、閃電、落石、地震等特效），地上的火海／草地／酸池也看得到（傷害只算一次）', en: 'In co-op your teammates now see your Max Moves too (flames, lightning, falling rocks, quakes...), including the ground zones (damage is only counted once)' },
+      { zh: '修正投射物招式（火花、水槍、電擊、污泥攻擊…）吃不到超級特性、起始招式覺醒與極巨招式；敵人被一擊打倒時也會放出極巨招式', en: 'Fixed projectile moves (Ember, Water Gun, Thunder Shock, Sludge...) not getting Mega abilities, the awakened starting move or Max Moves; Max Moves now also fire when the hit knocks the enemy out' },
       { zh: '練功房：極致馭風術以前對木樁完全沒傷害（木樁抓不走），現在風牆裡的木樁每次施放會被丟過來的敵人砸中，量得到真正的傷害', en: 'Training room: Wind Domain did no damage to dummies (they cannot be grabbed); dummies inside the wall are now hit by a thrown enemy on every cast, so its real damage shows' },
       { zh: '圖鑑：選了屬性（例如飛行）或搜尋之後，點上面的地區不會換——現在點地區會自動取消屬性和搜尋，直接顯示那個地區', en: 'Pokédex: after picking a type (e.g. Flying) or searching, tapping a region did nothing; it now clears the type and search and shows that region' },
       { zh: '極致馭風術：整個風牆裡的敵人都會被抓（以前只抓碰到邊緣那一圈，衝刺、跳躍或生在圈內的敵人會直接穿過去），被抓的敵人不再抖動、會慢慢升空並面向旋轉方向', en: 'Wind Domain: grabs every enemy inside the wall (it only caught those touching the edge, so dashing, jumping or spawning enemies slipped through); grabbed enemies no longer jitter and rise smoothly facing the spin' },

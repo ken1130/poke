@@ -43,7 +43,7 @@ G.MaxMoves = (() => {
 
   /** Desde Combat.hit: `m` acaba de pegar a `e`. */
   function onHit(pl, e, m) {
-    if (!active(pl) || !m || m.maxFx || !INFO[m.type] || G.Moves.isPassive(m) || e.dead) return;
+    if (!active(pl) || !m || m.maxFx || !INFO[m.type] || G.Moves.isPassive(m)) return;   // (aunque haya caído: sale donde estaba)
     const t = now();
     if (m.maxAt != null && t - m.maxAt < CD) return;
     m.maxAt = t;
@@ -57,13 +57,14 @@ G.MaxMoves = (() => {
   }
   function bolt(x0, y0, x1, y1, col) { bolts.push({ x0, y0, x1, y1, col, t: 0, life: 0.22, seed: Math.random() * 99 }); }
 
+  /**
+   * Lanza el «Maxi» de `type` sobre `e`: primero el daño (sólo aquí), luego lo que se ve, que
+   * también se manda al grupo (['mfx', 'max', ...] → Combat.netFx → netFx): los demás lo ven
+   * igual (zonas incluidas, sin daño). `ln`: rayos [x0,y0,x1,y1,...]; `pts`: rocas [x,y,...].
+   */
   function fire(pl, e, type) {
-    const x = e.x, y = e.y, col = COL(type), sees = G.Camera.sees(x, y, 120);
-    if (sees) {
-      G.FX.ring(x, y, 8, 90, col, 0.35, 4);
-      G.FX.burst(x, y - 10, col, 16, 200);
-      if (now() - nameT > NAME_CD) { nameT = now(); G.FX.dmgText(x, y - 46, G.T(INFO[type][0]), col, true); }
-    }
+    const x = e.x, y = e.y, ln = [], pts = [];
+    const line = (x0, y0, x1, y1) => ln.push(Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1));
     switch (type) {
       case 'fire':
         for (const o of near(x, y, 70)) { hit(pl, o, 1, type, 0, x, y); if (!o.dead) o.applyBurn(2); }
@@ -74,14 +75,13 @@ G.MaxMoves = (() => {
         break;
       case 'electric': {
         let cur = e; const done = new Set([e]);
-        hit(pl, e, 1, type, 0, x, y);
+        if (!e.dead) hit(pl, e, 1, type, 0, x, y);
         for (let k = 0; k < 4; k++) {
           const nx = near(cur.x, cur.y, 140).filter(o => !done.has(o)).sort((a, b) => G.U.dist2(a.x, a.y, cur.x, cur.y) - G.U.dist2(b.x, b.y, cur.x, cur.y))[0];
           if (!nx) break;
-          bolt(cur.x, cur.y - cur.bodyH * 0.5, nx.x, nx.y - nx.bodyH * 0.5, col);
+          line(cur.x, cur.y - cur.bodyH * 0.5, nx.x, nx.y - nx.bodyH * 0.5);
           done.add(nx); hit(pl, nx, 0.8, type, 0, cur.x, cur.y); cur = nx;
         }
-        if (sees) G.Audio.sfx('hit');
         break;
       }
       case 'grass':
@@ -92,37 +92,33 @@ G.MaxMoves = (() => {
       case 'ice':
         for (const o of near(x, y, 70)) { hit(pl, o, 0.9, type, 0, x, y); if (!o.dead) o.applyFreeze(1.2); }
         break;
-      case 'fighting':
-        hit(pl, e, 2.2, type, 220);
-        if (sees) { G.FX.sp('impact', 'fighting', x, y - e.bodyH * 0.5, { life: 0.2, scale: 2, frameRate: 14 }); G.Camera.kick(0.15); }
+      case 'fighting': {         // (si ya cayó, al más cercano)
+        const tg = e.dead ? near(x, y, 60)[0] : e;
+        if (tg) hit(pl, tg, 2.2, type, 220);
         break;
+      }
       case 'poison':
         for (const o of near(x, y, 80)) { hit(pl, o, 0.6, type, 0, x, y); if (!o.dead) o.applyPoison(3); }
         zones.push({ type, x, y, r: 70, t: 0, life: 3, every: 0.6, tick: 0.6, pl });
         break;
       case 'ground':
         for (const o of near(x, y, 110)) hit(pl, o, 1.1, type, 60, x, y);
-        if (sees) {
-          G.Camera.kick(0.25); G.FX.ring(x, y, 20, 120, '#aa7c3c', 0.45, 5);
-          for (let k = 0; k < 6; k++) G.FX.sp('rock', 'ground', x + G.U.rand(-60, 60), y + G.U.rand(-30, 30), { vx: G.U.rand(-80, 80), vy: G.U.rand(-170, -70), life: 0.4, scale: 1 });
-        }
         break;
       case 'flying':
         for (const o of near(x, y, 100)) hit(pl, o, 0.8, type, 260, x, y);
-        if (sees) for (let k = 0; k < 3; k++) G.FX.sp('crescent', 'flying', x + G.U.rand(-30, 30), y - 20 + G.U.rand(-20, 20), { life: 0.25, scale: 2, angle: Math.random() * 6.28 });
         break;
       case 'psychic':
         for (const o of near(x, y, 80)) { hit(pl, o, 0.9, type, 0, x, y); if (!o.dead) o.applyConfuse(1.5); }
         break;
       case 'bug': {
         const list = near(x, y, 160).sort((a, b) => G.U.dist2(a.x, a.y, x, y) - G.U.dist2(b.x, b.y, x, y)).slice(0, 5);
-        for (const o of list) { bolt(x, y - 20, o.x, o.y - o.bodyH * 0.5, col); hit(pl, o, 0.6, type, 0, x, y); }
+        for (const o of list) { line(x, y - 20, o.x, o.y - o.bodyH * 0.5); hit(pl, o, 0.6, type, 0, x, y); }
         break;
       }
       case 'rock':
         for (let k = 0; k < 3; k++) {
           const a = k * 2.094 + Math.random(), rx = x + Math.cos(a) * 35, ry = y + Math.sin(a) * 25;
-          if (sees) { G.FX.sp('rock', 'rock', rx, ry - 70, { vy: 420, life: 0.16, scale: 2 }); G.FX.burst(rx, ry, '#b8a038', 8, 140); }
+          pts.push(Math.round(rx), Math.round(ry));
           for (const o of near(rx, ry, 40)) hit(pl, o, 0.9, type, 40, rx, ry);
         }
         break;
@@ -136,17 +132,53 @@ G.MaxMoves = (() => {
         for (const o of near(x, y, 80)) hit(pl, o, o.hp < o.maxHp * 0.5 ? 1.8 : 0.9, type, 0, x, y);
         break;
       case 'steel':
-        for (let k = 0; k < 8; k++) { const a = k * 0.785; bolt(x, y - 10, x + Math.cos(a) * 100, y - 10 + Math.sin(a) * 70, '#c8d4e0'); }
+        for (let k = 0; k < 8; k++) { const a = k * 0.785; line(x, y - 10, x + Math.cos(a) * 100, y - 10 + Math.sin(a) * 70); }
         for (const o of near(x, y, 100)) hit(pl, o, 1, type, 60, x, y);
         break;
       case 'fairy':
         for (const o of near(x, y, 80)) hit(pl, o, 0.9, type, 0, x, y);
-        if (sees) for (let k = 0; k < 8; k++) G.FX.px(x + G.U.rand(-60, 60), y - 80 + G.U.rand(-20, 20), '#ffd6f0', { vy: 220, life: 0.35 });
         heal(pl, 0.015);
         break;
       default:            // normal
         for (const o of near(x, y, 80)) hit(pl, o, 1.2, type, 60, x, y);
     }
+    const bh = Math.round(e.bodyH || 30);
+    show(type, Math.round(x), Math.round(y), bh, ln, pts, false);
+    if (G.Coop.active) {
+      const ev = ['mfx', 'max', type, Math.round(x), Math.round(y), bh, ln, pts];
+      if (G.Coop.isHost) G.Coop.broadcast(ev); else G.Coop.toHost(ev);
+    }
+  }
+
+  /** Lo que se ve de un «Maxi» (el tuyo o el de un compañero: `ghost`, sus zonas no pegan). */
+  function show(type, x, y, bh, ln, pts, ghost) {
+    const col = COL(type), sees = G.Camera.sees(x, y, 160);
+    if (ghost && (type === 'fire' || type === 'grass' || type === 'poison'))
+      zones.push({ type, x, y, r: type === 'grass' ? 80 : type === 'fire' ? 60 : 70, t: 0, life: 3, every: 9e9, tick: 9e9, pl: null, ghost: true });
+    for (let k = 0; k + 3 < ln.length; k += 4) bolt(ln[k], ln[k + 1], ln[k + 2], ln[k + 3], type === 'steel' ? '#c8d4e0' : col);
+    if (!sees) return;
+    G.FX.ring(x, y, 8, 90, col, 0.35, 4);
+    G.FX.burst(x, y - 10, col, 16, 200);
+    if (now() - nameT > NAME_CD) { nameT = now(); G.FX.dmgText(x, y - 46, G.T(INFO[type][0]), col, true); }
+    switch (type) {
+      case 'electric': G.Audio.sfx('hit'); break;
+      case 'fighting': G.FX.sp('impact', 'fighting', x, y - bh * 0.5, { life: 0.2, scale: 2, frameRate: 14 }); G.Camera.kick(0.15); break;
+      case 'ground':
+        G.Camera.kick(0.25); G.FX.ring(x, y, 20, 120, '#aa7c3c', 0.45, 5);
+        for (let k = 0; k < 6; k++) G.FX.sp('rock', 'ground', x + G.U.rand(-60, 60), y + G.U.rand(-30, 30), { vx: G.U.rand(-80, 80), vy: G.U.rand(-170, -70), life: 0.4, scale: 1 });
+        break;
+      case 'flying': for (let k = 0; k < 3; k++) G.FX.sp('crescent', 'flying', x + G.U.rand(-30, 30), y - 20 + G.U.rand(-20, 20), { life: 0.25, scale: 2, angle: Math.random() * 6.28 }); break;
+      case 'rock':
+        for (let k = 0; k + 1 < pts.length; k += 2) { G.FX.sp('rock', 'rock', pts[k], pts[k + 1] - 70, { vy: 420, life: 0.16, scale: 2 }); G.FX.burst(pts[k], pts[k + 1], '#b8a038', 8, 140); }
+        break;
+      case 'fairy': for (let k = 0; k < 8; k++) G.FX.px(x + G.U.rand(-60, 60), y - 80 + G.U.rand(-20, 20), '#ffd6f0', { vy: 220, life: 0.35 }); break;
+    }
+  }
+  /** El «Maxi» de un compañero (Combat.netFx): sólo se ve. */
+  function netFx(ev) {
+    const [, , type, x, y, bh, ln, pts] = ev;
+    if (!INFO[type] || !isFinite(x) || !isFinite(y)) return;
+    show(type, x, y, bh || 30, Array.isArray(ln) ? ln.slice(0, 64) : [], Array.isArray(pts) ? pts.slice(0, 12) : [], true);
   }
 
   /** Cada fotograma: zonas en el suelo y rayos. */
@@ -154,7 +186,8 @@ G.MaxMoves = (() => {
     for (let i = zones.length - 1; i >= 0; i--) {
       const z = zones[i];
       z.t += dt; z.tick -= dt;
-      if (z.t >= z.life || !z.pl || z.pl.dead) { zones.splice(i, 1); continue; }
+      if (z.t >= z.life || (!z.ghost && (!z.pl || z.pl.dead))) { zones.splice(i, 1); continue; }
+      if (z.ghost) continue;                       // (la de un compañero: sólo se ve)
       if (z.tick > 0) continue;
       z.tick = z.every;
       for (const o of near(z.x, z.y, z.r)) {
@@ -204,5 +237,5 @@ G.MaxMoves = (() => {
   /** Para el HUD: nombre y qué hace el «Maxi» de un tipo. */
   const info = t => INFO[t] || INFO.normal;
 
-  return { reset, onHit, update, draw, info, CD };
+  return { reset, onHit, update, draw, info, netFx, CD };
 })();

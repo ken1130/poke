@@ -793,6 +793,7 @@ G.Combat = (() => {
     const pl = G.Game.player;
     if (!pl) return;
     if (ev[1] === 'conf') { confBlast(pl, ev[2], ev[3], ev[4] || 4, 0, true); return; }      // (V3.1) Esfera Dragón: sólo se ve
+    if (ev[1] === 'max') { G.MaxMoves.netFx(ev); return; }                                    // Gigamax: el «Maxi» de un compañero (maxmoves.js)
     if (ev[1] !== 'hole') return;
     addHole(pl, ev[2], ev[3], null, true);
   }
@@ -960,7 +961,7 @@ G.Combat = (() => {
 
   function payload(m) {
     return { burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, knock: m.knock || 0, mtype: m.type,
-             rootCh: m.rootCh || 0, rootT: m.rootT || 0, weakCh: m.weakCh || 0 };
+             rootCh: m.rootCh || 0, rootT: m.rootT || 0, weakCh: m.weakCh || 0, src: m };   // src: el movimiento (Mega y Gigamax)
   }
 
   // ---------------- efectos de los 19 movimientos nuevos (2026-10-15) ----------------
@@ -2491,7 +2492,11 @@ G.Combat = (() => {
           continue;
         }
         const crit = isCrit(pl);
-        const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? pl.critMul || CRIT_MUL : 1) * itemK(pl, p.mtype, e);
+        // El movimiento que lo lanzó (los de órbita sólo llevan `mid`): para la Megaevolución y el Gigamax,
+        // que antes sólo miraban Combat.hit y los disparos se los saltaban (2026-10-19).
+        const src = p.src || (p.mid && pl.moves.find(x => x.id === p.mid)) || null;
+        const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? pl.critMul || CRIT_MUL : 1) * itemK(pl, p.mtype, e)
+                * (src && (pl.megaAb || src.mega) ? G.MegaAb.dmgK(pl, src) : 1);
         if (G.Arts.zeroed()) G.Arts.miss(e);                   // Dados: el disparo no hace nada (pero choca igual)
         else {
           e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
@@ -2506,6 +2511,11 @@ G.Combat = (() => {
           G.Arts.onHit(pl, e);
           if (p.zap && !p.ghost) zapAround(p, e, pl);          // Boniato evolucionado
           if (p.grow || p.conf) dragonHit(p, e, e.dead);          // Esfera Dragón de Ocho Escamas (V3.1)
+          if (src && pl.gmaxT > 0) G.MaxMoves.onHit(pl, e, src);              // Gigamax (maxmoves.js)
+          if (src && pl.megaAb && !e.dead && G.MegaAb.again(pl)) {                       // Amor Filial
+            e.hurt(p.dmg * k * 0.5, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), 0, null);
+            pl.dmgDealt += p.dmg * k * 0.5; pl.onDealt(p.dmg * k * 0.5);
+          }
         }
 
         if (!p.orb) {
