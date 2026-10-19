@@ -231,6 +231,7 @@ G.Game = (() => {
     keepAwake(true);
     G.PvP.arenaStart(pl);
     if (G.Modes.run === 'training') G.Training.begin(pl);     // sala de entrenamiento (training.js)
+    G.Evo.reset(); G.Gmax.begin(pl);                          // ventana de evolución y Gigamax (evo.js, gmax.js)
     if (G.Modes.run === 'guard') G.Guard.begin(pl);           // «Proteger a Dazhuang» (guard.js)
     if (G.Modes.run === 'plaza') G.Plaza.begin(pl, coop);     // zona de fiesta (plaza.js)
   }
@@ -323,10 +324,10 @@ G.Game = (() => {
       // Las cartas se ponen en cola; mientras alguien elige, la partida se para para todos
       // (2026-10-14: antes seguía y te rodeaban mientras elegías).
       coopCards.push(level);
-      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear', 'scr-rest'].some(G.UI.isOpen)) nextCoopCard();
+      if (!coopPause && !['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear', 'scr-rest', 'scr-evo'].some(G.UI.isOpen)) nextCoopCard();
     },
     /** ¿Estás eligiendo algo? (lo manda coop.js en tu estado; si alguien elige, todo parado) */
-    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear', 'scr-rest'].some(G.UI.isOpen) || coopCards.length > 0; },
+    choosing() { return state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear', 'scr-rest', 'scr-evo'].some(G.UI.isOpen) || coopCards.length > 0; },
     /** Invitado: has cogido un disco de movimientos / una poción (lo decide el anfitrión). */
     sbox() { if (pl) { pl.sboxes = (pl.sboxes || 0) + 1; offerBox(); } },
     fbox() { if (pl) offerBox(); },
@@ -407,7 +408,7 @@ G.Game = (() => {
   }
   let choiceT = 0;          // grupo: segundos que llevas eligiendo (a los 25, elige solo)
   let orphanT = 0;          // segundos eligiendo sin ninguna ventana de elección abierta (frame)
-  const CHOICE_SCR = ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick', 'scr-fclear', 'scr-rest'];
+  const CHOICE_SCR = ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-pkpick', 'scr-fclear', 'scr-rest', 'scr-evo'];
   /**
    * Elecciones en cola (2026-10-15): si ya hay una ventana de elección abierta, la nueva espera
    * a que se cierre (frame). Antes la segunda escondía la primera: en la casa de monstruos (mucha
@@ -448,6 +449,7 @@ G.Game = (() => {
     if (state === 'over' || !pl) return;
     if (G.Modes.run === 'training') { endTraining(); return; }
     if (G.Modes.run === 'plaza') { endPlaza(); return; }
+    G.Evo.reset();                                // (la ventana de evolución, si quedaba abierta)
     const guardSm = G.Modes.run === 'guard' ? G.Guard.end() : null;      // «Proteger a Dazhuang»: hasta qué oleada
     const el = document.getElementById('scr-fclear');
     if (el) el.classList.add('hidden');
@@ -918,6 +920,10 @@ G.Game = (() => {
       for (let i = 0; i < 3; i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.Rest.pick(i);
       return;
     }
+    if (G.UI.isOpen('scr-evo')) {                                 // evolución / megaevolución (evo.js)
+      for (let i = 0; i < 9; i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.Evo.pick(i);
+      return;
+    }
     if (G.UI.isOpen('scr-sbox')) {
       if (G.Input.tap('keyr')) document.getElementById('sbox-reroll').click();
       else if (G.Input.tap('enter') || G.Input.tap('space') || G.Input.tap('digit1')) document.getElementById('sbox-ok').click();
@@ -1043,6 +1049,7 @@ G.Game = (() => {
         else if (G.UI.isOpen('scr-boon')) G.Boons.pick(0);
         else if (G.UI.isOpen('scr-fclear')) G.Floors.pickClear(1);     // mazmorra superada: seguir (no acabar la run de todos)
         else if (G.UI.isOpen('scr-rest')) G.Rest.pick(0);              // descanso: la hoguera
+        else if (G.UI.isOpen('scr-evo')) G.Evo.pick(-1);               // evolución: «ahora no» si es sólo la Mega; si no, la primera
         else if (G.UI.isOpen('scr-roul')) G.Roulette.forceClose();
       }
     } else choiceT = 0;
@@ -1082,7 +1089,7 @@ G.Game = (() => {
       G.FX.ring(pl.x, pl.y, 10, G.Camera.outerRadius(), '#ffffff', 0.7, 6);
     }
 
-    const picking = coop && (state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear', 'scr-rest'].some(G.UI.isOpen));
+    const picking = coop && (state === 'choice' || ['scr-levelup', 'scr-bond', 'scr-item', 'scr-sbox', 'scr-relic', 'scr-boon', 'scr-fclear', 'scr-rest', 'scr-evo'].some(G.UI.isOpen));
     pl.frozen = coop && (G.UI.isOpen('scr-pause') || G.UI.isOpen('scr-item') || picking);
     pl.picking = picking;   // eligiendo cartas: nada te hace daño (Player.hurt)
     pl.update(dt);
@@ -1147,6 +1154,8 @@ G.Game = (() => {
     G.RunGoals.update(dt, time, pl);                             // retos de la run (modo normal)
     if (coop && !guard) G.Raid.update(dt, time);
     G.Evo.check(pl);
+    G.Gmax.update(dt, pl);                                       // Gigamax: carga, duración y tecla G (gmax.js)
+    if (G.Input.tap('keym') && !G.UI.isOpen('scr-pause')) G.Evo.openMega(pl);   // megaevolución cuando quieras (evo.js)
     G.Tips.tick(dt);
     G.Stages.update(dt, time, pl);
     if (!guard) G.Events.update(dt, all, time);

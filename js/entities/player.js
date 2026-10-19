@@ -386,8 +386,8 @@ G.Player = class Player {
     this.mon = mon; this.dex = dex;
     this.shiny = this.shiny && G.Sprites.hasShiny(dex);
     this.anim = new G.Sprites.Animator(dex, 1, this.shiny);
-    this.r = G.Sprites.bodyRadius(dex) * (this.artSize || 1);
-    this.bodyH = G.Sprites.bodyHeight(dex) * (this.artSize || 1);
+    this.r = G.Sprites.bodyRadius(dex) * (this.artSize || 1) * (this.gmaxK || 1);
+    this.bodyH = G.Sprites.bodyHeight(dex) * (this.artSize || 1) * (this.gmaxK || 1);
     if (visual) return;
     // Además de los stats de la evolución, un empujón: +8% de vida y +6% de ataque.
     const dHp = (Math.max(0, mon.hp - old.hp) + this.maxHp * 0.08) * (this.glassK || 1);
@@ -469,7 +469,7 @@ G.Player = class Player {
   // ---------------- ciclo ----------------
   update(dt) {
     this.anim.update(dt);
-    this.anim.scale = (this.sizeK || 1) * (this.artSize || 1);            // gigante / diminuto (pociones) y Tanque 64
+    this.anim.scale = (this.sizeK || 1) * (this.artSize || 1) * (this.gmaxK || 1);   // pociones, Tanque 64 y Gigamax (gmax.js)
     if (this.dead) { if (this.potion) this.endPotion(); return; }
     if (this.potion) {
       this.potion.t -= dt;
@@ -772,6 +772,7 @@ G.Player = class Player {
     }
     const alpha = this.invuln > 0 && !this.dead && !starOn ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
     const starFlash = starOn && Math.floor(now / 120) % 3 !== 2;
+    G.Gmax.drawAura(ctx, this);                   // Gigamax: nubes rojas (gmax.js)
     const evoK = this.evoAnim ? G.Evo.progress(this) : null;
     if (evoK != null) {
       // Evolucionando (evo.js): silueta blanca que alterna entre las dos formas, cada vez más rápido.
@@ -780,7 +781,7 @@ G.Player = class Player {
       const an = t < period || !(sh && sh.ready) ? this.anim : this.evoAnim.toAnim;     // (la nueva, cuando ya ha cargado)
       an.dir = this.anim.dir; an.loop('Idle'); if (an !== this.anim) an.update(1 / 60);
       ctx.save();
-      ctx.globalAlpha = 0.25 + 0.35 * evoK; ctx.fillStyle = '#fff6c0';
+      ctx.globalAlpha = 0.25 + 0.35 * evoK; ctx.fillStyle = this.evoAnim.mega ? `hsl(${(now / 4) % 360},95%,70%)` : '#fff6c0';   // Mega: arcoíris
       const R = 18 + 20 * evoK;
       for (let k = 0; k < 16; k++) {                 // aro de luz de píxeles a los pies
         const b = k / 16 * 6.2832 + now / 300;

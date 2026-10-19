@@ -364,6 +364,38 @@ G.MenuUI = (() => {
   // Variante que se está viendo en la ficha (normal o shiny).
   let viewShiny = false;
 
+  /*
+   * Megaevolución (2026-10-19, data/mega.js · systems/evo.js): si este Pokémon (o una de sus
+   * evoluciones) puede megaevolucionar durante la run, se dice aquí con un dibujo de la Mega.
+   */
+  function megaLine(dex) {
+    const out = [], seen = new Set(), q = [dex];
+    while (q.length) {
+      const d = q.shift();
+      if (seen.has(d)) continue;
+      seen.add(d);
+      for (const m of (G.MEGA_BY_BASE && G.MEGA_BY_BASE[d]) || []) out.push(m);
+      for (const n of G.EVOS[d] || []) q.push(n);
+    }
+    return out;
+  }
+  function megaBox(dex) {
+    const list = megaLine(dex);
+    if (!list.length) return '';
+    const self = list.every(m => m.base === dex);
+    const txt = self ? G.I18n.f('Puede megaevolucionar en la partida (Nv. {x})', G.Evo.MEGA_LV)
+      : G.I18n.f('Al evolucionar a {x} podrá megaevolucionar (Nv. {x})', [...new Set(list.map(m => G.T(G.DEX_BY[m.base].name)))].join(' / '), G.Evo.MEGA_LV);
+    return `<div class="dex-mega"><b>${G.T('Megaevolución')}</b><small>${txt}</small>
+      <div class="dex-mega-pics">${list.map(m => `<span data-mega="${m.dex}" title="${G.T(m.name)}"></span>`).join('')}</div></div>`;
+  }
+  function wireMega(box) {
+    box.querySelectorAll('[data-mega]').forEach(el => {
+      const d = +el.dataset.mega;
+      el.appendChild(G.UI.spriteCanvas(d, 76, 64, { scale: 2, lively: true }));
+      el.insertAdjacentHTML('beforeend', `<small>${G.T(G.DEX_BY[d].name)}</small>`);
+    });
+  }
+
   function showDetail(dex) {
     const s = G.DB.save;
     const p = G.DEX_BY[dex];
@@ -398,6 +430,7 @@ G.MenuUI = (() => {
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
         <p class="move-icons" title="Movimientos que puede aprender">
           ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
+        ${megaBox(dex)}
         <div class="dex-acts">${usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
@@ -408,6 +441,7 @@ G.MenuUI = (() => {
             o derrotándolo cuando salga shiny.</p>`}
     </div>`;
     wireSheet(box);
+    wireMega(box);
     $('dex-big').style.setProperty('--stage-c', !own ? '#5b83d6' : viewShiny ? '#9ae6ff' : G.U.TYPE_COLOR[p.types[0]]);
     $('dex-big').classList.toggle('shiny', own && viewShiny);
     G.UI.sprite($('dex-big'), dex, { lively: own, spin: own, silhouette: !own, scale: 3, hero: true, shiny: own && viewShiny });

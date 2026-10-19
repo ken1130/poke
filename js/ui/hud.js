@@ -282,6 +282,9 @@ G.HUD = (() => {
 
     // ---------- piso y ataque combinado (floors.js) ----------
     G.Floors.drawHud(ctx, w, h, pl, F, roundRect);
+    // ---------- Megaevolución (M) y Gigamax (G) (evo.js, gmax.js) ----------
+    G.Evo.drawHud(ctx, w, h, pl, F);
+    G.Gmax.drawHud(ctx, w, h, pl, F);
 
     // ---------- minimapa (arriba a la derecha) ----------
     if (!G.Modes.rule('dark')) drawMinimap(ctx, w, pl, touch, h);

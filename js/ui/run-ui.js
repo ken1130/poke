@@ -412,6 +412,10 @@ G.RunUI = (() => {
     renderPauseStats();
     $('pause-auto').onclick = cycleAuto;
     showAuto();
+    // Megaevolución (evo.js): si ya puede y dijo «ahora no», desde aquí (cierra la pausa y abre la ventana).
+    const mb = $('pause-mega'), mp = G.Game.player;
+    mb.classList.toggle('hidden', !(mp && G.Evo.megaReady(mp)));
+    mb.onclick = () => { $('btn-resume').click(); setTimeout(() => G.Evo.openMega(G.Game.player), 60); };
     G.UI.soundControls($('pause-sound'));
     $('pause-coop').classList.toggle('hidden', !coop);
     $('btn-quit').textContent = coop ? 'Salir de la partida' : G.Modes.run === 'training' ? G.T('Salir del entrenamiento') : 'Abandonar run';

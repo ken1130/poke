@@ -89,10 +89,10 @@
 }
 </script>
 <!-- seo:end -->
-<link rel="stylesheet" href="css/style.css?v=20261019v31ui">
+<link rel="stylesheet" href="css/style.css?v=20261019mega">
 <link rel="stylesheet" href="css/rwd-menus.css?v=20261017">
 <link rel="stylesheet" href="css/rwd-panels.css?v=20261019v31ui">
-<link rel="stylesheet" href="css/rwd-run.css?v=20261019v31ui">
+<link rel="stylesheet" href="css/rwd-run.css?v=20261019mega">
 <link rel="stylesheet" href="css/party.css?v=20261019p">
 <link rel="stylesheet" href="css/party-typecards.css?v=20261019p">
 <link rel="stylesheet" href="css/party-voltorb.css?v=20261019p">
@@ -648,6 +648,16 @@
   </div>
 </section>
 
+<!-- Evolución: los caminos de ahora (evoluciones y Mega), evo.js -->
+<section id="scr-evo" class="scr dim hidden">
+  <div class="box center">
+    <h2 class="gold">¡Evolución!</h2>
+    <p id="evo-sub" class="sub"></p>
+    <div id="evo-cards" class="cards"></div>
+    <p id="evo-auto" class="note hidden"></p>
+  </div>
+</section>
+
 <section id="scr-rest" class="scr dim hidden">
   <div class="box center">
     <h2 class="gold">Zona de descanso</h2>
@@ -703,6 +713,7 @@
       <button id="btn-pause-settings" class="btn">Ajustes</button>
       <button id="btn-pause-cheat" class="btn">Trucos</button>
       <button id="pause-auto" class="btn lvl-auto" data-sfx="none">Elegir solo: no</button>
+      <button id="pause-mega" class="btn gold hidden" data-sfx="none">Megaevolucionar <kbd>M</kbd></button>
       <button id="btn-quit" class="btn">Abandonar run</button>
     </div>
   </div>
@@ -745,12 +756,15 @@
 <script defer src="js/data/lang-v31-guard.js"></script>
 <script defer src="js/data/lang-v31-party.js"></script>
 <script defer src="js/data/lang-v31-plaza.js"></script>
+<script defer src="js/data/lang-v31-mega.js"></script>
 <script defer src="js/core/settings.js"></script>
 <script defer src="js/data/music.js"></script>
 <script defer src="js/data/pokedex.js"></script>
 <script defer src="js/data/custom.js"></script>
 <script defer src="js/data/evolutions.js"></script>
 <script defer src="js/data/sprites-meta.js"></script>
+<script defer src="js/data/sprites-mega.js"></script>
+<script defer src="js/data/mega.js"></script>
 <!-- núcleo -->
 <script defer src="js/core/firebase-config.js"></script>
 <script defer src="js/core/db.js"></script>
@@ -810,6 +824,7 @@
 <script defer src="js/systems/training.js"></script>
 <script defer src="js/systems/guard.js"></script>
 <script defer src="js/systems/evo.js"></script>
+<script defer src="js/systems/gmax.js"></script>
 <script defer src="js/systems/raid.js"></script>
 <script defer src="js/systems/dexquests.js"></script>
 <script defer src="js/systems/stages.js"></script>
