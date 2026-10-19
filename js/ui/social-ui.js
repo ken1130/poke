@@ -151,7 +151,7 @@
         G.MenuUI.open();
       };
       $('lobby-menu').onclick = () => G.MenuUI.open();
-      $('lobby-start').onclick = start;
+      $('lobby-start').onclick = () => start();
       $('lobby-start').dataset.sfx = 'confirm';
       // Conecta / desconecta la red al entrar o salir de una sala.
       G.Social.on(what => {
@@ -519,12 +519,25 @@
       if (ch) ch.onclick = pickStage;
     }
 
-    function start() {
+    function start(over) {
       const room = G.Social.room;
       if (room && room.isHost && room.mode === 'party') {
+        const o = Object.assign({}, G.Social.partyOf(room), over || {});
+        // Zona de fiesta / Patata caliente (plaza.js, 2026-10-19): éstos sí son en el mundo.
+        const pg = G.Party.game(o.game);
+        if (pg && pg.world) {
+          const cpu = Math.min(o.cpu | 0, G.Social.MAX_PLAYERS - room.members.length);
+          if (room.members.length < 2) { close(); G.Plaza.soloStart(o.game, cpu); return; }   // sólo tú: sin red
+          const cfg = { k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: false, scene: null, rand: false,
+            mods: { plaza: o.game, cpu }, teams: false, arena: false, pkx: null,
+            members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny, team: G.Social.teamOf(m, i) })) };
+          G.Social.setOpen(false);
+          G.Net.broadcast(cfg);
+          G.Flow.startCoop(cfg);
+          return;
+        }
         // Fiesta: no se entra en el mundo; se abre la mesa para todos (la sala sigue abierta
         // para que quien se corte pueda volver a entrar y recuperar su plaza).
-        const o = G.Social.partyOf(room);
         const r = G.Party.hostStart({ game: o.game, cpu: Math.min(o.cpu, G.Social.MAX_PLAYERS - room.members.length), roomId: room.id, teams: o.teams, mix: o.mix, seat: o.seat,
           members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny })) });
         if (!r.ok) G.UI.toast(G.I18n.f(r.error, r.x || ''), 2600);
@@ -549,7 +562,15 @@
       G.Flow.startCoop(cfg);
     }
 
-    return { init, open, close, render };
+    /** Caseta de cartas de la zona de fiesta (plaza.js): al volver a la sala, empieza esa mesa. */
+    function startParty(game) {
+      const r = G.Social.room;
+      if (!r || !r.isHost) return;
+      G.Social.setParty(Object.assign(G.Social.partyOf(r), { game }));
+      start({ game });
+    }
+
+    return { init, open, close, render, startParty };
   })();
 
   // ======================= INVITACIONES =======================
