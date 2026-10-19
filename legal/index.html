@@ -8,6 +8,9 @@
 <meta name="theme-color" content="#0a1430">
 <link rel="icon" href="../favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="48x48" href="../assets/icons/icon-48.png">
 <link rel="stylesheet" href="../css/pages.css">
+<!-- (2026-10-16, hoja V3.1) Las mismas protecciones que el juego (F12, menú contextual…), y sin enlace de
+     vuelta: desde aquí se abría F12 y con «Volver al juego» se llegaba al juego con las herramientas abiertas. -->
+<script src="../js/core/guard.js"></script>
 <style>
   [data-l="en"] { display: none; }
   html[lang="en"] [data-l="zh"] { display: none; }
@@ -17,6 +20,8 @@
   .doc li { margin: 4px 0; }
   .eff { color: var(--muted, #aab); font-size: 14px; }
   .langsw { background: none; border: 2px solid rgba(244,248,255,.35); color: inherit; border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  .top nav button.play { background: var(--gold); color: #3a2200; padding: 4px 12px; border-radius: 8px; font-size: inherit; font-weight: 700; font-family: 'Pixelify', system-ui, sans-serif; border: 0; cursor: pointer; }
+  .top nav button.play:disabled { cursor: default; opacity: .85; }
 </style>
 <script>
   // 與遊戲相同的語言（只有英文時顯示英文版，其餘顯示繁體中文）。
@@ -30,10 +35,10 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="../"><span data-l="zh">寶可夢迷宮倖存者</span><span data-l="en">Pokémon Dungeon Survivors</span></a>
+  <span class="brand"><span data-l="zh">寶可夢迷宮倖存者</span><span data-l="en">Pokémon Dungeon Survivors</span></span>
   <nav>
     <button class="langsw" type="button" id="lang"><span data-l="zh">English</span><span data-l="en">繁體中文</span></button>
-    <a class="play" href="../"><span data-l="zh">回到遊戲</span><span data-l="en">Back to the game</span></a>
+    <button class="play" type="button" id="close"><span data-l="zh">關閉此頁</span><span data-l="en">Close this page</span></button>
   </nav>
 </header>
 <main>
@@ -202,6 +207,16 @@
 </article>
 </main>
 <script>
+  // Se abre en otra pestaña desde el juego: cerrarla vuelve a la del juego. Si el navegador no deja, se avisa.
+  document.getElementById('close').onclick = function () {
+    window.close();
+    var b = this;
+    setTimeout(function () {
+      if (window.closed) return;
+      b.innerHTML = document.documentElement.lang === 'en' ? 'Close this tab to go back to the game' : '請直接關閉這個分頁回到遊戲';
+      b.disabled = true;
+    }, 200);
+  };
   document.getElementById('lang').onclick = function () {
     var en = document.documentElement.lang !== 'en';
     document.documentElement.lang = en ? 'en' : 'zh-Hant';

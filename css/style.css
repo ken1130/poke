@@ -1370,3 +1370,30 @@ body.touch .keys kbd { display: inline-block !important; }
   .topbar { right: max(6px, env(safe-area-inset-right)); }
   .ach-pop { right: max(8px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); }
 }
+
+/* ---------- V3.1 (2026-10-16): mochila y rangos ---------- */
+/* La etiqueta de rango heredaba la sombra del texto de la caja: las letras se veían dobles («fuente superpuesta»). */
+.tier-chip { text-shadow: none; display: inline-block; line-height: 1.35; white-space: nowrap; }
+/* Mochila (botón I / icono flotante): lo que llevas arriba, lo encontrado debajo con sus botones. */
+#scr-item.bagmode > .box { width: min(760px, 100%); text-align: left; }
+#scr-item.bagmode > .box > h2, #scr-item.bagmode > .box > .sub { text-align: center; }
+#scr-item.bagmode #item-cards { display: block; width: 100%; }
+.bag { display: flex; flex-direction: column; gap: 8px; }
+.bag-h { font-weight: 800; color: var(--ember-hi, #ffd23f); font-size: 14px; margin-top: 2px; }
+.bag-held { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.bag-slot { --tc: rgba(160,190,255,.35); display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 6px; min-width: 0;
+  background: rgba(0,0,0,.28); border: 2px solid rgba(160,190,255,.2); border-left: 5px solid var(--tc); }
+.bag-slot.t1 { --tc: #b8c4d8; } .bag-slot.t2 { --tc: #4fb4ff; } .bag-slot.t3 { --tc: #c47bff; } .bag-slot.t4 { --tc: #ffb02e; }
+.bag-slot.art { box-shadow: 0 0 0 1px #ff8ad855, 0 0 12px #ff8ad833; }
+.bag-slot.empty { justify-content: center; align-items: center; color: var(--muted); border-style: dashed; border-left-width: 2px; min-height: 52px; }
+.bag-slot .ico { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 6px; background: rgba(0,0,0,.3); }
+.bag-slot .txt { min-width: 0; flex: 1; }
+.bag-slot .nm { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 15px; }
+.bag-slot .nm .tier-chip, .bag-slot .nm .art-chip { margin: 0; }
+.bag-slot .ds { color: var(--muted); font-size: 13px; line-height: 1.3; margin-top: 2px; }
+.bag-new { display: flex; flex-direction: column; gap: 6px; padding: 6px; border-radius: 8px; background: rgba(255,159,67,.06); border: 1px dashed rgba(255,191,90,.35); }
+.bag-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; }
+.bag-acts .btn { min-height: 34px; }
+.bag-lock { color: #ffc8f4; font-size: 13px; margin-right: auto; }
+.bag-foot { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+.bag-foot .btn.danger { background: linear-gradient(180deg, #e0505e, #a8283a); color: #fff; }

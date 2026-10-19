@@ -489,3 +489,10 @@
   #prof-body .fav-slot { width: 88px; min-height: 88px; }
   #prof-body .fav-slot canvas { width: 76px; }
 }
+
+/* Sala de entrenamiento (V3.1, 2026-10-16): el filtro de tipos, una sola fila que se desliza (como en la Pokédex). */
+@media (max-height: 520px) {
+  #training-panel .tr-types { flex-wrap: nowrap !important; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+  #training-panel .tr-types .chip { flex: none; padding: 3px 9px; }
+  #training-panel .tr-item select { min-height: 40px; font-size: 14px; }
+}

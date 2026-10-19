@@ -219,7 +219,58 @@ G.RunUI = (() => {
    * Has encontrado un objeto llevando ya dos: cambiar uno de los que llevas por el nuevo,
    * o quedarte como estás. cb(idQueSeQuita) o cb(null) si no lo coges.
    */
+  /** Título de la ventana de objetos: «¡Un objeto!» (cambiar) o «Mochila» (bag mode, showBag). */
+  function itemHead(bag) {
+    const sec = $('scr-item');
+    sec.classList.toggle('bagmode', !!bag);
+    sec.querySelector('h2').textContent = G.T(bag ? 'Mochila' : '¡Un objeto!');
+    sec.querySelector('.sub').innerHTML = bag
+      ? G.T('Elige qué cambias o tira los que no quieras (el que cambias desaparece)')
+      : G.T('Llevas dos: elige cuál cambias ·') + ' <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>';
+  }
+
+  /*
+   * Mochila (2026-10-16, hoja V3.1 «al pulsar I, una mochila con "tirar todo" o cambiar uno a
+   * uno; el cambiado desaparece»). Usa la ventana de objetos (#scr-item), así todo lo que ya
+   * la tiene en cuenta (pausa del grupo, tienda, tiempo límite) sirve igual.
+   *   held     lo que llevas · pending  lo que espera (icono flotante)
+   *   act(tipo, id, otro)  'take' (id en lugar de otro, o en un hueco) · 'drop' (id) · 'dropAll' · 'close'
+   * Mismas reglas de siempre: sólo por uno de su rango o peor; un artefacto sólo por otro artefacto.
+   */
+  function showBag(held, pending, act) {
+    itemHead(true);
+    const box = $('item-cards');
+    const art = id => G.Items.isArt(id), T = G.Items.tier;
+    const can = (o, id) => T(o) <= T(id) && (!art(o) || art(id));
+    const it = id => G.Items.BY[id];
+    const chip = id => G.Items.tierChip(id) + (art(id) ? `<span class="art-chip">${G.T('Artefacto')}</span>` : '');
+    const slot = id => `<div class="bag-slot t${T(id)}${art(id) ? ' art' : ''}"><div class="ico">${G.Icons.html(id, 32)}</div>` +
+      `<div class="txt"><div class="nm">${chip(id)}<b>${G.T(it(id).name)}</b></div><div class="ds">${G.T(it(id).desc)}</div></div></div>`;
+    const free = G.Player.MAX_ITEMS - held.length;
+    let html = `<div class="bag-h">${G.I18n.f('Llevas ({x}/{x})', held.length, G.Player.MAX_ITEMS)}</div><div class="bag-held">` +
+      held.map(slot).join('') + Array.from({ length: Math.max(0, free) }, () => `<div class="bag-slot empty">${G.T('Hueco libre')}</div>`).join('') + '</div>' +
+      `<div class="bag-h">${G.T('Objetos encontrados')}</div>`;
+    pending.forEach(id => {
+      const opts = held.filter(o => can(o, id));
+      html += `<div class="bag-new">${slot(id)}<div class="bag-acts">` +
+        (free > 0 ? `<button class="btn small gold" data-take="${id}">${G.T('Equipar en el hueco')}</button>` : '') +
+        opts.map(o => `<button class="btn small gold" data-take="${id}" data-out="${o}">${G.I18n.f('Cambiar por {x}', G.T(it(o).name))}</button>`).join('') +
+        (!opts.length && free <= 0 ? `<span class="bag-lock">${G.T('Lo que llevas es de más rango')}</span>` : '') +
+        `<button class="btn small ghost" data-drop="${id}">${G.I18n.f('Tirar (+{x})', G.Items.sellValue(id))}</button></div></div>`;
+    });
+    const all = pending.reduce((a, id) => a + G.Items.sellValue(id), 0);
+    html += `<div class="bag-foot"><button class="btn small danger" data-dropall="1">${G.I18n.f('Tirar todo (+{x} monedas)', all)}</button>` +
+      `<button class="btn small" data-close="1">${G.T('Cerrar (decido luego)')}</button></div>`;
+    box.innerHTML = `<div class="bag">${html}</div>`;
+    box.querySelectorAll('[data-take]').forEach(b => { b.onclick = () => act('take', b.dataset.take, b.dataset.out); });
+    box.querySelectorAll('[data-drop]').forEach(b => { b.onclick = () => act('drop', b.dataset.drop); });
+    box.querySelector('[data-dropall]').onclick = () => act('dropAll');
+    box.querySelector('[data-close]').onclick = () => act('close');
+    G.UI.show('scr-item');
+  }
+
   function showItemChoice(cur, next, cb) {
+    itemHead(false);
     const box = $('item-cards');
     box.innerHTML = '';
     const nx = G.Items.BY[next];
@@ -370,5 +421,5 @@ G.RunUI = (() => {
     $('btn-pause-cheat').onclick = () => G.Cheat.openPrompt();   // trucos de partida (invencible, nivel 30...)
   }
 
-  return { showLevelUp, reroll, showItemChoice, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
+  return { showLevelUp, reroll, showItemChoice, showBag, showBond, pickBond, bondBack, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
 })();
