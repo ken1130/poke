@@ -55,9 +55,13 @@ G.Guard = (() => {
   let dzAnim = null, flashT = 0, counterFx = 0;
   const helperAnims = new Map();
   let netT = 0, waveIds = new Set(), spawnQ = [], spawnT = 0, ambushT = null;
+  // Rezagados (2026-10-19, «queda 1 y no aparece nunca»): cada STRAY_EVERY s, los que quedan lejos o atascados vienen junto a Dazhuang.
+  const STRAY_EVERY = 8, STRAY_FAR = 520, STRAY_MAX = 3;
+  let strayT = STRAY_EVERY, strayPos = new Map(), strays = [];
 
   function reset() {
     S = null; waveIds = new Set(); spawnQ = []; spawnT = 0; ambushT = null; netT = 0; nearK = null; skip = null;
+    strayT = STRAY_EVERY; strayPos = new Map(); strays = [];
     helperAnims.clear(); dzAnim = null; flashT = 0;
     closePanel(true); showNext(false);
   }
@@ -258,6 +262,7 @@ G.Guard = (() => {
         alive++;
       }
       S.left = alive + spawnQ.length + (ambushT != null ? Math.round(AMBUSH_N(S.wave)) : 0);
+      pullStrays(dt, alive);
       if (!S.left) waveCleared();
     }
     hitDazhuang(dt);
@@ -265,6 +270,34 @@ G.Guard = (() => {
     helpers(dt);
     if (S.dz.hp <= 0) lose();
     if ((netT -= dt) <= 0) sendState(false);
+  }
+
+  /**
+   * Con todos fuera y pocos en pie (≤ STRAY_MAX), cada STRAY_EVERY s: el que está muy lejos de
+   * Dazhuang o casi no se ha movido (atascado tras un árbol, agua o una roca) aparece a su lado.
+   * La oleada se quedaba sin terminar por uno que nunca llegaba. También se marcan en el borde
+   * de la pantalla y en el minimapa (markers → strays).
+   */
+  function pullStrays(dt, alive) {
+    strays = [];
+    if (spawnQ.length || ambushT != null || !alive || alive > STRAY_MAX) { strayT = STRAY_EVERY; strayPos.clear(); return; }
+    for (const id of waveIds) { const e = G.EnemyMgr.get(id); if (e && !e.dead) strays.push(e); }
+    if ((strayT -= dt) > 0) return;
+    strayT = STRAY_EVERY;
+    for (const e of strays) {
+      const last = strayPos.get(e.id);
+      const stuck = last && G.U.dist2(last[0], last[1], e.x, e.y) < 40 * 40;
+      const far = G.U.dist2(e.x, e.y, S.dz.x, S.dz.y) > STRAY_FAR * STRAY_FAR;
+      strayPos.set(e.id, [e.x, e.y]);
+      if (!stuck && !far) continue;
+      const pt = freeAround(S.dz.x, S.dz.y, 200, 300, Math.random() * 6.2832, Math.PI);
+      if (!pt) continue;
+      G.FX.burst(e.x, e.y - 10, '#c9a6ff', 8, 120);
+      e.x = pt[0]; e.y = pt[1];
+      strayPos.set(e.id, [e.x, e.y]);
+      G.FX.burst(e.x, e.y - 10, '#c9a6ff', 12, 160);
+      G.FX.ring(e.x, e.y, 6, 50, '#c9a6ff', 0.4, 3);
+    }
   }
 
   /** Los enemigos que tocan a Dazhuang le pegan (primero al escudo). */
@@ -682,7 +715,7 @@ G.Guard = (() => {
   /** Para el minimapa y las flechas de borde (hud.js). */
   function markers() {
     if (!on() || !S) return null;
-    return { dz: S.dz, stalls: S.stalls };
+    return { dz: S.dz, stalls: S.stalls, strays };
   }
 
   /** Al acabar la run (game.js): resumen, récord y limpieza. */

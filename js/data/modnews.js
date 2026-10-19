@@ -17,6 +17,7 @@ G.MODNEWS = [
       { zh: '燃燒中的敵人會紅色閃爍，頭上也會顯示燃燒／中毒／流血圖示', en: 'Burning enemies flash red and show burn/poison/bleed icons' }
     ],
     fix: [
+      { zh: '修正守護大壯最後一隻怪卡在樹或水後面過不來、整波一直結束不了：剩 3 隻以內時，太遠或卡住的怪每 8 秒會被拉到大壯附近，畫面邊緣和小地圖也會標出剩下的怪', en: 'Fixed Guard Dazhuang waves never ending because the last enemy got stuck behind a tree or water: with 3 or fewer left, far or stuck ones are pulled next to Dazhuang every 8 s, and the remaining enemies are marked on the screen edge and minimap' },
       { zh: '修正道具稀有度字樣疊字；使用條款頁不能再用來開啟開發者工具', en: 'Fixed doubled rank labels; the terms page can no longer be used to open the developer tools' }
     ] },
   { d: '2026-10-17', title: { zh: '派對模式：2 對 2 組隊', en: 'Party mode: 2 vs 2 teams' },

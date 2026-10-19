@@ -439,6 +439,8 @@ G.HUD = (() => {
       // «Proteger a Dazhuang» (guard.js): hacia él si no se ve.
       const gm = G.Guard && G.Guard.markers();
       if (gm && !gm.dz.dead) edgeArrow(ctx, w, h, pl, gm.dz.x, gm.dz.y - 30, '#ffb44a', '#fff0c8', '#3a2008', '#ffe0a0', G.T('Dazhuang'));
+      // Los últimos de la oleada (guard.js pullStrays): dónde están, para no buscarlos a ciegas.
+      if (gm && gm.strays) for (const e of gm.strays) if (!e.dead) edgeArrow(ctx, w, h, pl, e.x, e.y - 10, '#ff5f6d', '#ffd8dc', '#3a0a10', '#ffb0b8', G.T('Último enemigo'));
       // Dos escaleras (2026-10-16): la segura en azul, la peligrosa en rojo.
       for (const st of G.Floors.stairsAll) {
         if (st.route === 'danger') edgeArrow(ctx, w, h, pl, st.x, st.y, '#ff7a5a', '#ffe2d8', '#3a0f0a', '#ffc4b0', G.T('Ruta peligrosa') + '・' + G.T(G.Floors.THEMES[st.theme].name));
@@ -1042,7 +1044,8 @@ G.HUD = (() => {
     { const en = G.Encounters.marker(); if (en) { const q = at(en.x, en.y, !inside); if (q) MM_ICON.enc(ctx, q[0], q[1], blink, en.col); } }
     for (const st of G.Floors.stairsAll) icon(st.route === 'danger' ? 'stairsD' : 'stairs', st.x, st.y, true);
     { const gm = G.Guard && G.Guard.markers();          // «Proteger a Dazhuang»: él (siempre, en el borde si hace falta) y sus puestos
-      if (gm) { for (const st of gm.stalls) icon('shop', st.x, st.y, false); icon('guard', gm.dz.x, gm.dz.y, true, gm.dz.hp / Math.max(1, gm.dz.mhp)); } }
+      if (gm) { for (const st of gm.stalls) icon('shop', st.x, st.y, false); icon('guard', gm.dz.x, gm.dz.y, true, gm.dz.hp / Math.max(1, gm.dz.mhp));
+                for (const e of gm.strays || []) if (!e.dead) icon('elite', e.x, e.y, true, blink); } }
     for (const e of G.EnemyMgr.all()) if (e.boss && !e.dead) icon('boss', e.x, e.y, true);
     for (const e of G.EnemyMgr.all()) if (e.elite && !e.boss && !e.dead) icon('elite', e.x, e.y, false, blink);
     if (G.Coop.active) for (const o of G.Coop.players()) if (o !== pl && !G.PvPX.hidden(o)) icon('mate', o.x, o.y, true, o.dead);   // (PK: el invisible no sale)

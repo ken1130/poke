@@ -56,7 +56,8 @@ G.I18n.add({
   '¡{x} protegerá a Dazhuang!': '{x}會保護大壯！',
   'Faltan monedas: cuesta {x}': '金幣不夠：需要 {x}',
   'El artefacto de este turno ya se ha vendido. Vuelve cuando cambie.': '這一輪的神器已經賣掉了，等它更換再來。',
-  'No queda nada en este puesto. Se repone al acabar la oleada.': '這個攤位賣完了，這一波結束後會補貨。'
+  'No queda nada en este puesto. Se repone al acabar la oleada.': '這個攤位賣完了，這一波結束後會補貨。',
+  'Último enemigo': '剩下的敵人',
 }, 'zh');
 G.I18n.add({
   'Proteger a Dazhuang': 'Guard Dazhuang',
@@ -115,5 +116,6 @@ G.I18n.add({
   '¡{x} protegerá a Dazhuang!': '{x} will protect Dazhuang!',
   'Faltan monedas: cuesta {x}': 'Not enough coins: costs {x}',
   'El artefacto de este turno ya se ha vendido. Vuelve cuando cambie.': 'This round’s artifact is sold. Come back when it changes.',
-  'No queda nada en este puesto. Se repone al acabar la oleada.': 'This stall is sold out. It restocks when the wave ends.'
+  'No queda nada en este puesto. Se repone al acabar la oleada.': 'This stall is sold out. It restocks when the wave ends.',
+  'Último enemigo': 'Last enemy',
 });
