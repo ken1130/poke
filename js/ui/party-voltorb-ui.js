@@ -38,7 +38,7 @@
   const DESC = {
     bomb: 'Voltorb: si lo robas sin goma aislante, explotas y quedas fuera.',
     defuse: 'Goma aislante: al robar un Voltorb lo desactivas y lo vuelves a meter en el mazo donde quieras.',
-    attack: 'Berrinche: acabas tu turno sin robar y el siguiente juega 2 turnos.',
+    attack: 'Berrinche: acabas tu turno sin robar y el siguiente juega 2 turnos (en 2 contra 2, el siguiente rival).',
     skip: 'Siesta: acabas un turno sin robar.',
     shuffle: 'Teletransporte: baraja el mazo.',
     future: 'Premonición: mira en secreto las 3 cartas de arriba del mazo.',

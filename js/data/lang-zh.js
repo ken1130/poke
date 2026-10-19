@@ -2502,7 +2502,7 @@ G.I18n.add({
   'Carta de pareja Magikarp': '鯉魚王',
   'Voltorb: si lo robas sin goma aislante, explotas y quedas fuera.': '雷電球：抽到時沒有絕緣橡膠，就會爆炸出局。',
   'Goma aislante: al robar un Voltorb lo desactivas y lo vuelves a meter en el mazo donde quieras.': '絕緣橡膠：抽到雷電球時拆除它，再把它放回牌堆任何位置。',
-  'Berrinche: acabas tu turno sin robar y el siguiente juega 2 turnos.': '大鬧一番：不用抽牌就結束回合，下一位要連續玩 2 回合。',
+  'Berrinche: acabas tu turno sin robar y el siguiente juega 2 turnos (en 2 contra 2, el siguiente rival).': '大鬧一番：不用抽牌就結束回合，下一位要連續玩 2 回合（2 對 2 時是下一位對手，不會打到隊友）。',
   'Siesta: acabas un turno sin robar.': '呼呼大睡：不用抽牌就結束一個回合。',
   'Teletransporte: baraja el mazo.': '瞬間移動：洗亂牌堆。',
   'Premonición: mira en secreto las 3 cartas de arriba del mazo.': '預知未來：偷看牌堆最上面 3 張（只有你看得到）。',

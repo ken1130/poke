@@ -492,12 +492,13 @@
 .lp-tbl .t0 { color: #9fc0ff; } .lp-tbl .t1 { color: #ffab9f; }
 @media (max-height: 520px) { .lp-seats { gap: 4px; } .lp-seat { min-height: 40px; padding: 2px 4px; } .lp-seat b { font-size: 12px; } .lp-tbl { min-height: 40px; } }
 /* 2 contra 2 (2026-10-19): la mano del compañero, de cara y en pequeño, en su asiento. */
-.pt-mh { display: flex; flex-direction: column; align-items: center; gap: 1px; max-width: 46vw; }
-.pt-mh small { font-size: 11px; color: #9fe0b0; text-shadow: 1px 1px 0 #000; white-space: nowrap; }
+/* (2026-10-19, el dueño: «la mano del compañero, más grande, no se ve»: ×0,5 → ×0,8; móvil ×0,34 → ×0,8) */
+.pt-mh { display: flex; flex-direction: column; align-items: center; gap: 2px; max-width: 60vw; }
+.pt-mh small { font-size: 13px; font-weight: 700; color: #9fe0b0; text-shadow: 1px 1px 0 #000; white-space: nowrap; }
 .pt-mhc { display: flex; flex-wrap: nowrap; justify-content: center; max-width: 100%; overflow: hidden; padding: 2px 4px; }
-.pt-mhc .pt-mini { zoom: .5; flex: none; pointer-events: none; }
-.pt-mhc .pt-mini + .pt-mini { margin-left: -38px; }
-@media (max-height: 520px) { .pt-mhc .pt-mini { zoom: .34; } .pt-mh small { font-size: 10px; } }
+.pt-mhc .pt-mini { zoom: .8; flex: none; pointer-events: none; }
+.pt-mhc .pt-mini + .pt-mini { margin-left: -40px; }
+@media (max-height: 520px) { .pt-mh { max-width: 52vw; } .pt-mhc .pt-mini { zoom: .8; } .pt-mhc .pt-mini + .pt-mini { margin-left: -32px; } .pt-mh small { font-size: 11px; } }
 /* (2026-10-19) Mano del Big Two: si no cabe, barra horizontal; las que no se pueden echar no se eligen. */
 .b2-handwrap.scroll { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
 .b2-handwrap.scroll .b2-hand { justify-content: flex-start; width: max-content; padding: 0 6px; }

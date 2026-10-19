@@ -1502,7 +1502,7 @@ G.I18n.add({
   'Carta de pareja Magikarp': 'Magikarp',
   'Voltorb: si lo robas sin goma aislante, explotas y quedas fuera.': 'Voltorb: draw it without Insulating Rubber and you blow up and are out.',
   'Goma aislante: al robar un Voltorb lo desactivas y lo vuelves a meter en el mazo donde quieras.': 'Insulating Rubber: when you draw a Voltorb, defuse it and put it back anywhere in the deck.',
-  'Berrinche: acabas tu turno sin robar y el siguiente juega 2 turnos.': 'Thrash: end your turn without drawing; the next player takes 2 turns.',
+  'Berrinche: acabas tu turno sin robar y el siguiente juega 2 turnos (en 2 contra 2, el siguiente rival).': 'Thrash: end your turn without drawing; the next player takes 2 turns (in 2 vs 2, the next opponent).',
   'Siesta: acabas un turno sin robar.': 'Snorlax Nap: end one turn without drawing.',
   'Teletransporte: baraja el mazo.': 'Teleport: shuffle the deck.',
   'Premonición: mira en secreto las 3 cartas de arriba del mazo.': 'Future Sight: secretly look at the top 3 cards of the deck.',

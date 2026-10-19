@@ -103,6 +103,15 @@
     for (let k = 1; k <= st.n; k++) { const j = (from + k) % st.n; if (st.alive[j]) return j; }
     return from;
   }
+  /**
+   * A quién le toca el Berrinche (2 turnos): el siguiente vivo; en 2 contra 2, el siguiente RIVAL vivo
+   * (2026-10-19, el dueño: «el Berrinche de mi compañero no debería caerme a mí»: con un rival
+   * fuera, el siguiente era tu compañero y además se acumulaba).
+   */
+  function attackTo(st, from) {
+    if (st.teams) for (let k = 1; k <= st.n; k++) { const j = (from + k) % st.n; if (st.alive[j] && st.teams[j] !== st.teams[from]) return j; }
+    return nextAlive(st, from);
+  }
   const aliveCount = st => st.alive.filter(Boolean).length;
   const bombsIn = st => st.deck.filter(isBomb).length;
 
@@ -303,7 +312,7 @@
     st.ev = [];
     for (const id of cards) { hand.splice(hand.indexOf(id), 1); st.discard.push(id); }
     const k = chk.kind;
-    st.pend = { seq: ++st.seq, seat, kind: k, cards, target: TARGETED.includes(k) ? a.target : (k === 'attack' ? nextAlive(st, seat) : -1), nopes: 0, last: seat, until: now + WIN };
+    st.pend = { seq: ++st.seq, seat, kind: k, cards, target: TARGETED.includes(k) ? a.target : (k === 'attack' ? attackTo(st, seat) : -1), nopes: 0, last: seat, until: now + WIN };
     st.tacts++;
     logEv(st, { k: 'play', seat, kind: k, cards, target: st.pend.target });
     st.moves++;
@@ -315,7 +324,7 @@
     const rng = rngOf(st), seat = p.seat;
     switch (p.kind) {
       case 'attack': {
-        const to = nextAlive(st, seat);
+        const to = attackTo(st, seat);
         const turns = (st.attacked ? st.left : 0) + 2;
         logEv(st, { k: 'attack', seat, to, turns });
         st.turn = to; st.left = turns; st.attacked = true; st.tacts = 0; st.tseq++;
@@ -468,7 +477,16 @@
 
   /** Dónde mete la CPU el Voltorb: arriba si el siguiente lo va a robar; abajo si le toca a ella otra vez.
    *  2 contra 2: donde lo robe el primer rival (nunca arriba si el siguiente es su compañero). */
+  /** Dónde mete la CPU (o el tiempo, en 2 contra 2) el Voltorb; en equipos, nunca donde lo robe el compañero. */
   function cpuInsert(st, seat) {
+    const pos = cpuInsertRaw(st, seat);
+    if (!st.teams) return pos;
+    const len = st.deck.length, ord = drawOrder(st, seat, Math.min(len + 1, 4));
+    if (pos >= ord.length || !mates(st, seat, ord[pos])) return pos;
+    const k = ord.findIndex(j => j !== seat && !mates(st, seat, j));
+    return k < 0 ? len : Math.min(len, k);
+  }
+  function cpuInsertRaw(st, seat) {
     const rng = rngOf(st), len = st.deck.length;
     if (st.left > 1) return len - Math.floor(rng() * Math.min(3, len + 1));   // aún te quedan turnos: lejos
     if (st.teams) {
@@ -535,7 +553,8 @@
     if (st.phase === 'favor') return { type: 'give', random: true };
     if (st.pend) return { type: 'resolve' };
     if (st.phase === 'bomb') return has(st.hands[seat], 'defuse') ? { type: 'defuse' } : { type: 'explode' };
-    if (st.phase === 'insert') return { type: 'insert', pos: -1 };
+    // 2 contra 2: nada de azar (podía caerle a tu compañero): donde lo pondría la CPU (2026-10-19).
+    if (st.phase === 'insert') return { type: 'insert', pos: st.teams ? cpuInsert(st, seat) : -1 };
     return { type: 'draw' };
   }
 
@@ -560,7 +579,7 @@
 
   const VB = { KINDS, CARDS, N, PAIRS, BOMBS, DEFUSES, ACTION_IDS, actionsFor, COUNTS, WIN, FAVOR_MS, BOMB_MS, BOOM_MS, INSERT_MS, PTS, PLAYABLE, TARGETED,
                card, kind, isBomb, sortHand, deckFor, extraDefuses, newRound, act, checkPlay, turnOf, results, nextAlive, targets, pairOf,
-               cpuMove, cpuInsert, cpuNopeChance, worstCard, timeoutMove, priv, pub, bombsIn, mates, drawOrder, TEAM_PTS };
+               cpuMove, cpuInsert, cpuNopeChance, worstCard, timeoutMove, priv, pub, bombsIn, mates, drawOrder, attackTo, TEAM_PTS };
   if (typeof module !== 'undefined' && module.exports) module.exports = VB;
   if (root && root.G) root.G.Voltorb = VB;
 })(typeof window !== 'undefined' ? window : globalThis);

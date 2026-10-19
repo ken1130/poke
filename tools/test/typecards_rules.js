@@ -356,7 +356,8 @@ const TEAMS = [0, 1, 0, 1];
   }
   ok(done === 360, '2v2: las 360 partidas de CPU terminan (' + done + ')');
   ok(bad === 0, '2v2: sin jugadas rechazadas, cartas perdidas, pillar al compañero ni puntos mal (' + bad + ')');
-  ok(pens > 20 && wins[0] > 60 && wins[1] > 60, '2v2: hay pilladas y ganan los dos equipos (' + pens + ', ' + wins.join('/') + ')');
+  // (2026-10-19: antes «> 20»; salen ~20-30 por azar y a veces justo 20: falso fallo. Sólo se mira que las haya.)
+  ok(pens > 8 && wins[0] > 60 && wins[1] > 60, '2v2: hay pilladas y ganan los dos equipos (' + pens + ', ' + wins.join('/') + ')');
   console.log('2v2 partidas CPU:', done, '· gana azul/rojo', wins.join('/'), '· pilladas', pens);
 }
 {

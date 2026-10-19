@@ -34,6 +34,8 @@ G.MODNEWS = [
       { zh: '燃燒中的敵人會紅色閃爍，頭上也會顯示燃燒／中毒／流血圖示', en: 'Burning enemies flash red and show burn/poison/bleed icons' }
     ],
     fix: [
+      { zh: '頑皮雷彈 2 對 2：大鬧一番不會再打到自己隊友（中間的對手出局時，以前會變成隊友要連玩 2 回合，還會疊加），改成打下一位對手；沒在時間內選位置放回電球時，也不會剛好放在隊友要抽的位置', en: 'Naughty Voltorb 2 vs 2: Thrash no longer hits your own teammate (with an opponent out it used to fall on your teammate and stack); it goes to the next opponent. A Voltorb put back on timeout no longer lands where your teammate draws' },
+      { zh: '屬性牌、頑皮雷彈 2 對 2：隊友的手牌放大（電腦 0.5 倍→0.8 倍，手機 0.34 倍→0.8 倍），看得清楚', en: 'Type Cards and Naughty Voltorb 2 vs 2: your teammate\'s hand is bigger (desktop ×0.5 → ×0.8, phone ×0.34 → ×0.8) and easy to read' },
       { zh: '修正夥伴選了圖鑑「其他」分頁的原創角色（熊貓、地瓜球、迪迪、湯姆貓…）後，重新整理或雲端同步時會跳回之前的寶可夢；現在會留著', en: 'Fixed: after picking an original character from the Pokédex\'s "Others" tab (Panda, Chick, Didi, Tom...) as your partner, a page reload or cloud sync switched it back to your previous Pokémon; it now stays' },
       { zh: '修正投射物招式（火花、水槍、電擊、污泥攻擊…）吃不到超級特性與起始招式覺醒', en: 'Fixed projectile moves (Ember, Water Gun, Thunder Shock, Sludge...) not getting Mega abilities or the awakened starting move' },
       { zh: '練功房：極致馭風術以前對木樁完全沒傷害（木樁抓不走），現在風牆裡的木樁每次施放會被丟過來的敵人砸中，量得到真正的傷害', en: 'Training room: Wind Domain did no damage to dummies (they cannot be grabbed); dummies inside the wall are now hit by a thrown enemy on every cast, so its real damage shows' },
