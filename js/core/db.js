@@ -200,7 +200,11 @@ G.DB = (() => {
     if (G.Stages) G.Stages.merge(r, older);
     if (r.starter == null) r.starter = older.starter;
     if (r.personality == null) r.personality = older.personality;
-    if (r.partner == null || !r.owned[r.partner]) { r.partner = older.partner; r.partnerShiny = older.partnerShiny; }
+    // Compañero: el de la versión más reciente si lo tiene. Los personajes originales (custom.js)
+    // no están en `owned`, así que cuentan aparte: si no, cada sincronización lo cambiaba por el
+    // compañero antiguo de la otra copia (2026-10-19).
+    const hasMon = d => d != null && !!(r.owned[d] || (G.CUSTOM_BY && G.CUSTOM_BY[d]));
+    if (!hasMon(r.partner)) { r.partner = older.partner; r.partnerShiny = older.partnerShiny; }
     r.created = Math.min(a.created || Date.now(), b.created || Date.now());
     r.updated = Math.max(a.updated || 0, b.updated || 0);
     return r;
