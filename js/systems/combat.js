@@ -640,7 +640,7 @@ G.Combat = (() => {
       if (e.dead || !alive(e) || !L.owner) { if (!isFoe(e)) e.jumpLift = 0; lifts.delete(e); continue; }
       const k = G.U.clamp(L.t / L.dur, 0, 1);
       // Sube rápido, flota girando y cae de golpe (los jefes no se levantan: sólo el remolino).
-      if (!L.boss && !e.jump) e.jumpLift = L.row.hops ? Math.abs(Math.sin(k * L.row.hops * Math.PI)) * 40      // Puño de Piedra: botes
+      if (!L.boss && !e.jump) e.jumpLift = L.row.hops ? Math.abs(Math.sin(k * L.row.hops * Math.PI)) * 54      // Puño de Piedra: botes (más alto que el puño)
                                           : (k < 0.2 ? Math.sin(k / 0.2 * Math.PI / 2) : k > 0.85 ? Math.cos((k - 0.85) / 0.15 * Math.PI / 2) : 1) * 46
                                             + Math.sin(L.t * 9) * 2;
       if (L.row.dot) {
@@ -1580,10 +1580,10 @@ G.Combat = (() => {
    */
   function rockFists(pl, m) {
     const row = G.Moves.stat(m), R = row.r * TILE;
-    for (const e of nearestN(pl, R, row.n)) fields.push({ kind: 'pillar', owner: pl, ghost, m, row, x: e.x, y: e.y + 2, t: 0, life: 0.75, struck: false });
+    for (const e of nearestN(pl, R, row.n)) fields.push({ kind: 'pillar', owner: pl, ghost, m, row, x: e.x, y: e.y + 2, t: 0, life: 0.55, struck: false });
   }
   function pillarStep(f) {
-    if (f.struck || f.t < 0.1) return true;
+    if (f.struck || f.t < 0.08) return true;
     f.struck = true;
     if (G.Camera.sees(f.x, f.y, 60)) {
       G.FX.burst(f.x, f.y - 4, '#aa7c3c', 12, 160);
@@ -1661,10 +1661,13 @@ G.Combat = (() => {
     }
     if (!row.grab) return true;
     f.held = f.held.filter(e => !e.dead && e.grab && e.grab.f === f);
-    for (const e of enemiesIn(pl.x, pl.y, R + 30)) {
-      if (e.dead || e.boss || e.dummy || isFoe(e) || e.grab) continue;
+    // Atrapa a todo el que esté dentro del muro (antes sólo en una franja fina del borde: los rápidos,
+    // los que saltan o los que aparecían dentro la cruzaban sin quedar atrapados), los más cercanos antes.
+    const near = enemiesIn(pl.x, pl.y, R + 30).sort(byDist(pl));
+    for (const e of near) {
+      if (e.dead || e.boss || e.dummy || isFoe(e) || e.grab || e.windFree > f.t) continue;
       const d = Math.hypot(e.x - pl.x, e.y - pl.y);
-      if (d < R - 26 || d > R + e.r) continue;
+      if (d > R + e.r) continue;
       if (e.remote) {
         // Invitado: los monstruos los mueve el anfitrión; el borde golpea y frena (una vez por segundo).
         const last = f.hitT.get(e.id);
@@ -1687,7 +1690,9 @@ G.Combat = (() => {
       e.x = G.U.damp(e.x, pl.x + Math.cos(e.grab.a) * rr, 10, dt);
       e.y = G.U.damp(e.y, pl.y + Math.sin(e.grab.a) * rr * 0.8, 10, dt);
       e.kx = 0; e.ky = 0; e.rootT = Math.max(e.rootT, 0.2);
-      e.jumpLift = 10 + Math.sin(e.grab.t * 6) * 4;
+      // Sube poco a poco (sin saltar de golpe a 10 px) y mira hacia donde gira.
+      e.jumpLift = Math.min(1, e.grab.t * 4) * (10 + Math.sin(e.grab.t * 6) * 4);
+      e.anim.dir = G.Sprites.dirFromAngle(e.grab.a + Math.PI / 2);
     }
     return true;
   }
@@ -1700,6 +1705,8 @@ G.Combat = (() => {
     }
     if (k < 1) return true;
     e.jumpLift = 0; e.grab = null;
+    const w = fields.find(o => o.kind === 'wind' && o.owner === f.owner);
+    if (w) e.windFree = w.t + 0.6;                  // recién lanzado: un momento antes de poder atraparlo otra vez
     G.FX.burst(f.tx, f.ty - 8, '#d2e2ff', 14, 170);
     G.FX.ring(f.tx, f.ty, 6, 1.2 * TILE, '#93b2ff', 0.3, 3);
     if (G.Camera.sees(f.tx, f.ty, 60)) { G.Audio.sfx('break'); G.Camera.kick(0.1); }
@@ -2103,8 +2110,9 @@ G.Combat = (() => {
         continue;
       }
       if (f.kind === 'pillar') {
-        // Puño de roca que sale del suelo (0,1 s), se queda y se hunde.
-        const k = f.t < 0.1 ? f.t / 0.1 : f.t > 0.55 ? Math.max(0, 1 - (f.t - 0.55) / 0.2) : 1;
+        // Puño de roca que sale del suelo (0,1 s), pega y se hunde enseguida (si se quedaba arriba
+        // tapaba al que salía volando y parecía que el puño pegaba y el Pokémon no se movía).
+        const k = f.t < 0.1 ? f.t / 0.1 : f.t > 0.3 ? Math.max(0, 1 - (f.t - 0.3) / 0.2) : 1;
         const H = 16 * G.Sprites.PX * 1.5;
         ctx.save();
         ctx.beginPath(); ctx.rect(f.x - 60, f.y - H - 10, 120, H + 12); ctx.clip();

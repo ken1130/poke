@@ -88,7 +88,7 @@ G.Training = (() => {
       }
       // Quieto en su sitio (empujones, atracciones y separación no lo mueven).
       this.x = this.hx; this.y = this.hy; this.kx = this.ky = 0;
-      this.jump = null; this.jumpLift = 0;
+      this.jump = null;            // (jumpLift no: el Puño de Piedra y el tornado sí lo levantan, en su sitio)
       if (pl) this.anim.dir = G.Sprites.dirFromAngle(Math.atan2(pl.y - this.y, pl.x - this.x));
       this.anim.loop('Idle', 1);
     }

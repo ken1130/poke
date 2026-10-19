@@ -31,10 +31,10 @@
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifyPS-400.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="preload" href="assets/fonts/PixelifyPS-700.ttf" as="font" type="font/ttf" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=20261019v31ui">
+<link rel="stylesheet" href="css/style.css?v=20261019mega">
 <link rel="stylesheet" href="css/rwd-menus.css?v=20261017">
 <link rel="stylesheet" href="css/rwd-panels.css?v=20261019v31ui">
-<link rel="stylesheet" href="css/rwd-run.css?v=20261019v31ui">
+<link rel="stylesheet" href="css/rwd-run.css?v=20261019mega">
 <link rel="stylesheet" href="css/party.css?v=20261019p">
 <link rel="stylesheet" href="css/party-typecards.css?v=20261019p">
 <link rel="stylesheet" href="css/party-voltorb.css?v=20261019p">
@@ -589,6 +589,16 @@
   </div>
 </section>
 
+<!-- Evolución: los caminos de ahora (evoluciones y Mega), evo.js -->
+<section id="scr-evo" class="scr dim hidden">
+  <div class="box center">
+    <h2 class="gold">¡Evolución!</h2>
+    <p id="evo-sub" class="sub"></p>
+    <div id="evo-cards" class="cards"></div>
+    <p id="evo-auto" class="note hidden"></p>
+  </div>
+</section>
+
 <section id="scr-rest" class="scr dim hidden">
   <div class="box center">
     <h2 class="gold">Zona de descanso</h2>
@@ -644,6 +654,7 @@
       <button id="btn-pause-settings" class="btn">Ajustes</button>
       <button id="btn-pause-cheat" class="btn">Trucos</button>
       <button id="pause-auto" class="btn lvl-auto" data-sfx="none">Elegir solo: no</button>
+      <button id="pause-mega" class="btn gold hidden" data-sfx="none">Megaevolucionar <kbd>M</kbd></button>
       <button id="btn-quit" class="btn">Abandonar run</button>
     </div>
   </div>
@@ -658,6 +669,6 @@
 </section>
 
 <!-- datos generados -->
-<script defer src="js/app.min.js?v=9bcdc5a3dd"></script>
+<script defer src="js/app.min.js?v=6537b6b9c1"></script>
 </body>
 </html>

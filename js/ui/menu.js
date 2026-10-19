@@ -176,7 +176,7 @@ G.MenuUI = (() => {
       const b = document.createElement('button');
       b.className = 'gen-tab' + (g === dexGen ? ' on' : '');
       b.innerHTML = `<b>${name}</b><small>${have}/${total}</small>`;
-      b.onclick = () => { dexGen = g; openDex(); };
+      b.onclick = () => { pickRegion(g); };
       tabs.appendChild(b);
     });
     // «Otros» (2026-10-16): personajes originales (data/custom.js). No cuentan para el total.
@@ -184,7 +184,7 @@ G.MenuUI = (() => {
       const b = document.createElement('button');
       b.className = 'gen-tab gen-other' + (dexGen === OTHER ? ' on' : '');
       b.innerHTML = `<b>${G.T('Otros')}</b><small>${(G.CUSTOM || []).length}</small>`;
-      b.onclick = () => { dexGen = OTHER; openDex(); };
+      b.onclick = () => { pickRegion(OTHER); };
       tabs.appendChild(b);
     }
 
@@ -238,6 +238,14 @@ G.MenuUI = (() => {
       if (G.CUSTOM_BY[dexSel]) dexSel = (G.DEX.find(p => p.gen === dexGen) || G.DEX[0]).dex;
       showDetail(dexSel);
     }
+  }
+
+  /** Pestaña de región: con un tipo, una búsqueda o «Mi equipo» la lista era de todas las regiones
+   *  y la pestaña no hacía nada (2026-10-19, «pulso otra región y no cambia»): se quitan y se ve la región. */
+  function pickRegion(g) {
+    dexGen = g; dexType = null; dexQuery = '';
+    if (dexFilter === 'team') dexFilter = 'all';
+    openDex();
   }
 
   /** ¿Coincide el Pokémon con lo buscado? Nombre (como se ve o el original) o número. */

@@ -6,6 +6,16 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-19', title: ['Formas regionales, Megaevolución y Gigantamax', 'Regional forms, Mega Evolution and Gigantamax'], new: [
+    ['56 formas regionales (Alola, Galar, Hisui y Paldea, junto a su especie en la Pokédex) y 5 Pokémon nuevos (Jellicent, Sirfetch\'d, Copperajah, Toedscool y Pecharunt), también en el gacha. El logro de todos los Pokémon sigue contando los 966 de antes.', '56 regional forms (Alola, Galar, Hisui and Paldea, next to their species in the Pokédex) and 5 new Pokémon (Jellicent, Sirfetch\'d, Copperajah, Toedscool and Pecharunt), also in the gacha. The every-Pokémon achievement still counts the original 966.'],
+    ['Las evoluciones con varias ramas abren una ventana para elegir (formas regionales incluidas), con los tipos y los cambios de PS, ataque y velocidad.', 'Branching evolutions open a window to choose (regional forms included), showing types and HP, attack and speed changes.'],
+    ['Megaevolución en partida: 39 megas con animación completa desde el Nv. 35 (se puede dejar para luego con M, el botón arcoíris o la pausa); PS y ataque ×1,3 y velocidad ×1,1 hasta el final de la partida.', 'In-run Mega Evolution: 39 fully animated Megas from Lv. 35 (you can leave it for later with M, the rainbow button or the pause menu); HP and attack ×1.3 and speed ×1.1 for the rest of the run.'],
+    ['Gigantamax: cualquier Pokémon carga la barra con 150 derrotas; pulsa G o el botón y durante 18 s crece y tiene ataque y PS ×1,5. Dos veces por partida (no en PvP, la zona de fiesta ni la sala de entrenamiento).', 'Gigantamax: any Pokémon charges the gauge with 150 knockouts; press G or the button to grow for 18 s with attack and HP ×1.5. Twice per run (not in PvP, the party plaza or the training room).'],
+  ], fix: [
+    ['Pokédex: con un tipo elegido o una búsqueda, pulsar otra región no hacía nada; ahora quita el tipo y la búsqueda y enseña esa región.', 'Pokédex: with a type picked or a search, tapping another region did nothing; it now clears the type and search and shows that region.'],
+    ['Dominio del Viento atrapa a todos los que están dentro del muro (antes sólo en el borde, y los rápidos lo cruzaban) y los atrapados ya no tiemblan.', 'Wind Domain grabs everyone inside the wall (before only at the edge, so fast enemies slipped through) and grabbed enemies no longer jitter.'],
+    ['Puño de Piedra: el puño se hunde nada más pegar y el Pokémon sube más alto, así se ve cómo sale volando.', 'Rock Fist: the fist sinks right after hitting and the Pokémon flies higher, so you can see it launch.'],
+  ] },
   { d: '2026-10-19', title: ['Sala de entrenamiento y Puño de Piedra', 'Training room and Rock Fist'], chg: [
     ['El Puño de Piedra ahora es un puño cerrado (cuatro nudillos y el pulgar) que sale de un montón de piedras, en vez de una columna alta y fina.', 'Rock Fist now looks like a clenched fist (four knuckles and a thumb) rising from a pile of rubble instead of a tall thin pillar.'],
   ], fix: [

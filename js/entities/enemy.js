@@ -443,6 +443,8 @@
         if (this.poisonT <= 0) this.poison = 0;
       }
       if (this.dead) return;
+      // Atrapado por Dominio del Viento (combat.js windStep): lo lleva el viento; sin IA, paredes ni ataques.
+      if (this.grab) { this.jump = null; this.kx = this.ky = 0; this.anim.loop('Walk', 2.2); return; }
       this.eliteTick(dt, pl);
 
       // --- terreno ---
@@ -1343,7 +1345,7 @@
 
     function separate(dt) {
       for (const e of list) {
-        if (e.dead) continue;
+        if (e.dead || e.grab) continue;          // (a los que lleva el viento no los empuja nadie)
         const cx = Math.floor(e.x / CELL), cy = Math.floor(e.y / CELL);
         let px = 0, py = 0, n = 0;
         for (let j = -1; j <= 1; j++) {
