@@ -27,6 +27,7 @@ G.MODNEWS = [
       { zh: '燃燒中的敵人會紅色閃爍，頭上也會顯示燃燒／中毒／流血圖示', en: 'Burning enemies flash red and show burn/poison/bleed icons' }
     ],
     fix: [
+      { zh: '修正夥伴選了圖鑑「其他」分頁的原創角色（熊貓、地瓜球、迪迪、湯姆貓…）後，重新整理或雲端同步時會跳回之前的寶可夢；現在會留著', en: 'Fixed: after picking an original character from the Pokédex\'s "Others" tab (Panda, Chick, Didi, Tom...) as your partner, a page reload or cloud sync switched it back to your previous Pokémon; it now stays' },
       { zh: '組隊時隊友也看得到你的極巨招式（火海、閃電、落石、地震等特效），地上的火海／草地／酸池也看得到（傷害只算一次）', en: 'In co-op your teammates now see your Max Moves too (flames, lightning, falling rocks, quakes...), including the ground zones (damage is only counted once)' },
       { zh: '修正投射物招式（火花、水槍、電擊、污泥攻擊…）吃不到超級特性、起始招式覺醒與極巨招式；敵人被一擊打倒時也會放出極巨招式', en: 'Fixed projectile moves (Ember, Water Gun, Thunder Shock, Sludge...) not getting Mega abilities, the awakened starting move or Max Moves; Max Moves now also fire when the hit knocks the enemy out' },
       { zh: '練功房：極致馭風術以前對木樁完全沒傷害（木樁抓不走），現在風牆裡的木樁每次施放會被丟過來的敵人砸中，量得到真正的傷害', en: 'Training room: Wind Domain did no damage to dummies (they cannot be grabbed); dummies inside the wall are now hit by a thrown enemy on every cast, so its real damage shows' },
