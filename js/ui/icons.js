@@ -214,6 +214,27 @@ G.Icons = (() => {
       '..................', '..................', '..................', '..................', '.......kkkkkk.....', '......klggggfk....',
       '.....klgyyggfkkkkk', '.....kggyggggmmmmk', '.....kgyyygffkkkkk', '..kkkkkkkkkkkkkk..', '.klllgggggggggffk.', 'kggggggggggggggffk',
       'kkkkkkkkkkkkkkkkkk', 'kdmdmdmdmdmdmdmdmk', 'kmdmdmdmdmdmdmdmdk', '.kddddddddddddddk.', '..kkkkkkkkkkkkkk..', '..................'] },
+    // ---------- 2026-10-17: artefactos de la tabla V3.1 ----------
+    iceghost: { pal: { w: '#e6f8ff', b: '#9fdcf5', d: '#2f5f8a', i: '#62d2ea', c: '#ffffff' }, rows: [
+      '.c................', 'cic.....kkkkk.....', '.c....kkwwwwwkk...', '.....kwwwwwwwwbk..', '....kwwwwwwwwwbbk.', '....kwwkkwwkkwwbk.',
+      '....kwwkdwwkdwwbk.', '....kwwwwwwwwwwbk.', '....kwwwwkkkwwwbk.', '....kwwwwwwwwwbbk.', '....kbwwwwwwwwbbk.', '....kbbwwwwwwbbbk.',
+      '....kbbbbbbbbbbbk.', '....kbkbbkkbbkbbk.', '....kk.kk..kk.kk..', '.............c....', '............cic...', '.............c....'] },
+    cleaver: { pal: { s: '#e6eef8', m: '#a9b6c9', d: '#66758c', b: '#8a5a2b', n: '#5a3a1a', r: '#e0303a', q: '#8a0f18' }, rows: [
+      '..................', '..kkkkkkkkkkk.....', '.ksssssssssssk....', '.ksmmmmmmmmmdk....', '.ksmmmmmmmkmdk....', '.ksmmmmmmmmmdk....',
+      '.ksmmmmmmmmmdk....', '.ksmmmmmmmmmdkkkk.', '.ksmmmmmmmmmdbbbbk', '.kddddddddddkbnnbk', '..kkkkkkkkkkkbbbbk', '..kr.......kkkkkk.',
+      '..krk.............', '.krrrk............', '.kqrrk............', '..kkk.............', '..................', '..................'] },
+    socks: { pal: { g: '#b8d860', h: '#7a9a30', y: '#f0e090', p: '#a043d0', q: '#d995f2', s: '#c8d4e6' }, rows: [
+      '..s...s...........', '...s...s..........', '..s...s...........', '....kkkkkkk.......', '....kyyyyyk.......', '....kgggggk.......',
+      '....kghghgk..kk...', '....kgggggk.kqpk..', '....kgggggk.kppk..', '....kgggggk..kk...', '....kgggggkkk.....', '....kgggggggkk....',
+      '....kggggggggk....', '....khgggggggk..kk', '.....khhhhhhhk.kqk', '......kkkkkkkk..kk', '..................', '..................'] },
+    fishrod: { pal: { b: '#8a5a2b', n: '#c08a4a', l: '#e6eef8', f: '#4fb4ff', g: '#2a6fb0', w: '#ffffff', r: '#ff5f6d' }, rows: [
+      '................kk', '...............knk', '..............knbk', '.............knbk.', '............knbkl.', '...........knbk.l.',
+      '..........knbk..l.', '.........knbk...l.', '........knbk....l.', '.......knbk.....l.', '......kkbk......l.', '.....krkk.....kkkk',
+      '.....kkk....kfwfgk', '...........kffffgk', '............kgggk.', '.............kkk..', '..................', '..................'] },
+    goat: { pal: { y: '#ffd23f', o: '#c08a10', w: '#fff3b0', h: '#e8e0d0', d: '#a89880', r: '#ff5f6d', b: '#4fb4ff' }, rows: [
+      '..................', '.kk............kk.', 'khhk..........khhk', 'khdk..........kdhk', '.khdk........kdhk.', '..khdk.k..k.kdhk..',
+      '...kkk.kwk.kkkk...', '..kwkykyyykykwk...', '..kyykyyyyykyyk...', '..kyyyyryyyyyyok..', '..kyyybyyyryyyok..', '..kyyyyyyyyyyyok..',
+      '..kooooooooooook..', '..kyyyyyyyyyyyok..', '..kkkkkkkkkkkkkk..', '..................', '..................', '..................'] },
     lock: { pal: { y: '#ffd23f', o: '#c08a10', g: '#9aa6b5', w: '#fff3b0' }, rows: [
       '....kkkk....', '...kggggk...', '..kgk..kgk..', '..kgk..kgk..', '.kkkkkkkkkk.', '.kwyyyyyyok.',
       '.kyyykkyyok.', '.kyyykkyyok.', '.kyyyykyyok.', '.kyyyyyyyok.', '.kkkkkkkkkk.', '............'] },

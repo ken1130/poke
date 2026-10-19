@@ -100,7 +100,7 @@ G.Player = class Player {
       * (this.pkSpdT > 0 ? 1.4 : 1) * (this.pebbleT > 0 ? 0.65 : 1);     // PK (pvp-extra.js): tesoro de velocidad / piedrita de un fantasma
     const w = G.Weather.speedFor(this.mon.types);
     // Pies de Mercurio (artefacto): el agua no te frena, seas del tipo que seas.
-    const slow = this.inLiquid && !this.hasItem('quicksilver') ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
+    const slow = this.inLiquid && !this.hasItem('quicksilver') && !this.hasItem('iceghost') ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;   // (y el Fantasma de Hielo)
     return s * slow * w;
   }
   /** Multiplicador de recarga de verdad: cdMul y la Varita de Saúco (artefacto, se queda quieto). */
@@ -109,7 +109,7 @@ G.Player = class Player {
   // + Paz Mental y Velo Sagrado evolucionado (apoyo)
   // (主人 2026-10-16：減傷上限 80% → 90%)
   get reduction() { return Math.max(0, Math.min(0.9, this.dmgReduce + (this.bulkRed || 0) + (this.potionRed || 0) + this.buffs.def.n * this.buffs.def.amount + (this.calmN || 0) * (this.calmAmt || 0) + (this.supRed || 0))); }
-  get regen() { return this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount; }
+  get regen() { return (this.regenFlat + this.buffs.regen.n * this.buffs.regen.amount) * (this.hasItem('goat') ? G.Items.ART.goat.heal : 1); }   // (Corona de Cabra: ×2)
 
   // ---------------- movimientos ----------------
   addMove(id) {
@@ -357,7 +357,7 @@ G.Player = class Player {
   }
 
   heal(amount) {
-    amount *= G.Modes.healMul();
+    amount *= G.Modes.healMul() * (this.hasItem('goat') ? G.Items.ART.goat.heal : 1);     // (Corona de Cabra: ×2)
     const before = this.hp;
     this.hp = Math.min(this.maxHp, this.hp + amount);
     const got = Math.round(this.hp - before);
@@ -365,6 +365,14 @@ G.Player = class Player {
   }
 
   addMaxHp(amount) { this.maxHp += amount; this.hp += amount; }
+
+  /** Tamaño por un artefacto (Tanque 64, 2026-10-17): aparte de sizeK, que es de las pociones. */
+  setArtSize(k) {
+    const old = this.artSize || 1;
+    if (old === k) return;
+    this.r *= k / old; this.bodyH *= k / old;
+    this.artSize = k;
+  }
 
   /**
    * Evoluciona (evo.js): stats y sprite de la evolución; se quedan los movimientos y las mejoras.
@@ -376,8 +384,8 @@ G.Player = class Player {
     this.mon = mon; this.dex = dex;
     this.shiny = this.shiny && G.Sprites.hasShiny(dex);
     this.anim = new G.Sprites.Animator(dex, 1, this.shiny);
-    this.r = G.Sprites.bodyRadius(dex);
-    this.bodyH = G.Sprites.bodyHeight(dex);
+    this.r = G.Sprites.bodyRadius(dex) * (this.artSize || 1);
+    this.bodyH = G.Sprites.bodyHeight(dex) * (this.artSize || 1);
     if (visual) return;
     // Además de los stats de la evolución, un empujón: +8% de vida y +6% de ataque.
     const dHp = (Math.max(0, mon.hp - old.hp) + this.maxHp * 0.08) * (this.glassK || 1);
@@ -410,7 +418,7 @@ G.Player = class Player {
     const want = Math.max(0, Math.min(this.level, Player.LV.max) - 1), add = want - (this.lvGrown || 0);
     if (add <= 0) return;
     // (sin los +200 del Tanque 64: el crecimiento por nivel va sobre la vida propia)
-    if (!this.lvHpBase) this.lvHpBase = this.maxHp - (this.hasItem('tank64') ? G.Items.ART.tank64.hp : 0);
+    if (!this.lvHpBase) this.lvHpBase = this.maxHp - (this.hasItem('tank64') ? G.Items.ART.tank64.hp : 0) - (this._goatHp || 0);
     const tot = k => Math.round(this.lvHpBase * Player.LV.hp * k);     // (por el total: sin acumular redondeos)
     const hp = tot(want) - tot(this.lvGrown || 0);
     this.maxHp += hp; this.hp = Math.min(this.maxHp, this.hp + hp);
@@ -459,7 +467,7 @@ G.Player = class Player {
   // ---------------- ciclo ----------------
   update(dt) {
     this.anim.update(dt);
-    this.anim.scale = this.sizeK || 1;            // gigante / diminuto (pociones)
+    this.anim.scale = (this.sizeK || 1) * (this.artSize || 1);            // gigante / diminuto (pociones) y Tanque 64
     if (this.dead) { if (this.potion) this.endPotion(); return; }
     if (this.potion) {
       this.potion.t -= dt;
@@ -508,7 +516,8 @@ G.Player = class Player {
     this.svy = slide ? G.U.damp(this.svy || 0, ay * s * 1.15, 1.6, dt) : ay * s;
     this.x += this.svx * dt;
     this.y += this.svy * dt;
-    G.World.collide(this);
+    // Fantasma de Hielo (artefacto): atraviesa paredes y rocas, salvo en las salas y la arena (no se sale de ellas).
+    if (!(this.hasItem('iceghost') && !G.World.arena)) G.World.collide(this);
     if (this.walking) this.moveAngle = Math.atan2(ay, ax);
     if (this.walking && this.wandN) this.wandN = 0;          // Varita de Saúco: al moverte se pierde
 
@@ -516,7 +525,7 @@ G.Player = class Player {
     this.inLiquid = G.World.isLiquid(this.x, this.y);
     if (this.inLiquid) {
       const le = G.World.liquidEffect(this.mon.types);
-      if (le.dmg) {
+      if (le.dmg && !this.hasItem('iceghost')) {
         this.lavaTick -= dt;
         if (this.lavaTick <= 0) {
           this.lavaTick = le.every; this.invuln = 0;
