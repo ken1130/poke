@@ -102,6 +102,9 @@ G.Floors = (() => {
   /** Spawner: 0 = no sale nada, 1 = normal (la tregua del piso nuevo). */
   const graceMul = () => graceT <= 0 ? 1 : graceT > GRACE - GRACE_EMPTY ? 0 : Math.pow(1 - graceT / (GRACE - GRACE_EMPTY), 2);
   const normal = () => G.Modes.run === 'normal' && !G.PvP.on;
+  // Modos con la dificultad de NORMAL (2026-10-19, el dueño: también aventura y torre sin fin;
+  // los retos diario y semanal no, por la clasificación; Proteger a Dazhuang va aparte).
+  const harder = () => ['normal', 'stage', 'tower'].includes(G.Modes.run) && !G.PvP.on;
   const allowed = () => normal() && !G.Rift.inArena && !(G.Dungeon && G.Dungeon.inRoom);
 
   /** Reloj de la dificultad (spawner): con las escaleras fuera, se queda parado. */
@@ -677,11 +680,12 @@ G.Floors = (() => {
       e.maxHp = e.hp = Math.round(e.maxHp * kf);
       e.xp = Math.round(e.xp * (1 + 0.2 * floor));
     }
-    if (!normal()) return;
-    e.dmg *= k('dmg'); e.spd *= k('spd');
-    e.xp = Math.round(e.xp * k('xp'));
+    if (normal()) {
+      e.dmg *= k('dmg'); e.spd *= k('spd');
+      e.xp = Math.round(e.xp * k('xp'));
+    }
     // (2026-10-19, V3.1 «más difícil y menos experiencia; poca de los pequeños, mucha de los grandes»)
-    if (!e.boss) {
+    if (harder() && !e.boss) {
       e.maxHp = e.hp = Math.round(e.maxHp * NORMAL.hp);
       e.dmg *= NORMAL.dmg;
       e.xp = Math.max(1, Math.round(e.xp * NORMAL.xp * sizeXp(e)));
@@ -1090,7 +1094,7 @@ G.Floors = (() => {
            get stairs() { return stairs[0] || null; }, get stairsAll() { return stairs; },
            get theme() { return theme; }, get route() { return route; }, get cleared() { return cleared; }, get endless() { return endless; },
            get clearTime() { return clearT; }, get dangerRuns() { return dangerRuns; },
-           get spawnMul() { return k('spawn') * (normal() ? NORMAL.spawn : 1); }, get capMul() { return k('cap') * (normal() ? NORMAL.cap : 1); }, lordShieldBroken, get eliteMul() { return k('elite'); },
+           get spawnMul() { return k('spawn') * (harder() ? NORMAL.spawn : 1); }, get capMul() { return k('cap') * (harder() ? NORMAL.cap : 1); }, lordShieldBroken, get eliteMul() { return k('elite'); },
            get eliteItem() { return !!k('eliteItem', false); }, get healMul() { return k('heal'); }, get thickFog() { return !!k('fog', false); },
            get farmMul() { return normal() ? farmMul() : 1; }, get stairsAge() { return stairsAge(); },
            get bossState() { return bossState; }, get bossAt() { return bossAt; },

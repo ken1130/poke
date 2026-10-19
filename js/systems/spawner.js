@@ -145,6 +145,7 @@ G.Spawner = (() => {
     if (rollShiny(b.dex)) e.makeShiny(!G.Modes.on('shiny'));
     if (tweak) tweak(e);
     G.Floors.scaleEnemy(e);
+    G.GmaxFoe.maybe(e);                 // jefe Dinamax (gmaxfoe.js): normal y torre, a veces
     G.EnemyMgr.add(e);
     say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' salvaje apareció!', 3.2);
     G.Camera.kick(1.1);

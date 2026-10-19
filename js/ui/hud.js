@@ -299,7 +299,7 @@ G.HUD = (() => {
       bar(ctx, bcx - bw / 2, 70, bw, touch ? 14 : 12, boss.hp / boss.maxHp, fboss ? (G.Floors.LAST === G.Floors.floor && !G.Floors.cleared ? '#d98aff' : '#ff9a3d') : '#ffcb3d');
       ctx.font = F(800, 10);
       ctx.fillStyle = '#20160a';
-      const tag = fboss ? G.T(fboss.lord || (G.Floors.floor === G.Floors.LAST) ? 'SEÑOR DEL LABERINTO' : 'JEFE DEL PISO') + ' · ' : boss.raid ? G.T('INCURSIÓN') + ' · ' : '';
+      const tag = (boss.gmaxFoe ? G.T('DINAMAX') + ' · ' : '') + (fboss ? G.T(fboss.lord || (G.Floors.floor === G.Floors.LAST) ? 'SEÑOR DEL LABERINTO' : 'JEFE DEL PISO') + ' · ' : boss.raid ? G.T('INCURSIÓN') + ' · ' : '');
       ctx.fillText(tag + G.T(boss.name).toUpperCase(), bcx, touch ? 81.5 : 80);
     }
 
@@ -847,8 +847,6 @@ G.HUD = (() => {
       for (let k = 0; k < m.lvl - 1 && m.def.ups[k]; k++) rows.push(['✓ ' + G.T(m.def.ups[k].t), '#9fe0b0']);
       if (m.evolved && G.Moves.EVO_MODS[m.kind]) rows.push(['★ ' + G.T(m.name) + ': ' + G.T(m.def.evoText || G.Moves.EVO_MODS[m.kind].t), '#ffd23f']);
       if (m.mega) rows.push(['✦ ' + G.I18n.f('Despertado por la Megaevolución: daño +{x}% y recarga -{x}%', Math.round((G.MegaAb.AWAKE_DMG - 1) * 100), Math.round((1 - G.MegaAb.AWAKE_CD) * 100)), '#ffb0f0']);
-      if (!passive) { const [mn, md] = G.MaxMoves.info(m.type);   // Gigamax: su «Maxi» (al pegar, cada 1,4 s)
-        rows.push(['◆ ' + G.I18n.f('Gigamax: {x}', G.T(mn)) + ' — ' + G.T(md), pl.gmaxT > 0 ? '#ff8a95' : '#b07a80']); }
       const next = G.Moves.nextUpText(m);
       if (next) rows.push(['→ ' + G.I18n.f('Siguiente nivel: {x}', G.T(next)), '#8fa3c4']);
     }

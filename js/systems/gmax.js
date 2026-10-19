@@ -10,7 +10,10 @@
 G.Gmax = (() => {
   const REMIND = 45, CHARGE_KILLS = 150, USES = 2, DUR = 20, SIZE = 1.8, ATK = 1.5, HP = 1.5;
 
-  const allowed = pl => !!pl && !G.PvP.on && G.Modes.run !== 'plaza' && G.Modes.run !== 'training';
+  // (2026-10-19, el dueño: «el jugador ya tiene la Megaevolución; el Dinamax, en otro sitio»):
+  // el jugador ya no se gigamaxiza; ahora son los jefes (gmaxfoe.js). PLAYER = true lo vuelve a abrir.
+  const PLAYER = false;
+  const allowed = pl => PLAYER && !!pl && !G.PvP.on && G.Modes.run !== 'plaza' && G.Modes.run !== 'training';
   /** Al empezar la run. */
   function begin(pl) { G.MaxMoves.reset(); if (pl) { pl.gmaxUses = 0; pl.gmaxK0 = pl.kills || 0; pl.gmaxT = 0; pl.gmaxK = 1; } }
   const need = pl => Math.round(CHARGE_KILLS * (pl.gmaxUses ? 1.5 : 1));

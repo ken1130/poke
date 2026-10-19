@@ -362,3 +362,10 @@
 - **原因**：`js/core/db.js` 的 `merge()`（合併本機副本與雲端存檔）有一條保險：較新那份的 `partner` 不在 `owned` 裡就改用較舊那份的夥伴。原創角色（dex 10001 起）設計上不寫進 `owned`（不算圖鑑），所以每次同步——選完上傳後的回寫、重整時 `loadCloud` 的合併——都會被換回舊夥伴。選完當下畫面是對的，所以看起來像「重整才壞」。
 - **修法**：`merge()` 的夥伴檢查改成 `owned[d] || G.CUSTOM_BY[d]` 都算有效（`hasMon`）。
 - **以後怎麼避免**：原創角色「可以玩但不在 `owned`」是特例；凡是用 `owned[...]` 判斷「這隻能不能用」的地方（存檔合併、sanitize、強化頁、組隊同步）都要一起放行 `G.CUSTOM_BY`。搜尋 `owned\[` 逐一檢查，別只改圖鑑那一處。
+
+## 31. 刪程式時用「從 A 到 B」切片，把中間別的函式一起刪掉；測試又沒抓主控台錯誤（2026-10-19）
+
+- **症狀**：敵人極巨招式落地時 `ReferenceError: show is not defined`，落地後的傷害都沒算；單人測試卻顯示「沒有錯誤」。
+- **原因**：移除 `gfire` 時用「從 gfire 的註解切到 showG 的註解」，但 `show()` 剛好在兩者中間，一起被刪了。遊戲迴圈會把每幀的例外 `console.error("[Game] fallo en un fotograma…")` 吞掉，頁面不會丟 `pageerror`，所以只聽 `pageerror` 的測試看不到。
+- **修法**：從上一版（`git show HEAD:檔案`）把 `show()` 拿回來。
+- **以後怎麼避免**：刪一段程式前先 `grep -n "^  function "` 看起訖之間有哪些函式；無頭瀏覽器測試一律同時聽 `pageerror` **和** `console` 的 error（`[Game] fallo en un fotograma` 就是遊戲內的例外）。

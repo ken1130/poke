@@ -138,6 +138,7 @@ G.Guard = (() => {
       const floor = Math.round(G.Enemies.bossFloor(vt) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1));
       if (e.maxHp < floor) e.maxHp = e.hp = floor;
       e.dmg *= G.Coop.scaleDmg(n);
+      G.GmaxFoe.guardBoss(e, S.wave);   // jefes de oleada Dinamax desde la 10 (gmaxfoe.js)
     } else {
       const sc = G.Enemies.scale(vt);
       e = new G.Enemy(def, x, y, G.Modes.scale(Object.assign({}, sc, { hp: sc.hp * G.Coop.scaleHp(n) * hpK(vt) })));
@@ -317,6 +318,24 @@ G.Guard = (() => {
       if (G.Camera.sees(dz.x, dz.y, 0)) G.FX.dmgText(dz.x + G.U.rand(-14, 14), dz.y - dz.bodyH - 10, '-' + Math.round(e.dmg * HIT_K), '#ff8a95');
     }
   }
+
+  /**
+   * Un golpe en área que cae en (x, y) radio r (jefes Dinamax, gmaxfoe.js): si Dazhuang está dentro,
+   * le quita `dmg` (primero al escudo). Sólo quien lleva la partida. ¿Le dio? → true.
+   */
+  function blast(x, y, r, dmg) {
+    const dz = S && S.dz;
+    if (!dz || dz.hp <= 0 || (G.Coop.active && !G.Coop.isHost)) return false;
+    if (G.U.dist2(dz.x, dz.y, x, y) > (r + dz.r * 0.6) ** 2) return false;
+    let d = dmg;
+    if (dz.sh > 0) { const a = Math.min(dz.sh, d); dz.sh -= a; d -= a; }
+    dz.hp = Math.max(0, dz.hp - d);
+    flashT = 0.2;
+    if (G.Camera.sees(dz.x, dz.y, 0)) G.FX.dmgText(dz.x, dz.y - dz.bodyH - 14, '-' + Math.round(dmg), '#ff5a6a', true);
+    return true;
+  }
+  /** Dazhuang (para los jefes Dinamax que lo eligen de blanco), o null. */
+  const target = () => (S && S.dz && S.dz.hp > 0 ? S.dz : null);
 
   /** Contraataque de Dazhuang: un pisotón que aparta y daña a los de alrededor. */
   let counterT = 1;
@@ -756,6 +775,6 @@ G.Guard = (() => {
   /** Invitado: la oleada a la que se llegó (lo manda el anfitrión al acabar). */
   function setWave(w) { if (S) S.wave = w; }
 
-  return { reset, begin, tick, update, drawables, hudLine, markers, onNet, onClient, startNow, buy, summary, end, best, setWave,
+  return { blast, target, reset, begin, tick, update, drawables, hudLine, markers, onNet, onClient, startNow, buy, summary, end, best, setWave,
            WAVES, get on() { return on() && !!S; }, get dz() { return S && S.dz; }, get state() { return S; } };
 })();

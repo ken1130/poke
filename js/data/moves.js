@@ -326,9 +326,10 @@
       cd: 0.85, stat: 'def', amount: 0.07, dur: 7, stacks: 5 },
 
     // ---------------- FUEGO ----------------
+    // (2026-10-19, «la Ascuas cuesta acertar»: los disparos sueltos lentos curvan un poco hacia el enemigo: homing)
     { id: 'ember', name: 'Ascuas', type: 'fire', kind: 'projectile',
       desc: 'Bola de fuego al enemigo más cercano.',
-      cd: 0.52, dmg: 18, speed: 310, count: 1, spread: 0.12, pierce: 0, life: 1.6, size: 7, burn: 1 },
+      cd: 0.52, dmg: 18, speed: 340, count: 1, spread: 0.12, pierce: 0, life: 1.6, size: 7, burn: 1, homing: 3 },
 
     { id: 'flamethrower', name: 'Lanzallamas', type: 'fire', kind: 'cone',
       desc: 'Chorro de llamas en abanico corto que quema.',
@@ -345,7 +346,7 @@
     // ---------------- AGUA ----------------
     { id: 'water-gun', name: 'Pistola Agua', type: 'water', kind: 'projectile',
       desc: 'Chorro perforante. Fiable a cualquier distancia.',
-      cd: 0.44, dmg: 14, speed: 350, count: 1, spread: 0.10, pierce: 1, life: 1.5, size: 6 },
+      cd: 0.44, dmg: 14, speed: 350, count: 1, spread: 0.10, pierce: 1, life: 1.5, size: 6, homing: 3 },
 
     { id: 'bubble', name: 'Burbuja', type: 'water', kind: 'nova',
       desc: 'Burbujas en abanico que ralentizan a quien tocan.',
@@ -380,7 +381,7 @@
     // ---------------- ELÉCTRICO ----------------
     { id: 'thunder-shock', name: 'Impactrueno', type: 'electric', kind: 'projectile',
       desc: 'Descarga rapidísima que atraviesa varios enemigos.',
-      cd: 0.40, dmg: 13, speed: 480, count: 1, spread: 0.08, pierce: 2, life: 1.1, size: 5 },
+      cd: 0.40, dmg: 13, speed: 480, count: 1, spread: 0.08, pierce: 2, life: 1.1, size: 5, homing: 1.5 },
 
     { id: 'discharge', name: 'Chispazo', type: 'electric', kind: 'aura',
       desc: 'Campo eléctrico permanente alrededor de ti.',
@@ -407,7 +408,7 @@
     // ---------------- TIPOS SECUNDARIOS ----------------
     { id: 'sludge', name: 'Residuos', type: 'poison', kind: 'projectile',
       desc: 'Lodo tóxico que envenena al impactar.',
-      cd: 0.60, dmg: 17, speed: 290, count: 1, spread: 0.12, pierce: 0, life: 1.5, size: 8, poison: 1 },
+      cd: 0.60, dmg: 17, speed: 290, count: 1, spread: 0.12, pierce: 0, life: 1.5, size: 8, poison: 1, homing: 3 },
 
     { id: 'mud-shot', name: 'Disparo Lodo', type: 'ground', kind: 'nova',
       desc: 'Salpica lodo alrededor y ralentiza.',
@@ -433,7 +434,7 @@
     // ---------------- VENENO (extra) ----------------
     { id: 'poison-sting', name: 'Picotazo Veneno', type: 'poison', kind: 'projectile',
       desc: 'Aguijón rápido que envenena.',
-      cd: 0.34, dmg: 8, speed: 420, count: 1, spread: 0.08, pierce: 0, life: 1.0, size: 4, poison: 1 },
+      cd: 0.34, dmg: 8, speed: 420, count: 1, spread: 0.08, pierce: 0, life: 1.0, size: 4, poison: 1, homing: 1.5 },
 
     { id: 'toxic', name: 'Tóxico', type: 'poison', kind: 'trail',
       desc: 'Vas dejando charcos de veneno que intoxican a quien los pisa.',
@@ -460,7 +461,7 @@
     // ---------------- ROCA ----------------
     { id: 'rock-throw', name: 'Lanzarrocas', type: 'rock', kind: 'projectile',
       desc: 'Pedrusco pesado que empuja al enemigo.',
-      cd: 0.7, dmg: 24, speed: 260, count: 1, spread: 0.12, pierce: 0, life: 1.4, size: 9, knock: 90 },
+      cd: 0.7, dmg: 24, speed: 260, count: 1, spread: 0.12, pierce: 0, life: 1.4, size: 9, knock: 90, homing: 3 },
 
     { id: 'rock-slide', name: 'Avalancha', type: 'rock', kind: 'meteor',
       desc: 'Caen rocas del cielo sobre los enemigos cercanos.',
@@ -491,7 +492,7 @@
 
     { id: 'shadow-ball', name: 'Bola Sombra', type: 'ghost', kind: 'projectile',
       desc: 'Esfera oscura que atraviesa a varios.',
-      cd: 0.66, dmg: 19, speed: 280, count: 1, spread: 0.1, pierce: 2, life: 1.6, size: 9 },
+      cd: 0.66, dmg: 19, speed: 280, count: 1, spread: 0.1, pierce: 2, life: 1.6, size: 9, homing: 3 },
 
     // ---------------- DRAGÓN ----------------
     { id: 'dragon-rage', name: 'Furia Dragón', type: 'dragon', kind: 'beam',
@@ -743,7 +744,7 @@
     // Hielo
     { id: 'ice-shard', name: 'Canto Helado', type: 'ice', kind: 'projectile',
       desc: 'Esquirlas de hielo rapidísimas, casi sin recarga.',
-      cd: 0.3, dmg: 10, speed: 520, count: 1, spread: 0.1, pierce: 0, life: 0.8, size: 6 },
+      cd: 0.3, dmg: 10, speed: 520, count: 1, spread: 0.1, pierce: 0, life: 0.8, size: 6, homing: 1.5 },
     { id: 'freeze-dry', name: 'Liofilización', type: 'ice', kind: 'beam',
       desc: 'Rayo helado que frena. Hace el doble a los de tipo Agua.',
       cd: 1.1, dmg: 19, radius: 220, width: 32, slow: 0.5, superVs: 'water' },

@@ -1081,6 +1081,7 @@
       if (conf) this.anim.dir = Math.floor(performance.now() / 90) % 8;
       const burning = this.burn > 0 || !!(this.net && this.net.st & 1);
       const burnBlink = burning && !raging && Enemy.FILTER && Math.floor(performance.now() / 140) % 2 === 0;
+      if (this.gmaxFoe) G.GmaxFoe.drawAura(ctx, this);   // jefe Dinamax (gmaxfoe.js)
       this.anim.draw(ctx, this.x, this.y - lift, { flash: this.flash > 0, alpha, tint: raging && Enemy.FILTER ? RAGE_TINT : burnBlink ? BURN_TINT : null });
       ctx.restore();
 
@@ -1259,6 +1260,7 @@
       if (o.shiny) e.makeShiny();
       if (o.elite) e.makeElite(o.elite, true);
       if (o.small) e.makeSmall();
+      if (o.gm) G.GmaxFoe.look(e, o.gm);          // jefe Dinamax: grande y con nubes (gmaxfoe.js)
       e.maxHp = o.hp; e.hp = o.hp;
       e.net = { x: o.x, y: o.y, vx: 0, vy: 0, age: 0, dir: 0, anim: 0, st: 0 };
       list.push(e);
