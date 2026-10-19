@@ -32,6 +32,13 @@ G.Plaza = (() => {
   const CPU_DEX = [25, 133, 39, 52, 54, 143, 7, 175, 172, 197, 196, 470];
   const FUSE_MIN = 5, FUSE_MAX = 10;
   const THROW_SPEED = 380, THROW_T = 0.55;
+  // Pelotas (2026-10-19, «la pelota es un cuadrado y el tenis no parece tenis»): gravedad y botes de verdad.
+  const GRAV = 620;                        // px/s² (la altura z es en píxeles de pantalla)
+  const T_HIT_Z = 16, T_BOUNCE = 0.55;     // tenis: altura del golpe y lo que conserva al botar
+  const T_REACH_Z = 46;                    // tenis: más alta que esto, no llegas
+  const V_REACH_Z = 56;                    // voleibol
+  const CPU_MISS = 0.08;                   // las CPU la mandan fuera de vez en cuando
+  const SIDE_COL = ['#4fb4ff', '#ff6fa8'];
 
   let opts = null;                        // { zone, cpu } de la sala o del modo solitario
   let games = {};                         // zona -> juego (anfitrión: el estado de verdad; invitado: la foto)
@@ -137,6 +144,7 @@ G.Plaza = (() => {
     if (!on() || !authority()) return;
     if (ev[1] === 'go') startGame(ev[2], ev[3] | 0, false, from);
     else if (ev[1] === 'throw') throwBomb(from, +ev[2] || 0);
+    else if (ev[1] === 'leave') leaveGame(ev[2], from);
   }
 
   /** Invitado: lo que manda el anfitrión. */
@@ -145,7 +153,7 @@ G.Plaza = (() => {
     const k = ev[1];
     if (k === 'start') applyStart(ev[2], ev[3]);
     else if (k === 'st') { const g = games[ev[2]]; if (g) Object.assign(g, ev[3]); }
-    else if (k === 'fx') fx(ev[2], ev[3], ev[4]);
+    else if (k === 'fx') fx(ev[2], ev[3], ev[4], ev[5]);
     else if (k === 'end') applyEnd(ev[2], ev[3]);
     else if (k === 'close') {
       const t = ev[2];
@@ -254,10 +262,16 @@ G.Plaza = (() => {
   }
 
   /** Efectos (en todos). */
-  function fx(kind, x, y) {
-    if (kind === 'hit') { G.Audio.sfx('hit'); G.FX.sp('impact', 'normal', x, y - 10, { life: 0.16, scale: 1.3, frameRate: 14 }); }
-    else if (kind === 'bounce') { G.FX.burst(x, y, '#e8dcc0', 5, 60); }
+  function fx(kind, x, y, who) {
+    if (kind === 'hit' || kind === 'spike') {
+      G.Audio.sfx('hit');
+      G.FX.sp(kind === 'spike' ? 'pow' : 'impact', kind === 'spike' ? 'electric' : 'normal', x, y - 12, { life: 0.16, scale: kind === 'spike' ? 1.4 : 1.1, frameRate: 14 });
+      if (who) swings[who] = performance.now();          // la raqueta / los brazos de quien golpea
+      if (kind === 'spike') G.FX.dmgText(x, y - 40, G.T('¡Remate!'), '#fff36a', true);
+    }
+    else if (kind === 'bounce') { G.FX.burst(x, y, '#e8dcc0', 5, 60); G.FX.ring(x, y, 2, 14, '#ffffff', 0.25, 2); }
     else if (kind === 'point') { G.Audio.sfx('coin'); G.FX.ring(x, y, 6, 70, '#ffe14d', 0.4, 3); }
+    else if (kind === 'out') { G.Audio.sfx('error'); G.FX.dmgText(x, y - 20, G.T('¡Fuera!'), '#ff8a95', true); G.FX.ring(x, y, 4, 40, '#ff5f6d', 0.35, 3); }
     else if (kind === 'pass') { G.Audio.sfx('select'); G.FX.ring(x, y, 4, 40, '#ff9a3d', 0.3, 3); }
     else if (kind === 'boom') {
       G.Audio.sfx('break'); G.Camera.kick(0.5);
@@ -265,34 +279,65 @@ G.Plaza = (() => {
       G.FX.burst(x, y - 10, '#ff7b3d', 40, 280); G.FX.burst(x, y - 10, '#3a3a3a', 20, 160);
     }
   }
-  function hostFx(kind, x, y) { x = Math.round(x); y = Math.round(y); fx(kind, x, y); emit(['plz', 'fx', kind, x, y]); }
+  function hostFx(kind, x, y, who) { x = Math.round(x); y = Math.round(y); fx(kind, x, y, who); emit(['plz', 'fx', kind, x, y, who || '']); }
+  const swings = {};                         // id -> cuándo golpeó (para animar la raqueta)
+
+  /**
+   * Salir del juego en el que estás (2026-10-19, el dueño: «salir de un minijuego sin volver al
+   * menú»). Pistas: se acaba el partido. Patata: quedas fuera y los demás siguen. Sigues en la zona.
+   */
+  function leaveGame(kind, who) {
+    const g = games[kind];
+    if (!g || g.phase === 'over' || !g.parts.some(p => p.id === who)) return;
+    const name = (g.parts.find(p => p.id === who) || {}).name || '';
+    if (kind === 'potato') {
+      if (!g.alive.includes(who)) return;
+      g.alive = g.alive.filter(id => id !== who); g.out.push(who);
+      if (g.holder === who) { g.holder = g.alive[Math.floor(Math.random() * g.alive.length)] || null; }
+      emit(['plz', 'st', kind, snapshot(g)]);
+      if (g.alive.length <= 1) potatoOver(g);
+      return;
+    }
+    g.phase = 'over';
+    emit(['plz', 'st', kind, snapshot(g)]);
+    const text = G.I18n.f('{x} ha dejado el partido', name);
+    emit(['plz', 'end', kind, text]); applyEnd(kind, text);
+  }
 
   // ---------------- tenis y voleibol (anfitrión) ----------------
 
   const sideOfX = (z, x) => (x < z.cx ? 0 : 1);
 
-  /** Saca o devuelve la pelota desde el lado `s` hacia un punto del otro campo. */
-  function launch(g, z, s, from) {
-    const b = g.ball, ts = TS();
-    const tx = z.cx + (s ? -1 : 1) * z.hw * (0.3 + Math.random() * 0.55);
-    const ty = z.cy + (Math.random() * 2 - 1) * z.hh * 0.82;
-    b.x = from.x; b.y = from.y; b.from = s; b.bounced = false; b.tx = tx; b.ty = ty;
+  /**
+   * Saca o devuelve la pelota desde el lado `s` hacia un punto del otro campo. Tenis: parábola
+   * que cae en el blanco (luego bota); voleibol: bombeada. `cpu`: a veces la manda fuera.
+   * `aim`: inclinación (−1..1) de quien golpea al moverse arriba/abajo.
+   */
+  function launch(g, z, s, from, cpu, aim = 0) {
+    const b = g.ball;
+    let tx = z.cx + (s ? -1 : 1) * z.hw * (0.3 + Math.random() * 0.55);
+    let ty = z.cy + G.U.clamp((Math.random() * 2 - 1) * 0.7 + aim * 0.5, -0.92, 0.92) * z.hh;
+    if (cpu && Math.random() < CPU_MISS) {                 // fuera: larga o por un lado
+      if (Math.random() < 0.5) tx = z.cx + (s ? -1 : 1) * (z.hw + 30 + Math.random() * 30);
+      else ty = z.cy + (Math.random() < 0.5 ? -1 : 1) * (z.hh + 24 + Math.random() * 24);
+    }
+    b.x = from.x; b.y = from.y; b.from = s; b.bounced = false; b.tx = tx; b.ty = ty; b.hops = 0;
     if (g.kind === 'tennis') {
-      const sp = Math.min(520, 250 + 16 * g.rally), d = Math.hypot(tx - b.x, ty - b.y) || 1;
-      b.vx = (tx - b.x) / d * sp; b.vy = (ty - b.y) / d * sp; b.z = 8;
+      const sp = Math.min(520, 250 + 16 * g.rally), d = Math.hypot(tx - b.x, ty - b.y) || 1, T = d / sp;
+      b.vx = (tx - b.x) / d * sp; b.vy = (ty - b.y) / d * sp;
+      b.z = T_HIT_Z; b.vz = GRAV * T / 2 - T_HIT_Z / T;       // llega a z=0 justo en el blanco
     } else {
-      // Voleibol: bombeada; cada golpe un poco más rápida.
       const d = Math.hypot(tx - b.x, ty - b.y);
       b.fl = G.U.clamp(d / 240, 0.95, 1.5) * Math.pow(0.97, g.rally); b.p = 0;
       b.vx = (tx - b.x) / b.fl; b.vy = (ty - b.y) / b.fl; b.sx = b.x; b.sy = b.y;
     }
-    void ts;
   }
+  const inCourt = (z, x, y) => Math.abs(x - z.cx) <= z.hw + 4 && Math.abs(y - z.cy) <= z.hh + 4;
 
-  function point(g, z, winner) {
+  function point(g, z, winner, why) {
     g.score[winner]++;
     g.rally = 0;
-    hostFx('point', g.ball.x, g.ball.y);
+    hostFx(why === 'out' ? 'out' : 'point', g.ball.x, g.ball.y);
     if (g.score[winner] >= WIN) {
       g.phase = 'over';
       const names = g.parts.filter(p => p.side === winner).map(p => p.name).join(' / ');
@@ -308,25 +353,38 @@ G.Plaza = (() => {
   function courtStep(g, dt) {
     const z = zone(g.kind), b = g.ball;
     if (g.phase === 'ready') {
-      // La pelota espera delante del que saca.
+      // La pelota espera delante del que saca (botando un poco en la mano).
       const srv = g.parts.find(p => p.side === g.server), sp = srv && posOf(g, srv.id);
-      if (sp) { b.x = sp.x + (g.server ? -22 : 22); b.y = sp.y; b.z = g.kind === 'volley' ? 26 : 10; b.vx = b.vy = 0; }
-      if ((g.t -= dt) <= 0) { g.phase = 'play'; launch(g, z, g.server, b); hostFx('hit', b.x, b.y); }
+      if (sp) { b.x = sp.x + (g.server ? -22 : 22); b.y = sp.y; b.z = (g.kind === 'volley' ? 26 : 12) + Math.abs(Math.sin(now() * 5)) * 8; b.vx = b.vy = 0; }
+      if ((g.t -= dt) <= 0) { g.phase = 'play'; launch(g, z, g.server, b, srv && srv.cpu); hostFx('hit', b.x, b.y, srv ? srv.id : ''); }
       return;
     }
     if (g.phase !== 'play') return;
     if (g.kind === 'tennis') {
       b.x += b.vx * dt; b.y += b.vy * dt;
-      // Bota una vez donde apuntaba; luego sigue (si nadie la devuelve, sale fuera).
-      if (!b.bounced && G.U.dist2(b.x, b.y, b.tx, b.ty) < (Math.hypot(b.vx, b.vy) * dt + 6) ** 2) { b.bounced = true; hostFx('bounce', b.x, b.y); }
-      b.z = b.bounced ? 6 + Math.abs(Math.sin(G.U.dist(b.x, b.y, b.tx, b.ty) / 26)) * 10 : 10 + Math.sin(Date.now() / 90) * 2;
-      const out = b.x < z.cx - z.hw - 26 || b.x > z.cx + z.hw + 26 || b.y < z.cy - z.hh - 26 || b.y > z.cy + z.hh + 26;
-      if (out) { point(g, z, 1 - sideOfX(z, b.x)); return; }
+      b.vz -= GRAV * dt; b.z += b.vz * dt;
+      if (b.z <= 0) {
+        b.z = 0;
+        const recv = 1 - b.from;
+        if (!b.bounced) {
+          // Primer bote: fuera de la pista o en el campo de quien la golpeó → punto para el otro.
+          if (!inCourt(z, b.x, b.y) || sideOfX(z, b.x) !== recv) { point(g, z, recv, 'out'); return; }
+          b.bounced = true; b.vz = Math.abs(b.vz) * T_BOUNCE; b.vx *= 0.92; b.vy *= 0.92;
+          hostFx('bounce', b.x, b.y);
+        } else { point(g, z, b.from, 'twice'); return; }   // segundo bote sin devolverla
+      }
+      if (b.x < z.cx - z.hw - 120 || b.x > z.cx + z.hw + 120 || b.y < z.cy - z.hh - 120 || b.y > z.cy + z.hh + 120) { point(g, z, b.from, 'twice'); return; }
     } else {
       b.p += dt / b.fl;
       b.x = b.sx + (b.tx - b.sx) * Math.min(1, b.p); b.y = b.sy + (b.ty - b.sy) * Math.min(1, b.p);
       b.z = 4 * 72 * Math.min(1, b.p) * (1 - Math.min(1, b.p));
-      if (b.p >= 1) { hostFx('bounce', b.x, b.y); point(g, z, 1 - sideOfX(z, b.x)); return; }
+      if (b.p >= 1) {
+        hostFx('bounce', b.x, b.y);
+        // En la pista del otro: punto para quien la mandó; fuera: para el otro.
+        if (!inCourt(z, b.x, b.y)) point(g, z, 1 - b.from, 'out');
+        else point(g, z, 1 - sideOfX(z, b.x));
+        return;
+      }
     }
     // ¿Alguien del campo donde está la pelota la devuelve?
     const s = sideOfX(z, b.x);
@@ -335,12 +393,16 @@ G.Plaza = (() => {
         if (p.side !== s) continue;
         const q = posOf(g, p.id);
         if (!q) continue;
-        const reach = radius(q) + (g.kind === 'volley' ? 24 : 16);
-        if (g.kind === 'volley' && b.z > 48) continue;
+        const reach = radius(q) + (g.kind === 'volley' ? 26 : 20);
+        if (b.z > (g.kind === 'volley' ? V_REACH_Z : T_REACH_Z)) continue;
         if (G.U.dist2(q.x, q.y, b.x, b.y) > reach * reach) continue;
         g.rally++;
-        launch(g, z, s, b);
-        hostFx('hit', b.x, b.y);
+        // Personas: si te mueves arriba/abajo al golpear, la pelota sale hacia ese lado.
+        const pl = !p.cpu && humanById(p.id);
+        const aim = pl && pl.walking ? Math.sin(pl.moveAngle || 0) : 0;
+        const spike = g.kind === 'volley' && b.z > 30;
+        launch(g, z, s, b, p.cpu, aim);
+        hostFx(spike ? 'spike' : 'hit', b.x, b.y, p.id);
         break;
       }
     }
@@ -495,7 +557,7 @@ G.Plaza = (() => {
     // (Sin null: por la red se pierden los campos null y el invitado se quedaba con el valor viejo.)
     if (g.kind === 'potato') Object.assign(s, { alive: g.alive, out: g.out, holder: g.holder || '', f: g.f, round: g.round,
       bomb: g.bomb ? { x: Math.round(g.bomb.x), y: Math.round(g.bomb.y), vx: Math.round(g.bomb.vx), vy: Math.round(g.bomb.vy), ft: g.bomb.ft, from: g.bomb.from } : 0 });
-    else { const b = g.ball; Object.assign(s, { score: g.score, server: g.server, ball: { x: Math.round(b.x), y: Math.round(b.y), z: Math.round(b.z), vx: Math.round(b.vx), vy: Math.round(b.vy), p: b.p, fl: b.fl, sx: b.sx, sy: b.sy, tx: b.tx, ty: b.ty, from: b.from } }); }
+    else { const b = g.ball; Object.assign(s, { score: g.score, server: g.server, ball: { x: Math.round(b.x), y: Math.round(b.y), z: Math.round(b.z), vz: Math.round(b.vz || 0), vx: Math.round(b.vx), vy: Math.round(b.vy), p: b.p, fl: b.fl, sx: b.sx, sy: b.sy, tx: b.tx, ty: b.ty, from: b.from } }); }
     return s;
   }
 
@@ -520,7 +582,10 @@ G.Plaza = (() => {
         const g = games[k];
         if (g.ball && g.phase === 'play') {
           const b = g.ball;
-          if (k === 'tennis') { b.x += b.vx * dt; b.y += b.vy * dt; }
+          if (k === 'tennis') {
+            b.x += b.vx * dt; b.y += b.vy * dt; b.vz = (b.vz || 0) - GRAV * dt; b.z = (b.z || 0) + b.vz * dt;
+            if (b.z < 0) { b.z = 0; b.vz = Math.abs(b.vz) * T_BOUNCE; }
+          }
           else { b.p = Math.min(1, (b.p || 0) + dt / (b.fl || 1)); b.x = b.sx + (b.tx - b.sx) * b.p; b.y = b.sy + (b.ty - b.sy) * b.p; b.z = 4 * 72 * b.p * (1 - b.p); }
         }
         if (g.bomb && g.bomb.ft > 0) { g.bomb.x += g.bomb.vx * dt; g.bomb.y += g.bomb.vy * dt; g.bomb.ft -= dt; }
@@ -645,13 +710,15 @@ G.Plaza = (() => {
         html = `<div class="pz-card">${out ? G.T('Estás fuera: mira cómo acaba.') : mine ? `<b class="pz-hot">${G.T('¡Tienes la bomba!')}</b> <span class="pz-tip">${G.T('Toca a alguien o lánzala')}</span>`
           : G.T('¡Huye de quien lleve la bomba!')}
           <span class="pz-sub">${G.I18n.f('Quedan {x}', (g.alive || []).length)}</span>
-          ${mine ? `<button class="btn gold pz-big" data-pz="throw">${G.T('Lanzar la bomba')} <kbd>F</kbd></button>` : ''}</div>`;
+          ${mine ? `<button class="btn gold pz-big" data-pz="throw">${G.T('Lanzar la bomba')} <kbd>F</kbd></button>` : ''}
+          ${out || g.phase === 'over' ? '' : `<button class="btn small ghost" data-pz="leave:potato">${G.T('Dejar el partido')}</button>`}</div>`;
       } else {
         const p = g.parts.find(q => q.id === me), sc = g.score || [0, 0];
         key = 'court:' + playing + sc.join('-') + g.phase;
         html = `<div class="pz-card"><b>${G.T(playing === 'tennis' ? 'Tenis' : 'Voleibol')}</b>
           <span class="pz-score">${sc[0]} : ${sc[1]}</span>
-          <span class="pz-sub">${G.T(p && p.side ? 'Juegas en el campo de la derecha' : 'Juegas en el campo de la izquierda')} · ${G.I18n.f('Gana quien llegue a {x}', WIN)}</span></div>`;
+          <span class="pz-sub">${G.T(p && p.side ? 'Juegas en el campo de la derecha' : 'Juegas en el campo de la izquierda')} · ${G.I18n.f('Gana quien llegue a {x}', WIN)}</span>
+          ${g.phase === 'over' ? '' : `<button class="btn small ghost" data-pz="leave:${playing}">${G.T('Dejar el partido')}</button>`}</div>`;
       }
     } else if (here === 'tennis' || here === 'volley') {
       const busy = games[here] && games[here].phase !== 'over';
@@ -687,6 +754,7 @@ G.Plaza = (() => {
         if (what === 'quit') { if (G.Coop.active && authority()) { closeAll(''); setTimeout(() => G.Game.quit(), 300); } else G.Game.quit(); }
         else if (what === 'go') { G.Audio.sfx('click'); ask(['plz', 'go', a, +c || 0]); }
         else if (what === 'throw') throwMine();
+        else if (what === 'leave') { G.Audio.sfx('back'); ask(['plz', 'leave', a]); }
         else if (what === 'table') goTable(a);
       };
     });
@@ -726,26 +794,61 @@ G.Plaza = (() => {
     label(ctx, txt, x, y - 6, col, 12);
   }
 
+  /** Ruido fijo por posición (granos de arena, motas): siempre igual en el mismo sitio. */
+  const hash = (x, y) => { const h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453; return h - Math.floor(h); };
+
   function court(ctx, kind, t) {
     const z = zone(kind), x0 = R(z.cx - z.hw), y0 = R(z.cy - z.hh), w = R(z.hw * 2), h = R(z.hh * 2);
     const tennis = kind === 'tennis';
-    // Suelo de la pista y un borde exterior.
-    ctx.fillStyle = tennis ? '#2e5a3a' : '#a9864a'; ctx.fillRect(x0 - 26, y0 - 26, w + 52, h + 52);
-    ctx.fillStyle = tennis ? '#3f8f5a' : '#d9b46a'; ctx.fillRect(x0, y0, w, h);
-    // Rayado de cuadros (pixel art) para que no sea plano.
-    ctx.fillStyle = tennis ? 'rgba(255,255,255,.05)' : 'rgba(120,80,30,.12)';
-    for (let yy = y0; yy < y0 + h; yy += 16) for (let xx = x0 + ((yy - y0) / 16 % 2) * 16; xx < x0 + w; xx += 32) ctx.fillRect(xx, yy, 16, 16);
-    // Líneas.
-    ctx.fillStyle = '#f4f8ff';
-    ctx.fillRect(x0, y0, w, 3); ctx.fillRect(x0, y0 + h - 3, w, 3); ctx.fillRect(x0, y0, 3, h); ctx.fillRect(x0 + w - 3, y0, 3, h);
-    if (tennis) { ctx.fillRect(x0 + R(w * 0.25), y0, 2, h); ctx.fillRect(x0 + R(w * 0.75), y0, 2, h); ctx.fillRect(x0 + R(w * 0.25), R(z.cy - 1), R(w * 0.5), 2); }
-    else { ctx.fillRect(x0 + R(w * 0.33), y0, 2, h); ctx.fillRect(x0 + R(w * 0.67), y0, 2, h); }
-    // Red: postes y malla de cuadritos (en el voleibol, más alta).
-    const nx = R(z.cx), lift = tennis ? 10 : 24;
-    ctx.fillStyle = '#2a2a3a'; ctx.fillRect(nx - 3, y0 - 14 - lift, 6, h + 28 + lift); ctx.fillRect(nx - 3, y0 - 18 - lift, 6, 6);
-    ctx.fillStyle = '#e8eef8';
-    for (let yy = y0 - 10 - lift; yy < y0 + h + 10; yy += 6) ctx.fillRect(nx - 1 + ((yy / 6) % 2 ? -2 : 2), yy, 3, 3);
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(nx - 4, y0 - 12 - lift, 8, 3);
+    if (tennis) {
+      // Pista dura: azul dentro, verde fuera, con un borde oscuro.
+      ctx.fillStyle = '#1f4a34'; ctx.fillRect(x0 - 34, y0 - 34, w + 68, h + 68);
+      ctx.fillStyle = '#3a7d52'; ctx.fillRect(x0 - 30, y0 - 30, w + 60, h + 60);
+      ctx.fillStyle = '#2f5f9a'; ctx.fillRect(x0, y0, w, h);
+      ctx.fillStyle = 'rgba(255,255,255,.035)';
+      for (let yy = y0; yy < y0 + h; yy += 4) for (let xx = x0; xx < x0 + w; xx += 4) if (hash(xx, yy) > 0.86) ctx.fillRect(xx, yy, 2, 2);
+      // Líneas: dobles, individuales, saque, central y marcas del fondo.
+      const L = (x, y, ww, hh) => ctx.fillRect(R(x), R(y), R(ww), R(hh));
+      ctx.fillStyle = '#f4f8ff';
+      L(x0, y0, w, 3); L(x0, y0 + h - 3, w, 3); L(x0, y0, 3, h); L(x0 + w - 3, y0, 3, h);
+      const alley = h * 0.12;
+      L(x0, y0 + alley, w, 2); L(x0, y0 + h - alley - 2, w, 2);
+      const sv = z.hw * 0.52;
+      L(z.cx - sv, y0 + alley, 2, h - alley * 2); L(z.cx + sv - 2, y0 + alley, 2, h - alley * 2);
+      L(z.cx - sv, z.cy - 1, sv * 2, 2);
+      L(x0, z.cy - 1, 8, 2); L(x0 + w - 8, z.cy - 1, 8, 2);
+    } else {
+      // Arena de playa con granos, y una cinta azul de borde.
+      ctx.fillStyle = '#b8924e'; ctx.fillRect(x0 - 32, y0 - 32, w + 64, h + 64);
+      ctx.fillStyle = '#e2c07e'; ctx.fillRect(x0 - 28, y0 - 28, w + 56, h + 56);
+      for (let yy = y0 - 28; yy < y0 + h + 28; yy += 4) for (let xx = x0 - 28; xx < x0 + w + 28; xx += 4) {
+        const k = hash(xx, yy);
+        if (k > 0.9) { ctx.fillStyle = '#f2d89a'; ctx.fillRect(xx, yy, 2, 2); }
+        else if (k < 0.07) { ctx.fillStyle = '#c49a58'; ctx.fillRect(xx, yy, 2, 2); }
+      }
+      ctx.fillStyle = '#2f6fc0';
+      ctx.fillRect(x0, y0, w, 4); ctx.fillRect(x0, y0 + h - 4, w, 4); ctx.fillRect(x0, y0, 4, h); ctx.fillRect(x0 + w - 4, y0, 4, h);
+      ctx.fillStyle = '#9fd0ff';
+      ctx.fillRect(x0, y0, w, 1); ctx.fillRect(x0, y0 + h - 4, w, 1);
+      // Líneas de ataque (discontinuas).
+      ctx.fillStyle = 'rgba(47,111,192,.75)';
+      for (const ax of [z.cx - z.hw * 0.34, z.cx + z.hw * 0.34]) for (let yy = y0 + 6; yy < y0 + h - 6; yy += 10) ctx.fillRect(R(ax - 1), yy, 3, 6);
+    }
+    // Red: sombra, malla, cinta blanca y postes (la de voleibol, más alta y con antenas).
+    const nx = R(z.cx), top = y0 - (tennis ? 12 : 22), bot = y0 + h + (tennis ? 12 : 22);
+    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(nx + 3, top + 6, 6, bot - top);
+    ctx.fillStyle = 'rgba(20,24,34,.55)'; ctx.fillRect(nx - 3, top, 6, bot - top);
+    ctx.fillStyle = '#dfe6f2';
+    for (let yy = top; yy < bot; yy += 4) { ctx.fillRect(nx - 3, yy, 6, 1); }
+    for (let yy = top; yy < bot; yy += 2) { ctx.fillRect(nx - 3 + ((yy >> 1) % 3) * 2, yy, 1, 1); }
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(nx - 4, top, 2, bot - top);
+    const post = (y) => {
+      ctx.fillStyle = '#1a1c26'; ctx.fillRect(nx - 6, y - 6, 12, 12);
+      ctx.fillStyle = tennis ? '#5a6478' : '#c8cfdc'; ctx.fillRect(nx - 4, y - 4, 8, 8);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(nx - 4, y - 4, 3, 3);
+    };
+    post(top - 4); post(bot + 4);
+    if (!tennis) for (const yy of [y0 - 2, y0 + h - 22]) for (let k = 0; k < 6; k++) { ctx.fillStyle = k % 2 ? '#ffffff' : '#e8323a'; ctx.fillRect(nx - 2, yy + k * 4, 4, 4); }
     const [px, py] = padOf(kind);
     pad(ctx, px, py, t);
     sign(ctx, px, py - 26, G.T(tennis ? 'Pista de tenis' : 'Pista de voleibol'), tennis ? '#c8ff7a' : '#ffe08a');
@@ -816,14 +919,64 @@ G.Plaza = (() => {
     return out;
   }
 
-  function ballPx(ctx, x, y, kind) {
-    const P = kind === 'tennis' ? ['#3a4a10', '#c8f04a', '#eaff9a'] : ['#2a3a6a', '#f4f8ff', '#4fb4ff'];
-    const s = kind === 'tennis' ? 3 : 3, n = kind === 'tennis' ? 3 : 4;
-    const w = n * s;
-    ctx.fillStyle = P[0]; ctx.fillRect(R(x - w / 2 - 1), R(y - w / 2 - 1), w + 2, w + 2);
-    ctx.fillStyle = P[1]; ctx.fillRect(R(x - w / 2), R(y - w / 2), w, w);
-    ctx.fillStyle = P[2]; ctx.fillRect(R(x - w / 2), R(y - w / 2), s, s);
-    if (kind !== 'tennis') { ctx.fillStyle = '#ffd23f'; ctx.fillRect(R(x - w / 2), R(y), w, s - 1); }
+  /** Pelota redonda de píxeles: tenis amarilla-verde con la costura blanca; voleibol blanca con gajos azules y amarillos. */
+  function ballPx(ctx, x, y, kind, spin) {
+    const tennis = kind === 'tennis', r = tennis ? 5 : 7;
+    disc(ctx, x, y, r + 1, tennis ? '#2e3a0c' : '#1e2a4a', 1);
+    disc(ctx, x, y, r, tennis ? '#c8f04a' : '#f4f8ff', 1);
+    const a = spin || 0;
+    if (tennis) {
+      // Costura: un arco blanco que gira.
+      ctx.fillStyle = '#ffffff';
+      for (let k = -3; k <= 3; k++) { const q = a + k * 0.32; ctx.fillRect(R(x + Math.cos(q) * (r - 2)), R(y + Math.sin(q) * (r - 2) * 0.6 - 1), 1, 1); }
+      ctx.fillStyle = '#eaff9a'; ctx.fillRect(R(x - 3), R(y - 3), 2, 2);
+    } else {
+      // Gajos de color que giran.
+      for (let k = 0; k < 3; k++) {
+        const q = a + k * 2.09;
+        ctx.fillStyle = k === 1 ? '#ffd23f' : '#3a7bd5';
+        for (let d = 2; d < r; d++) ctx.fillRect(R(x + Math.cos(q) * d), R(y + Math.sin(q) * d), 2, 2);
+      }
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(R(x - 4), R(y - 4), 2, 2);
+    }
+  }
+  /** Raqueta de píxeles en la mano (de frente; al golpear, gira). col: el color de su equipo. */
+  function racket(ctx, x, y, side, col, swing) {
+    const dir = side ? -1 : 1, k = swing == null ? 0 : Math.min(1, swing / 0.2);
+    const ang = swing == null ? -0.5 : -1.6 + 3.0 * k;
+    ctx.save();
+    ctx.translate(R(x + dir * 10), R(y));
+    ctx.rotate(ang * dir); ctx.scale(dir, 1);
+    ctx.fillStyle = '#5a3a1a'; ctx.fillRect(-1, 0, 3, 7);
+    ctx.fillStyle = '#1b1528'; ctx.fillRect(-4, -12, 9, 12);
+    ctx.fillStyle = col; ctx.fillRect(-3, -11, 7, 10);
+    ctx.fillStyle = 'rgba(240,244,255,.85)'; ctx.fillRect(-2, -10, 5, 8);
+    ctx.fillStyle = col; for (let i = -9; i < -2; i += 2) ctx.fillRect(-2, i, 5, 1);
+    ctx.restore();
+    if (swing != null && swing < 0.18) {                  // estela del golpe
+      ctx.fillStyle = 'rgba(255,255,255,.55)';
+      for (let i = 0; i < 5; i++) { const q = -1.2 + i * 0.5; ctx.fillRect(R(x + dir * (10 + Math.cos(q) * 14)), R(y - 6 + Math.sin(q) * 12), 2, 2); }
+    }
+  }
+  /** Marcador de la pista: tablero oscuro con los dos equipos (su color) y quién saca. */
+  function scoreboard(ctx, g, z) {
+    const sc = g.score || [0, 0], side = s => g.parts.filter(p => p.side === s).map(p => p.name).join(' / ');
+    // Debajo de la pista, a la izquierda del cartel (arriba lo tapaba el panel de la zona).
+    const W = 260, H = 34, cx = R(z.cx - z.hw + W / 2 - 20), y = R(z.cy + z.hh + 40);
+    ctx.fillStyle = '#0f0c16'; ctx.fillRect(cx - W / 2 - 3, y - 3, W + 6, H + 6);
+    ctx.fillStyle = '#2a2438'; ctx.fillRect(cx - W / 2, y, W, H);
+    ctx.fillStyle = SIDE_COL[0]; ctx.fillRect(cx - W / 2, y, 4, H);
+    ctx.fillStyle = SIDE_COL[1]; ctx.fillRect(cx + W / 2 - 4, y, 4, H);
+    ctx.fillStyle = '#3a3350'; ctx.fillRect(cx - 34, y + 3, 68, H - 6);
+    label(ctx, `${sc[0]} : ${sc[1]}`, cx, y + 24, '#ffe14d', 18);
+    ctx.font = '800 10px Pixelify,"Segoe UI",system-ui,sans-serif';
+    const nm = (t, x, col, al) => { ctx.textAlign = al; ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.strokeText(t, x, y + 21); ctx.fillStyle = col; ctx.fillText(t, x, y + 21); };
+    nm(side(0).slice(0, 18), cx - 42, '#cfe8ff', 'right');
+    nm(side(1).slice(0, 18), cx + 42, '#ffd0e4', 'left');
+    if (g.phase === 'ready') {                            // pelotita junto a quien saca
+      const sx = g.server ? cx + W / 2 - 14 : cx - W / 2 + 14;
+      disc(ctx, sx, y + 17, 3, '#ffe14d', 1);
+    }
   }
 
   /** Bomba de píxeles: cuerpo, brillo, mecha y chispa; parpadea en rojo cada vez más deprisa. */
@@ -845,18 +998,27 @@ G.Plaza = (() => {
     for (const k in games) {
       const g = games[k], z = zone(k);
       if (k !== 'potato') {
-        const b = g.ball;
-        if (b && g.phase !== 'over') {
-          // Sombra en el suelo y la pelota a su altura.
-          ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(R(b.x - 5), R(b.y - 2), 10, 4);
-          ballPx(ctx, b.x, b.y - (b.z || 0), k);
+        const b = g.ball, v = views[k] || (views[k] = { anims: {}, cpus: {} });
+        // Raquetas (tenis) en la mano de cada uno, del color de su equipo; giran al golpear.
+        if (k === 'tennis') for (const p of g.parts) {
+          const s2 = p.cpu ? v.cpus[p.id] : posOf(g, p.id);
+          if (!s2) continue;
+          const sw = swings[p.id] ? (performance.now() - swings[p.id]) / 1000 : null;
+          racket(ctx, s2.x, s2.y - 18, p.side, SIDE_COL[p.side], sw != null && sw < 0.3 ? sw : null);
         }
-        // Marcador sobre la pista.
-        const sc = g.score || [0, 0];
-        label(ctx, `${sc[0]}  :  ${sc[1]}`, z.cx, z.cy - z.hh - 40, '#ffe14d', 18);
-        const side = s => g.parts.filter(p => p.side === s).map(p => p.name).join(' / ');
-        label(ctx, side(0), z.cx - z.hw / 2, z.cy - z.hh - 14, '#9fd4ff', 10);
-        label(ctx, side(1), z.cx + z.hw / 2, z.cy - z.hh - 14, '#ff9ec4', 10);
+        if (b && g.phase !== 'over') {
+          const zz = Math.max(0, b.z || 0);
+          // Sombra: más pequeña y clara cuanto más alta va la pelota.
+          const sk = Math.max(0.35, 1 - zz / 90);
+          ctx.fillStyle = `rgba(0,0,0,${0.35 * sk})`; ctx.fillRect(R(b.x - 6 * sk), R(b.y - 2), R(12 * sk), 4);
+          // Estela.
+          const tr = v.trail || (v.trail = []);
+          tr.push([b.x, b.y - zz]); if (tr.length > 6) tr.shift();
+          tr.forEach(([tx, ty], i) => { ctx.fillStyle = `rgba(255,255,255,${0.08 + i * 0.05})`; ctx.fillRect(R(tx - 2), R(ty - 2), 4, 4); });
+          v.spin = (v.spin || 0) + Math.hypot(b.vx || 0, b.vy || 0) / 1500;
+          ballPx(ctx, b.x, b.y - zz, k, v.spin);
+        } else if (v.trail) v.trail.length = 0;
+        scoreboard(ctx, g, z);
       } else {
         const f = g.f || 0;
         let bx = null, by = null;

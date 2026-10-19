@@ -37,7 +37,11 @@ G.I18n.add({
   'Caseta de cartas': '牌桌小屋',
   'Elige una mesa: todos volvéis a la sala y empieza la partida.': '選一個牌桌：大家會回到房間，牌局馬上開始。',
   'Acércate a un cartel: tenis, voleibol, patata caliente o la caseta de cartas.': '走到告示牌旁邊：網球、排球、燙手山芋，或牌桌小屋。',
-  '¡BUM!': '轟！', 'Preparados…': '準備……'
+  '¡BUM!': '轟！', 'Preparados…': '準備……',
+  '¡Remate!': '殺球！',
+  '¡Fuera!': '出界！',
+  'Dejar el partido': '離開比賽',
+  '{x} ha dejado el partido': '{x} 離開了比賽',
 }, 'zh');
 G.I18n.add({
   'Zona de fiesta': 'Party Plaza',
@@ -77,5 +81,9 @@ G.I18n.add({
   'Caseta de cartas': 'Card hut',
   'Elige una mesa: todos volvéis a la sala y empieza la partida.': 'Pick a table: everyone returns to the room and the game starts.',
   'Acércate a un cartel: tenis, voleibol, patata caliente o la caseta de cartas.': 'Walk up to a sign: tennis, volleyball, hot potato or the card hut.',
-  '¡BUM!': 'BOOM!', 'Preparados…': 'Get ready…'
+  '¡BUM!': 'BOOM!', 'Preparados…': 'Get ready…',
+  '¡Remate!': 'Spike!',
+  '¡Fuera!': 'Out!',
+  'Dejar el partido': 'Leave match',
+  '{x} ha dejado el partido': '{x} left the match',
 });
