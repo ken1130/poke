@@ -133,9 +133,12 @@ G.GmaxFoe = (() => {
       if (pl && !pl.dead && G.U.dist2(pl.x, pl.y, z.x, z.y) < (z.r + pl.r) ** 2) pl.hurt(z.dmg, z.type);
     }
   }
+  /** Blanco: el jugador más cercano o, en Proteger a Dazhuang, Dazhuang si está más cerca (2026-10-19). */
   function nearestPlayer(e) {
     let best = null, bd = RANGE * RANGE;
-    for (const p of G.Game.everyone()) {
+    const cands = G.Game.everyone().slice();
+    if (G.Modes.run === 'guard') { const dz = G.Guard.target(); if (dz) cands.push(dz); }
+    for (const p of cands) {
       if (!p || p.dead) continue;
       const d2 = G.U.dist2(p.x, p.y, e.x, e.y);
       if (d2 < bd) { bd = d2; best = p; }
@@ -160,6 +163,7 @@ G.GmaxFoe = (() => {
     G.MaxMoves.fx(d.type, w.x, w.y, gid);
     if (d.zone) zones.push({ type: d.type, x: w.x, y: w.y, r: d.zone.r, life: d.zone.life, t: 0, tick: 0.5, dmg: Math.max(1, Math.round(w.dmg * d.zone.k)), col: d.col });
     if (d.coins && authority()) for (let n = 0; n < d.coins; n++) G.Pickups.drop('coin', w.x + G.U.rand(-50, 50), w.y + G.U.rand(-30, 30), 3);
+    if (G.Modes.run === 'guard' && authority()) G.Guard.blast(w.x, w.y, w.r, w.dmg);   // también a Dazhuang (guard.js)
     const pl = G.Game.player;
     if (!pl || pl.dead || G.U.dist2(pl.x, pl.y, w.x, w.y) > (w.r + pl.r * 0.5) ** 2) return;
     pl.hurt(w.dmg, d.type);

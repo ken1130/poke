@@ -263,5 +263,6 @@
 | 出現 | 一般模式定時頭目 25%、無盡塔頭目 40%（`maybe`，排除層主 `floorBoss`、團體戰 `raid`、傳說）；守護大壯第 10 波起的頭目全部（`guardBoss`）；傳說連戰每 3 隻一隻（`legendBoss`） |
 | 組隊 | `'ne'` 第 12 欄放 gid，隊友 `look()` 只變外觀；房主送 `['gmx', id, gid, x, y, r, dmg]`，`coop.js applyHostEvent` 已加 case |
 | 頭目血條 | 前面加「極巨化 ·」 |
+| 大壯 | 守護大壯裡目標在「最近玩家／大壯」選近的；落地時房主呼叫 `G.Guard.blast(x, y, r, dmg)`，大壯在圈內就扣血（先扣護盾）。主人 10-19 要的 |
 
 **冒險、無盡塔也套一般模式的難度**（同一天，主人選）：`floors.js harder()` = normal／stage／tower；每日、每週（排行榜）、守護大壯不套。
