@@ -122,11 +122,13 @@ G.Evo = (() => {
   }
   /** Mega: el aspecto y los tipos de la Mega (evolveTo visual) y los ×MEGA_BOOST, para toda la run. */
   function megaEvolve(pl, to) {
+    const base = pl.dex;
     pl.evolveTo(to, true);
     pl.megaDone = true;
     const add = pl.maxHp * (MEGA_BOOST.hp - 1);
     pl.maxHp += add; pl.hp = Math.min(pl.maxHp, pl.hp + add);
     pl.atkMul *= MEGA_BOOST.atk; pl.spdMul *= MEGA_BOOST.spd;
+    G.MegaAb.apply(pl, (G.DEX_BY[to] && G.DEX_BY[to].base) || base);   // habilidad Mega y movimiento despertado
   }
 
   // ---------------- la ventana ----------------
@@ -173,7 +175,8 @@ G.Evo = (() => {
       const later = !mega && G.MEGA_BY_BASE && G.MEGA_BY_BASE[o.to] ? `<span class="tag-chip evo-later">${G.T('Luego puede megaevolucionar')}</span>` : '';
       el.innerHTML = `<div class="txt"><div class="nm"><span class="tag-chip ${mega ? 'evo-tag-mega' : 'evo-tag'}">${G.T(mega ? 'Megaevolución' : 'Evolución')}</span> ${G.T(to.name)}</div>
         <div class="evo-types">${G.UI.typeChips(to.types)}${later}</div>
-        <div class="evo-stats">${deltas(pl, o).map(([k, v]) => `<span>${G.T(k)} <b>${v}</b></span>`).join('')}</div></div>
+        <div class="evo-stats">${deltas(pl, o).map(([k, v]) => `<span>${G.T(k)} <b>${v}</b></span>`).join('')}</div>
+        ${mega ? `<div class="evo-ab">${G.I18n.f('Habilidad Mega: {x}', `<b>${G.T(G.MegaAb.of(to.base).name)}</b>`)} — ${G.T(G.MegaAb.of(to.base).desc)}<br>${G.I18n.f('{x} se despierta: daño +{x}%', G.T(G.Moves.BY_ID[pl.startMoveId] ? G.Moves.BY_ID[pl.startMoveId].name : ''), Math.round((G.MegaAb.AWAKE_DMG - 1) * 100))}</div>` : ''}</div>
         <div class="key">${i + 1}</div>`;
       el.insertBefore(canvas, el.firstChild);
       el.dataset.sfx = 'none';

@@ -1405,6 +1405,8 @@ body.touch .keys kbd { display: inline-block !important; }
 #evo-cards .evo-types { margin: 4px 0; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 #evo-cards .evo-stats { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 #evo-cards .evo-stats b { color: #9fe0b0; }
+#evo-cards .evo-ab { margin-top: 4px; font-size: 12px; line-height: 1.45; color: #ffd0f0; }
+#evo-cards .evo-ab b { color: #ff9ef0; }
 #evo-cards .tag-chip { text-shadow: none; }
 .evo-tag { background: #fff6c0; color: #3a2a08; }
 .evo-tag-mega { background: linear-gradient(90deg, #ff8ad8, #ffd23f, #7fe0ff); color: #1b1528; }

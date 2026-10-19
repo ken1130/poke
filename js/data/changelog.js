@@ -6,6 +6,12 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-19', title: ['Movimientos Dinamax y habilidades Mega', 'Max Moves and Mega abilities'], new: [
+    ['Movimientos Dinamax: durante el Gigamax, cada ataque, al pegar, lanza además el «Maxi» de su tipo (Maxignición deja un mar de llamas, Maxitormenta salta entre enemigos, Maxihelada congela, Maxiciclón los aparta...: 18 en total). Los huecos se ven con borde rojo y «Máx.» delante del nombre.', 'Max Moves: during Gigantamax every attack also fires the Max Move of its type on hit (Max Flare leaves a sea of flames, Max Lightning chains, Max Hailstorm freezes, Max Airstream blows enemies away... 18 in all). Slots get a red frame and a "Max" prefix.'],
+    ['La Megaevolución trae una habilidad Mega (Garra Dura, Adaptable, Sombra Trampa, Amor Filial, Chorro Arena, Impulso, Sequía, Piel Feérica...) y despierta tu movimiento inicial: +30% de daño y 15% menos de recarga, con borde arcoíris.', 'Mega Evolution brings a Mega ability (Tough Claws, Adaptability, Shadow Tag, Parental Bond, Sand Stream, Speed Boost, Drought, Pixilate...) and awakens your starting move: +30% damage and 15% less recharge, with a rainbow frame.'],
+  ], fix: [
+    ['Sala de entrenamiento: Dominio del Viento no hacía daño a los muñecos (no se pueden atrapar); ahora los que están dentro del muro reciben un enemigo lanzado en cada lanzamiento.', 'Training room: Wind Domain did no damage to dummies (they cannot be grabbed); dummies inside the wall now take a thrown enemy on every cast.'],
+  ] },
   { d: '2026-10-19', title: ['Formas regionales, Megaevolución y Gigantamax', 'Regional forms, Mega Evolution and Gigantamax'], new: [
     ['56 formas regionales (Alola, Galar, Hisui y Paldea, junto a su especie en la Pokédex) y 5 Pokémon nuevos (Jellicent, Sirfetch\'d, Copperajah, Toedscool y Pecharunt), también en el gacha. El logro de todos los Pokémon sigue contando los 966 de antes.', '56 regional forms (Alola, Galar, Hisui and Paldea, next to their species in the Pokédex) and 5 new Pokémon (Jellicent, Sirfetch\'d, Copperajah, Toedscool and Pecharunt), also in the gacha. The every-Pokémon achievement still counts the original 966.'],
     ['Las evoluciones con varias ramas abren una ventana para elegir (formas regionales incluidas), con los tipos y los cambios de PS, ataque y velocidad.', 'Branching evolutions open a window to choose (regional forms included), showing types and HP, attack and speed changes.'],

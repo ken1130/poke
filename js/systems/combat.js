@@ -67,7 +67,7 @@ G.Combat = (() => {
       return;
     }
     const row = G.Moves.stat(m);
-    m.t = Math.max(0.05, ((row && row.cd) || m.cd) * pl.cdK);
+    m.t = Math.max(0.05, ((row && row.cd) || m.cd) * pl.cdK * (m.mega ? G.MegaAb.cdK(m) : 1));
     // Los pasivos no hacen animación ni se mandan a los demás (sólo cuenta su efecto).
     if (!G.Moves.isPassive(m)) {
       G.Arts.onAttack(pl, m);           // Varita de Saúco: cada ataque, un poco menos de recarga
@@ -1642,6 +1642,22 @@ G.Combat = (() => {
       const tx = tg ? tg.x : e.x + (e.x - pl.x), ty = tg ? tg.y : e.y + (e.y - pl.y);
       fields.push({ kind: 'toss', owner: pl, ghost: false, m, row, e, x: e.x, y: e.y, x0: e.x, y0: e.y, tx, ty, target: tg, t: 0, life: 9e9, dur: 0.32 });
     });
+    // Muñecos (sala de entrenamiento) y Magikarp: no se pueden atrapar (no se mueven), así que en
+    // cada lanzamiento `toss` de los que están dentro del muro reciben el golpe de un enemigo lanzado
+    // (2026-10-19: «sólo se levantan un poco y no hay daño»: en la sala no había nadie a quien atrapar).
+    const dums = enemiesIn(pl.x, pl.y, f.r + 40).filter(o => o.dummy && !o.dead && G.U.dist(o.x, o.y, pl.x, pl.y) <= f.r + o.r);
+    if (dums.length) {
+      f.dumI = (f.dumI || 0);
+      for (let k = 0; k < Math.min(row.toss || 1, dums.length); k++) {
+        const d = dums[(f.dumI++) % dums.length];
+        hit(pl, d, row.throw * pl.atk, G.U.TYPE_COLOR.flying, d.x - pl.x, d.y - pl.y, 0, m);
+        if (G.Camera.sees(d.x, d.y, 60)) {
+          G.FX.burst(d.x, d.y - 8, '#d2e2ff', 14, 170);
+          G.FX.ring(d.x, d.y, 6, 1.2 * TILE, '#93b2ff', 0.3, 3);
+          G.Audio.sfx('break');
+        }
+      }
+    }
   }
   function windStep(f, dt) {
     const pl = f.owner;
@@ -2299,6 +2315,7 @@ G.Combat = (() => {
 
   /** @param opt  { crit: forzar sí/no, cmul: multiplicador del crítico } (Puño Lee y los estados) */
   function hit(pl, e, dmg, col, dx, dy, knock, m, opt) {
+    const dmg0 = dmg;
     if (isFoe(e)) {
       if (ghost) return;
       const crit = opt && opt.crit != null ? opt.crit : isCrit(pl);
@@ -2310,6 +2327,7 @@ G.Combat = (() => {
     const crit = !ghost && (opt && opt.crit != null ? opt.crit
       : m.critBonus ? Math.random() < (pl.critChance || 0) + m.critBonus : isCrit(pl));
     dmg *= k * (crit ? (opt && opt.cmul) || pl.critMul || CRIT_MUL : 1) * itemK(pl, m.type, e);
+    if (pl.megaAb || m.mega) dmg *= G.MegaAb.dmgK(pl, m);         // Megaevolución: habilidad y movimiento despertado (megaability.js)
     if (G.Arts.zeroed()) { G.Arts.miss(e); return; }          // Dados del Doble o Nada: este golpe no hace nada
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
@@ -2320,6 +2338,8 @@ G.Combat = (() => {
     if (!ghost && (m.rootCh || m.weakCh)) extraFx(e, m.rootCh, m.rootT, m.weakCh);
     if (!ghost) G.Arts.onHit(pl, e);               // Equipo de Shixin: quema
     if (!ghost && pl.gmaxT > 0) G.MaxMoves.onHit(pl, e, m);   // Gigamax: su «Maxi» del tipo (maxmoves.js)
+    // Amor Filial (Mega Kangaskhan): a veces pega otra vez, a la mitad.
+    if (!ghost && pl.megaAb && !m.maxFx && !(opt && opt.again) && !e.dead && G.MegaAb.again(pl)) hit(pl, e, dmg0 * 0.5, col, dx, dy, 0, m, { again: true });
   }
 
   /**

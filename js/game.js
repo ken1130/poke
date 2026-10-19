@@ -202,7 +202,8 @@ G.Game = (() => {
     // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
     // antes de aprender nada: addMove ya los coloca.
     if (!dailyMon) (save.pbind && save.pbind[mon.dex] || []).forEach((id, i) => { if (id) pl.bind[id] = i; });
-    pl.addMove(G.startMoveOf(mon.dex));
+    pl.startMoveId = G.startMoveOf(mon.dex);              // (megaability.js: el que se despierta al megaevolucionar)
+    pl.addMove(pl.startMoveId);
     // Mejora "Veto": movimientos que no quieres que te salgan.
     pl.banned = new Set(dailyMon ? [] : (save.pban && save.pban[mon.dex] || []).slice(0, perks.bans));
     // Mejora "Repertorio": un segundo movimiento de ataque al azar.
@@ -1154,6 +1155,7 @@ G.Game = (() => {
     G.RunGoals.update(dt, time, pl);                             // retos de la run (modo normal)
     if (coop && !guard) G.Raid.update(dt, time);
     G.Evo.check(pl);
+    G.MegaAb.update(dt, pl);                                     // Megaevolución: Sombra Trampa, Chorro Arena, Impulso (megaability.js)
     G.Gmax.update(dt, pl);                                       // Gigamax: carga, duración y tecla G (gmax.js)
     if (G.Input.tap('keym') && !G.UI.isOpen('scr-pause')) G.Evo.openMega(pl);   // megaevolución cuando quieras (evo.js)
     G.Tips.tick(dt);

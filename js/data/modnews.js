@@ -5,6 +5,8 @@
 G.MODNEWS = [
   { d: '2026-10-19', title: { zh: '守護大壯、派對遊戲區、新招式與新神器', en: 'Guard Dazhuang, Party Plaza, new moves and artifacts' },
     new: [
+      { zh: '極巨招式：極巨化的 18 秒內，每個攻擊招式命中時會依屬性多放一招極巨招式（極巨火爆留下火海、極巨閃電連鎖、極巨寒冰冰凍、極巨大地地震、極巨飛衝把敵人吹走…共 18 種），招式欄變紅框、名稱前加「極巨」，點招式可以看效果', en: 'Max Moves: during the 18 s of Gigantamax, every attack also fires a Max Move of its type on hit (Max Flare leaves a sea of flames, Max Lightning chains, Max Hailstorm freezes, Max Quake, Max Airstream blows enemies away... 18 in all); move slots get a red frame and a "Max" prefix, tap a move to see its effect' },
+      { zh: '超級進化加上超級特性與起始招式覺醒：每隻超級型態有自己的特性（硬爪、適應力、踩影、親子愛、揚沙、加速、日照、妖精皮膚…），起始招式傷害 +30%、冷卻 -15%，招式欄彩虹框、名稱前加「超級」；選擇卡片上會寫清楚', en: 'Mega Evolution now brings a Mega ability and awakens your starting move: each Mega has its own ability (Tough Claws, Adaptability, Shadow Tag, Parental Bond, Sand Stream, Speed Boost, Drought, Pixilate...), and the starting move deals +30% with 15% less recharge, with a rainbow frame and a "Mega" prefix; the choice card explains it' },
       { zh: '圖鑑新增 56 個地區型態（阿羅拉／伽勒爾／洗翠／帕底亞，排在原本物種旁邊）和 5 隻新寶可夢（胖嘟嘟、蔥遊兵、大王銅象、原野水母、桃歹郎），可以從扭蛋抽到；「全部寶可夢」成就還是算原本的 966 隻', en: 'The Pokédex adds 56 regional forms (Alola/Galar/Hisui/Paldea, listed next to their species) and 5 new Pokémon (Jellicent, Sirfetch\'d, Copperajah, Toedscool, Pecharunt), all in the gacha; the "every Pokémon" achievement still counts the original 966' },
       { zh: '有分支的進化改成跳出選擇視窗，自己挑要進化成哪一隻（地區型態也在裡面），每張卡會顯示屬性和 HP／攻擊／速度的變化', en: 'Branching evolutions now open a choice window (regional forms included), each card showing types and HP/attack/speed changes' },
       { zh: '局內超級進化：39 隻有完整動畫的超級型態，Lv.35 起跳出選擇（可以先不要，之後按 M、右下彩虹按鈕或暫停選單再開），整局 HP、攻擊 ×1.3、速度 ×1.1', en: 'In-run Mega Evolution: 39 fully animated Mega forms from Lv.35 (you can skip it and open it later with M, the rainbow button or the pause menu); HP and attack ×1.3, speed ×1.1 for the rest of the run' },
@@ -23,6 +25,7 @@ G.MODNEWS = [
       { zh: '燃燒中的敵人會紅色閃爍，頭上也會顯示燃燒／中毒／流血圖示', en: 'Burning enemies flash red and show burn/poison/bleed icons' }
     ],
     fix: [
+      { zh: '練功房：極致馭風術以前對木樁完全沒傷害（木樁抓不走），現在風牆裡的木樁每次施放會被丟過來的敵人砸中，量得到真正的傷害', en: 'Training room: Wind Domain did no damage to dummies (they cannot be grabbed); dummies inside the wall are now hit by a thrown enemy on every cast, so its real damage shows' },
       { zh: '圖鑑：選了屬性（例如飛行）或搜尋之後，點上面的地區不會換——現在點地區會自動取消屬性和搜尋，直接顯示那個地區', en: 'Pokédex: after picking a type (e.g. Flying) or searching, tapping a region did nothing; it now clears the type and search and shows that region' },
       { zh: '極致馭風術：整個風牆裡的敵人都會被抓（以前只抓碰到邊緣那一圈，衝刺、跳躍或生在圈內的敵人會直接穿過去），被抓的敵人不再抖動、會慢慢升空並面向旋轉方向', en: 'Wind Domain: grabs every enemy inside the wall (it only caught those touching the edge, so dashing, jumping or spawning enemies slipped through); grabbed enemies no longer jitter and rise smoothly facing the spin' },
       { zh: '石拳：拳頭打中後馬上縮回地底，寶可夢飛得比拳頭高，不會再被拳頭擋住看起來像沒飛；練功房的木樁也會被打飛', en: 'Rock Fist: the fist sinks right after hitting and Pokémon fly higher than it, so they are no longer hidden behind it; training dummies are launched too' },
