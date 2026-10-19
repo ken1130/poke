@@ -3,7 +3,7 @@
  * premios, con cuatro rincones:
  *   tenis    pista con red; 1 contra 1 o 2 contra 2 (las CPU rellenan); gana quien llegue a WIN.
  *   voleibol igual, pero la pelota va por el aire (bombeada) y es punto si cae en tu campo.
- *   patata   «Patata caliente» (燙手山芋): una bomba con mecha de 5-10 s (al azar, no se sabe
+ *   patata   «Patata caliente» (燙手山芋): una bomba con mecha de 8-15 s (al azar, no se sabe
  *            cuánto queda: la mecha chisporrotea y parpadea cada vez más deprisa). Se pasa
  *            tocando a otro o se lanza (F / botón). Al explotar queda fuera quien la tenga (o
  *            quien la lanzó, si está en el suelo). Gana el último que quede.
@@ -30,7 +30,7 @@ G.Plaza = (() => {
   const WIN = 5;                          // puntos para ganar (tenis y voleibol)
   const SNAP = 1 / 12;                    // fotos del estado por segundo
   const CPU_DEX = [25, 133, 39, 52, 54, 143, 7, 175, 172, 197, 196, 470];
-  const FUSE_MIN = 5, FUSE_MAX = 10;
+  const FUSE_MIN = 8, FUSE_MAX = 15;          // (el dueño, 2026-10-19: antes 5-10 s, muy corto)
   const THROW_SPEED = 380, THROW_T = 0.55;
   // Pelotas (2026-10-19, «la pelota es un cuadrado y el tenis no parece tenis»): gravedad y botes de verdad.
   const GRAV = 620;                        // px/s² (la altura z es en píxeles de pantalla)
@@ -773,7 +773,7 @@ G.Plaza = (() => {
       const busy = games.potato && games.potato.phase !== 'over';
       key = 'pad:potato' + busy;
       html = `<div class="pz-card"><b>${G.T('Patata caliente')}</b>
-        <span class="pz-sub">${G.T(busy ? 'Ya están jugando: espera a que acaben.' : 'Pasa la bomba tocando a alguien o lánzala. Explota entre 5 y 10 s: el que la tenga, fuera.')}</span>
+        <span class="pz-sub">${G.T(busy ? 'Ya están jugando: espera a que acaben.' : 'Pasa la bomba tocando a alguien o lánzala. Explota entre 8 y 15 s: el que la tenga, fuera.')}</span>
         ${busy ? '' : `<button class="btn gold" data-pz="go:potato:0">${G.T('Empezar la patata caliente')}</button>`}</div>`;
     } else if (here === 'hut') {
       const can = room && room.isHost;
