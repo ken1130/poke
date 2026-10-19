@@ -159,21 +159,25 @@ G.Rift = (() => {
     G.Spawner.say('Has entrado en la grieta…', 2.4, true);
   }
 
+  const RIFT_K = { hp: 1.4, floor: 1.6, dmg: 1.2 };
   function spawnLegend() {
     const mon = G.DEX_BY[arena.dex];
     const t = G.Game.st.time;
     const n = G.Game.everyone().length;
     const ts = TS();
     const lk = G.Enemies.late(t);          // tiempo extra (ver data/enemies.js)
+    // Grieta más dura (2026-10-19, V3.1 «el jefe de la grieta, más fuerte»): fuera del Desafío
+    // legendario, vida ×1,4 (suelo 1,2 → 1,6 del de jefe) y daño ×1,2. Ajustables en RIFT_K.
+    const rk = rush() ? { hp: 1, floor: 1.2, dmg: 1 } : RIFT_K;
     const def = {
       dex: mon.dex, name: mon.name,
       // Desafío legendario: el primero más flojo (empiezas a nivel 1) y cada vez más duros.
-      // Fuera del Desafío legendario, nunca menos que 1,2× el mínimo de un jefe de ese momento.
-      hp: Math.round(Math.max(rush() ? 0 : G.Enemies.bossFloor(t) * 1.2, (3200 + t * 9) * lk) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1) * (rush() ? rushHp() * (G.Modes.rule('lhp') || 1) : 1)),
+      // Fuera del Desafío legendario, nunca menos que el mínimo de un jefe de ese momento × rk.floor.
+      hp: Math.round(Math.max(rush() ? 0 : G.Enemies.bossFloor(t) * rk.floor, (3200 + t * 9) * lk * rk.hp) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1) * (rush() ? rushHp() * (G.Modes.rule('lhp') || 1) : 1)),
       spd: Math.round(G.U.clamp(48 + (mon.spd - 78) * 0.6, 48, 105)),
-      dmg: Math.round((36 + t / 20) * Math.pow(lk, 0.7) * (rush() ? (G.Modes.rule('ldmg') || 1) * rushDmg() : 1)), xp: Math.round(500 + t * 1.2),
+      dmg: Math.round((36 + t / 20) * Math.pow(lk, 0.7) * rk.dmg * (rush() ? (G.Modes.rule('ldmg') || 1) * rushDmg() : 1)), xp: Math.round(500 + t * 1.2),
       behavior: mon.types.some(x => ['psychic', 'electric', 'ghost', 'fairy', 'fire', 'water', 'ice', 'dragon'].includes(x)) ? 'ranged' : 'charger',
-      shotDmg: Math.round((18 + t / 40) * Math.pow(lk, 0.7) * (rush() ? (G.Modes.rule('ldmg') || 1) * rushDmg() : 1)), shotCd: 0.9, range: 300
+      shotDmg: Math.round((18 + t / 40) * Math.pow(lk, 0.7) * rk.dmg * (rush() ? (G.Modes.rule('ldmg') || 1) * rushDmg() : 1)), shotCd: 0.9, range: 300
     };
     const e = new G.Enemy(def, arena.x, arena.y - ts * 3.5, { hp: 1, spd: 1, dmg: 1 }, true);
     e.legend = true;

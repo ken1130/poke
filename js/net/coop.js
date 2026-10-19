@@ -567,6 +567,7 @@ G.Coop = (() => {
       case 'st2': case 'fbs': case 'fclr': case 'fcn': G.Floors.onNet(ev); break;   // dos escaleras, jefe del piso, mazmorra superada, seguir (floors.js)
       // Piso del tesoro (2026-10-16): faltaba aquí y el invitado se quedaba en el mapa viejo con sus enemigos.
       case 'ftr': G.Floors.onNet(ev); break;
+      case 'lst': case 'ldb': G.Floors.onNet(ev); break;   // Arceus: escudo/invulnerable y maldiciones (2026-10-19)
       case 'sbox': api.sbox && api.sbox(); break;
       case 'fbox': api.fbox && api.fbox(); break;
       case 'ms': api.milestone && api.milestone(ev[1]); break;            // hito de tiempo (boons.js)

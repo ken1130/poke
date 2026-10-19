@@ -93,11 +93,12 @@ G.Player = class Player {
 
   // ---------------- stats efectivos ----------------
   // calmN/calmAmt: Paz Mental (apoyo, combat.js)
-  get atk() { return this.baseAtk * this.atkMul * (1 + (this.lvGrown || 0) * Player.LV.atk) * (1 + this.buffs.atk.n * this.buffs.atk.amount) * (1 + (this.calmN || 0) * (this.calmAmt || 0)); }
+  get atk() { return this.baseAtk * this.atkMul * (1 + (this.lvGrown || 0) * Player.LV.atk) * (1 + this.buffs.atk.n * this.buffs.atk.amount) * (1 + (this.calmN || 0) * (this.calmAmt || 0))
+      * (this.lordWeakT > 0 ? 0.75 : 1); }   // maldición de Arceus: debilidad (floors.js, 2026-10-19)
   get spd() {
     // hasteT/hasteK: Arte Sin Forma (combat.js) acelera un rato al acertar.
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1) * (this.hasteT > 0 ? 1 + (this.hasteK || 0) : 1)
-      * (this.pkSpdT > 0 ? 1.4 : 1) * (this.pebbleT > 0 ? 0.65 : 1);     // PK (pvp-extra.js): tesoro de velocidad / piedrita de un fantasma
+      * (this.pkSpdT > 0 ? 1.4 : 1) * (this.pebbleT > 0 ? 0.65 : 1) * (this.lordSlowT > 0 ? 0.7 : 1);   // (… y la lentitud de Arceus)     // PK (pvp-extra.js): tesoro de velocidad / piedrita de un fantasma
     const w = G.Weather.speedFor(this.mon.types);
     // Pies de Mercurio (artefacto): el agua no te frena, seas del tipo que seas.
     const slow = this.inLiquid && !this.hasItem('quicksilver') && !this.hasItem('iceghost') ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;   // (y el Fantasma de Hielo)
@@ -357,6 +358,7 @@ G.Player = class Player {
   }
 
   heal(amount) {
+    if (this.lordNoHealT > 0) return;          // maldición de Arceus: sin curación
     amount *= G.Modes.healMul() * (this.hasItem('goat') ? G.Items.ART.goat.heal : 1);     // (Corona de Cabra: ×2)
     const before = this.hp;
     this.hp = Math.min(this.maxHp, this.hp + amount);
@@ -446,7 +448,7 @@ G.Player = class Player {
   onDealt(dmg) {
     if (this.hasItem('shellbell')) this.bellHeal = Math.min(4, this.bellHeal + dmg * 0.04);
     // Reliquia Colmillo Sediento (torre): un poco de vida por golpe (como mucho el 1 % por golpe).
-    if (this.relicLeech && !this.dead) this.hp = Math.min(this.maxHp, this.hp + Math.min(dmg * this.relicLeech, this.maxHp * 0.01));
+    if (this.relicLeech && !this.dead && !(this.lordNoHealT > 0)) this.hp = Math.min(this.maxHp, this.hp + Math.min(dmg * this.relicLeech, this.maxHp * 0.01));
   }
 
   /** Poder de un altar (ver systems/interact.js): se aplica y se quita solo. */
@@ -494,9 +496,12 @@ G.Player = class Player {
       if (b.n > 0) { b.t -= dt; if (b.t <= 0) b.n = 0; }
     }
     if (this.slowT > 0) this.slowT -= dt;
-    if (this.bellHeal > 0) { const h = Math.min(this.bellHeal, 4 * dt); this.hp = Math.min(this.maxHp, this.hp + h); this.bellHeal -= h; }
+    if (this.lordSlowT > 0) this.lordSlowT -= dt;
+    if (this.lordWeakT > 0) this.lordWeakT -= dt;
+    if (this.lordNoHealT > 0) this.lordNoHealT -= dt;
+    if (this.bellHeal > 0 && !(this.lordNoHealT > 0)) { const h = Math.min(this.bellHeal, 4 * dt); this.hp = Math.min(this.maxHp, this.hp + h); this.bellHeal -= h; }
     if (this.power && (this.power.t -= dt) <= 0) { this.power.def.off(this); this.power = null; }
-    if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt * G.Modes.healMul());
+    if (this.regen > 0 && !(this.lordNoHealT > 0)) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt * G.Modes.healMul());
 
     // --- movimiento con colisiones ---
     // (En cooperativo la pausa no para el juego: sólo te quedas quieto.)
@@ -784,6 +789,21 @@ G.Player = class Player {
       ctx.restore();
       an.draw(ctx, this.x, this.y, { flash: true });
     } else this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0 || starFlash, softFlash: true, alpha, color: starFlash ? `hsl(${hue},100%,70%)` : '#ffcb3d' });
+    // Maldiciones de Arceus (floors.js, 2026-10-19): icono encima, tachado en rojo, y lo que le queda.
+    const curses = [['lordSlowT', 'boot'], ['lordWeakT', 'fist'], ['lordNoHealT', 'heart']].filter(([k]) => this[k] > 0);
+    if (curses.length && !this.dead) {
+      ctx.save();
+      const S = 14, y0 = Math.round(this.y - this.bodyH - 30), x0 = Math.round(this.x - (curses.length * (S + 3) - 3) / 2);
+      curses.forEach(([k, ic], i) => {
+        const x = x0 + i * (S + 3);
+        ctx.fillStyle = 'rgba(40,10,60,.85)'; ctx.fillRect(x - 2, y0 - 2, S + 4, S + 4);
+        G.Icons.draw(ctx, ic, x, y0, S);
+        ctx.fillStyle = '#ff3a5a';
+        for (let j = 0; j < S; j += 2) { ctx.fillRect(x + j, y0 + j, 2, 2); }          // tachado en diagonal
+        ctx.fillStyle = '#d9b8ff'; ctx.fillRect(x - 2, y0 + S + 2, Math.round((S + 4) * Math.min(1, this[k] / 6)), 2);   // lo que queda
+      });
+      ctx.restore();
+    }
 
     // Arcos de buff alrededor de los pies.
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
