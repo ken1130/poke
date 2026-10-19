@@ -316,6 +316,15 @@ G.Combat = (() => {
     d.owner = pl;
     return d;
   }
+  /** Artefactos que dejan daño en el tiempo al golpear (G.Arts.onHit): 'cleaver' sangrado, 'socks' veneno. */
+  const ART_MOVE = { type: 'none', kind: 'artifact', id: 'artifact' };      // (sin tipo: ni eficaz ni inmune)
+  function artDot(pl, e, kind) {
+    if (e.dead || isFoe(e)) return;
+    const d = dotOf(pl, e), A = G.Items.ART;
+    d.km = ART_MOVE;
+    if (kind === 'cleaver') d.kb = A.cleaver.bleed;
+    else if (kind === 'socks') { d.sk = A.socks.dps; d.skSlow = A.socks.slow; d.skUntil = G.Game.st.time + A.socks.dur; }
+  }
   function poisonWith(pl, e, row, m) {
     const d = dotOf(pl, e), now = G.Game.st.time;
     d.pm = m; d.pUntil = Math.max(d.pUntil, now + row.dur); d.pDps = row.dps; d.slow = row.slow;
@@ -343,6 +352,18 @@ G.Combat = (() => {
           G.FX.px(e.x + G.U.rand(-e.r, e.r) * 0.5, e.y - e.bodyH * G.U.rand(0.4, 0.7), k ? '#8a0f18' : '#ff4a4a',
                   { vx: G.U.rand(-25, 25), vy: G.U.rand(-50, -15), grav: 420, drag: 0.97, life: G.U.rand(0.35, 0.55), size: k === 2 ? 2 : 1 });
         }
+      }
+      // Artefactos (2026-10-17): Cuchillo de Matanza (sangrado aparte, se suma) y Calcetines de Otis (veneno aparte).
+      if (d.kb && !e.dead) {
+        keep = true;
+        hit(pl, e, d.kb * 0.5 * pl.atk, '#e0303a', 0, 0, 0, d.km, NOCRIT);
+        if (G.Camera.sees(e.x, e.y, 20)) G.FX.px(e.x + G.U.rand(-e.r, e.r) * 0.4, e.y - e.bodyH * 0.6, '#c0101c', { vy: -30, grav: 420, life: 0.4, size: 2 });
+      }
+      if (d.skUntil > now && !e.dead) {
+        keep = true;
+        hit(pl, e, d.sk * 0.5 * pl.atk, '#8fd14a', 0, 0, 0, d.km, NOCRIT);
+        if (!e.dead && !(d.pUntil > now)) e.applySlow(d.skSlow, 0.7);      // con otro veneno, sólo se suma el daño
+        if (G.Camera.sees(e.x, e.y, 20)) G.FX.px(e.x + G.U.rand(-e.r, e.r) * 0.4, e.y - e.bodyH, '#a8e05a', { vy: -26, life: 0.5, size: 2 });
       }
       if (d.drip > now && !e.dead) {
         keep = true;
@@ -2474,6 +2495,15 @@ G.Combat = (() => {
     for (const e of enemiesIn(pl.x, pl.y, pl.r + 40)) {
       if (isFoe(e)) continue;      // PK: el rival no tiene daño por contacto (antes: e.strike no existe y fallaba cada fotograma)
       if (e.disabled) continue;    // confundido, congelado o atrapado (V3.1): no pega
+      // Fantasma de Hielo (artefacto, 2026-10-17): lo atraviesas sin daño y se queda congelado (el jefe, frenado).
+      if (pl.hasItem('iceghost')) {
+        if (e.touchCd > 0 || e.dmg <= 0 || G.U.dist2(e.x, e.y, pl.x, pl.y) > (e.r + pl.r) * (e.r + pl.r)) continue;
+        const ig = G.Items.ART.iceghost;
+        e.touchCd = ig.cd;
+        if (e.boss) e.applySlow(0.5, ig.freeze); else e.applyRoot(ig.freeze);
+        G.Arts.frozen(e, ig.freeze);
+        continue;
+      }
       // Shaq (Peso Pesado evolucionado): los enemigos normales no pueden tocarte: se quedan
       // fuera del campo (el anillo que se dibuja en player.js) y rebotan. Los jefes y los disparos sí.
       // (2026-10-15: antes sólo los apartaba hasta tocarte el cuerpo y parecía que no hacía nada.)
@@ -2501,6 +2531,6 @@ G.Combat = (() => {
     }
   }
 
-  return { supportHeal, beamImmune, netFx, tick, resolve, ghostCast, ghostOrbit, updateFields, drawGroundFields, drawAirFields, clearFields,
+  return { artDot, supportHeal, beamImmune, netFx, tick, resolve, ghostCast, ghostOrbit, updateFields, drawGroundFields, drawAirFields, clearFields,
            get fieldCount() { return fields.length; } };
 })();

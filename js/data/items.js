@@ -61,7 +61,13 @@ G.Items = (() => {
                 liver: { red: 0.40, cap: 10 },   // (主人 2026-10-16：35% → 40%)
                 dice: { win: 0.9, mul: 2 },
                 climber: { stacks: 6 },
-                tank64: { hp: 500 } };   // (主人 2026-10-16：200 → 500)
+                tank64: { hp: 500, size: 1.3 },   // (主人 2026-10-16：200 → 500；10-17：además, más grande)
+                // ---- 2026-10-17 (tabla del dueño, V3.1) ----
+                iceghost: { freeze: 1, cd: 1.2 },                 // atraviesa terreno y enemigos; los congela 1 s
+                cleaver: { bleed: 30 },                           // sangrado ×ataque por segundo (se suma a otros)
+                socks: { dps: 18, slow: 0.3, dur: 3 },            // veneno ×ataque por segundo + frenado
+                fishrod: { every: 15, life: 40, max: 3, rate: 1.1, dmg: 9 },
+                goat: { atk: 1.6, cd: 0.75, hp: 1.5, heal: 2, spd: 1.3 } };
   const ARTS = [
     { id: 'quicksilver', art: true, name: 'Los Pies de Mercurio', short: 'Pies de Mercurio',
       desc: '+50% de velocidad. Dejas huellas que duran 1 s: los enemigos que las pisan reciben daño (14 × tu ataque, cada 0,5 s). Con Agilidad, la velocidad se acumula hasta Nv. 10. El agua no te frena.',
@@ -92,8 +98,32 @@ G.Items = (() => {
       desc: 'Tus golpes queman: unos 20 de daño por segundo (sube con tu nivel, como las quemaduras).',
       on: () => {}, off: () => {} },
     { id: 'tank64', art: true, name: 'El Tanque 64', short: 'Tanque 64',
-      desc: '+500 de vida máxima.',
-      on: p => { p.addMaxHp(ART.tank64.hp); }, off: p => { p.maxHp -= ART.tank64.hp; p.hp = Math.min(p.hp, p.maxHp); } }
+      desc: '+500 de vida máxima y eres un 30 % más grande.',
+      on: p => { p.addMaxHp(ART.tank64.hp); p.setArtSize(ART.tank64.size); },
+      off: p => { p.maxHp -= ART.tank64.hp; p.hp = Math.min(p.hp, p.maxHp); p.setArtSize(1); } },
+    // ---- 2026-10-17 (V3.1). Lo que hacen al golpear / al moverse, en systems/artifacts.js ----
+    { id: 'iceghost', art: true, name: 'El Fantasma de Hielo', short: 'Fantasma de Hielo',
+      desc: 'Atraviesas todo el terreno (paredes, rocas, agua y lava, sin frenarte ni quemarte; en las salas y la grieta no). Los enemigos no te hacen daño al chocar: al tocarte se quedan congelados 1 s (los jefes, frenados).',
+      on: () => {}, off: p => G.Arts.unstick(p) },
+    { id: 'cleaver', art: true, name: 'El Cuchillo de Matanza', short: 'Cuchillo de Matanza',
+      desc: 'Hecho para despiezar bestias. Tus golpes hacen sangrar: 30 × tu ataque por segundo hasta que caigan (se suma a otros sangrados).',
+      on: () => {}, off: () => {} },
+    { id: 'socks', art: true, name: 'Los Calcetines de Otis', short: 'Calcetines de Otis',
+      desc: 'Tus golpes envenenan: 18 × tu ataque por segundo durante 3 s y frenan. Si ya los envenenas con otra cosa, sólo se suma el daño.',
+      on: () => {}, off: () => {} },
+    { id: 'fishrod', art: true, name: 'La Caña Mágica de Ben Simmons', short: 'Caña de Ben Simmons',
+      desc: 'Cada 15 s pescas un Pokémon de tipo Agua que lucha a tu lado durante 40 s (hasta 3 a la vez).',
+      on: p => { p.fishT = 3; }, off: p => { p.fishes = []; } },
+    { id: 'goat', art: true, name: 'La Corona de Cabra de LeBron', short: 'Corona de Cabra',
+      desc: 'Todo a lo grande: ×1,6 de daño, ×2 de curación y regeneración, ×1,5 de vida máxima, −25 % de recarga y ×1,3 de velocidad.',
+      on: p => {
+        p.atkMul *= ART.goat.atk; p.cdMul *= ART.goat.cd; p.spdMul *= ART.goat.spd;
+        p._goatHp = Math.round(p.maxHp * (ART.goat.hp - 1)); p.addMaxHp(p._goatHp);
+      },
+      off: p => {
+        p.atkMul /= ART.goat.atk; p.cdMul /= ART.goat.cd; p.spdMul /= ART.goat.spd;
+        p.maxHp -= p._goatHp || 0; p.hp = Math.min(p.hp, p.maxHp); p._goatHp = 0;
+      } }
   ];
   /*
    * ---- Rangos (2026-10-16, pedido del dueño) ----
