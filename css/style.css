@@ -75,12 +75,15 @@ input { font: inherit; }
   border-radius: 12px;
   box-shadow: 0 0 0 3px var(--edge-out), inset 0 0 0 2px var(--edge-in), 0 18px 50px rgba(0,0,0,.55);
   padding: 22px 24px;
-  text-shadow: 2px 2px 0 var(--shadow);
+  /* (2026-10-19, el dueño: «la letra se ve borrosa»): sombra de 1 px; la de 2 px emborronaba la letra
+     pequeña con el escalado de Windows (125-150 %). Los títulos grandes siguen con 2 px (abajo). */
+  text-shadow: 1px 1px 0 var(--shadow);
   animation: pop .22s ease-out;
   max-height: 100%;
   overflow: auto;
 }
 .box h1, .box h2, .box h3 { margin: 0 0 6px; font-weight: 700; letter-spacing: .5px; }
+.box h1, .box h2 { text-shadow: 2px 2px 0 var(--shadow); }
 .box h2 { font-size: 26px; }
 .box h3 { font-size: 18px; }
 .sub { color: var(--muted); margin: 0 0 16px; font-size: 15px; }
