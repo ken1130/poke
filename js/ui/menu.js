@@ -612,7 +612,7 @@ G.MenuUI = (() => {
    * pasó la última vez. «Aquí yace» si caíste, «Victoria» si superaste la mazmorra, «Retirada»
    * si la dejaste. Al pulsarla, el detalle (movimientos, modo, fecha).
    */
-  const MODE_NAME = { normal: 'Jugar', daily: 'Desafío diario', weekly: 'Reto semanal', legend: 'Desafío legendario', tower: 'Torre sin fin', stage: 'Aventura' };
+  const MODE_NAME = { normal: 'Jugar', daily: 'Desafío diario', weekly: 'Reto semanal', legend: 'Desafío legendario', tower: 'Torre sin fin', stage: 'Aventura', guard: 'Proteger a Dazhuang' };
   function grave(r) {
     const el = $('menu-grave');
     if (!el) return;

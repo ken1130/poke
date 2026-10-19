@@ -313,6 +313,8 @@ G.Challenges = (() => {
               `<button class="btn small ${G.Modes.legendTier() === i ? 'gold' : ''}" data-tier="${i}">${G.T(t.name)}</button>`).join('')}</div>
              <small style="color:var(--muted)">${G.T(G.Modes.LEGEND_TIERS[G.Modes.legendTier()].desc)}</small>`,
           lb ? G.I18n.f('Récord: {x}', lb) : '', false)}
+        ${card('guard', 'Proteger a Dazhuang', '', G.T('50 oleadas van a por Dazhuang: protégelo. Cada 5, un jefe; cada 10, una emboscada. Entre oleadas, 60 s para comprar en sus puestos (objetos, artefacto, pociones, mascotas y ayudantes, y mejoras para él).'),
+          G.Guard.best() ? G.I18n.f('Récord: oleada {x}', G.Guard.best()) : '', false)}
         ${card('training', 'Sala de entrenamiento', '', G.T('Muñecos Pikachu que no se mueven, no atacan y nunca caen. Elige cualquier movimiento y su nivel y mira cuánto daño haces por segundo.')
           + `<div><small style="color:var(--muted)">${G.T('Sin enemigos, sin premios y sin récords. Sólo en solitario.')}</small></div>`, '', false)}</div>
       </div>`;

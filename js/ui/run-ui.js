@@ -175,6 +175,8 @@ G.RunUI = (() => {
     // Mazmorra superada (floors.js): victoria, no "has caído".
     $('over-title').textContent = r.clear ? '¡Victoria! Mazmorra superada' : r.dead ? 'Has caído…' : 'Run terminada';
     $('over-title').classList.toggle('gold', !!r.clear);
+    // «Proteger a Dazhuang» (guard.js): su propio título.
+    if (r.guard) $('over-title').textContent = G.T(r.guard.won ? '¡Has protegido a Dazhuang!' : r.dead ? 'Dazhuang ha caído…' : 'Run terminada');
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     $('over-stats').innerHTML = `
       <div class="ov-tile"><span>Tiempo</span><b>${G.U.mmss(r.time)}</b></div>
@@ -182,6 +184,7 @@ G.RunUI = (() => {
       <div class="ov-tile"><span>Derrotados</span><b>${r.kills}</b></div>
       <div class="ov-tile"><span>Jefes</span><b>${r.bosses}</b></div>
       ${r.floor ? `<div class="ov-tile"><span>Piso más hondo</span><b>B${r.floor + 1}F</b></div>` : ''}
+      ${r.guard ? `<div class="ov-tile"><span>${G.T('Oleadas superadas')}</span><b class="${r.guard.won ? 'gold' : ''}">${r.guard.cleared} / ${G.Guard.WAVES}</b></div>` : ''}
       ${r.clearTime != null ? `<div class="ov-tile"><span>Mazmorra superada</span><b class="gold">${G.U.mmss(r.clearTime)}</b></div>` : ''}
       ${r.goals && r.goals.length ? `<div class="ov-goals" style="grid-column:1/-1"><span>Retos de la run</span><b style="font-size:14px">
         ${r.goals.map(g => `<span style="color:${g.done ? '#7dffb0' : '#ff8a96'}">${g.done ? '✔' : '✘'} ${esc(G.T(g.name))}</span>`).join(' · ')}</b></div>` : ''}

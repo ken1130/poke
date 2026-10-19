@@ -1311,6 +1311,11 @@
       rebuildGrid();
       for (const e of list) {
         if (e.remote) e.netUpdate(dt);
+        // «Proteger a Dazhuang» (guard.js): van a por Dazhuang (`goal`) salvo con un jugador encima.
+        else if (e.goal && !e.goal.dead) {
+          const np = nearestPlayer(players, e.x, e.y);
+          e.update(dt, np && G.U.dist2(np.x, np.y, e.x, e.y) < 130 * 130 ? np : e.goal);
+        }
         // Jefe de incursión: va a por el que ha fichado (raid.js).
         else e.update(dt, (e.lockOn && !e.lockOn.dead && players.includes(e.lockOn) && e.lockOn) || nearestPlayer(players, e.x, e.y) || pl);
       }
@@ -1337,7 +1342,7 @@
           if (G.Coop.isHost) G.Coop.enemyGone(e, false);
           continue;
         }
-        if (e.boss || e.shiny || e.dummy || G.Rift.inArena) continue;     // (dummy: muñeco de la sala de entrenamiento)
+        if (e.boss || e.shiny || e.dummy || e.goal || G.Rift.inArena) continue;     // (dummy: muñeco de la sala de entrenamiento; goal: oleada de guard.js)
         // Rezagados: los que se quedan atrás mientras corres y llevan un rato
         // FUERA DE LA VISTA (de todos) vuelven a salir por delante de ti. Así
         // no se puede huir sin más, y nunca desaparece uno que estés viendo.

@@ -282,6 +282,7 @@ G.Enemies = (() => {
 
   return { mobRef, bossFloor,
     TIERS, BOSS_SLOTS, LATE_FROM, rollRun, bossAt, bossFor, scale, bossScale, late, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
+    defFor, tierAt, behaviorOf,      // (2026-10-16: también para «Proteger a Dazhuang», guard.js)
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }
   };

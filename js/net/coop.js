@@ -461,6 +461,7 @@ G.Coop = (() => {
         case 'po': m.rtt = Math.max(1, Math.round((clock() - ev[1]) * 1000)); break;       // latencia
         case 'rv': creditRevive(ev[1]); break;                                         // `from` fue levantado por ev[1]
         case 'dg': G.Dungeon.onClient(from, ev); break;
+        case 'gd': G.Guard.onClient(from, ev); break;                                 // «Proteger a Dazhuang»: compra / empezar ya (guard.js)
         case 'shl': G.Combat.supportHeal(ev[1], ev[2], ev[3], ev[4], ev[5]); emit(ev, from); break;   // Deseo / Rocío Vital
         case 'mfx': G.Combat.netFx(ev); emit(ev, from); break;   // agujero negro de un compañero (combat.js)
         case 'cb': G.Floors.comboFx(ev[1], ev[2], ev[3], ev[4]); emit(ev, from); break;   // ataque combinado (floors.js)
@@ -599,6 +600,7 @@ G.Coop = (() => {
       case 'twr': G.Challenges.onNet(ev); break;
       case 'pi': outEv.push(['po', ev[1]]); flushClient(true); break;            // latencia: se devuelve al momento
       case 'dg': G.Dungeon.onNet(ev); break;
+      case 'gd': G.Guard.onNet(ev); break;                                             // «Proteger a Dazhuang» (guard.js)
       case 'pv': G.PvP.onNet(ev); break;
       case 'shl': G.Combat.supportHeal(ev[1], ev[2], ev[3], ev[4], ev[5]); break;      // Deseo / Rocío Vital de un compañero
       case 'mfx': G.Combat.netFx(ev); break;                                           // agujero negro de un compañero

@@ -471,8 +471,8 @@
 
     function renderPlay(room, md, cur) {
       const PLAYS = [['n', 'Partida normal'], ['stage', 'Aventura'], ['daily', 'Reto diario'], ['weekly', 'Reto semanal'],
-                     ['tower', 'Torre sin fin'], ['legend', 'Desafío legendario']];
-      const set = v => G.Social.setMods(Object.assign({}, md, { stage: null, rush: v === 'legend', ch: ['daily', 'weekly', 'tower'].includes(v) ? v : null }));
+                     ['tower', 'Torre sin fin'], ['legend', 'Desafío legendario'], ['guard', 'Proteger a Dazhuang']];
+      const set = v => G.Social.setMods(Object.assign({}, md, { stage: null, rush: v === 'legend', ch: ['daily', 'weekly', 'tower', 'guard'].includes(v) ? v : null }));
       const pickStage = () => G.Stages.openMap({ current: md.stage, pick: id => G.Social.setMods(Object.assign({}, md, { stage: id, ch: null, rush: false })) });
       const box = $('lobby-play');
       const html = PLAYS.map(([v, l]) => `<button class="chip ${v === cur ? 'on' : ''}" data-play="${v}" ${room.isHost ? '' : 'disabled'}
