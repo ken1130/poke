@@ -242,13 +242,8 @@
       const p = v.pub;
       if (p.turn !== v.you) { G.Audio.sfx('select'); c.sel = c.sel === id ? -1 : id; c.handKey = ''; R.update(v, c); return; }
       const ok = TC().legalView(v.priv.hand, p, v.priv.drawn);
-      if (!ok.includes(id)) {
-        G.Audio.sfx('error');
-        UI.flash(G.T(p.phase === 'drawn' ? 'Sólo puedes echar la carta que acabas de robar.' : p.phase === 'pick' ? 'Primero elige el tipo de la mesa.' : 'Esa carta no vale: tiene que ser del mismo tipo o número.'));
-        const el = q(`.tc-hand .tcc[data-c="${id}"]`);
-        if (el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
-        return;
-      }
+      // (2026-10-19, pedido del dueño) Las que no se pueden echar (oscurecidas) no responden al tocarlas.
+      if (!ok.includes(id)) return;
       if (c.sel === id) { R.playCard(id); return; }
       c.sel = id; c.handKey = '';
       G.Audio.sfx('select');
@@ -315,7 +310,7 @@
       const k = hand.children.length;
       const cw = hand.firstElementChild.offsetWidth || 64;
       const room = wrap.clientWidth - 12;
-      const min = cw * 0.4;
+      const min = cw * 0.62;          // (2026-10-19: antes 0,4; las cartas iban demasiado juntas)
       let step = k > 1 ? Math.min(cw + 6, (room - cw) / (k - 1)) : cw;
       const scroll = step < min;
       if (scroll) step = min;
@@ -356,6 +351,7 @@
         if (isMe) return;
         const fan = el.querySelector('.tc-fan'), show = Math.min(nC, 14);
         if (fan.childElementCount !== show) fan.innerHTML = fanHTML(show);
+        UI.mateHand(el, fan, v, j, cardHTML);       // 2 contra 2: la mano del compañero, de cara
         el.querySelector('.tc-cnt').textContent = nC;
         el.classList.toggle('few', nC <= 2 && !v.res);
         el.classList.toggle('vuln', p.vuln === j && !v.res);

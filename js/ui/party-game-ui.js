@@ -47,7 +47,7 @@ G.PartyGameUI = (() => {
       if (what === 'open') open();
       else if (what === 'view') render(x);
       else if (what === 'close') close(x);
-      else if (what === 'err') { G.Audio.sfx('error'); flash(G.I18n.f(x.err, x.x)); }
+      else if (what === 'err') { G.Audio.sfx('error'); flash(G.I18n.f(x.err, x.x && G.T(x.x))); }
       else if (what === 'busy') G.UI.toast(G.T('En la sala hay una partida de fiesta en marcha: espera a que termine.'), 3200);
       else if (what === 'ended' && G.UI.isOpen('scr-lobby')) G.LobbyUI.open();
     });
@@ -112,6 +112,22 @@ G.PartyGameUI = (() => {
   const TEAM_NAMES = ['Equipo azul', 'Equipo rojo'];
   const teamName = t => G.T(TEAM_NAMES[t] || '');
   const mateOf = (v, a, b) => !!(v.teams && a !== b && v.teams[a] === v.teams[b]);
+  /**
+   * 2 contra 2 (2026-10-19, pedido del dueño): en el asiento de tu compañero, sus cartas de cara (en
+   * pequeño) en vez del abanico boca abajo. v.priv.mate = { seat, hand } (party.js mateHand; sólo os
+   * llega a vosotros dos). fan: el abanico de ese asiento; card: (id, extra) => HTML de la carta.
+   */
+  function mateHand(el, fan, v, j, card) {
+    const m = v.priv && v.priv.mate && v.priv.mate.seat === j ? v.priv.mate.hand : null;
+    let box = el.querySelector('.pt-mh');
+    if (!m) { if (box) box.remove(); fan.classList.remove('hidden'); return; }
+    fan.classList.add('hidden');
+    if (!box) { box = document.createElement('div'); box.className = 'pt-mh'; fan.parentNode.insertBefore(box, fan); }
+    const k = m.join(',');
+    if (box.dataset.k === k) return;
+    box.dataset.k = k;
+    box.innerHTML = `<small>${esc(G.T('Mano de tu compañero'))}</small><div class="pt-mhc">${m.map(id => card(id, 'pt-mini')).join('')}</div>`;
+  }
 
   /** En la barra de arriba: «2 對 2» y tu equipo (con su color). */
   function teamBar(v) {
@@ -245,8 +261,10 @@ G.PartyGameUI = (() => {
       const L = ['Cada jugador recibe 13 cartas. Gana quien se quede sin cartas el primero.',
         'Orden de las cartas: 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < J < Q < K < A < 2. Si empatan, por el palo: ♣ < ♦ < ♥ < ♠.',
         'Empieza quien tiene el 3♣ y su primera jugada tiene que llevarlo (con menos de 4 jugadores, si nadie lo tiene, la carta más baja).',
-        'Jugadas: suelta, pareja, trío o 5 cartas. Hay que echar el mismo número de cartas que la mesa y ganarle, o pasar.',
-        'Jugadas de 5, de menor a mayor: escalera < color < full < póker (4 iguales + 1) < escalera de color.',
+        // (2026-10-19, reglas del dueño: sin tríos ni colores; cada tipo sólo gana a su tipo; bombas.)
+        'Jugadas: suelta, pareja, escalera, full, póker (4 iguales + 1) y escalera de color. No valen el trío ni el color.',
+        'Sólo se gana a una jugada del mismo tipo: suelta a suelta, pareja a pareja, escalera a escalera, full a full. O pasas.',
+        'Bombas: el póker y la escalera de color ganan a cualquier jugada (también a sueltas y parejas). Entre bombas, la escalera de color gana al póker.',
         'Escaleras: 5 rangos seguidos de 3 a A; también valen A-2-3-4-5 (la más baja) y 2-3-4-5-6. No valen J-Q-K-A-2 ni las que tienen el 2 en medio.',
         'Pasar no te deja fuera de la baza. Si todos los demás pasan, quien jugó la última abre como quiera.',
         'Al acabar, cada carta que te queda es un punto de castigo. Los puntos se suman ronda tras ronda: menos es mejor.',
@@ -299,6 +317,8 @@ G.PartyGameUI = (() => {
         const el = e.target.closest('.b2c');
         if (!el) return;
         const id = +el.dataset.c;
+        // (2026-10-19, pedido del dueño) Las que no entran en ninguna jugada (oscurecidas) no se pueden elegir.
+        if (el.classList.contains('dim') && !c.sel.has(id)) return;
         if (c.sel.has(id)) c.sel.delete(id); else c.sel.add(id);
         el.classList.toggle('up', c.sel.has(id));
         c.hintI = -1;
@@ -331,7 +351,7 @@ G.PartyGameUI = (() => {
 
     send(v, c, a) {
       const r = G.Party.act(a);
-      if (!r.ok) { G.Audio.sfx('error'); flash(G.I18n.f(r.err, r.x)); return; }
+      if (!r.ok) { G.Audio.sfx('error'); flash(G.I18n.f(r.err, r.x && G.T(r.x))); return; }
       if (a.type === 'play') c.sel.clear();
       c.hintI = -1;
     },
@@ -381,7 +401,10 @@ G.PartyGameUI = (() => {
       if (!cards) return;
       const cw = hand.firstElementChild.getBoundingClientRect().width || 60;
       const room = wrap.clientWidth - 8;
-      const step = cards > 1 ? Math.max(cw * 0.5, Math.min(cw * 0.72, (room - cw) / (cards - 1))) : cw;
+      // (2026-10-19, «las cartas están demasiado juntas»: antes 50-72 % del ancho; si no caben, barra horizontal.)
+      const fit = cards > 1 ? (room - cw) / (cards - 1) : cw;
+      const step = cards > 1 ? Math.max(cw * 0.62, Math.min(cw * 0.92, fit)) : cw;
+      wrap.classList.toggle('scroll', cards > 1 && fit < cw * 0.62);
       hand.style.setProperty('--step', (step - cw) + 'px');
       // Lo que se ve de cada carta (el Pokémon se encoge a ese ancho para no quedar cortado por la siguiente).
       hand.style.setProperty('--vis', Math.round(step) + 'px');
@@ -566,5 +589,5 @@ G.PartyGameUI = (() => {
   // Se engancha al cargar (G.Party ya existe: se carga antes).
   wire();
 
-  return { open, close, flash, rules, RENDER, teamResults, mateOf, teamName };
+  return { open, close, flash, rules, RENDER, teamResults, mateOf, mateHand, teamName };
 })();

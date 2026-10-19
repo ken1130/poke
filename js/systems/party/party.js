@@ -39,6 +39,13 @@ G.Party = (() => {
   const MAX_SEATS = 4;
   const CPU_DEX = [25, 133, 39, 52, 54, 143, 7, 175, 172, 151, 197, 196, 470, 471];
 
+  /** 2 contra 2 (2026-10-19, pedido del dueño): la mano de tu compañero, sólo para ti y para él (nunca a los rivales). */
+  function mateHand(st, seat) {
+    if (!st.teams) return {};
+    const j = st.teams.findIndex((t, i) => i !== seat && t === st.teams[seat]);
+    return j >= 0 ? { mate: { seat: j, hand: st.hands[j].slice() } } : {};
+  }
+
   function register(def) { if (!games.some(g => g.id === def.id)) games.push(def); }
   const game = id => games.find(g => g.id === id && !g.soon) || null;
 
@@ -121,7 +128,7 @@ G.Party = (() => {
       }
       return { ok: true };
     },
-    priv: (st, seat) => ({ hand: st.hands[seat].slice(), drawn: st.turn === seat && st.phase === 'drawn' ? st.drawn : -1, called: !!st.called[seat] }),
+    priv: (st, seat) => Object.assign({ hand: st.hands[seat].slice(), drawn: st.turn === seat && st.phase === 'drawn' ? st.drawn : -1, called: !!st.called[seat] }, mateHand(st, seat)),
     pub: st => ({ counts: st.hands.map(h => h.length), turn: st.over ? -1 : st.turn, top: st.discard[st.discard.length - 1],
                   under: st.discard.slice(-4, -1), color: st.color, dir: st.dir, phase: st.phase, deck: st.deck.length,
                   called: st.called.map((c, i) => c && st.hands[i].length === 1), lastCall: st.lastCall, vuln: st.vuln >= 0 && !st.called[st.vuln] && st.hands[st.vuln].length === 1 ? st.vuln : -1,
@@ -186,7 +193,7 @@ G.Party = (() => {
       if (a.type === 'draw' && (p.pend || p.phase !== 'play')) return { ok: false, err: p.pend ? 'Espera: aún se puede anular la última carta.' : 'Ahora no puedes robar.' };
       return { ok: true };
     },
-    priv: (st, seat) => VT().priv(st, seat),
+    priv: (st, seat) => Object.assign(VT().priv(st, seat), mateHand(st, seat)),
     pub: st => VT().pub(st, Date.now()),
     results: st => VT().results(st)
   });
@@ -226,9 +233,11 @@ G.Party = (() => {
     const seats = humans.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny, cpu: false, gone: false, afk: false, afkN: 0 }));
     cpuDexes(humans, nCpu).forEach((dex, i) => seats.push({ uid: null, name: 'CPU ' + (i + 1), dex, shiny: false, cpu: true, gone: false, afk: false, afkN: 0 }));
     // 2 contra 2: las plazas de la sala (personas y luego CPU) se reparten según mix y se sientan A,B,A,B.
+    // (2026-10-19, pedido del dueño: cada uno elige su asiento en la sala; cfg.seat = { uid: 0-3 }.
+    //  Con 2 contra 2 los asientos 0 y 2 son el azul y 1 y 3 el rojo: los compañeros, enfrente.)
     const duo = !!(cfg.teams && def.teams && n === 4);
-    const ord = duo ? seatOrder(cfg.mix) : null;
-    const seated = duo ? ord.map(k => seats[k]) : seats;
+    const plan = cfg.seat ? seatPlan(humans, nCpu, cfg.seat) : null;
+    const seated = plan ? plan.map(x => seats[x]) : duo ? seatOrder(cfg.mix).map(k => seats[k]) : seats;
     // Puntos acumulados: se siguen sumando mientras sea la misma sala y el mismo juego.
     // (2 contra 2 lleva su propia cuenta: «types:2v2».)
     const gk = def.id + (duo ? ':2v2' : '');
@@ -244,6 +253,25 @@ G.Party = (() => {
   function teamSlots(mix) { const p = 1 + ((mix | 0) % 3 + 3) % 3; return [0, 1, 2, 3].map(k => (k === 0 || k === p ? 0 : 1)); }
   /** Orden en la mesa (plazas de la sala) para que los compañeros queden enfrente: azul, rojo, azul, rojo. */
   function seatOrder(mix) { const t = teamSlots(mix), a = [0, 1, 2, 3].filter(k => t[k] === 0), b = [0, 1, 2, 3].filter(k => t[k] === 1); return [a[0], b[0], a[1], b[1]]; }
+
+  /**
+   * Asientos elegidos en la sala (2026-10-19): members (personas, en su orden), nCpu y pick = { uid: 0-3 }.
+   * Devuelve el orden en la mesa como índices de la sala (0..n-1: personas y luego CPU). Cada persona va
+   * a su asiento si está libre; las que no eligieron (o chocan) a los libres; las CPU, al resto. Si en la
+   * mesa hay menos de 4, se quitan los huecos (el orden se respeta).
+   */
+  function seatPlan(members, nCpu, pick) { return seatSlots(members, nCpu, pick).filter(x => x != null); }
+  /** Para la sala: en qué asiento (0-3) acaba cada plaza de la sala (personas y luego CPU) antes de quitar huecos. */
+  function seatSlots(members, nCpu, pick) {
+    const slot = [null, null, null, null], waiting = [];
+    members.forEach((m, k) => {
+      const want = pick ? pick[m.uid] : undefined;
+      if (Number.isInteger(want) && want >= 0 && want < 4 && slot[want] == null) slot[want] = k; else waiting.push(k);
+    });
+    for (const k of waiting) { const f = slot.indexOf(null); if (f >= 0) slot[f] = k; }
+    for (let c = 0; c < nCpu; c++) { const f = slot.indexOf(null); if (f >= 0) slot[f] = members.length + c; }
+    return slot;
+  }
 
   /** El Pokémon de cada CPU (distinto de los de las personas; también lo usa la sala para enseñar los equipos). */
   function cpuDexes(humans, nCpu) {
@@ -485,6 +513,8 @@ G.Party = (() => {
 
   G.Net.on((from, m) => {
     if (!m || m.k !== 'pty') return;
+    // En la sala (2026-10-19): un invitado pide un asiento; lo apunta el anfitrión (G.Social.setParty).
+    if (m.t === 'seat') { pickSeat(from, m.seat); return; }
     if (amHost()) { onHostMsg(from, m); return; }
     if (from !== G.Net.hostUid) return;
     if (m.t === 'st') onView(m);
@@ -503,6 +533,28 @@ G.Party = (() => {
     if (lost && active) closeLocal('host');
     else if (!lost && mode !== 'connecting') autoHello();
   });
+
+  /** Asiento elegido en la sala. El anfitrión lo apunta (si está libre); un invitado se lo pide a él. */
+  function pickSeat(uid, seat) {
+    const r = G.Social && G.Social.room;
+    if (!r || r.mode !== 'party' || !(seat >= 0 && seat < 4)) return;
+    if (!r.isHost) { if (uid === myUid()) toHost({ t: 'seat', seat }); return; }
+    if (!r.members.some(m => m.uid === uid)) return;
+    const o = G.Social.partyOf(r), pick = Object.assign({}, o.seat);
+    // Libre: nadie más lo eligió (las CPU y quien no eligió se colocan después).
+    if (Object.keys(pick).some(u => u !== uid && pick[u] === seat && r.members.some(m => m.uid === u))) return;
+    pick[uid] = seat;
+    for (const u of Object.keys(pick)) if (!r.members.some(m => m.uid === u)) delete pick[u];
+    G.Social.setParty(Object.assign(o, { seat: pick }));
+  }
+  /** Anfitrión: todos a asientos al azar (antes «Rehacer los equipos»). */
+  function shuffleSeats() {
+    const r = G.Social && G.Social.room;
+    if (!r || !r.isHost) return;
+    const order = [0, 1, 2, 3].sort(() => Math.random() - 0.5), pick = {};
+    r.members.slice(0, 4).forEach((m, i) => { pick[m.uid] = order[i]; });
+    G.Social.setParty(Object.assign(G.Social.partyOf(r), { seat: pick }));
+  }
 
   function autoHello() {
     const r = G.Social && G.Social.room;
@@ -528,7 +580,7 @@ G.Party = (() => {
   initSocial();
 
   return {
-    register, games: () => games.slice(), game, hostStart, teamSlots, seatOrder, cpuDexes, again, endAll, act, leave, hello, rejoinCode,
+    register, games: () => games.slice(), game, hostStart, teamSlots, seatOrder, seatPlan, seatSlots, pickSeat, shuffleSeats, cpuDexes, again, endAll, act, leave, hello, rejoinCode,
     on(fn) { listeners.add(fn); }, off(fn) { listeners.delete(fn); },
     get view() { return V; }, get active() { return active; }, get isHost() { return amHost(); },
     get left() { return leftSid; }, MAX_SEATS,

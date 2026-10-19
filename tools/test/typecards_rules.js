@@ -405,6 +405,26 @@ const TEAMS = [0, 1, 0, 1];
   S = P._host();
   ok(S.teams === null && S.seats.map(s => s.uid || 'cpu').join() === 'H,A,cpu,cpu', 'Big Two no tiene 2v2: orden de siempre');
   P.endAll();
+  // Asientos elegidos en la sala (2026-10-19): cada uno donde quiere; 2v2 = asientos 0/2 contra 1/3.
+  P.hostStart({ game: 'types', members: mem, cpu: 2, teams: true, mix: 0, seat: { H: 1, A: 3 } });
+  S = P._host();
+  ok(S.seats.map(s => s.uid || 'cpu').join() === 'cpu,H,cpu,A' && JSON.stringify(S.teams) === '[0,1,0,1]', 'asientos: Ken en el 2 y Peter en el 4, enfrente y del mismo equipo');
+  const mv = P.view;
+  ok(mv.you === 1 && mv.priv.mate && mv.priv.mate.seat === 3 && mv.priv.mate.hand.join() === S.st.hands[3].join(), '2v2: ves la mano de tu compañero');
+  ok(JSON.stringify(mv.pub).indexOf(JSON.stringify(S.st.hands[0])) < 0 || S.st.hands[0].length < 2, '2v2: la vista pública no lleva manos de rivales');
+  P.endAll();
+  P.hostStart({ game: 'voltorb', members: mem, cpu: 2, teams: true, mix: 0, seat: { H: 0, A: 2 } });
+  S = P._host();
+  ok(P.view.priv.mate && P.view.priv.mate.seat === 2 && P.view.priv.mate.hand.join() === S.st.hands[2].join(), '2v2 Voltorb: ves la mano de tu compañero');
+  P.endAll();
+  P.hostStart({ game: 'types', members: mem, cpu: 1, teams: false, seat: { H: 3, A: 0 } });
+  S = P._host();
+  ok(S.seats.map(s => s.uid || 'cpu').join() === 'A,cpu,H' && !P.view.priv.mate, 'asientos sin equipos (3 en la mesa): sin huecos y sin mano ajena');
+  P.endAll();
+  P.hostStart({ game: 'types', members: mem, cpu: 2, teams: true, seat: { H: 2, A: 2 } });
+  S = P._host();
+  ok(S.seats[2].uid === 'H' && S.seats.filter(s => s.uid === 'A').length === 1, 'asiento repetido: el primero se queda, el otro va a uno libre');
+  P.endAll();
 }
 console.log(fails ? `${fails} FALLOS de ${n}` : `OK: ${n} comprobaciones`);
 process.exit(fails ? 1 : 0);

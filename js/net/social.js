@@ -439,12 +439,22 @@ G.Social = (() => {
    *  party.js teamSlots). Lo que falta: Big Two, ninguna CPU, todos contra todos. */
   function partyOf(r) {
     const x = (r && r.party) || {};
-    return { game: typeof x.game === 'string' ? x.game : 'bigtwo', cpu: Math.max(0, Math.min(3, x.cpu | 0)), teams: x.teams === true, mix: Math.max(0, Math.min(2, x.mix | 0)) };
+    return { game: typeof x.game === 'string' ? x.game : 'bigtwo', cpu: Math.max(0, Math.min(3, x.cpu | 0)), teams: x.teams === true, mix: Math.max(0, Math.min(2, x.mix | 0)),
+             seat: seatsOf(x.seat) };
+  }
+  /** Asientos elegidos en la sala de fiesta (2026-10-19): { uid: 0-3 }, sin repetir asiento. */
+  function seatsOf(x) {
+    const out = {}, used = new Set();
+    if (x && typeof x === 'object') for (const u of Object.keys(x).slice(0, 8)) {
+      const v = x[u] | 0;
+      if (typeof u === 'string' && u.length < 64 && v >= 0 && v < 4 && !used.has(v)) { out[u] = v; used.add(v); }
+    }
+    return out;
   }
   /** El anfitrión cambia el juego, las CPU o los equipos de la fiesta. */
   function setParty(o) {
     if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/party').set({ game: String(o.game || 'bigtwo').slice(0, 16), cpu: Math.max(0, Math.min(3, o.cpu | 0)),
-      teams: o.teams === true, mix: Math.max(0, Math.min(2, o.mix | 0)) }).catch(() => {});
+      teams: o.teams === true, mix: Math.max(0, Math.min(2, o.mix | 0)), seat: seatsOf(o.seat) }).catch(() => {});
   }
 
   /** PK por equipos: el equipo de cada uno (el que eligió, o 1.º/3.º rojo y 2.º/4.º azul). */
