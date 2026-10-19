@@ -323,6 +323,25 @@ G.VFX = (() => {
       P.outline();
     } },
 
+    // ---- 2026-10-16 (V3.1) · los 5 movimientos nuevos ----
+    // Bola de arcilla del Elemento Inestable (con su mecha arriba).
+    clay: { w: 10, h: 10, gen(P) {
+      rows(P, ['.....w....', '....d.....', '...dmmd...', '..dmllmd..', '.dmlwllmd.', '.dmllllmd.', '.dmmllmmd.', '..dmmmmd..', '...dddd...']);
+      P.outline();
+    } },
+    // Columna de roca con un puño en lo alto (Puño de Piedra): se dibuja saliendo del suelo.
+    pillar: { w: 13, h: 22, gen(P) {
+      rows(P, ['...lll.ll...', '..lwwlwwll..', '..lwllllll..', '..lllllllm..', '..mllllllm..', '...mmmmmm...',
+               '...mlllld...', '...mllmld...', '..dmlllmld..', '..mllmllmd..', '..mlllldmd..', '..mmllmlmd..',
+               '..mlmlllmd..', '.dmllllmmdd.', '.mmlmlllmmd.', 'dmmmlmmlmmdd', 'ddmmmmmmmddd'], 0, 3);
+      P.outline();
+    } },
+    // Bloque de hielo (Agonía de Escarcha): borde claro y dentro medio transparente (L).
+    icecube: { w: 14, h: 14, gen(P) {
+      P.fill((x, y) => (x === 0 || y === 0 || x === 13 || y === 13) ? 'm' : (x === 1 || y === 1) ? 'w' : (x + y) % 7 === 0 ? 'w' : 'L');
+      P.set(3, 3, 'w'); P.set(4, 3, 'w'); P.set(3, 4, 'w');
+      P.outline();
+    } },
     // ---- 2026-10-16 · píxel para los ataques nuevos (antes eran rayas, círculos y rombos lisos) ----
     // Letras fijas (no dependen de la paleta): ver COLS más abajo.
     acidrop: { w: 5, h: 10, gen(P) {                          // gota de Lluvia Corrosiva (cae en vertical)

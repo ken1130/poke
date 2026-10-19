@@ -197,7 +197,7 @@ G.Coop = (() => {
       if (e.dead || G.U.dist2(e.x, e.y, near.x, near.y) > r2n) continue;
       const a = ANIMS.indexOf(e.anim.cur);
       out.push([e.id, r1(e.x), r1(e.y), Math.ceil(e.hp), a < 0 ? 0 : a, e.anim.dir,
-                (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0) | (e.raging ? 8 : 0)]);
+                (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0) | (e.raging ? 8 : 0) | (e.freezeT > 0 ? 16 : 0) | (e.confT > 0 ? 32 : 0) | (e.grab ? 64 : 0)]);
     }
     return out;
   }
@@ -229,7 +229,7 @@ G.Coop = (() => {
       if (d2 > r2n) continue;
       seen.add(e.id);
       const a = Math.max(0, ANIMS.indexOf(e.anim.cur)), dir = e.anim.dir;
-      const st = (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0) | (e.raging ? 8 : 0);
+      const st = (e.burn > 0 ? 1 : 0) | (e.poison > 0 ? 2 : 0) | (e.shield > 0 ? 4 : 0) | (e.raging ? 8 : 0) | (e.freezeT > 0 ? 16 : 0) | (e.confT > 0 ? 32 : 0) | (e.grab ? 64 : 0);
       const h = Math.ceil(e.hp), qx = Math.round((e.x - ox) / Q), qy = Math.round((e.y - oy) / Q);
       const s = sent.get(e.id);
       // Repetición cada ~1 s, repartida entre enemigos (cada uno con su desfase) y con tope.
@@ -442,6 +442,8 @@ G.Coop = (() => {
           else if (ev[2] === 'p') e.applyPoison(ev[3]);
           else if (ev[2] === 's') e.applySlow(ev[3]);
           else if (ev[2] === 'r') e.applyRoot(ev[3]);
+          else if (ev[2] === 'c') e.applyConfuse(ev[3]);      // (2026-10-16, V3.1) confusión y congelación
+          else if (ev[2] === 'f') e.applyFreeze(ev[3]);
           break;
         }
         case 'c':

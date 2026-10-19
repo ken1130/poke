@@ -236,6 +236,37 @@
       { t: '+10 de daño y +1 bola', m: {} },
       { t: '+14 de daño, bolas más grandes que atraviesan 8', m: {} }
     ],
+    // ---- 2026-10-16 (V3.1): los 5 de la hoja del dueño ----
+    clay: [
+      { t: '+2 de daño, +1 arcilla y la explosión +10',                       m: {} },
+      { t: '+2 de daño, +1 casilla de alcance y la explosión +10',            m: {} },
+      { t: '+2 de daño, +1 arcilla y la explosión +10',                       m: {} },
+      { t: '+4 de daño y la explosión +10, mucho más grande: daña a todos los de alrededor', m: {} }
+    ],
+    rockfist: [
+      { t: '+10 de daño y +1 puño',                                         m: {} },
+      { t: '+12 de daño; los lanza por los aires 2 veces',                  m: {} },
+      { t: '+10 de daño y +2 casillas de alcance',                          m: {} },
+      { t: '+8 de daño, +1 puño y 3 lanzamientos',                          m: {} }
+    ],
+    windwall: [
+      { t: '+8 de daño',                                                    m: {} },
+      { t: '+10 de daño y el golpe invisible alcanza a 2 enemigos',         m: {} },
+      { t: '+14 de daño; el muro de viento aparta a los enemigos',          m: {} },
+      { t: '+8 de daño y el golpe invisible alcanza a 3 enemigos',          m: {} }
+    ],
+    icebolt: [
+      { t: '+8 de daño y +1 casilla de alcance',                            m: {} },
+      { t: '+8 de daño y +1 objetivo',                                      m: {} },
+      { t: '+14 de daño, +1 casilla de alcance y algo más lento',           m: {} },
+      { t: '+14 de daño, +1 objetivo y el hielo salpica alrededor',         m: {} }
+    ],
+    dragonorb: [
+      { t: '+8 de daño, frena y +1 casilla de alcance',                     m: {} },
+      { t: '+10 de daño y +2 esferas',                                      m: {} },
+      { t: '+10 de daño, empuja, atraviesa a 3 y +1 casilla de alcance',    m: {} },
+      { t: '+12 de daño y +2 esferas',                                      m: {} }
+    ],
     // ---- 2026-10-16 ----
     hearts: [
       { t: '+8 de daño y +2 casillas de alcance',                           m: {} },
@@ -619,6 +650,22 @@
     { id: 'potato-roll', name: 'Boniato Rodante', type: 'electric', kind: 'roll', only: 10002,
       desc: 'EXCLUSIVO del Boniato: rueda bolas de boniato electrizadas que atraviesan a los enemigos.',
       cd: 1.0, dmg: 22, radius: 256 },
+    // ---------------- 2026-10-16 (V3.1): los 5 de la hoja del dueño (números en TABLE) ----------------
+    { id: 'unstable-element', name: 'Elemento Inestable', type: 'rock', kind: 'clay',
+      desc: 'Lanza arcilla a un enemigo a 8 casillas: le hace daño, se le queda pegada y explota a los 2,5 s.',
+      cd: 1.0, dmg: 10, radius: 256 },
+    { id: 'stone-fist', name: 'Puño de Piedra', type: 'ground', kind: 'rockfist',
+      desc: 'Un puño de roca sale del suelo bajo un enemigo a 8 casillas, le pega y lo lanza por los aires.',
+      cd: 0.6, dmg: 24, radius: 256 },
+    { id: 'planet-wind', name: 'Viento Planetario', type: 'flying', kind: 'windwall',
+      desc: 'Un muro de viento de 3 casillas a tu alrededor para todos los proyectiles; además, golpes invisibles a un enemigo a 5 casillas.',
+      cd: 0.55, dmg: 12, radius: 160 },
+    { id: 'ice-art', name: 'Arte Gélido', type: 'ice', kind: 'icebolt',
+      desc: 'Ataque de hielo a un enemigo a 8 casillas que además lo frena.',
+      cd: 0.5, dmg: 18, radius: 256 },
+    { id: 'dragon-orb', name: 'Esfera Dragón', type: 'dragon', kind: 'dragonorb',
+      desc: 'Dos esferas de energía dragón contra los enemigos a 8 casillas que atraviesan a 2.',
+      cd: 1.0, dmg: 20, radius: 256 },
     // ---------------- apoyo (2026-10-15): curar y defender ----------------
     { id: 'recover', name: 'Recuperación', type: 'psychic', kind: 'support', cd: 12, dmg: 0, radius: 0,
       desc: 'APOYO: cada pocos segundos recuperas parte de tu vida máxima.',
@@ -883,6 +930,47 @@
       { dmg: 76, n: 3, pierce: 8, size: 1.6, r: 9 },
       { dmg: 110, n: 5, pierce: 99, size: 2, r: 10, zap: 40, cd: 0.8 }
     ],
+    // ---- 2026-10-16 (V3.1): hoja del dueño ×2 (como los demás de la hoja); CD elegido para quedar cerca de Puño Lee ----
+    // Elemento Inestable: dmg al pegar, boom al explotar (a los 2,5 s), n arcillas, r alcance, br radio de la explosión;
+    // evo: bounce (salta a otros a 2 casillas y los pega), combo (con 3 pegados explota ya: frena y quema)
+    'unstable-element': [
+      { dmg: 10, boom: 20, n: 1, r: 8, br: 1.2 }, { dmg: 12, boom: 30, n: 2, r: 8, br: 1.2 },
+      { dmg: 14, boom: 40, n: 2, r: 9, br: 1.2 }, { dmg: 16, boom: 50, n: 3, r: 9, br: 1.2 },
+      { dmg: 20, boom: 60, n: 3, r: 9, br: 1.8 },
+      { dmg: 24, boom: 70, n: 5, r: 11, br: 2, bounce: 2, combo: true }
+    ],
+    // Puño de Piedra: dmg, n puños, hops (veces que lo lanza por los aires), r alcance;
+    // evo: endKnock (empujón al acabar) y stun (s aturdido, gira sin atacar)
+    'stone-fist': [
+      { dmg: 24, n: 1, hops: 1, r: 8 },  { dmg: 34, n: 2, hops: 1, r: 8 },
+      { dmg: 46, n: 2, hops: 2, r: 8 },  { dmg: 56, n: 2, hops: 2, r: 10 },
+      { dmg: 64, n: 3, hops: 3, r: 10 },
+      { dmg: 72, n: 5, hops: 3, r: 10, endKnock: 180, stun: 1, cd: 0.55 }
+    ],
+    // Viento Planetario: dmg del golpe invisible, n enemigos, r alcance (casillas), wr radio del muro, push (aparta);
+    // evo: grab (atrapa hasta n que tocan el muro; giran sin atacar), throw (daño al lanzarlos), cut (vida que pierde el lanzado)
+    'planet-wind': [
+      { dmg: 12, n: 1, r: 5, wr: 3 },  { dmg: 20, n: 1, r: 5, wr: 3 },
+      { dmg: 30, n: 2, r: 5, wr: 3 },  { dmg: 44, n: 2, r: 5, wr: 3, push: true },
+      { dmg: 52, n: 3, r: 5, wr: 3, push: true },
+      { dmg: 0, n: 0, r: 10, wr: 6, grab: 8, throw: 110, toss: 2, cut: 0.5, cd: 0.6 }
+    ],
+    // Arte Gélido: dmg, n objetivos, r alcance, slow; sr (casillas) salpicadura a Nv.5;
+    // evo: freeze (s en un bloque de hielo), shatter (casillas de las esquirlas), shard (daño de cada esquirla)
+    'ice-art': [
+      { dmg: 18, n: 1, r: 8, slow: 0.35 },  { dmg: 26, n: 1, r: 9, slow: 0.35 },
+      { dmg: 34, n: 2, r: 9, slow: 0.35 },  { dmg: 48, n: 2, r: 10, slow: 0.35, cd: 0.65 },
+      { dmg: 62, n: 3, r: 10, slow: 0.35, sr: 1.4, cd: 0.65 },
+      { dmg: 70, n: 5, r: 10, freeze: 1, shatter: 2, shard: 24, cd: 0.5 }
+    ],
+    // Esfera Dragón: dmg, n esferas, r alcance, slow, knock, pierce (cuántos atraviesa); evo: grow (crece al atravesar, hasta 2 veces),
+    // conf (s de confusión) a los de confR casillas cuando la esfera grande mata
+    'dragon-orb': [
+      { dmg: 20, n: 2, r: 8, pierce: 2 },              { dmg: 28, n: 2, r: 9, slow: 0.3, pierce: 2 },
+      { dmg: 38, n: 4, r: 9, slow: 0.3, pierce: 2 },   { dmg: 48, n: 4, r: 10, slow: 0.3, knock: 80, pierce: 3 },
+      { dmg: 60, n: 6, r: 10, slow: 0.3, knock: 80, pierce: 3 },
+      { dmg: 66, n: 8, r: 10, slow: 0.3, knock: 80, pierce: 99, grow: 2, conf: 2, confR: 4, cd: 0.9 }
+    ],
     'destruction-beam': [
       { dmg: 24, n: 1, w: 30, r: 10 },   { dmg: 30, n: 1, w: 44, r: 10 },   { dmg: 42, n: 2, w: 44, r: 10 },
       { dmg: 50, n: 2, w: 44, r: 11.5, crit: 0.15 },
@@ -1072,6 +1160,10 @@
     // 2026-10-16
     'formless-art': ['Vuelo Celestial', 'spd'],  'raging-tornado': ['Perro Loco', 'atk'],
     'blade-storm': ['Cruzada', 'def'],           'destruction-beam': ['Poder Púrpura', 'atk'],
+    // 2026-10-16 (V3.1)
+    'unstable-element': ['Bomba Pegajosa Letal', 'atk'], 'stone-fist': ['Maestro del Puño de Piedra', 'hp'],
+    'planet-wind': ['Dominio del Viento', 'spd'],        'ice-art': ['Agonía de Escarcha', 'cd'],
+    'dragon-orb': ['Esfera Dragón de Ocho Escamas', 'atk'],
     'foam-punch': ['Gran Ola Esponjosa', 'atk'], 'scaredy-burst': ['Valor de Héroe', 'def'],
     'turbo-dash': ['Turbo Máximo', 'spd'],       'cat-pounce': ['Gato Implacable', 'atk'],
     'frying-pan': ['Sartén Furiosa', 'atk'],
@@ -1130,6 +1222,11 @@
     whip:        { t: 'Tres lenguas a la vez que atraen a los enemigos hacia ti y envenenan ×4; mucho más daño', m: {} },
     question:    { t: 'Pregunta a TODOS los enemigos del radio a la vez y se quedan pensando 0,8 s', m: {} },
     roll:        { t: '5 bolas enormes que lo atraviesan todo y electrocutan (40) a los de alrededor al golpear', m: {} },
+    clay:        { t: 'La arcilla salta a 2 enemigos cercanos y los pega; con 3 pegados explota al momento (frena y quema); +2 arcillas y +2 casillas', m: {} },
+    rockfist:    { t: '+2 puños; los lanza por los aires 3 veces seguidas, luego los empuja lejos y se quedan aturdidos 1 s', m: {} },
+    windwall:    { t: 'Muro de 6 casillas que atrapa a los que lo tocan (hasta 8): giran a tu alrededor sin poder atacar y los lanzas de dos en dos contra otros enemigos a 10 casillas (110 de daño; el lanzado pierde la mitad de su vida)', m: {} },
+    icebolt:     { t: '+2 objetivos; ya no frena: congela 1 s en un bloque de hielo que al romperse suelta 4 esquirlas que congelan a los de alrededor', m: {} },
+    dragonorb:   { t: '+2 esferas que lo atraviesan todo; crecen al atravesar enemigos (hasta 2 veces) y lo que mata la esfera más grande explota y confunde 2 s a los de 4 casillas (giran sin atacar)', m: {} },
     dbeam:       { t: 'Rayo púrpura continuo mientras haya enemigos: daña y frena; al matar, 15% de dejar un agujero negro que atrae (7 casillas) 4 s y estalla (80)', m: {} },
     support:     { t: 'Más fuerte y más a menudo', m: {} }       // (el texto de verdad: def.evoText)
   };

@@ -89,7 +89,8 @@ G.Combat = (() => {
    * ese objeto con su daño.
    */
   const ENEMY_ONLY = new Set(['flameshield', 'lightning', 'drain', 'psyarrow', 'acidrain', 'fist', 'spear', 'treefall', 'hearts',
-                              'tornado', 'bladestorm', 'dbeam', 'foampunch', 'scare', 'afterimage', 'pounce', 'whip', 'question', 'pan']);
+                              'tornado', 'bladestorm', 'dbeam', 'foampunch', 'scare', 'afterimage', 'pounce', 'whip', 'question', 'pan',
+                              'clay', 'rockfist', 'windwall', 'icebolt']);
   /** El objeto rompible más cercano a su alcance si no hay enemigos (cofres y rocas antes que la hierba). */
   function propNear(pl, m) {
     const R = reach(m);
@@ -153,6 +154,12 @@ G.Combat = (() => {
       case 'whip':       whips(pl, m); break;
       case 'question':   questions(pl, m); break;
       case 'roll':       potatoRoll(pl, m); break;
+      // 2026-10-16 (V3.1): los 5 de la hoja del dueño
+      case 'clay':       clays(pl, m); break;
+      case 'rockfist':   rockFists(pl, m); break;
+      case 'windwall':   windWall(pl, m); break;
+      case 'icebolt':    iceArts(pl, m); break;
+      case 'dragonorb':  dragonOrbs(pl, m); break;
     }
     if (!ghost && (m.boostCh || m.recoil || m.confuseEvery)) afterCast(pl, m);
   }
@@ -610,7 +617,8 @@ G.Combat = (() => {
       if (e.dead || !alive(e) || !L.owner) { if (!isFoe(e)) e.jumpLift = 0; lifts.delete(e); continue; }
       const k = G.U.clamp(L.t / L.dur, 0, 1);
       // Sube rápido, flota girando y cae de golpe (los jefes no se levantan: sólo el remolino).
-      if (!L.boss && !e.jump) e.jumpLift = (k < 0.2 ? Math.sin(k / 0.2 * Math.PI / 2) : k > 0.85 ? Math.cos((k - 0.85) / 0.15 * Math.PI / 2) : 1) * 46
+      if (!L.boss && !e.jump) e.jumpLift = L.row.hops ? Math.abs(Math.sin(k * L.row.hops * Math.PI)) * 40      // Puño de Piedra: botes
+                                          : (k < 0.2 ? Math.sin(k / 0.2 * Math.PI / 2) : k > 0.85 ? Math.cos((k - 0.85) / 0.15 * Math.PI / 2) : 1) * 46
                                             + Math.sin(L.t * 9) * 2;
       if (L.row.dot) {
         L.tick -= dt;
@@ -620,6 +628,14 @@ G.Combat = (() => {
         if (!L.boss && !e.jump) e.jumpLift = 0;
         lifts.delete(e);
         if (G.Camera.sees(e.x, e.y, 30)) G.FX.burst(e.x, e.y - 2, '#8ccaff', 8, 110);
+        // Maestro del Puño de Piedra: al caer, empujón lejos y aturdido (gira sin atacar).
+        if (L.row.endKnock && !e.dead) {
+          if (!L.ghost) {
+            hit(L.owner, e, L.row.dmg * 0.3 * L.owner.atk, G.U.TYPE_COLOR.ground, e.x - L.owner.x, e.y - L.owner.y, L.row.endKnock, L.m);
+            if (!e.dead && !L.boss && L.row.stun) e.applyConfuse(L.row.stun);
+          }
+          if (G.Camera.sees(e.x, e.y, 30)) G.FX.sp('impact', 'ground', e.x, e.y - e.bodyH * 0.5, { life: 0.18, scale: 1.6, frameRate: 14 });
+        }
         if (L.row.slap && !e.dead) {
           fields.push({ kind: 'hand', owner: L.owner, ghost: true, m: L.m, x: e.x, y: e.y - e.bodyH * 0.5, t: 0, life: 0.5, flip: Math.random() < 0.5 });
           if (!L.ghost) hit(L.owner, e, L.row.slap * L.owner.atk, '#3d8bff', 0, 1, 0, L.m);
@@ -752,7 +768,9 @@ G.Combat = (() => {
   /** Cooperativo: efecto de un compañero que no sale de repetir su ataque (el agujero negro). */
   function netFx(ev) {
     const pl = G.Game.player;
-    if (!pl || ev[1] !== 'hole') return;
+    if (!pl) return;
+    if (ev[1] === 'conf') { confBlast(pl, ev[2], ev[3], ev[4] || 4, 0, true); return; }      // (V3.1) Esfera Dragón: sólo se ve
+    if (ev[1] !== 'hole') return;
     addHole(pl, ev[2], ev[3], null, true);
   }
   function holeStep(f, dt) {
@@ -900,7 +918,8 @@ G.Combat = (() => {
   }
 
   const TARGETED = ['melee', 'beam', 'projectile', 'boomerang', 'chain', 'meteor', 'dash', 'cone', 'lightning', 'drain', 'psyarrow',
-                    'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam', 'foampunch', 'pounce', 'whip', 'question', 'roll', 'pan'];
+                    'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam', 'foampunch', 'pounce', 'whip', 'question', 'roll', 'pan',
+                    'clay', 'rockfist', 'icebolt', 'dragonorb'];
   function needsTarget(m) { return TARGETED.includes(m.kind); }
   function reach(m) {
     if (m.kind === 'melee') return m.radius + 30;
@@ -910,7 +929,8 @@ G.Combat = (() => {
     if (m.kind === 'meteor') return 340;
     if (m.kind === 'dash') return m.radius + 60;
     if (['lightning', 'drain', 'psyarrow', 'acidrain', 'fist', 'spear', 'treefall', 'hearts', 'tornado', 'bladestorm', 'dbeam',
-         'foampunch', 'scare', 'pounce', 'whip', 'question', 'roll', 'pan'].includes(m.kind)) return G.Moves.stat(m).r * 32;
+         'foampunch', 'scare', 'pounce', 'whip', 'question', 'roll', 'pan',
+         'clay', 'rockfist', 'windwall', 'icebolt', 'dragonorb'].includes(m.kind)) return G.Moves.stat(m).r * 32;
     if (m.kind === 'cone') return m.speed * m.life + 30;
     return 520;
   }
@@ -1467,6 +1487,306 @@ G.Combat = (() => {
     }
   }
 
+  // ---------------- 2026-10-16 (V3.1): los 5 de la hoja del dueño ----------------
+  // Estados nuevos de los enemigos (enemy.js): confundido (applyConfuse), congelado (applyFreeze) y
+  // atrapado (e.grab, sólo los que mueve este ordenador). Los jefes nunca: se frenan.
+  const nearestN = (pl, R, n) => enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl)).slice(0, n);
+
+  /**
+   * Elemento Inestable: arcilla a los `n` más cercanos (a `r` casillas): daño al pegar y explosión
+   * (`boom`, radio `br`) a los 2,5 s, también si el pegado muere antes. Evolucionado (Bomba Pegajosa
+   * Letal): salta a `bounce` enemigos a 2 casillas y los pega a la misma bomba; con 3 pegados explota
+   * al momento y además frena y quema.
+   */
+  const CLAY_FUSE = 2.5;
+  function clays(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE, col = G.U.TYPE_COLOR.rock;
+    const list = nearestN(pl, R, row.n);
+    if (!list.length) return;
+    const taken = new Set();
+    for (const e of list) {
+      if (taken.has(e)) continue;
+      G.FX.sp('clay', 'rock', pl.x, pl.y - pl.bodyH * 0.6, { vx: (e.x - pl.x) * 4.5, vy: (e.y - e.bodyH * 0.5 - pl.y + pl.bodyH * 0.6) * 4.5, life: 0.22 });
+      if (!ghost) hit(pl, e, row.dmg * pl.atk, col, e.x - pl.x, e.y - pl.y, 0, m);
+      const f = { kind: 'clay', owner: pl, ghost, m, row, x: e.x, y: e.y, t: 0, life: 9e9, fuse: CLAY_FUSE, stuck: [e] };
+      taken.add(e);
+      for (let k = 0, cur = e; k < (row.bounce || 0); k++) {
+        const nx = enemiesIn(cur.x, cur.y, 2 * TILE).filter(o => !o.dead && !taken.has(o) && !isFoe(o))
+          .sort((a, b) => G.U.dist2(a.x, a.y, cur.x, cur.y) - G.U.dist2(b.x, b.y, cur.x, cur.y))[0];
+        if (!nx) break;
+        taken.add(nx); f.stuck.push(nx);
+        G.FX.sp('clay', 'rock', (cur.x + nx.x) / 2, (cur.y + nx.y) / 2 - 16, { life: 0.15 });
+        if (!ghost) hit(pl, nx, row.dmg * pl.atk, col, nx.x - cur.x, nx.y - cur.y, 0, m);
+        cur = nx;
+      }
+      if (row.combo && f.stuck.length >= 3) f.fuse = 0.15;          // tres pegados: explota ya
+      fields.push(f);
+    }
+  }
+  function clayStep(f) {
+    const e = f.stuck.find(o => !o.dead && alive(o));
+    if (e) { f.x = e.x; f.y = e.y; }
+    if (f.t < f.fuse) return true;
+    const R = f.row.br * TILE, combo = f.row.combo && f.stuck.length >= 3;
+    const centers = f.stuck.filter(o => !o.dead && alive(o)).map(o => [o.x, o.y]);
+    if (!centers.length) centers.push([f.x, f.y]);
+    const done = new Set();
+    for (const [x, y] of centers) {
+      if (G.Camera.sees(x, y, R)) {
+        G.FX.sp('pow', 'fire', x, y - 14, { life: 0.24, scale: 1.5, frameRate: 14, fade: false });
+        G.FX.burst(x, y - 8, '#c6b08a', 10, 170);
+        G.FX.ring(x, y, 6, R, combo ? '#ff6a1f' : '#ff9a4d', 0.3, 3);
+      }
+      if (f.ghost) continue;
+      for (const o of enemiesIn(x, y, R)) {
+        if (o.dead || done.has(o)) continue;
+        done.add(o);
+        hit(f.owner, o, f.row.boom * f.owner.atk, '#ff9a4d', o.x - x, o.y - y, 60, f.m);
+        if (combo && !o.dead && !isFoe(o)) { o.applySlow(0.45, 2); o.applyBurn(3); }
+      }
+      for (const q of G.World.propsInCircle(x, y, R)) G.World.damageProp(q, f.row.boom * f.owner.atk, '#ff9a4d');
+    }
+    if (G.Camera.sees(f.x, f.y, 80)) { G.Audio.sfx('break'); G.Camera.kick(0.08); }
+    return false;
+  }
+
+  /**
+   * Puño de Piedra: un puño de roca sale del suelo bajo los `n` más cercanos (a `r` casillas), les
+   * pega y los lanza por los aires `hops` veces seguidas (en `lifts`, como el tornado). Evolucionado
+   * (Maestro del Puño de Piedra): al acabar, empujón (`endKnock`) y aturdidos `stun` s.
+   */
+  function rockFists(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE;
+    for (const e of nearestN(pl, R, row.n)) fields.push({ kind: 'pillar', owner: pl, ghost, m, row, x: e.x, y: e.y + 2, t: 0, life: 0.75, struck: false });
+  }
+  function pillarStep(f) {
+    if (f.struck || f.t < 0.1) return true;
+    f.struck = true;
+    if (G.Camera.sees(f.x, f.y, 60)) {
+      G.FX.burst(f.x, f.y - 4, '#aa7c3c', 12, 160);
+      for (let k = 0; k < 5; k++) G.FX.sp('rock', 'ground', f.x + G.U.rand(-14, 14), f.y - 6, { vx: G.U.rand(-90, 90), vy: G.U.rand(-160, -60), life: 0.35, scale: 1 });
+      G.Audio.sfx('break');
+    }
+    for (const e of enemiesIn(f.x, f.y, 26 + 30)) {
+      if (e.dead || G.U.dist2(e.x, e.y, f.x, f.y) > (26 + e.r) ** 2) continue;
+      if (!f.ghost) hit(f.owner, e, f.row.dmg * f.owner.atk, G.U.TYPE_COLOR.ground, 0, -1, 0, f.m);
+      if (!e.dead) hop(f, e);
+    }
+    if (!f.ghost) for (const q of G.World.propsInCircle(f.x, f.y, 26)) G.World.damageProp(q, f.row.dmg * f.owner.atk, G.U.TYPE_COLOR.ground);
+    return true;
+  }
+  function hop(f, e) {
+    const row = f.row, dur = 0.38 * row.hops;
+    if (!f.ghost) { if (e.boss || isFoe(e)) e.applySlow(0.5, dur); else e.applyRoot(dur + 0.05); }
+    if (lifts.has(e)) return;
+    lifts.set(e, { owner: f.owner, ghost: f.ghost, m: f.m, row: { hops: row.hops, endKnock: row.endKnock, stun: row.stun, dmg: row.dmg },
+                   t: 0, dur, tick: 0.5, boss: !!e.boss || isFoe(e) });
+  }
+
+  /**
+   * Viento Planetario: muro de viento de `wr` casillas a tu alrededor mientras lo llevas (deshace
+   * los proyectiles enemigos que entran: ver resolve) y golpes invisibles a los `n` más cercanos a
+   * `r` casillas. Con `push`, el muro aparta a los enemigos. Evolucionado (Dominio del Viento): muro
+   * de 6 casillas sin golpe invisible; atrapa a los que tocan el borde (hasta `grab`), giran a tu
+   * alrededor sin atacar y, en cada lanzamiento, uno sale disparado contra otro enemigo a `r`
+   * casillas (`throw` de daño; el lanzado pierde `cut` de su vida). Atrapar sólo puede quien mueve a
+   * los monstruos (solo o anfitrión); en un invitado el borde del muro golpea y frena.
+   */
+  function windWall(pl, m) {
+    const row = G.Moves.stat(m), WR = row.wr * TILE, cd = (row.cd || m.cd) * (pl.cdK || 1);
+    if (!ghost) { pl.windUntil = G.Game.st.time + cd + 0.4; pl.windR = WR; }
+    let f = fields.find(o => o.kind === 'wind' && o.owner === pl && !o.gone);
+    if (!f) { f = { kind: 'wind', owner: pl, ghost, m, row, x: pl.x, y: pl.y, t: 0, life: 9e9, held: [], hitT: new Map() }; fields.push(f); }
+    f.row = row; f.m = m; f.r = WR; f.end = f.t + cd + 0.4;
+    if (!row.grab) {
+      for (const e of nearestN(pl, row.r * TILE, row.n)) {
+        if (G.Camera.sees(e.x, e.y, 30)) {
+          G.FX.sp('crescent', 'flying', e.x, e.y - e.bodyH * 0.5, { life: 0.16, scale: 1.5, angle: Math.random() * 6.28 });
+          for (let k = 0; k < 3; k++) G.FX.px(e.x + G.U.rand(-8, 8), e.y - e.bodyH * 0.5 + G.U.rand(-8, 8), '#d2e2ff', { vx: G.U.rand(-60, 60), vy: G.U.rand(-60, 20), life: 0.25 });
+        }
+        if (!ghost) hit(pl, e, row.dmg * pl.atk, G.U.TYPE_COLOR.flying, e.x - pl.x, e.y - pl.y, 0, m);
+      }
+      return;
+    }
+    if (ghost) return;
+    // Lanza (de `toss` en `toss`) a los que lleven más rato atrapados contra los enemigos más cercanos.
+    const ready = f.held.filter(e => !e.dead && e.grab && !e.grab.toss && e.grab.t > 0.8).sort((a, b) => b.grab.t - a.grab.t).slice(0, row.toss || 1);
+    const tgs = enemiesIn(pl.x, pl.y, row.r * TILE).filter(o => !o.dead && !o.grab && !isFoe(o)).sort(byDist(pl));
+    ready.forEach((e, i) => {
+      const tg = tgs[i] || tgs[0];
+      if (!tg && e.grab.t < 4) return;
+      e.grab.toss = true;
+      const tx = tg ? tg.x : e.x + (e.x - pl.x), ty = tg ? tg.y : e.y + (e.y - pl.y);
+      fields.push({ kind: 'toss', owner: pl, ghost: false, m, row, e, x: e.x, y: e.y, x0: e.x, y0: e.y, tx, ty, target: tg, t: 0, life: 9e9, dur: 0.32 });
+    });
+  }
+  function windStep(f, dt) {
+    const pl = f.owner;
+    if (f.t > f.end || !pl || pl.dead) { for (const e of f.held) if (e.grab && e.grab.f === f && !e.grab.toss) e.grab = null; return false; }
+    f.x = pl.x; f.y = pl.y;
+    if (f.ghost) return true;
+    const row = f.row, R = f.r;
+    if (row.push) {
+      for (const e of enemiesIn(pl.x, pl.y, R)) {
+        if (e.dead || e.boss || e.remote || isFoe(e) || e.grab) continue;
+        const dx = e.x - pl.x, dy = e.y - pl.y, d = Math.max(1, Math.hypot(dx, dy)), min = R + e.r * 0.5;
+        if (d >= min) continue;
+        const x = pl.x + dx / d * min, y = pl.y + dy / d * min;
+        if (!G.World.isWall(x, y)) { e.x = x; e.y = y; }
+        e.kx += dx / d * 90; e.ky += dy / d * 90;
+      }
+    }
+    if (!row.grab) return true;
+    f.held = f.held.filter(e => !e.dead && e.grab && e.grab.f === f);
+    for (const e of enemiesIn(pl.x, pl.y, R + 30)) {
+      if (e.dead || e.boss || isFoe(e) || e.grab) continue;
+      const d = Math.hypot(e.x - pl.x, e.y - pl.y);
+      if (d < R - 26 || d > R + e.r) continue;
+      if (e.remote) {
+        // Invitado: los monstruos los mueve el anfitrión; el borde golpea y frena (una vez por segundo).
+        const last = f.hitT.get(e.id);
+        if (last != null && f.t - last < 1) continue;
+        f.hitT.set(e.id, f.t);
+        hit(pl, e, row.throw * 0.5 * pl.atk, G.U.TYPE_COLOR.flying, e.x - pl.x, e.y - pl.y, 0, f.m);
+        e.applySlow(0.5, 1);
+        continue;
+      }
+      if (f.held.length >= row.grab) continue;
+      e.grab = { f, a: Math.atan2(e.y - pl.y, e.x - pl.x), t: 0 };
+      f.held.push(e);
+      G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#d2e2ff', 6, 90);
+    }
+    // Los atrapados giran a tu alrededor (más cerca que el muro) sin poder hacer nada.
+    const rr = Math.min(R * 0.55, 3.2 * TILE);
+    for (const e of f.held) {
+      if (e.grab.toss) continue;
+      e.grab.t += dt; e.grab.a += dt * 2.6;
+      e.x = G.U.damp(e.x, pl.x + Math.cos(e.grab.a) * rr, 10, dt);
+      e.y = G.U.damp(e.y, pl.y + Math.sin(e.grab.a) * rr * 0.8, 10, dt);
+      e.kx = 0; e.ky = 0; e.rootT = Math.max(e.rootT, 0.2);
+      e.jumpLift = 10 + Math.sin(e.grab.t * 6) * 4;
+    }
+    return true;
+  }
+  function tossStep(f) {
+    const e = f.e, k = Math.min(1, f.t / f.dur);
+    if (!e.dead) {
+      e.x = f.x0 + (f.tx - f.x0) * k; e.y = f.y0 + (f.ty - f.y0) * k;
+      e.jumpLift = Math.sin(k * Math.PI) * 50;
+      if (Math.random() < 0.5) G.FX.px(e.x + G.U.rand(-6, 6), e.y - e.jumpLift - 6, '#d2e2ff', { life: 0.25 });
+    }
+    if (k < 1) return true;
+    e.jumpLift = 0; e.grab = null;
+    G.FX.burst(f.tx, f.ty - 8, '#d2e2ff', 14, 170);
+    G.FX.ring(f.tx, f.ty, 6, 1.2 * TILE, '#93b2ff', 0.3, 3);
+    if (G.Camera.sees(f.tx, f.ty, 60)) { G.Audio.sfx('break'); G.Camera.kick(0.1); }
+    const pl = f.owner, row = f.row;
+    for (const o of enemiesIn(f.tx, f.ty, 1.2 * TILE)) {
+      if (o === e || o.dead || isFoe(o)) continue;
+      hit(pl, o, row.throw * pl.atk, G.U.TYPE_COLOR.flying, o.x - f.tx, o.y - f.ty, 80, f.m);
+    }
+    if (!e.dead) e.hurt(e.hp * row.cut, G.U.TYPE_COLOR.flying, e.x - pl.x, e.y - pl.y, 60);
+    return false;
+  }
+
+  /**
+   * Arte Gélido: hielo a los `n` más cercanos (a `r` casillas): daño y frena; con `sr`, salpica
+   * (mitad de daño) a los de alrededor. Evolucionado (Agonía de Escarcha): no frena: los congela
+   * `freeze` s en un bloque de hielo (enemy.js) que al romperse suelta 4 esquirlas: a los de `shatter`
+   * casillas, daño (`shard`) y también congelados (una vez: las esquirlas de éstos ya no congelan).
+   */
+  function iceArts(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE, col = G.U.TYPE_COLOR.ice;
+    for (const e of nearestN(pl, R, row.n)) {
+      const a = Math.atan2(e.y - pl.y, e.x - pl.x), d = Math.hypot(e.x - pl.x, e.y - pl.y);
+      if (G.Camera.sees(e.x, e.y, R)) {
+        G.FX.sp('shard', 'ice', pl.x + Math.cos(a) * 10, pl.y - pl.bodyH * 0.5 + Math.sin(a) * 10,
+                { vx: Math.cos(a) * 560, vy: Math.sin(a) * 560, life: Math.max(0.05, d / 560), angle: a, scale: 1.5, fade: false });
+        G.FX.sp('impact', 'ice', e.x, e.y - e.bodyH * 0.5, { life: 0.16, scale: 1.4, frameRate: 14 });
+      }
+      if (ghost) continue;
+      hit(pl, e, row.dmg * pl.atk, col, Math.cos(a), Math.sin(a), 0, m);
+      if (!e.dead && !isFoe(e)) { if (row.freeze) freezeOn(pl, e, m, row, 0); else e.applySlow(row.slow, 1.5); }
+      if (row.sr) {
+        G.FX.ring(e.x, e.y, 4, row.sr * TILE, '#bff3ff', 0.25, 3);
+        for (const o of enemiesIn(e.x, e.y, row.sr * TILE)) {
+          if (o === e || o.dead) continue;
+          hit(pl, o, row.dmg * 0.35 * pl.atk, col, o.x - e.x, o.y - e.y, 0, m);
+          if (!o.dead && !isFoe(o)) o.applySlow(row.slow, 1.5);
+        }
+      }
+    }
+  }
+  function freezeOn(pl, e, m, row, depth) {
+    if (e.boss) { e.applySlow(0.6, row.freeze); return; }
+    if (fields.some(f => f.kind === 'frost' && f.e === e)) return;       // ya está congelado
+    e.applyFreeze(row.freeze);
+    fields.push({ kind: 'frost', owner: pl, ghost: false, m, row, e, x: e.x, y: e.y, t: 0, life: 9e9, dur: row.freeze, depth });
+  }
+  function frostStep(f) {
+    const e = f.e;
+    if (!e.dead && alive(e)) { f.x = e.x; f.y = e.y; }
+    if (f.t < f.dur && !e.dead) return true;
+    // Se rompe: 4 esquirlas en diagonal.
+    if (G.Camera.sees(f.x, f.y, 80)) {
+      for (let k = 0; k < 4; k++) {
+        const a = 0.785 + k * 1.571;
+        G.FX.sp('shard', 'ice', f.x, f.y - 14, { vx: Math.cos(a) * 240, vy: Math.sin(a) * 240, life: 0.26, angle: a, scale: 1.5 });
+      }
+      G.FX.burst(f.x, f.y - 12, '#bff3ff', 10, 150);
+      G.Audio.sfx('break');
+    }
+    const R = f.row.shatter * TILE;
+    for (const o of enemiesIn(f.x, f.y, R)) {
+      if (o === e || o.dead || isFoe(o)) continue;
+      hit(f.owner, o, f.row.shard * f.owner.atk, G.U.TYPE_COLOR.ice, o.x - f.x, o.y - f.y, 0, f.m);
+      if (!o.dead && f.depth < 1) freezeOn(f.owner, o, f.m, f.row, f.depth + 1);
+    }
+    return false;
+  }
+
+  /**
+   * Esfera Dragón: `n` esferas contra los más cercanos (a `r` casillas) que los atraviesan; frenan
+   * (`slow`) y empujan (`knock`). Evolucionado (Esfera Dragón de Ocho Escamas): crecen al atravesar
+   * (hasta `grow` veces, ×1,25 de daño cada vez) y lo que mata la más grande explota y confunde
+   * (`conf` s) a los de `confR` casillas (ver resolve: dragonHit).
+   */
+  const ORB_SPEED = 320;
+  function dragonOrbs(pl, m) {
+    const row = G.Moves.stat(m), R = row.r * TILE;
+    const near = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl));
+    for (let i = 0; i < row.n; i++) {
+      const e = near[i];
+      const a = e ? Math.atan2(e.y - pl.y, e.x - pl.x) : (pl.aim || 0) + (i - (row.n - 1) / 2) * 0.25;
+      G.Projectiles.spawn(Object.assign(payload(m), {
+        x: pl.x + Math.cos(a) * 8, y: pl.y + Math.sin(a) * 8, vx: Math.cos(a) * ORB_SPEED, vy: Math.sin(a) * ORB_SPEED,
+        dmg: row.dmg * pl.atk, r: 7, scale: 1, life: R / ORB_SPEED + 0.15, pierce: row.pierce || 2, color: G.U.TYPE_COLOR.dragon,
+        hits: new Set(), vis: { proj: 'ball', pal: 'dragon' }, ghost, owner: pl,
+        slow: row.slow || 0, knock: row.knock || 0, grow: row.grow || 0, grown: 0, conf: row.conf || 0, confR: row.confR || 0
+      }));
+    }
+  }
+  /** Una esfera dragón ha atravesado a `e` (mató: `killed`): confusión si era la grande, y crece. */
+  function dragonHit(p, e, killed) {
+    if (p.conf && killed && p.grown >= p.grow && !p.ghost) confBlast(p.owner, e.x, e.y, p.confR, p.conf);
+    if (p.grow && p.grown < p.grow) {
+      p.grown++;
+      p.scale = p.grown >= 2 ? 2 : 1.5; p.r = 7 * p.scale; p.dmg *= 1.25;
+      G.FX.ring(p.x, p.y, 4, 16 * p.scale, '#a490ff', 0.2, 2);
+    }
+  }
+  function confBlast(pl, x, y, rTiles, dur, fromNet) {
+    const R = rTiles * TILE;
+    if (G.Camera.sees(x, y, R)) {
+      G.FX.ring(x, y, 8, R, '#a490ff', 0.45, 4);
+      G.FX.burst(x, y - 10, '#c47bff', 16, 200);
+      for (let k = 0; k < 6; k++) G.FX.sp('star', 'psychic', x, y - 12, { vx: Math.cos(k * 1.05) * 160, vy: Math.sin(k * 1.05) * 110, life: 0.4 });
+    }
+    if (fromNet) return;
+    for (const o of enemiesIn(x, y, R)) if (!o.dead && !isFoe(o)) o.applyConfuse(dur);
+    if (G.Coop.active) { const ev = ['mfx', 'conf', Math.round(x), Math.round(y), rTiles]; if (G.Coop.isHost) G.Coop.broadcast(ev); else G.Coop.toHost(ev); }
+  }
+
   function updateFields(dt) {
     tickDots(dt);
     if (lifts.size) updateLifts(dt);
@@ -1514,6 +1834,16 @@ G.Combat = (() => {
         if (!arrowStep(f, dt)) fields.splice(i, 1);
       } else if (f.kind === 'heart') {
         if (!heartStep(f, dt)) fields.splice(i, 1);
+      } else if (f.kind === 'clay') {
+        if (!clayStep(f)) fields.splice(i, 1);
+      } else if (f.kind === 'pillar') {
+        pillarStep(f);
+      } else if (f.kind === 'wind') {
+        if (!windStep(f, dt)) fields.splice(i, 1);
+      } else if (f.kind === 'toss') {
+        if (!tossStep(f)) fields.splice(i, 1);
+      } else if (f.kind === 'frost') {
+        if (!frostStep(f)) fields.splice(i, 1);
       } else if (f.kind === 'shade') {
         shadeStep(f, dt);
         if (f.t >= f.life - dt) shadeEnd(f);
@@ -1614,6 +1944,14 @@ G.Combat = (() => {
   function drawGroundFields(ctx) {
     const now = performance.now() / 1000;
     for (const f of fields) {
+      if (f.kind === 'wind' && G.Camera.sees(f.x, f.y, f.r)) {
+        // Borde del muro de viento en el suelo (puntos que giran).
+        ctx.save();
+        ctx.globalAlpha = 0.33; ctx.fillStyle = '#d2e2ff';
+        G.VFX.dashOval(ctx, f.x, f.y, f.r, f.r * 0.6, Math.floor(now * 8), 2, 3);
+        ctx.restore();
+        continue;
+      }
       if (!G.Camera.sees(f.x, f.y, 60)) continue;
       ctx.save();
       if (f.kind === 'patch') {
@@ -1723,6 +2061,40 @@ G.Combat = (() => {
         });
         ctx.restore();
         G.VFX.draw(ctx, 'psyarrow', 'psychic', f.x, f.y, { angle: f.ang, scale: 1.2 });
+        continue;
+      }
+      if (f.kind === 'clay') {
+        // Arcilla pegada (y en la evolucionada, el hilo de barro entre los pegados); parpadea antes de explotar.
+        const vivos = f.stuck.filter(o => !o.dead);
+        for (let k = 1; k < vivos.length; k++) {
+          const a = vivos[k - 1], b = vivos[k], d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.floor(d / 8));
+          ctx.fillStyle = '#8e7a5a';
+          for (let j = 1; j < n; j++) ctx.fillRect(Math.round(a.x + (b.x - a.x) * j / n) - 2, Math.round(a.y - a.bodyH * 0.5 + (b.y - b.bodyH * 0.5 - a.y + a.bodyH * 0.5) * j / n) - 2, 4, 4);
+        }
+        const left = f.fuse - f.t, blink = left < 0.9 && Math.floor(f.t * 14) % 2 === 0;
+        for (const o of vivos) {
+          const y = o.y - o.bodyH * 0.6 - (o.jumpLift || 0);
+          G.VFX.draw(ctx, 'clay', 'rock', o.x, y, { scale: 1.5 });
+          if (blink) { ctx.fillStyle = '#ff3a2a'; ctx.fillRect(Math.round(o.x) - 3, Math.round(y) - 14, 6, 6); }
+        }
+        continue;
+      }
+      if (f.kind === 'pillar') {
+        // Columna de roca que sale del suelo (0,1 s), se queda y se hunde.
+        const k = f.t < 0.1 ? f.t / 0.1 : f.t > 0.55 ? Math.max(0, 1 - (f.t - 0.55) / 0.2) : 1;
+        const H = 22 * G.Sprites.PX * 1.5;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(f.x - 60, f.y - H - 10, 120, H + 12); ctx.clip();
+        G.VFX.draw(ctx, 'pillar', 'ground', f.x, f.y + 2 + (1 - k) * H, { scale: 1.5, pivot: [6.5, 22] });
+        ctx.restore();
+        continue;
+      }
+      if (f.kind === 'wind') {
+        // Muro de viento: remolinos de píxeles girando alrededor (más claros delante).
+        for (let k = 0; k < 10; k++) {
+          const a = k / 10 * 6.2832 + now * 1.6, x = f.x + Math.cos(a) * f.r, y = f.y - 10 + Math.sin(a) * f.r * 0.6;
+          G.VFX.draw(ctx, 'wind', 'flying', x, y, { frame: (k + Math.floor(now * 8)) % 2, alpha: Math.sin(a) > 0 ? 0.66 : 0.33 });
+        }
         continue;
       }
       if (f.kind === 'shade') {
@@ -1957,6 +2329,12 @@ G.Combat = (() => {
 
       // --- disparos enemigos: paredes y objetos sólidos dan cobertura ---
       if (!p.friendly) {
+        // Viento Planetario (V3.1): los proyectiles que entran en el muro se deshacen.
+        if (pl.windUntil > G.Game.st.time && !pl.dead && G.U.dist2(p.x, p.y, pl.x, pl.y) < pl.windR * pl.windR) {
+          G.FX.sp('wind', 'flying', p.x, p.y - G.LIFT, { life: 0.2 });
+          projectiles.splice(i, 1);
+          continue;
+        }
         if (G.World.projectileBlock(p.x, p.y, p.r)) {
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 5, 70);
           projectiles.splice(i, 1);
@@ -2042,6 +2420,7 @@ G.Combat = (() => {
           G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
           if (p.split && p.pierce > 0) splitSpear(p, e);
           if (p.split90) { const left = p.split90 - 1; p.split90 = 0; splitBlade(p, e, left); }
+          if (p.grow) dragonHit(p, e, false);                    // (se ve crecer también en el fantasma)
           if (p.pierce > 0) { p.pierce--; continue; }
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 5, 80);
           projectiles.splice(i, 1);
@@ -2074,6 +2453,7 @@ G.Combat = (() => {
           if (p.rootCh || p.weakCh) extraFx(e, p.rootCh, p.rootT, p.weakCh);
           G.Arts.onHit(pl, e);
           if (p.zap && !p.ghost) zapAround(p, e, pl);          // Boniato evolucionado
+          if (p.grow || p.conf) dragonHit(p, e, e.dead);          // Esfera Dragón de Ocho Escamas (V3.1)
         }
 
         if (!p.orb) {
@@ -2093,6 +2473,7 @@ G.Combat = (() => {
     if (pl.dead) return;
     for (const e of enemiesIn(pl.x, pl.y, pl.r + 40)) {
       if (isFoe(e)) continue;      // PK: el rival no tiene daño por contacto (antes: e.strike no existe y fallaba cada fotograma)
+      if (e.disabled) continue;    // confundido, congelado o atrapado (V3.1): no pega
       // Shaq (Peso Pesado evolucionado): los enemigos normales no pueden tocarte: se quedan
       // fuera del campo (el anillo que se dibuja en player.js) y rebotan. Los jefes y los disparos sí.
       // (2026-10-15: antes sólo los apartaba hasta tocarte el cuerpo y parecía que no hacía nada.)

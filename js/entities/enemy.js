@@ -53,6 +53,9 @@
       this.flash = 0;
       this.slow = 0; this.slowT = 0;
       this.rootT = 0;            // inmovilizado (enredaderas de ¡Árbol Va!)
+      // (2026-10-16, V3.1) Confundido (gira sin atacar), congelado (bloque de hielo) y atrapado
+      // por el Viento Planetario (lo mueve combat.js). Los tres: ni se mueve ni ataca.
+      this.confT = 0; this.freezeT = 0; this.grab = null;
       this.burn = 0; this.burnT = 0; this.burnTick = 0;
       this.poison = 0; this.poisonT = 0; this.poisonTick = 0;
       this.lavaTick = 0;
@@ -234,6 +237,20 @@
       if (this.remote) { G.Coop.status(this, 'r', dur); return; }
       this.rootT = Math.max(this.rootT, dur);
     }
+    /** Confundido `dur` s: gira en el sitio y no ataca (los jefes sólo se frenan). */
+    applyConfuse(dur) {
+      if (this.remote) { G.Coop.status(this, 'c', dur); return; }
+      if (this.boss) { this.applySlow(0.5, dur); return; }
+      this.confT = Math.max(this.confT, dur); this.rootT = Math.max(this.rootT, dur);
+    }
+    /** Congelado `dur` s en un bloque de hielo: no se mueve ni ataca (los jefes sólo se frenan). */
+    applyFreeze(dur) {
+      if (this.remote) { G.Coop.status(this, 'f', dur); return; }
+      if (this.boss) { this.applySlow(0.6, dur); return; }
+      this.freezeT = Math.max(this.freezeT, dur); this.rootT = Math.max(this.rootT, dur);
+    }
+    /** ¿Fuera de combate? (confundido, congelado o atrapado; en una copia, lo que diga el anfitrión) */
+    get disabled() { return this.confT > 0 || this.freezeT > 0 || !!this.grab || !!(this.net && this.net.st & 112); }
     applyBurn(stacks = 1) {
       if (this.remote) { G.Coop.status(this, 'b', stacks); return; }
       this.burn = Math.min(8, this.burn + stacks); this.burnT = 3;
@@ -397,6 +414,8 @@
       // --- estados ---
       if (this.slowT > 0) { this.slowT -= dt; if (this.slowT <= 0) this.slow = 0; }
       if (this.rootT > 0) this.rootT -= dt;
+      if (this.confT > 0) this.confT -= dt;
+      if (this.freezeT > 0) this.freezeT -= dt;
       if (this.burn > 0) {
         this.burnT -= dt; this.burnTick -= dt;
         if (this.burnTick <= 0) { this.burnTick = 0.5; this.hurt(1.6 * this.burn * (1 + pl.level * 0.06), '#ff9a4d'); }
@@ -512,7 +531,7 @@
         if (dist < keep * 0.75) { vx = -ddx * spd * 0.8; vy = -ddy * spd * 0.8; }
         else if (dist < keep) { vx *= 0.1; vy *= 0.1; animBase = 'Idle'; }
         this.shotCd -= dt;
-        if (this.shotCd <= 0 && dist < range) {
+        if (this.shotCd <= 0 && dist < range && !this.disabled) {
           this.shotCd = this.def.shotCd || 2;
           this.special(pl, ddx, ddy);
         }
@@ -1014,10 +1033,27 @@
       const lift = (this.flying && !this.boss ? 1 + Math.sin(this.bob) * 1.5 : 0) + (this.jumpLift || 0);
       // Furia: el sprite enrojecido (filtro del canvas; donde no lo hay, sólo el aura y el vapor).
       // (2026-10-16: la hoja enrojecida se hace una vez y se guarda; ctx.filter en cada dibujo iba muy lento en el móvil.)
+      // Confundido: gira en el sitio (una dirección cada 0,09 s).
+      const conf = !this.dead && (this.confT > 0 || !!(this.net && this.net.st & 32));
+      if (conf) this.anim.dir = Math.floor(performance.now() / 90) % 8;
       this.anim.draw(ctx, this.x, this.y - lift, { flash: this.flash > 0, alpha, tint: raging && Enemy.FILTER ? RAGE_TINT : null });
       ctx.restore();
 
       if (this.dead) return;
+
+      // Congelado: bloque de hielo de píxeles encima (combat.js lo rompe en esquirlas al acabar).
+      if (this.freezeT > 0 || (this.net && this.net.st & 16)) {
+        const k = this.bodyH > 44 ? 2 : 1.5;
+        G.VFX.draw(ctx, 'icecube', 'ice', this.x, this.y - lift - this.bodyH * 0.45, { scale: k * Math.max(1, this.bodyH / 40), alpha: 0.8 });
+      }
+      // Confundido: estrellitas girando sobre la cabeza.
+      if (conf) {
+        const t = performance.now() / 260, cy = this.y - lift - this.bodyH - 6;
+        for (let i = 0; i < 3; i++) {
+          const a = t + i * 2.094;
+          G.VFX.draw(ctx, 'star', 'psychic', this.x + Math.cos(a) * (this.r + 4), cy + Math.sin(a) * 3, { frame: i, alpha: Math.sin(a) > 0 ? 1 : 0.66 });
+        }
+      }
 
       // Escudo: burbuja azul.
       if (this.shield > 0 || (this.net && this.net.st & 4)) {
