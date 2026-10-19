@@ -19,6 +19,7 @@ G.MODNEWS = [
       { zh: '派對牌桌：大老二改新規則（三條、同花不能出；順子只壓順子、葫蘆只壓葫蘆；鐵支、同花順是炸彈，可以壓任何牌）；手牌間距加大，不能出的牌點了沒反應；大廳可以自己選座位（2 對 2 時隊友坐對面）；2 對 2 的屬性牌和頑皮雷彈看得到隊友的手牌', en: 'Party tables: new Big Two rules (no triples or flushes; straights only beat straights, full houses only full houses; four of a kind and straight flush are bombs that beat anything); wider hand spacing, unplayable cards no longer react; pick your seat in the lobby (teammates sit opposite in 2v2); in 2v2 Type Cards and Voltorb you can see your teammate’s hand' }
     ],
     chg: [
+      { zh: '強化商店的「禁用」從 3 級加到 8 級：每隻寶可夢最多可以禁用 8 個招式；漲價幅度調低，8 級的價格是 300 → 5130 金幣（全買 14790）', en: 'The Ban upgrade goes from 3 to 8 levels: each Pokémon can now ban up to 8 moves; prices rise more gently, 300 → 5,130 coins for the 8 levels (14,790 in total)' },
       { zh: '燙手山芋的炸彈改成 8～15 秒才爆炸（原本 5～10 秒太短）', en: 'Hot Potato: the bomb now blows up after 8–15 s (was 5–10 s, too short)' },
       { zh: '極巨化時間從 18 秒改成 20 秒；集滿時會跳大字提示「按 G」（手機是點畫面上的極巨化按鈕），沒用的話每 45 秒再提醒一次', en: 'Gigantamax now lasts 20 s instead of 18; when it is charged a big message tells you to press G (or tap the Gigantamax button on phones), repeated every 45 s until you use it' },
       { zh: '守護大壯的大壯換成黑色的怪力', en: 'Dazhuang in Guard Dazhuang is now a black Machamp' },

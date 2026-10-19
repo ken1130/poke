@@ -15,7 +15,9 @@ G.Upgrades = (() => {
     { id: 'moves',  icon: 'cards', name: 'Repertorio',     unit: 'Empiezas con 2 movimientos', max: 1, base: 1500, grow: 1 },
     { id: 'crit',   icon: 'star', name: 'Golpe Crítico',  unit: '+3% de críticos (x1,5 de daño)', max: 10, base: 90, grow: 1.4 },
     { id: 'reroll', icon: 'up', name: 'Cambio de cartas', unit: '+1 cambio de cartas de nivel por run', max: 5, base: 150, grow: 1.6 },
-    { id: 'ban',    icon: 'ban', name: 'Veto',           unit: 'Bloquea 1 movimiento: no te sale en las cartas', max: 3, base: 300, grow: 1.9 },
+    // 2026-10-19 (pedido de peter): 8 vetos en vez de 3; la subida de precio baja a ×1,5 para que el último
+    // nivel no se vaya a 27 000 (300 → 5130; 14 790 en total).
+    { id: 'ban',    icon: 'ban', name: 'Veto',           unit: 'Bloquea 1 movimiento: no te sale en las cartas', max: 8, base: 300, grow: 1.5 },
     { id: 'shieldbreak', icon: 'shieldbreak', name: 'Rompescudos', unit: 'Tus golpes atraviesan y rompen los escudos enemigos', max: 1, base: 800, grow: 1 },
     { id: 'healblock', icon: 'healblock', name: 'Anticura',   unit: '-11% curación de los enemigos', max: 9, base: 200, grow: 1.4 }
   ];
