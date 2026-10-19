@@ -18,6 +18,7 @@ G.MODNEWS = [
       { zh: '派對牌桌：大老二改新規則（三條、同花不能出；順子只壓順子、葫蘆只壓葫蘆；鐵支、同花順是炸彈，可以壓任何牌）；手牌間距加大，不能出的牌點了沒反應；大廳可以自己選座位（2 對 2 時隊友坐對面）；2 對 2 的屬性牌和頑皮雷彈看得到隊友的手牌', en: 'Party tables: new Big Two rules (no triples or flushes; straights only beat straights, full houses only full houses; four of a kind and straight flush are bombs that beat anything); wider hand spacing, unplayable cards no longer react; pick your seat in the lobby (teammates sit opposite in 2v2); in 2v2 Type Cards and Voltorb you can see your teammate’s hand' }
     ],
     chg: [
+      { zh: '網頁載入時不再顯示「Pokémon Dungeon Survivors」的載入畫面（只剩深色底）；網頁分頁和加到主畫面的圖示換成自己的「金色迷宮＋寶貝球」', en: 'The loading screen no longer shows "Pokémon Dungeon Survivors" (just the dark background); the tab and home-screen icon is now our own gold maze with a Poké Ball' },
       { zh: '網球、排球：開賽時站在球場左半邊就是左隊、右半邊就是右隊（倒數時面板會顯示兩邊人數）；可以切換電腦難度（簡單／普通／困難）', en: 'Tennis and volleyball: the half of the court you stand in at the start picks your team (the countdown shows both halves); CPU difficulty can be switched (Easy / Normal / Hard)' },
       { zh: '網球、排球：有人中途離開不再讓整場結束，改由電腦接手；比賽結束後有「再來一局」，同一批人照原本隊伍馬上再開', en: 'Tennis and volleyball: someone leaving mid-match no longer ends it for everyone, a CPU takes over; after a match, Play again restarts with the same players and teams' },
       { zh: '撲球：隊友也看得到你撲倒的動作；撲的距離縮短一些', en: 'Dive: teammates now see you dive; the dive is a bit shorter' },

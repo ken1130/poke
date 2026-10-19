@@ -42,11 +42,11 @@
 <!-- seo:end -->
 <link rel="manifest" href="manifest.webmanifest">
 <!-- Google sólo enseña en los resultados iconos de 48 px o múltiplos -->
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="48x48" href="assets/icons/icon-48.png">
-<link rel="icon" type="image/png" sizes="96x96" href="assets/icons/icon-96.png">
-<link rel="icon" type="image/png" sizes="144x144" href="assets/icons/icon-144.png">
-<link rel="apple-touch-icon" href="assets/icons/icon-180.png">
+<link rel="icon" href="favicon.ico?v=2" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="assets/icons/icon-48.png?v=2">
+<link rel="icon" type="image/png" sizes="96x96" href="assets/icons/icon-96.png?v=2">
+<link rel="icon" type="image/png" sizes="144x144" href="assets/icons/icon-144.png?v=2">
+<link rel="apple-touch-icon" href="assets/icons/icon-180.png?v=2">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -309,27 +309,15 @@
     </div>
   </div>
 </section>
-<div id="boot" class="boot">
-  <div class="boot-in">
-    <h1>Pokémon Dungeon Survivors</h1>
-    <p>Juego de supervivencia con Pokémon, gratis en el navegador y en el móvil.</p>
-    <p class="boot-ld">Cargando…</p>
-  </div>
-</div>
+<!-- Pantalla de carga: sólo el fondo, sin título ni texto (2026-10-19, el dueño: «no quiero esa pantalla»).
+     Se queda el div: tapa la página en blanco mientras carga y main.js escribe ahí si falla o hay mantenimiento. -->
+<div id="boot" class="boot"></div>
 <script>
   (function () {
     var s = null; try { s = localStorage.getItem('ps.lang'); } catch (e) {}
     // Igual que js/core/i18n.js: sin idioma elegido, chino tradicional.
     var l = s === 'es' || s === 'en' || s === 'zh' ? s : (/\/en(\/|$)/.test(location.pathname) ? 'en' : 'zh');
     document.documentElement.lang = l === 'zh' ? 'zh-Hant' : l;
-    var p = document.querySelectorAll('#boot p');
-    if (l === 'en') {
-      p[0].textContent = 'A Pokémon survival game, free in your browser and on mobile.';
-      p[1].textContent = 'Loading…';
-    } else if (l === 'zh') {
-      p[0].textContent = '寶可夢生存遊戲，免費在瀏覽器和手機上玩。';
-      p[1].textContent = '載入中…';
-    }
   })();
 </script>
 <div id="tap-start" class="tapstart hidden">
