@@ -18,6 +18,9 @@ G.Spawner = (() => {
   // Menos Pokémon pero más fuertes (la pantalla no se satura): salen ~24% de
   // los de antes, cada uno con más vida, daño y experiencia.
   const DENSITY = 0.24, DMG_K = 2.4, XP_K = 5.6;
+  // Jefes errantes de la partida normal (V3.1): desde el minuto 4, cada 2:30, con el 75 % de vida.
+  const ROAM_FROM = 240, ROAM_EVERY = 150, ROAM_HP = 0.75;
+  let roamAt = ROAM_FROM;
   // La resistencia extra crece con la run: al principio ×3,3 y hasta ×5
   // hacia el minuto 6, cuando ya tienes ataques para tumbarlos.
   // (2026-10-15: la subida hasta ×5 tarda 12 min, antes 6; ver también enemies.js mobRef.)
@@ -36,7 +39,7 @@ G.Spawner = (() => {
   function reset() {
     wasCalm = false;
     bossModeT = BOSS_EVERY - 3;
-    acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
+    acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0; roamAt = ROAM_FROM;
     G.Enemies.rollRun();
     G.Sprites.preload(G.Enemies.upcomingDex(0, 80));
   }
@@ -181,6 +184,16 @@ G.Spawner = (() => {
     if (b && tReal >= b.at && !G.Floors.inGrace) {
       if (G.Floors.holdBoss(tReal)) b.at = tReal + 30;
       else { spawnBoss(anchor(), tReal, b); bossIdx++; }
+    }
+    // Partida normal (2026-10-19, V3.1 «más jefes»): además de los de siempre, un jefe errante
+    // cada ROAM_EVERY s desde ROAM_FROM, con el 75 % de vida; se espera si ya hay un jefe o el del piso.
+    if (G.Modes.run === 'normal' && !G.PvP.on && tReal >= roamAt) {
+      if (G.EnemyMgr.bossAlive() || G.Floors.holdBoss(tReal) || G.Floors.inGrace || G.Dungeon.inRoom || G.Rift.inArena) roamAt = tReal + 20;
+      else {
+        const d = G.Enemies.bossAt(tReal);
+        if (d) spawnBoss(anchor(), tReal, Object.assign({}, d, { hp: Math.round(d.hp * ROAM_HP) }));
+        roamAt = tReal + ROAM_EVERY;
+      }
     }
 
     // Combate de jefe: las oleadas bajan al 25% y no hay mareas, para que el

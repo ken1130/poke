@@ -183,6 +183,19 @@
         this.showHurt(d, color, dirX, dirY, eff);
         return;
       }
+      /*
+       * Arceus, Señor del Laberinto (2026-10-19, V3.1, floors.js): mientras carga o encadena su
+       * ataque no le pasa nada; y su Escudo Divino va aparte del escudo normal: sólo lo bajan
+       * los golpes y el Rompescudos no le afecta.
+       */
+      if (this.lordInv) { if (Math.random() < 0.3) G.FX.dmgText(this.x, this.y - this.bodyH - 4, G.T('Inmune'), '#fff3c0'); this.flash = 0.03; return; }
+      if (this.lordShield > 0) {
+        const a = Math.min(this.lordShield, d);
+        this.lordShield -= a;
+        if (this.lordShield <= 0) G.Floors.lordShieldBroken(this);
+        if (a >= d) { G.FX.dmgText(this.x, this.y - this.bodyH - 4, d, '#ffe9a0'); this.flash = 0.05; return; }
+        amount = d - a;
+      }
       // Rompescudos (Mejoras): el escudo se rompe sin absorber nada.
       if (this.shield > 0 && G.Game.everyone().some(p => p.shieldBreak)) {
         this.shield = 0; this.shieldT = 0;

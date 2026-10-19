@@ -95,6 +95,7 @@ G.Floors = (() => {
     stairsAt = null; remindT = 0; farmTold = 0; promptT = 0; bossBanner = null; clearBanner = 0;
     cleared = false; endless = false; clearPending = false; clearT = 0; dangerRuns = 0; fireDefs = null;
     treasure = null; treasureT = 0; treasureUsed = false; treasureBanner = 0; treasureWarn = false; restPending = false;
+    lordUltT = 0; lordDebT = 0; lordCast = null; lordUltN = 0; lordDebN = 0; lstT = 0; lordView = { id: 0, sh: 0, inv: 0 };
     const el = document.getElementById('scr-fclear');
     if (el) el.classList.add('hidden');
   }
@@ -132,18 +133,22 @@ G.Floors = (() => {
     const slots = G.Enemies.BOSS_SLOTS, slot = slots[Math.min(slots.length - 1, floor)];
     // Más duro que un jefe normal de su hueco (×1,3); el Señor ×1,2 del último hueco más su
     // suelo de vida (×2,5 del de jefe); sin fin (B6F+): +10 % por piso.
-    const hpMul = lord ? 1.2 : floor > LAST ? 1.3 * (1 + 0.1 * (floor - LAST)) : 1.3;
+    // (2026-10-19, V3.1 «el jefe final con más vida»: el Señor ×1,2 → ×1,5 y su suelo ×2,5 → ×3.)
+    const hpMul = lord ? LORD.hpMul : floor > LAST ? 1.3 * (1 + 0.1 * (floor - LAST)) : 1.3;
     const def = G.Enemies.bossFor(bossDex || pickBossDex(), slot, hpMul);
     const n = G.Game.everyone().length;
     const near = live.slice().sort((a, b) => G.U.dist2(a.x, a.y, cx(live), cy(live)) - G.U.dist2(b.x, b.y, cx(live), cy(live)))[0];
     const e = G.Spawner.spawnBossNow(near, t, def, e => {
-      const minHp = Math.round(G.Enemies.bossFloor(t) * (lord ? 2.5 : 1.6) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1));
+      const minHp = Math.round(G.Enemies.bossFloor(t) * (lord ? LORD.hpFloor : 1.6) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1));
       if (e.maxHp < minHp) e.maxHp = e.hp = minHp;
       e.dmg *= lord ? 1.3 : 1.15;
       e.floorBoss = floor + 1; e.lord = lord;
     });
     if (!e) return;
     bossId = e.id; bossState = 'alive'; lordPh = 0;
+    // Escudo Divino (enemy.js hurt): sobre la vida ya definitiva (después de la escala del piso).
+    if (lord) e.lordShield = Math.round(e.maxHp * LORD.shield0);
+    if (lord) { lordUltT = LORD.ultFirst; lordDebT = LORD.debFirst; lordCast = null; lordUltN = 0; lordDebN = 0; lstT = 0; }
     if (G.Coop.active) G.Coop.broadcast(['fbs', e.id, floor, lord ? 1 : 0]);
     announceBoss(e.id, lord);
   }
@@ -167,6 +172,7 @@ G.Floors = (() => {
         if (!m.elite) m.makeElite(G.Enemy.rollAffixes(t));
       }
       G.Spawner.say(G.T('¡Arceus llama a sus guardianes!'), 3.2);
+      shieldUp(e);
       G.Audio.sfx('boss'); G.Camera.kick(0.9);
       G.FX.ring(e.x, e.y, 20, 260, '#f2e6b0', 0.7, 6);
     }
@@ -186,6 +192,7 @@ G.Floors = (() => {
       // Furia: más rápido y más fuerte.
       e.spd *= 1.2; e.dmg *= 1.15;
       G.Spawner.say(G.T('¡Arceus se enfurece! Llegan dos jefes más'), 3.4);
+      shieldUp(e);
       G.Audio.sfx('legend'); G.Camera.kick(1.4);
       G.FX.ring(e.x, e.y, 20, 320, '#ffd23f', 0.8, 8);
     }
@@ -197,6 +204,100 @@ G.Floors = (() => {
     for (const m of G.EnemyMgr.all()) if (m.lordMinion && !m.dead) { m.shield = 0; m.shieldT = 0; m.hurt(m.maxHp * 10 + m.hp, '#ffffff'); k++; }
     if (k) G.Spawner.say(G.T('¡Sus guardianes huyen con él!'), 2.6);
   }
+  /*
+   * Arceus más duro (2026-10-19, V3.1, pedido del dueño):
+   *   - Escudo Divino: un 25 % de su vida al salir y +15 % en cada fase. Sólo lo bajan los golpes
+   *     (enemy.js hurt: aparte del escudo normal; el Rompescudos no le afecta).
+   *   - Ataques cargados, invulnerable mientras: «Sentencia» (círculo enorme a su alrededor tras
+   *     2,2 s: hay que salir) y «Castigo en cadena» (3 tandas de círculos donde estáis). Se alternan.
+   *   - Maldiciones a los jugadores cercanos, una cada 11 s durante 6 s: lentitud (−30 % de
+   *     velocidad), debilidad (−25 % de ataque) y sin curación. Icono encima de tu Pokémon.
+   * Lo decide el anfitrión: los círculos van por G.Hazards ('hz'), las maldiciones con 'ldb' y el
+   * escudo/la invulnerabilidad (para dibujarlos) con 'lst'. Números en LORD, para ajustarlos.
+   */
+  const LORD = { hpMul: 1.5, hpFloor: 3.0, shield0: 0.25, shieldPh: 0.15,
+                 ultFirst: 10, ultEvery: 16, ultEveryRage: 12, chargeT: 2.2, judgeR: 260, judgeK: 1.8,
+                 comboWaves: 3, comboGap: 0.6, comboDelay: 1.0, comboR: 95, comboK: 1.1,
+                 debFirst: 6, debEvery: 11, debDur: 6, debR: 700 };
+  const CURSES = ['slow', 'weak', 'noheal'];
+  let lordUltT = 0, lordDebT = 0, lordCast = null, lordUltN = 0, lordDebN = 0, lstT = 0, lordView = { id: 0, sh: 0, inv: 0 };
+  function shieldUp(e) {
+    e.lordShield = (e.lordShield || 0) + Math.round(e.maxHp * LORD.shieldPh);
+    G.FX.ring(e.x, e.y, 10, 150, '#ffe9a0', 0.6, 5);
+    G.Spawner.say(G.T('¡El Escudo Divino de Arceus se renueva!'), 2.8);
+  }
+  /** enemy.js (anfitrión): se le ha roto el Escudo Divino. */
+  function lordShieldBroken(e) {
+    G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#ffe9a0', 40, 300);
+    G.FX.ring(e.x, e.y, 10, 220, '#fff6d0', 0.6, 6);
+    G.Camera.kick(0.9); G.Audio.sfx('break');
+    G.Spawner.say(G.T('¡El Escudo Divino se ha roto!'), 2.6);
+    if (G.Coop.active) G.Coop.say(G.T('¡El Escudo Divino se ha roto!'), 2.6);
+  }
+  /** Anfitrión, cada fotograma con Arceus vivo: ataques cargados, maldiciones y sincronía. */
+  function lordTick(e, dt, live) {
+    if (lordCast) castStep(e, dt, live);
+    else if ((lordUltT -= dt) <= 0) startCast(e, live);
+    if (!lordCast && (lordDebT -= dt) <= 0) { lordDebT = LORD.debEvery; curse(e); }
+    // Escudo e invulnerabilidad para los demás (sólo si cambian, como mucho 4 veces por segundo).
+    const sh = Math.round(Math.max(0, e.lordShield || 0) / e.maxHp * 100), inv = e.lordInv ? 1 : 0;
+    lordView = { id: e.id, sh: sh / 100, inv };
+    if ((lstT -= dt) <= 0 && (sh !== lordView.sent || inv !== lordView.sentInv)) {
+      lstT = 0.25; lordView.sent = sh; lordView.sentInv = inv;
+      if (G.Coop.active) G.Coop.broadcast(['lst', e.id, sh, inv]);
+    }
+  }
+  function startCast(e, live) {
+    const kind = lordUltN % 2 === 0 ? 'judge' : 'combo';
+    const dur = kind === 'judge' ? LORD.chargeT : LORD.comboGap * (LORD.comboWaves - 1) + LORD.comboDelay + 0.2;
+    lordCast = { kind, t: 0, dur, wave: 0 };
+    e.lordInv = true; e.rootT = Math.max(e.rootT || 0, dur);
+    if (kind === 'judge') {
+      G.Hazards.add({ kind: 'zone', x: e.x, y: e.y, r: LORD.judgeR, delay: LORD.chargeT, dmg: e.dmg * LORD.judgeK, type: 'normal', color: '#ffe9a0' });
+      G.Spawner.say(G.T('¡Arceus carga la Sentencia! ¡Sal del círculo!'), 2.6);
+      if (G.Coop.active) G.Coop.say(G.T('¡Arceus carga la Sentencia! ¡Sal del círculo!'), 2.6);
+    } else {
+      G.Spawner.say(G.T('¡Castigo en cadena! No te quedes quieto'), 2.6);
+      if (G.Coop.active) G.Coop.say(G.T('¡Castigo en cadena! No te quedes quieto'), 2.6);
+    }
+    G.Audio.sfx('surge');
+  }
+  function castStep(e, dt, live) {
+    const c = lordCast;
+    c.t += dt;
+    e.lordInv = true;
+    if (c.kind === 'combo') {
+      while (c.wave < LORD.comboWaves && c.t >= c.wave * LORD.comboGap) {
+        for (const p of live) G.Hazards.add({ kind: 'zone', x: p.x, y: p.y, r: LORD.comboR, delay: LORD.comboDelay, dmg: e.dmg * LORD.comboK, type: 'normal', color: '#ffd23f' });
+        c.wave++;
+      }
+    }
+    if (c.t < c.dur) return;
+    e.lordInv = false;
+    lordCast = null; lordUltN++;
+    lordUltT = lordPh >= 2 ? LORD.ultEveryRage : LORD.ultEvery;
+    G.FX.ring(e.x, e.y, 10, c.kind === 'judge' ? LORD.judgeR : 120, '#fff6d0', 0.4, 5);
+  }
+  /** Una maldición a los que estén cerca (anfitrión: la suya ya; a los demás, 'ldb'). */
+  function curse(e) {
+    const kind = CURSES[lordDebN++ % CURSES.length];
+    if (G.Coop.active) G.Coop.broadcast(['ldb', kind, LORD.debDur, Math.round(e.x), Math.round(e.y), LORD.debR]);
+    applyCurse(kind, LORD.debDur, e.x, e.y, LORD.debR);
+  }
+  const CURSE_MSG = { slow: '¡Maldición de Arceus: más lento!', weak: '¡Maldición de Arceus: menos ataque!', noheal: '¡Maldición de Arceus: no puedes curarte!' };
+  /** Cada uno, a su Pokémon: la maldición si está a su alcance. */
+  function applyCurse(kind, dur, x, y, r) {
+    const pl = G.Game.player;
+    if (!pl || pl.dead || G.U.dist2(pl.x, pl.y, x, y) > r * r) return;
+    const k = { slow: 'lordSlowT', weak: 'lordWeakT', noheal: 'lordNoHealT' }[kind];
+    if (!k) return;
+    pl[k] = Math.max(pl[k] || 0, dur);
+    G.FX.ring(pl.x, pl.y, 6, 70, '#b07cff', 0.5, 4);
+    G.FX.burst(pl.x, pl.y - pl.bodyH * 0.6, '#d9b8ff', 12, 120);
+    G.Spawner.say(G.T(CURSE_MSG[kind]), 2.4, true);
+    G.Audio.sfx('error');
+  }
+
   const cx = l => l.reduce((s, p) => s + p.x, 0) / l.length;
   const cy = l => l.reduce((s, p) => s + p.y, 0) / l.length;
 
@@ -341,7 +442,7 @@ G.Floors = (() => {
     } else if (bossState === 'alive') {
       const e = G.EnemyMgr.get(bossId);
       if (!e || e.dead) { if (bossLord) lordMinionsDown(); bossDown(live); }
-      else if (bossLord) lordPhases(e, live);
+      else if (bossLord) { lordPhases(e, live); lordTick(e, dt, live); }
     }
     if (!stairs.length) return;
     // A más de 100 m de todos (te has ido lejos): se vuelven a poner cerca (2026-10-16:
@@ -579,6 +680,33 @@ G.Floors = (() => {
     if (!normal()) return;
     e.dmg *= k('dmg'); e.spd *= k('spd');
     e.xp = Math.round(e.xp * k('xp'));
+    // (2026-10-19, V3.1 «más difícil y menos experiencia; poca de los pequeños, mucha de los grandes»)
+    if (!e.boss) {
+      e.maxHp = e.hp = Math.round(e.maxHp * NORMAL.hp);
+      e.dmg *= NORMAL.dmg;
+      e.xp = Math.max(1, Math.round(e.xp * NORMAL.xp * sizeXp(e)));
+    }
+  }
+  /*
+   * Partida normal más dura (2026-10-19, V3.1). Ajustables:
+   *   hp/dmg  vida y daño de los salvajes        spawn/cap  ritmo y tope de aparición
+   *   xp      experiencia (×0,75 de media: −25 %) repartida según el tamaño: sizeXp compara su
+   *           radio con la media de los de su tramo (×0,6 los pequeños … ×1,7 los grandes), así
+   *           que de media el tramo da lo mismo y la diferencia está entre pequeños y grandes.
+   */
+  const NORMAL = { hp: 1.15, dmg: 1.1, spawn: 1.12, cap: 1.1, xp: 0.75 };
+  let sizeCast = null, sizeRef = null;
+  function sizeXp(e) {
+    const cast = G.Enemies.cast;
+    if (cast !== sizeCast) {
+      sizeCast = cast; sizeRef = {};
+      for (const tier of cast) {
+        const avg = tier.list.reduce((a, d) => a + G.Sprites.bodyRadius(d.dex, 1), 0) / Math.max(1, tier.list.length);
+        for (const d of tier.list) sizeRef[d.dex] = avg;
+      }
+    }
+    const ref = sizeRef[e.dex];
+    return ref ? G.U.clamp(G.Sprites.bodyRadius(e.dex, 1) / ref, 0.6, 1.7) : 1;
   }
   const coinMul = () => (1 + 0.2 * floor) * k('coin') * (normal() ? farmMul() : 1);
   /** Spawner, «en llamas»: un salvaje de tipo Fuego (o null = el de siempre). */
@@ -667,6 +795,8 @@ G.Floors = (() => {
       case 'fclr': onClear(ev[1]); break;
       case 'fcn': endless = true; G.Spawner.say(G.T('¡Sigue la aventura! Modo sin fin: los pisos se endurecen'), 3.4, true); break;
       case 'cb': comboFx(ev[1], ev[2], ev[3], ev[4]); break;
+      case 'lst': lordView = { id: ev[1], sh: (ev[2] || 0) / 100, inv: ev[3] ? 1 : 0 }; break;     // escudo/invulnerable de Arceus
+      case 'ldb': applyCurse(ev[1], ev[2], ev[3], ev[4], ev[5]); break;                             // maldición de Arceus
     }
   }
 
@@ -741,6 +871,7 @@ G.Floors = (() => {
     });
     // Corona sobre el jefe del piso.
     const e = floorBoss();
+    if (e && bossLord && G.Camera.sees(e.x, e.y, 300)) drawLordAura(ctx, e, now);
     if (e && G.Camera.sees(e.x, e.y, 120)) {
       const img = G.Tiles.propSprite(0, 'crown', bossLord ? 1 : 0), kk = 2;
       const y = e.y - e.bodyH - 18 - Math.abs(Math.sin(now * 3)) * 3;
@@ -751,6 +882,42 @@ G.Floors = (() => {
       outlined(ctx, G.T(bossLord ? 'Señor del Laberinto' : 'Jefe del piso'), e.x, y - img.height * kk - 4, bossLord ? '#ffb0ff' : '#ffd23f', 3);
       ctx.restore();
     }
+  }
+  /**
+   * Escudo Divino (anillo de rombos dorados que gira, más denso cuanto más escudo) y, cargando,
+   * rayos de luz que convergen en Arceus. Todo en píxeles. Lo ven todos (lordView en invitados).
+   */
+  function drawLordAura(ctx, e, now) {
+    const sh = authority() ? Math.max(0, e.lordShield || 0) / e.maxHp : (lordView.id === e.id ? lordView.sh : 0);
+    const inv = authority() ? !!e.lordInv : lordView.id === e.id && !!lordView.inv;
+    const cy = e.y - e.bodyH * 0.5, R = Math.max(e.r * 1.7, 40);
+    ctx.save();
+    if (sh > 0) {
+      const n = Math.max(6, Math.round(10 + sh * 40));
+      for (let i = 0; i < n; i++) {
+        const a = i / n * 6.2832 + now * 0.9;
+        const x = Math.round(e.x + Math.cos(a) * R), y = Math.round(cy + Math.sin(a) * R * 0.75);
+        ctx.fillStyle = i % 2 ? '#ffe9a0' : '#fff6d0';
+        ctx.fillRect(x - 2, y, 5, 1); ctx.fillRect(x, y - 2, 1, 5); ctx.fillRect(x - 1, y - 1, 3, 3);
+      }
+      ctx.font = F(800, 10); ctx.textAlign = 'center';
+      outlined(ctx, G.I18n.f('Escudo Divino {x}%', Math.round(sh * 100)), e.x, e.y + 16, '#ffe9a0', 3);
+    }
+    if (inv) {
+      // Carga: rayos que entran hacia él y un halo que late.
+      for (let i = 0; i < 12; i++) {
+        const a = i / 12 * 6.2832 + now * 2, d = R * (1.6 - ((now * 1.8 + i * 0.37) % 1));
+        ctx.fillStyle = i % 3 ? '#fff3c0' : '#ffffff';
+        ctx.fillRect(Math.round(e.x + Math.cos(a) * d) - 1, Math.round(cy + Math.sin(a) * d * 0.75) - 1, 3, 3);
+      }
+      ctx.globalAlpha = 0.25 + 0.2 * Math.sin(now * 14);
+      ctx.fillStyle = '#fff6d0';
+      ctx.beginPath(); ctx.ellipse(e.x, cy, R * 0.9, R * 0.7, 0, 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.font = F(800, 11); ctx.textAlign = 'center';
+      outlined(ctx, G.T('¡Invulnerable!'), e.x, e.y + 30, '#ffffff', 3);
+    }
+    ctx.restore();
   }
   /** El jefe del piso vivo (también la copia del invitado). */
   function floorBoss() {
@@ -923,7 +1090,7 @@ G.Floors = (() => {
            get stairs() { return stairs[0] || null; }, get stairsAll() { return stairs; },
            get theme() { return theme; }, get route() { return route; }, get cleared() { return cleared; }, get endless() { return endless; },
            get clearTime() { return clearT; }, get dangerRuns() { return dangerRuns; },
-           get spawnMul() { return k('spawn'); }, get capMul() { return k('cap'); }, get eliteMul() { return k('elite'); },
+           get spawnMul() { return k('spawn') * (normal() ? NORMAL.spawn : 1); }, get capMul() { return k('cap') * (normal() ? NORMAL.cap : 1); }, lordShieldBroken, get eliteMul() { return k('elite'); },
            get eliteItem() { return !!k('eliteItem', false); }, get healMul() { return k('heal'); }, get thickFog() { return !!k('fog', false); },
            get farmMul() { return normal() ? farmMul() : 1; }, get stairsAge() { return stairsAge(); },
            get bossState() { return bossState; }, get bossAt() { return bossAt; },
