@@ -45,6 +45,15 @@ G.I18n.add({
   '¡Fuera!': '出界！',
   'Dejar el partido': '離開比賽',
   '{x} ha dejado el partido': '{x} 離開了比賽',
+  'Empieza en {x} s: si quieres jugar, entra en la pista': '{x} 秒後開賽：要打的人請走進球場',
+  'Apuntados ahora: {x}': '目前加入：{x} 人',
+  'las CPU completan lo que falte': '不夠的由電腦補上',
+  'Empezar ya': '馬上開始',
+  '¡Empieza en {x}! Entra para jugar': '{x} 秒後開賽！走進來就能一起玩',
+  '{x} se une al partido en lugar de la CPU': '{x} 加入了，換下電腦',
+  'Plancha': '撲球',
+  'Botón «Plancha»: te lanzas a por la pelota': '「撲球」按鈕：往前撲出去救球',
+  'Espacio: te lanzas a por la pelota hacia donde vas': '空白鍵：往移動方向撲出去救球'
 }, 'zh');
 G.I18n.add({
   'Zona de fiesta': 'Party Plaza',
@@ -92,4 +101,13 @@ G.I18n.add({
   '¡Fuera!': 'Out!',
   'Dejar el partido': 'Leave match',
   '{x} ha dejado el partido': '{x} left the match',
+  'Empieza en {x} s: si quieres jugar, entra en la pista': 'Starts in {x} s: walk onto the court to join',
+  'Apuntados ahora: {x}': 'Joined so far: {x}',
+  'las CPU completan lo que falte': 'CPUs fill the rest',
+  'Empezar ya': 'Start now',
+  '¡Empieza en {x}! Entra para jugar': 'Starts in {x}! Walk in to play',
+  '{x} se une al partido en lugar de la CPU': '{x} joins and replaces a CPU',
+  'Plancha': 'Dive',
+  'Botón «Plancha»: te lanzas a por la pelota': '"Dive" button: throw yourself at the ball',
+  'Espacio: te lanzas a por la pelota hacia donde vas': 'Space: dive for the ball in the direction you move'
 });

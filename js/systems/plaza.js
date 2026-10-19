@@ -46,6 +46,10 @@ G.Plaza = (() => {
   let opts = null;                        // { zone, cpu } de la sala o del modo solitario
   let games = {};                         // zona -> juego (anfitrión: el estado de verdad; invitado: la foto)
   let views = {};                         // zona -> lo que se dibuja (CPU suavizadas, pelota, bomba)
+  // Cuenta atrás para juntarse (2026-10-19, el dueño: «somos 4 y el último aún no había entrado:
+  // ¿le toca una CPU?»): al pulsar empezar, GATHER s para que entre quien quiera; luego empieza.
+  let lobbies = {};                       // zona -> { mode, t, by }
+  const GATHER = 5;
   let hud = null, hudT = 0, snapT = 0, hutTold = 0;
   let lastKey = '';
 
@@ -107,7 +111,7 @@ G.Plaza = (() => {
   function begin(pl, coop) {
     const mods = coop ? coop.mods || {} : opts || {};
     opts = { zone: mods.plaza || 'plaza', cpu: mods.cpu | 0 };
-    games = {}; views = {}; snapT = 0; hutTold = 0; lastKey = '';
+    games = {}; views = {}; lobbies = {}; snapT = 0; hutTold = 0; lastKey = '';
     pl.god = true;
     const [cx, cy] = center();
     G.World.setArena({ tx: TX, ty: TY, room: true, rw: RW, rh: RH, type: 'normal' });
@@ -126,8 +130,10 @@ G.Plaza = (() => {
   function end() {
     for (const p of G.Game.everyone()) p.spectK = 1;
     if (thBtn) { thBtn.remove(); thBtn = null; }
+    if (dvBtn) { dvBtn.remove(); dvBtn = null; }
+    dive = null; diveCd = 0;
     if (hud) { hud.remove(); hud = null; }
-    games = {}; views = {}; opts = null;
+    games = {}; views = {}; lobbies = {}; opts = null;
   }
 
   /** Anfitrión: todos de vuelta a la sala (mesa = juego de cartas que empezar después). */
@@ -147,7 +153,9 @@ G.Plaza = (() => {
   /** Anfitrión: lo que pide un invitado. */
   function onClient(from, ev) {
     if (!on() || !authority()) return;
-    if (ev[1] === 'go') startGame(ev[2], ev[3] | 0, false, from);
+    if (ev[1] === 'go') gather(ev[2], ev[3] | 0, from);
+    else if (ev[1] === 'now') { const l = lobbies[ev[2]]; if (l) { delete lobbies[ev[2]]; startGame(ev[2], l.mode, false, l.by); } }
+    else if (ev[1] === 'cancel') { if (lobbies[ev[2]]) { delete lobbies[ev[2]]; emit(['plz', 'lobbyx', ev[2]]); lastKey = ''; } }
     else if (ev[1] === 'throw') throwBomb(from, +ev[2] || 0);
     else if (ev[1] === 'leave') leaveGame(ev[2], from);
   }
@@ -157,6 +165,9 @@ G.Plaza = (() => {
     if (!on()) return;
     const k = ev[1];
     if (k === 'start') applyStart(ev[2], ev[3]);
+    else if (k === 'lobby') { lobbies[ev[2]] = { mode: ev[3] | 0, t: +ev[4] || GATHER, by: ev[5] }; lastKey = ''; G.Audio.sfx('select'); }
+    else if (k === 'lobbyx') { delete lobbies[ev[2]]; lastKey = ''; }
+    else if (k === 'swap') applySwap(ev[2], ev[3], ev[4]);
     else if (k === 'st') { const g = games[ev[2]]; if (g) Object.assign(g, ev[3]); }
     else if (k === 'fx') fx(ev[2], ev[3], ev[4], ev[5]);
     else if (k === 'end') applyEnd(ev[2], ev[3]);
@@ -168,6 +179,61 @@ G.Plaza = (() => {
   }
 
   // ---------------- juegos: empezar ----------------
+
+  /** Anfitrión: alguien pulsa empezar → cuenta atrás de GATHER s (o nada, si ya hay una o se juega). */
+  function gather(kind, mode, by) {
+    if (!['tennis', 'volley', 'potato'].includes(kind) || lobbies[kind]) return;
+    if (games[kind] && games[kind].phase !== 'over') return;
+    // Sin nadie más en la zona (solo): empieza ya; esperar no sirve de nada.
+    if (G.Game.everyone().filter(p => !p.gone).length < 2) { startGame(kind, mode, false, by); return; }
+    lobbies[kind] = { mode, t: GATHER, by };
+    emit(['plz', 'lobby', kind, mode, GATHER, by]);
+    G.Audio.sfx('select'); lastKey = '';
+  }
+  /** ¿`p` está dentro de la pista / del círculo de `kind` (de verdad dentro, no por el borde)? */
+  function insideZone(kind, p) {
+    const z = zone(kind);
+    if (kind === 'potato') return G.U.dist2(p.x, p.y, z.cx, z.cy) < z.r * z.r;
+    return Math.abs(p.x - z.cx) < z.hw && Math.abs(p.y - z.cy) < z.hh;
+  }
+  /** Cuántas personas se apuntarían ahora a `kind` (en la pista o en su cartel). */
+  function joiners(kind) {
+    const [px, py] = padOf(kind);
+    return G.Game.everyone().filter(p => !p.gone && (insideZone(kind, p) || G.U.dist2(p.x, p.y, px, py) < (PAD_R + 20) ** 2)).length;
+  }
+  /**
+   * Anfitrión, entre punto y punto (tenis y voleibol): quien entra en la pista sin jugar ocupa el
+   * sitio de una CPU (primero del equipo con menos personas). Sigue el marcador.
+   */
+  function swapIn(g) {
+    if (!g.parts.some(p => p.cpu)) return;
+    const busy = id => Object.values(games).some(x => x.phase !== 'over' && x.parts.some(q => q.id === id));
+    for (const h of G.Game.everyone()) {
+      const id = idOf(h);
+      if (h.gone || h.dead || busy(id) || !insideZone(g.kind, h)) continue;
+      const humans = s => g.parts.filter(p => p.side === s && !p.cpu).length;
+      const cpus = g.parts.filter(p => p.cpu).sort((a, b) => humans(a.side) - humans(b.side));
+      const c = cpus[0];
+      if (!c) return;
+      const np = { id, cpu: false, dex: h.dex, name: nameOf(h), side: c.side };
+      emit(['plz', 'swap', g.kind, c.id, np]);
+      applySwap(g.kind, c.id, np);
+    }
+  }
+  /** En todos: `np` ocupa el sitio de la CPU `cid`. */
+  function applySwap(kind, cid, np) {
+    const g = games[kind];
+    if (!g || !np || !np.id) return;
+    const i = g.parts.findIndex(p => p.id === cid);
+    if (i < 0) return;
+    g.parts[i] = np;
+    if (g.homes && g.homes[cid]) { g.homes[np.id] = g.homes[cid]; delete g.homes[cid]; }
+    if (g.cpus) delete g.cpus[cid];
+    if (views[kind] && views[kind].cpus) delete views[kind].cpus[cid];
+    if (np.id === meId() && g.homes && g.homes[np.id]) { const pl = G.Game.player, [x, y] = g.homes[np.id]; pl.x = x; pl.y = y; }
+    G.Spawner.say(G.I18n.f('{x} se une al partido en lugar de la CPU', np.name), 2.6, true);
+    G.Audio.sfx('confirm'); lastKey = '';
+  }
 
   /**
    * Anfitrión: empieza el juego del rincón `kind`. Juegan las personas que están en el rincón
@@ -236,6 +302,7 @@ G.Plaza = (() => {
 
   /** En todos: empieza un juego (el invitado crea su copia; cada uno se coloca en su sitio). */
   function applyStart(kind, meta, hostGame) {
+    delete lobbies[kind];
     const g = hostGame || Object.assign({ kind, parts: meta.parts, homes: meta.homes, cpus: {}, phase: 'ready' }, games[kind] && games[kind].phase !== 'over' ? {} : {});
     if (!hostGame) {
       for (const p of meta.parts) if (p.cpu) { const [x, y] = meta.homes[p.id]; g.cpus[p.id] = { x, y, ang: 0, mv: 0 }; }
@@ -576,10 +643,17 @@ G.Plaza = (() => {
   function update(dt, pl) {
     if (!on()) return;
     const host = authority();
+    for (const k in lobbies) {               // cuenta atrás para juntarse (en todos; empieza el anfitrión)
+      const l = lobbies[k];
+      if ((l.t -= dt) > 0) continue;
+      if (host) { delete lobbies[k]; startGame(k, l.mode, false, l.by); }
+      else l.t = 0;
+    }
     if (host) {
       for (const k in games) {
         const g = games[k];
         if (g.phase === 'over') continue;
+        if (k !== 'potato' && g.phase === 'ready') swapIn(g);   // entre punto y punto: quien entra ocupa una CPU
         if (k === 'potato') { potatoCpu(g, dt); potatoStep(g, dt); } else { courtCpu(g, dt); courtStep(g, dt); }
       }
       if (G.Coop.active && (snapT -= dt) <= 0) {
@@ -614,12 +688,68 @@ G.Plaza = (() => {
     smooth(dt);
     if ((hudT -= dt) <= 0) { hudT = 0.15; drawHud(); }
     throwButton(!!(pg && pg.phase === 'play' && pg.holder === meId() && G.Touch.active));
+    diveStep(dt, pl);
     if (hud) hud.style.display = G.UI.isOpen('scr-pause') ? 'none' : '';
     hutCheck(pl);
   }
 
   /** Móvil: botón redondo con la bomba abajo a la derecha, sólo mientras la llevas. */
   let thBtn = null;
+
+  /*
+   * Plancha (2026-10-19, idea del dueño: «tirarse a por la pelota con espacio»): en tenis y voleibol,
+   * espacio (o el botón «Plancha» del móvil) te lanza DIVE.dist px hacia donde vas (o hacia la pelota)
+   * en DIVE.t s; luego DIVE.down s en el suelo sin moverte y DIVE.cd s hasta la siguiente.
+   * Sólo mueve a tu Pokémon: el golpe es el de siempre (por distancia), y en grupo viaja tu posición.
+   */
+  const DIVE = { t: 0.22, dist: 140, down: 0.45, cd: 1.5 };
+  let dive = null, diveCd = 0, dvBtn = null, diveTap = false;
+  /** El partido de pista en el que juegas (o null). */
+  function myCourt() {
+    const me = meId();
+    for (const k of ['tennis', 'volley']) { const g = games[k]; if (g && g.phase !== 'over' && g.parts.some(p => p.id === me)) return g; }
+    return null;
+  }
+  function diveStep(dt, pl) {
+    const g = myCourt();
+    if (diveCd > 0) diveCd -= dt;
+    const want = G.Input.tap('space') || diveTap;
+    diveTap = false;
+    if (g && !dive && diveCd <= 0 && want && !pl.dead) {
+      // Hacia donde caminas; quieto, hacia la pelota.
+      const b = g.ball;
+      const a = pl.walking ? pl.moveAngle : b ? Math.atan2(b.y - pl.y, b.x - pl.x) : 0;
+      dive = { a, t: 0, x: pl.x, y: pl.y };
+      diveCd = DIVE.cd;
+      pl.anim.play('Hurt', { speed: 2 });
+      G.Audio.sfx('select');
+      G.FX.burst(pl.x, pl.y, '#e8dcc0', 8, 90);
+    }
+    if (dive) {
+      dive.t += dt;
+      if (dive.t <= DIVE.t) {
+        const v = DIVE.dist / DIVE.t * dt, nx = pl.x + Math.cos(dive.a) * v, ny = pl.y + Math.sin(dive.a) * v;
+        if (!G.World.isWall(nx, ny)) { pl.x = nx; pl.y = ny; }
+        keepInside(pl);
+        dive.x = pl.x; dive.y = pl.y;
+        if (Math.random() < 0.6) G.FX.px(pl.x + G.U.rand(-8, 8), pl.y - 2, '#e8dcc0', { vy: -30, life: 0.3 });
+      } else if (dive.t <= DIVE.t + DIVE.down) {
+        pl.x = dive.x; pl.y = dive.y;              // en el suelo: no te mueves
+      } else dive = null;
+    }
+    if (!g) dive = null;
+    diveButton(!!g && G.Touch.active);
+  }
+  function diveButton(show) {
+    if (show && !dvBtn) {
+      dvBtn = document.createElement('button');
+      dvBtn.id = 'pz-dive'; dvBtn.type = 'button';
+      dvBtn.innerHTML = `<span class="pz-dive-ico"></span><small>${G.T('Plancha')}</small>`;
+      dvBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); diveTap = true; });
+      document.body.appendChild(dvBtn);
+    }
+    if (dvBtn) { dvBtn.classList.toggle('hidden', !show); dvBtn.classList.toggle('cool', diveCd > 0); }
+  }
   function throwButton(show) {
     if (show && !thBtn) {
       thBtn = document.createElement('button');
@@ -723,6 +853,13 @@ G.Plaza = (() => {
   }
 
   /** Qué rincón tienes delante (cartel) o en el que juegas. */
+  /** La cuenta atrás que te toca: la del cartel donde estás o la de la pista en la que has entrado. */
+  function lobbyHere(pl) {
+    const h = hereOf(pl);
+    if (h && lobbies[h]) return h;
+    for (const k in lobbies) if (insideZone(k, pl)) return k;
+    return null;
+  }
   function hereOf(pl) {
     for (const k of ['tennis', 'volley', 'potato', 'hut']) {
       const [x, y] = padOf(k);
@@ -760,8 +897,19 @@ G.Plaza = (() => {
         html = `<div class="pz-card"><b>${G.T(playing === 'tennis' ? 'Tenis' : 'Voleibol')}</b>
           <span class="pz-score">${sc[0]} : ${sc[1]}</span>
           <span class="pz-sub">${G.T(p && p.side ? 'Juegas en el campo de la derecha' : 'Juegas en el campo de la izquierda')} · ${G.I18n.f('Gana quien llegue a {x}', WIN)}</span>
+          <span class="pz-tip">${G.T(G.Touch.active ? 'Botón «Plancha»: te lanzas a por la pelota' : 'Espacio: te lanzas a por la pelota hacia donde vas')}</span>
           ${g.phase === 'over' ? '' : `<button class="btn small ghost" data-pz="leave:${playing}">${G.T('Dejar el partido')}</button>`}</div>`;
       }
+    } else if (lobbyHere(pl)) {
+      // Cuenta atrás para juntarse: cuántos van, y empezar ya / cancelar.
+      const k = lobbyHere(pl), l = lobbies[k], secs = Math.max(0, Math.ceil(l.t)), n = joiners(k);
+      const nm = k === 'tennis' ? 'Tenis' : k === 'volley' ? 'Voleibol' : 'Patata caliente';
+      key = 'lobby:' + k + secs + ':' + n;
+      html = `<div class="pz-card"><b>${G.T(nm)}</b>
+        <b class="pz-hot">${G.I18n.f('Empieza en {x} s: si quieres jugar, entra en la pista', secs)}</b>
+        <span class="pz-sub">${G.I18n.f('Apuntados ahora: {x}', n)}${k !== 'potato' ? ' · ' + G.T(l.mode === 2 ? '2 contra 2' : '1 contra 1') : ''} · ${G.T('las CPU completan lo que falte')}</span>
+        <div class="pz-row"><button class="btn gold" data-pz="now:${k}">${G.T('Empezar ya')}</button>
+          <button class="btn small ghost" data-pz="cancel:${k}">${G.T('Cancelar')}</button></div></div>`;
     } else if (here === 'tennis' || here === 'volley') {
       const busy = games[here] && games[here].phase !== 'over';
       key = 'pad:' + here + busy;
@@ -795,6 +943,8 @@ G.Plaza = (() => {
         const [what, a, c] = b.dataset.pz.split(':');
         if (what === 'quit') { if (G.Coop.active && authority()) { closeAll(''); setTimeout(() => G.Game.quit(), 300); } else G.Game.quit(); }
         else if (what === 'go') { G.Audio.sfx('click'); ask(['plz', 'go', a, +c || 0]); }
+        else if (what === 'now') { G.Audio.sfx('confirm'); ask(['plz', 'now', a]); }
+        else if (what === 'cancel') { G.Audio.sfx('back'); ask(['plz', 'cancel', a]); }
         else if (what === 'throw') throwMine();
         else if (what === 'leave') { G.Audio.sfx('back'); ask(['plz', 'leave', a]); }
         else if (what === 'table') goTable(a);
@@ -1037,6 +1187,11 @@ G.Plaza = (() => {
     if (!on()) return;
     const t = performance.now() / 1000;
     ctx.save();
+    for (const k in lobbies) {                // cuenta atrás grande encima de la pista
+      // (Debajo del cartel, por donde llega la gente: encima de la pista se salía de la pantalla.)
+      const [px, py] = padOf(k), secs = Math.max(0, Math.ceil(lobbies[k].t));
+      label(ctx, G.I18n.f('¡Empieza en {x}! Entra para jugar', secs), px, py + PAD_R + 6, Math.sin(t * 8) > 0 ? '#fff36a' : '#ffb06a', 18);
+    }
     for (const k in games) {
       const g = games[k], z = zone(k);
       if (k !== 'potato') {
