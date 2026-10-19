@@ -2,6 +2,10 @@
 G.MenuUI = (() => {
   const $ = G.UI.$;
   const GEN_NAMES = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Teselia', 'Kalos', 'Alola', 'Galar', 'Paldea'];
+  // Formas regionales (pokedex-forms.js, 2026-10-19): se numeran por su especie y llevan su región.
+  const FORM_NAME = { alola: 'Forma de Alola', galar: 'Forma de Galar', hisui: 'Forma de Hisui', paldea: 'Forma de Paldea' };
+  const noOf = p => String(p.base || p.dex).padStart(3, '0');
+  const formOf = p => (p.form ? ' · ' + G.T(FORM_NAME[p.form]) : '');
   let dexFilter = 'all', dexGen = 1, dexSel = null, dexQuery = '', dexType = null;
 
   function init() {
@@ -238,7 +242,7 @@ G.MenuUI = (() => {
 
   /** ¿Coincide el Pokémon con lo buscado? Nombre (como se ve o el original) o número. */
   function matches(p, q) {
-    if (/^\d+$/.test(q)) return p.dex === +q;   // número exacto: 25 o 025 -> Pikachu
+    if (/^\d+$/.test(q)) return p.dex === +q || p.base === +q;   // (las formas regionales, por su especie)   // número exacto: 25 o 025 -> Pikachu
     // También por tipo escrito ("fuego", "火", "fire"...).
     const byType = Object.keys(G.U.TYPE_NAME).find(t => [G.U.TYPE_NAME[t], G.T(G.U.TYPE_NAME[t]), t].some(n => String(n).toLowerCase() === q));
     if (byType) return p.types.includes(byType);
@@ -339,7 +343,7 @@ G.MenuUI = (() => {
 
       const cell = document.createElement('div');
       cell.className = 'cell' + (own ? '' : ' locked') + (p.dex === dexSel ? ' on' : '');
-      cell.insertAdjacentHTML('beforeend', `<span class="no">${String(p.dex).padStart(3, '0')}</span>`);
+      cell.insertAdjacentHTML('beforeend', `<span class="no">${noOf(p)}</span>`);
       if (inTeam) cell.insertAdjacentHTML('beforeend', '<span class="badge-team" title="Mi equipo">★</span>');
       if (p.dex === s.partner) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Compañero">${G.Icons.html('crown', 14)}</span>`);
       else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
@@ -380,13 +384,13 @@ G.MenuUI = (() => {
     const usingThis = isPartner && (!hasSh || !!s.partnerShiny === viewShiny);
 
     const box = $('dex-detail');
-    box.innerHTML = sheetHead(own ? p.name : '???', `Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}`) + `<div class="dex-hero">
+    box.innerHTML = sheetHead(own ? p.name : '???', `Nº ${noOf(p)} · ${GEN_NAMES[p.gen - 1]}${formOf(p)}`) + `<div class="dex-hero">
       <canvas id="dex-big" class="stage" width="220" height="190"></canvas>
       ${hasSh ? `<div class="seg">
           <button class="${viewShiny ? '' : 'on'}" data-v="0">Normal</button>
           <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
       <div class="center">
-        <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
+        <div style="color:var(--muted);font-size:13px">Nº ${noOf(p)} · ${GEN_NAMES[p.gen - 1]}${formOf(p)}</div>
         <h3>${own ? p.name : '???'}</h3>
         <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>

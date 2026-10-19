@@ -8,6 +8,9 @@
  */
 G.AchDefs = (() => {
   const own = s => Object.keys(s.owned || {}).filter(d => G.DEX_BY[d]).length;
+  // «Todos los Pokémon» sólo cuenta los de antes: las formas regionales y especies de la V3.1
+  // (`extra`, pokedex-forms.js) no quitan el logro a quien ya lo tenía (2026-10-19).
+  const ownBase = s => Object.keys(s.owned || {}).filter(d => G.DEX_BY[d] && !G.DEX_BY[d].extra).length;
   const shinies = s => Object.keys(s.shiny || {}).length;
   const legends = s => Object.keys(s.legends || {}).length;
   const st = k => s => (s.stats && s.stats[k]) || 0;
@@ -26,7 +29,7 @@ G.AchDefs = (() => {
     { id: 'own100', cat: 'coleccion', tier: 2, name: 'Cien amigos', desc: 'Ten 100 Pokémon.', value: own, goal: 100, reward: { t10: 1 } },
     { id: 'own250', cat: 'coleccion', tier: 3, name: 'Maestro Pokémon', desc: 'Ten 250 Pokémon.', value: own, goal: 250, reward: { t10: 2 }, title: 'Maestro Pokémon' },
     { id: 'own500', cat: 'coleccion', tier: 3, name: 'Enciclopedia', desc: 'Ten 500 Pokémon.', value: own, goal: 500, reward: { t10: 3 } },
-    { id: 'ownAll', cat: 'coleccion', tier: 3, name: 'Profesor Pokémon', desc: 'Ten todos los Pokémon del juego.', value: own, goal: 966, reward: { t10: 10 }, title: 'Profesor Pokémon' },
+    { id: 'ownAll', cat: 'coleccion', tier: 3, name: 'Profesor Pokémon', desc: 'Ten todos los Pokémon del juego.', value: ownBase, goal: 966, reward: { t10: 10 }, title: 'Profesor Pokémon' },
     { id: 'shiny1', cat: 'coleccion', tier: 1, name: 'Algo brilla', desc: 'Consigue 1 shiny.', value: shinies, goal: 1, reward: { t1: 3 }, title: 'Brillante' },
     { id: 'shiny5', cat: 'coleccion', tier: 2, name: 'Ojo para el brillo', desc: 'Consigue 5 shinies.', value: shinies, goal: 5, reward: { t10: 1 } },
     { id: 'shiny20', cat: 'coleccion', tier: 3, name: 'Cazashinies', desc: 'Consigue 20 shinies.', value: shinies, goal: 20, reward: { t10: 2 }, title: 'Cazashinies' },
@@ -110,14 +113,15 @@ G.AchDefs = (() => {
   ];
 
   // Un logro por legendario: "Vence a Mewtwo"...
-  for (const p of G.DEX.filter(p => p.leg && G.SPRITE_META[p.dex])) {
+  for (const p of G.DEX.filter(p => p.leg && !p.extra && G.SPRITE_META[p.dex])) {
     LIST.push({ id: 'leg_' + p.dex, cat: 'legendarios', tier: 2, dex: p.dex, name: 'Vence a ' + p.name,
                 desc: 'Derrota a ' + p.name + ' en una grieta.', value: s => (s.legends && s.legends[p.dex] ? 1 : 0), goal: 1, reward: { t1: 1 } });
   }
   const totalLegends = LIST.filter(a => a.dex).length;
   for (const a of LIST) if (a.id === 'legAll') { a.goal = totalLegends; a.desc = `Vence a los ${totalLegends} legendarios.`; }
   // Metas que dependen de los datos del juego.
-  for (const a of LIST) if (a.id === 'ownAll') { a.goal = G.DEX.length; a.desc = `Ten los ${G.DEX.length} Pokémon del juego.`; }
+  const baseTotal = G.DEX.filter(p => !p.extra).length;
+  for (const a of LIST) if (a.id === 'ownAll') { a.goal = baseTotal; a.desc = `Ten los ${baseTotal} Pokémon del juego.`; }
   const evoTotal = Object.keys(G.Moves.EVO).length;
   for (const a of LIST) if (a.id === 'evoAll') { a.goal = evoTotal; a.desc = `Evoluciona los ${evoTotal} movimientos distintos.`; }
 
