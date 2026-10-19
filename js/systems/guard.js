@@ -613,8 +613,28 @@ G.Guard = (() => {
 
   // ---------------- cada fotograma (todos) ----------------
 
+  /*
+   * Avisos de la vida de Dazhuang (2026-10-19, el dueño: «¿cómo sabe el jugador cuánta le queda?»).
+   * En todos los ordenadores: al bajar del 50 % y del 25 %, aviso grande (una vez por oleada) y
+   * aro rojo; si le pegan y estás lejos (fuera de la pantalla), recordatorio cada 6 s.
+   */
+  let warnLvl = 0, lastHp = null, hitWarnT = 0, warnWave = -1;
+  function hpAlerts(dt, pl) {
+    const dz = S.dz, k = dz.hp / Math.max(1, dz.mhp);
+    if (warnWave !== S.wave || S.phase !== 'fight') { warnLvl = 0; warnWave = S.wave; }
+    if (S.phase === 'fight' && !dz.dead) {
+      if (warnLvl < 1 && k < 0.5) { warnLvl = 1; G.Spawner.say(G.T('¡A Dazhuang le queda la mitad de la vida!'), 2.6, true); G.Audio.sfx('error'); G.FX.ring(dz.x, dz.y, 10, 120, '#ffb44a', 0.6, 5); }
+      if (warnLvl < 2 && k < 0.25) { warnLvl = 2; G.Spawner.say(G.T('¡Dazhuang no aguanta más! ¡Ve a protegerlo!'), 3, true); G.Audio.sfx('boss'); G.FX.ring(dz.x, dz.y, 10, 160, '#ff3a4a', 0.8, 6); G.Game.flash && G.Game.flash('#ff3a4a', 0.25); }
+      // Le pegan y no lo estás viendo: recordatorio.
+      const hurt = lastHp != null && dz.hp < lastHp - 0.5;
+      if ((hitWarnT -= dt) <= 0 && hurt && !G.Camera.sees(dz.x, dz.y, -40)) { hitWarnT = 6; G.Spawner.say(G.T('¡Están atacando a Dazhuang!'), 2, true); }
+    }
+    lastHp = dz.hp;
+  }
+
   function update(dt, pl) {
     if (!on() || !S || !pl) { if (panelK) closePanel(); if (nextBtn) nextBtn.classList.add('hidden'); return; }
+    hpAlerts(dt, pl);
     if (flashT > 0) flashT -= dt;
     if (counterFx > 0) counterFx -= dt;
     if (dzAnim) { dzAnim.loop(S.dz.dead ? 'Faint' : counterFx > 0 ? 'Attack' : 'Idle'); dzAnim.update(dt); }
@@ -708,7 +728,7 @@ G.Guard = (() => {
       ? (S.wave ? G.I18n.f('Oleada {x}/{x} superada', S.wave, WAVES) : G.T('Proteger a Dazhuang')) + ' · ' + G.I18n.f('Siguiente en {x} s', Math.ceil(S.prepT))
       : S.phase === 'fight' ? G.I18n.f('Oleada {x}/{x}', S.wave, WAVES) + ' · ' + G.I18n.f('Quedan {x}', S.left)
       : S.phase === 'won' ? G.T('¡Dazhuang está a salvo!') : G.T('¡Dazhuang ha caído!');
-    const sub = G.I18n.f('Dazhuang {x}/{x}', Math.ceil(dz.hp), dz.mhp) + (dz.msh ? ' · ' + G.I18n.f('Escudo {x}', Math.ceil(dz.sh)) : '')
+    const sub = G.I18n.f('Dazhuang {x}/{x}', Math.ceil(dz.hp).toLocaleString(), Math.round(dz.mhp).toLocaleString()) + ` (${Math.max(0, Math.round(dz.hp / Math.max(1, dz.mhp) * 100))}%)` + (dz.msh ? ' · ' + G.I18n.f('Escudo {x}', Math.ceil(dz.sh)) : '')
       + (S.wave % BOSS_EVERY === BOSS_EVERY - 1 && S.phase === 'prep' ? ' · ' + G.T('La siguiente trae jefe') : '');
     return { title, sub, bar: dz.hp / Math.max(1, dz.mhp), color: dz.hp / dz.mhp > 0.35 ? '#ffd27a' : '#ff8a95' };
   }

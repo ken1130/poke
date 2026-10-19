@@ -19,6 +19,9 @@ G.MODNEWS = [
       { zh: '燃燒中的敵人會紅色閃爍，頭上也會顯示燃燒／中毒／流血圖示', en: 'Burning enemies flash red and show burn/poison/bleed icons' }
     ],
     fix: [
+      { zh: '燙手山芋拿到炸彈時不再跳出大按鈕框：電腦按 F 丟出去，手機右下角出現圓形炸彈按鈕', en: 'Hot Potato no longer pops up a big button: press F to throw on a computer, or tap the round bomb button on phones' },
+      { zh: '守護大壯：上方顯示大壯的血量百分比；血量低於一半、低於 25% 會跳出大提示和音效，你不在大壯附近而他被攻擊時也會提醒；血量低時畫面邊緣的大壯箭頭變紅閃爍', en: 'Guard Dazhuang: his HP percentage is shown at the top; big alerts and sounds at 50% and 25% HP, a reminder when he is attacked while you are away, and his edge arrow blinks red when low' },
+      { zh: '派對遊戲區裡所有人移動速度一樣（不吃強化商店的速度、也不看寶可夢原本的速度），比的是操作', en: 'Everyone moves at the same speed in the Party Plaza (no shop speed upgrades, no species speed differences)' },
       { zh: '燙手山芋出局的人會移到場地外、不能再走進去，所有人看到都是半透明（頭上紅色 ✕），不會再擋在場中間', en: 'In Hot Potato, players who are out move outside the ring, can’t walk back in and look translucent to everyone (with a red ✕)' },
       { zh: '修正守護大壯最後一隻怪卡在樹或水後面過不來、整波一直結束不了：剩 3 隻以內時，太遠或卡住的怪每 8 秒會被拉到大壯附近，畫面邊緣和小地圖也會標出剩下的怪', en: 'Fixed Guard Dazhuang waves never ending because the last enemy got stuck behind a tree or water: with 3 or fewer left, far or stuck ones are pulled next to Dazhuang every 8 s, and the remaining enemies are marked on the screen edge and minimap' },
       { zh: '修正道具稀有度字樣疊字；使用條款頁不能再用來開啟開發者工具', en: 'Fixed doubled rank labels; the terms page can no longer be used to open the developer tools' }

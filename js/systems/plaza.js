@@ -39,6 +39,9 @@ G.Plaza = (() => {
   const V_REACH_Z = 56;                    // voleibol
   const CPU_MISS = 0.08;                   // las CPU la mandan fuera de vez en cuando
   const SIDE_COL = ['#4fb4ff', '#ff6fa8'];
+  // (2026-10-19, el dueño: «¿las mejoras de velocidad cuentan en la zona?») Aquí todos igual de rápidos:
+  // sin mejoras de la tienda ni la velocidad de cada Pokémon (iban de 91 a 126; las CPU, 165-190).
+  const PLAZA_SPD = 170;
 
   let opts = null;                        // { zone, cpu } de la sala o del modo solitario
   let games = {};                         // zona -> juego (anfitrión: el estado de verdad; invitado: la foto)
@@ -122,6 +125,7 @@ G.Plaza = (() => {
 
   function end() {
     for (const p of G.Game.everyone()) p.spectK = 1;
+    if (thBtn) { thBtn.remove(); thBtn = null; }
     if (hud) { hud.remove(); hud = null; }
     games = {}; views = {}; opts = null;
   }
@@ -600,6 +604,8 @@ G.Plaza = (() => {
     // Los que han quedado fuera de la patata: medio transparentes en todas las pantallas.
     const pg0 = games.potato, outIds = pg0 && pg0.phase !== 'over' ? pg0.out || [] : [];
     for (const p of G.Game.everyone()) p.spectK = outIds.includes(idOf(p)) ? 0.4 : 1;
+    // Misma velocidad para todos (cada fotograma: nada de mejoras, pociones ni acelerones).
+    pl.baseSpd = PLAZA_SPD; pl.spdMul = 1; pl.hasteT = 0;
     // Tu Pokémon: en tu campo o dentro del círculo mientras juegas.
     keepInside(pl);
     // Lanzar la bomba (F o el botón).
@@ -607,8 +613,22 @@ G.Plaza = (() => {
     if (pg && pg.phase === 'play' && pg.holder === meId() && G.Input.tap('keyf')) throwMine();
     smooth(dt);
     if ((hudT -= dt) <= 0) { hudT = 0.15; drawHud(); }
+    throwButton(!!(pg && pg.phase === 'play' && pg.holder === meId() && G.Touch.active));
     if (hud) hud.style.display = G.UI.isOpen('scr-pause') ? 'none' : '';
     hutCheck(pl);
+  }
+
+  /** Móvil: botón redondo con la bomba abajo a la derecha, sólo mientras la llevas. */
+  let thBtn = null;
+  function throwButton(show) {
+    if (show && !thBtn) {
+      thBtn = document.createElement('button');
+      thBtn.id = 'pz-throw'; thBtn.type = 'button';
+      thBtn.innerHTML = `<span class="pz-throw-ico"></span><small>${G.T('Lanzar')}</small>`;
+      thBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); throwMine(); });
+      document.body.appendChild(thBtn);
+    }
+    if (thBtn) thBtn.classList.toggle('hidden', !show);
   }
 
   function throwMine() {
@@ -726,11 +746,13 @@ G.Plaza = (() => {
       if (playing === 'potato') {
         const out = !g.alive || !g.alive.includes(me);
         const mine = g.holder === me && g.phase === 'play';
-        key = 'pot:' + out + mine + (g.alive || []).length + g.phase;
-        html = `<div class="pz-card">${out ? G.T('Estás fuera: mira cómo acaba.') : mine ? `<b class="pz-hot">${G.T('¡Tienes la bomba!')}</b> <span class="pz-tip">${G.T('Toca a alguien o lánzala')}</span>`
+        key = 'pot:' + out + mine + (g.alive || []).length + g.phase + G.Touch.active;
+        // (2026-10-19, el dueño: «lanzar es con una tecla, no con un cuadro») Sólo un aviso; se lanza con F
+        // o, en el móvil, con el botón redondo de abajo a la derecha (#pz-throw).
+        const tip = G.Touch.active ? 'Toca a alguien o pulsa el botón de la bomba' : 'Toca a alguien o pulsa F para lanzarla';
+        html = `<div class="pz-card">${out ? G.T('Estás fuera: mira cómo acaba.') : mine ? `<b class="pz-hot">${G.T('¡Tienes la bomba!')}</b> <span class="pz-tip">${G.T(tip)}</span>`
           : G.T('¡Huye de quien lleve la bomba!')}
           <span class="pz-sub">${G.I18n.f('Quedan {x}', (g.alive || []).length)}</span>
-          ${mine ? `<button class="btn gold pz-big" data-pz="throw">${G.T('Lanzar la bomba')} <kbd>F</kbd></button>` : ''}
           ${out || g.phase === 'over' ? '' : `<button class="btn small ghost" data-pz="leave:potato">${G.T('Dejar el partido')}</button>`}</div>`;
       } else {
         const p = g.parts.find(q => q.id === me), sc = g.score || [0, 0];

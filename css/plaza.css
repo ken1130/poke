@@ -41,3 +41,12 @@
   #plaza-hud .btn { min-height: 40px; padding: 4px 10px; }
   #plaza-hud .pz-big { font-size: 14px; padding: 6px 12px; }
 }
+
+/* Botón de lanzar la bomba (sólo móvil, mientras la llevas): redondo, abajo a la derecha. */
+#pz-throw { position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: 96px; z-index: 31; width: 78px; height: 78px; border-radius: 50%;
+  border: 3px solid #4a2208; background: radial-gradient(circle at 40% 35%, #ffd88a, #ff9f43 55%, #c8501a); box-shadow: 0 4px 0 #4a2208, 0 0 18px rgba(255,120,40,.6);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #3a1a06; font: 800 12px Pixelify, sans-serif; touch-action: none;
+  animation: pzHot .5s steps(2) infinite; }
+#pz-throw:active { transform: translateY(2px); box-shadow: 0 2px 0 #4a2208; }
+#pz-throw .pz-throw-ico { width: 26px; height: 26px; border-radius: 50%; background: #2a2433; box-shadow: inset -4px -4px 0 #15111d, 0 0 0 2px #0f0c16; position: relative; }
+#pz-throw .pz-throw-ico::after { content: ''; position: absolute; right: 1px; top: -6px; width: 5px; height: 7px; background: #ffe14d; box-shadow: 0 -3px 0 #ff9a3d; }

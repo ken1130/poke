@@ -438,7 +438,12 @@ G.HUD = (() => {
       if (en && !en.noArrow) edgeArrow(ctx, w, h, pl, en.x, en.y - 20, en.col, '#ffffff', '#1a1a2a', en.col, en.name);
       // «Proteger a Dazhuang» (guard.js): hacia él si no se ve.
       const gm = G.Guard && G.Guard.markers();
-      if (gm && !gm.dz.dead) edgeArrow(ctx, w, h, pl, gm.dz.x, gm.dz.y - 30, '#ffb44a', '#fff0c8', '#3a2008', '#ffe0a0', G.T('Dazhuang'));
+      if (gm && !gm.dz.dead) {
+        // Con poca vida (< 35 %), la flecha de Dazhuang se pone roja y parpadea.
+        const low = gm.dz.hp / Math.max(1, gm.dz.mhp) < 0.35, on = !low || Math.floor(performance.now() / 250) % 2;
+        if (low && on) edgeArrow(ctx, w, h, pl, gm.dz.x, gm.dz.y - 30, '#ff3a4a', '#ffd8dc', '#3a0a10', '#ffb0b8', G.T('¡Dazhuang en peligro!'));
+        else if (!low) edgeArrow(ctx, w, h, pl, gm.dz.x, gm.dz.y - 30, '#ffb44a', '#fff0c8', '#3a2008', '#ffe0a0', G.T('Dazhuang'));
+      }
       // Los últimos de la oleada (guard.js pullStrays): dónde están, para no buscarlos a ciegas.
       if (gm && gm.strays) for (const e of gm.strays) if (!e.dead) edgeArrow(ctx, w, h, pl, e.x, e.y - 10, '#ff5f6d', '#ffd8dc', '#3a0a10', '#ffb0b8', G.T('Último enemigo'));
       // Dos escaleras (2026-10-16): la segura en azul, la peligrosa en rojo.
