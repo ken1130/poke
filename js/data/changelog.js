@@ -6,6 +6,11 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-19', title: ['Sala de entrenamiento y Puño de Piedra', 'Training room and Rock Fist'], chg: [
+    ['El Puño de Piedra ahora es un puño cerrado (cuatro nudillos y el pulgar) que sale de un montón de piedras, en vez de una columna alta y fina.', 'Rock Fist now looks like a clenched fist (four knuckles and a thumb) rising from a pile of rubble instead of a tall thin pillar.'],
+  ], fix: [
+    ['Sala de entrenamiento: los muñecos Pikachu congelados por Agonía de Escarcha (o confundidos) ya no se quedan para siempre en el hielo, y Dominio del Viento ya no los atrapa.', 'Training room: Pikachu dummies frozen by Frost Agony (or confused) no longer stay stuck in the ice forever, and Wind Domain no longer grabs them.'],
+  ] },
   { d: '2026-10-17', title: ['Modo fiesta: 2 contra 2', 'Party mode: 2 vs 2'], new: [
     ['Cartas de tipos y Voltorb travieso se pueden jugar 2 contra 2 (con 4 jugadores en la mesa, CPU incluidas): el anfitrión elige «2 contra 2» en la sala y puede rehacer los equipos. El compañero se sienta enfrente y los equipos se turnan. En Cartas de tipos, si uno de los dos se queda sin cartas gana el equipo (los dos se llevan los puntos) y no puedes pillar a tu compañero; en Voltorb travieso, el equipo cae cuando explotan los dos. Colores de equipo, «Compañero» y final de ronda por equipos.',
      'Type Cards and Naughty Voltorb can be played 2 vs 2 (4 seats at the table, CPUs included): the host picks "2 vs 2" in the room and can reshuffle teams. Your partner sits opposite and teams alternate turns. In Type Cards, when either partner empties their hand the team wins (both get the points) and you can\'t catch your partner; in Naughty Voltorb, a team is out when both have exploded. Team colours, a "Partner" tag and team results.']

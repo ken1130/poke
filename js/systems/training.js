@@ -70,6 +70,10 @@ G.Training = (() => {
       this.bob += dt * 6;
       if (this.slowT > 0) { this.slowT -= dt; if (this.slowT <= 0) this.slow = 0; }
       if (this.rootT > 0) this.rootT -= dt;
+      // Congelado / confundido (V3.1) se pasan solos, como en Enemy.update; nunca se queda atrapado.
+      if (this.confT > 0) this.confT -= dt;
+      if (this.freezeT > 0) this.freezeT -= dt;
+      this.grab = null;
       if (this.shieldT > 0) { this.shieldT -= dt; if (this.shieldT <= 0) this.shield = 0; }
       // Quemadura y veneno (igual que en Enemy.update), para que cuenten en el daño.
       if (this.burn > 0) {

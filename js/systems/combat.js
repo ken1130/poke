@@ -1651,7 +1651,7 @@ G.Combat = (() => {
     const row = f.row, R = f.r;
     if (row.push) {
       for (const e of enemiesIn(pl.x, pl.y, R)) {
-        if (e.dead || e.boss || e.remote || isFoe(e) || e.grab) continue;
+        if (e.dead || e.boss || e.remote || e.dummy || isFoe(e) || e.grab) continue;
         const dx = e.x - pl.x, dy = e.y - pl.y, d = Math.max(1, Math.hypot(dx, dy)), min = R + e.r * 0.5;
         if (d >= min) continue;
         const x = pl.x + dx / d * min, y = pl.y + dy / d * min;
@@ -1662,7 +1662,7 @@ G.Combat = (() => {
     if (!row.grab) return true;
     f.held = f.held.filter(e => !e.dead && e.grab && e.grab.f === f);
     for (const e of enemiesIn(pl.x, pl.y, R + 30)) {
-      if (e.dead || e.boss || isFoe(e) || e.grab) continue;
+      if (e.dead || e.boss || e.dummy || isFoe(e) || e.grab) continue;
       const d = Math.hypot(e.x - pl.x, e.y - pl.y);
       if (d < R - 26 || d > R + e.r) continue;
       if (e.remote) {
@@ -2103,12 +2103,12 @@ G.Combat = (() => {
         continue;
       }
       if (f.kind === 'pillar') {
-        // Columna de roca que sale del suelo (0,1 s), se queda y se hunde.
+        // Puño de roca que sale del suelo (0,1 s), se queda y se hunde.
         const k = f.t < 0.1 ? f.t / 0.1 : f.t > 0.55 ? Math.max(0, 1 - (f.t - 0.55) / 0.2) : 1;
-        const H = 22 * G.Sprites.PX * 1.5;
+        const H = 16 * G.Sprites.PX * 1.5;
         ctx.save();
         ctx.beginPath(); ctx.rect(f.x - 60, f.y - H - 10, 120, H + 12); ctx.clip();
-        G.VFX.draw(ctx, 'pillar', 'ground', f.x, f.y + 2 + (1 - k) * H, { scale: 1.5, pivot: [6.5, 22] });
+        G.VFX.draw(ctx, 'pillar', 'ground', f.x, f.y + 2 + (1 - k) * H, { scale: 1.5, pivot: [8, 16] });
         ctx.restore();
         continue;
       }

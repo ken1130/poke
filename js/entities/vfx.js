@@ -329,11 +329,13 @@ G.VFX = (() => {
       rows(P, ['.....w....', '....d.....', '...dmmd...', '..dmllmd..', '.dmlwllmd.', '.dmllllmd.', '.dmmllmmd.', '..dmmmmd..', '...dddd...']);
       P.outline();
     } },
-    // Columna de roca con un puño en lo alto (Puño de Piedra): se dibuja saliendo del suelo.
-    pillar: { w: 13, h: 22, gen(P) {
-      rows(P, ['...lll.ll...', '..lwwlwwll..', '..lwllllll..', '..lllllllm..', '..mllllllm..', '...mmmmmm...',
-               '...mlllld...', '...mllmld...', '..dmlllmld..', '..mllmllmd..', '..mlllldmd..', '..mmllmlmd..',
-               '..mlmlllmd..', '.dmllllmmdd.', '.mmlmlllmmd.', 'dmmmlmmlmmdd', 'ddmmmmmmmddd'], 0, 3);
+    // Puño de roca (Puño de Piedra): puño cerrado y ancho (cuatro nudillos y el pulgar cruzado) sobre
+    // una muñeca corta y un montón de piedras; se dibuja saliendo del suelo. Antes era una columna
+    // alta y fina con una bola encima y no se leía como un puño.
+    pillar: { w: 16, h: 16, gen(P) {
+      rows(P, ['...ll.ll.ll.ll..', '..lwwlwwlwwlwwl.', '..lwllwllwllwlm.', '..lllmlllmllmllm', '..mllmlllmllmlmm',
+               '.lwwwwwwwllmlmmd', '.lllllllllmmlmmd', '.mmmllllmmmmmmd.', '..dmmmmmmmmmmd..', '...mlllllllmd...',
+               '...mllmllllmd...', '..dmllllllmlmd..', '.ddmlmlllllmmdd.', 'dmmmmlmmlmmmmmdd', 'ddmmdmmmmmdmmddd'], 0, 1);
       P.outline();
     } },
     // Bloque de hielo (Agonía de Escarcha): borde claro y dentro medio transparente (L).

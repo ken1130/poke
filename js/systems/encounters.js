@@ -103,6 +103,11 @@ G.Encounters = (() => {
         this.anim.update(dt);
         if (this.flash > 0) this.flash -= dt;
         this.bob += dt * 6;
+        // Congelado / confundido (V3.1) se pasan solos, como en Enemy.update; nunca se queda atrapado.
+        if (this.rootT > 0) this.rootT -= dt;
+        if (this.confT > 0) this.confT -= dt;
+        if (this.freezeT > 0) this.freezeT -= dt;
+        this.grab = null;
         // Chapotea: saltitos en el sitio (a un lado y a otro).
         if ((this.hopT -= dt) <= 0) {
           this.hopT = G.U.rand(0.5, 1.1);

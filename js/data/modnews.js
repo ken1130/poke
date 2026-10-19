@@ -19,6 +19,8 @@ G.MODNEWS = [
       { zh: '燃燒中的敵人會紅色閃爍，頭上也會顯示燃燒／中毒／流血圖示', en: 'Burning enemies flash red and show burn/poison/bleed icons' }
     ],
     fix: [
+      { zh: '修正練功房：被霜之哀傷冰住（或被混亂）的皮卡丘木樁會一直卡在冰塊裡回不來；風之支配也不會再把木樁抓走', en: 'Training room: Pikachu dummies frozen by Frost Agony (or confused) no longer stay stuck in the ice forever; Wind Domain no longer grabs the dummies' },
+      { zh: '石拳的圖改成清楚的握拳（四個指節加拇指）從碎石堆冒出來，不再是細長的石柱', en: 'Rock Fist now looks like a clear clenched fist (four knuckles and a thumb) rising from rubble instead of a tall thin pillar' },
       { zh: '燙手山芋拿到炸彈時不再跳出大按鈕框：電腦按 F 丟出去，手機右下角出現圓形炸彈按鈕', en: 'Hot Potato no longer pops up a big button: press F to throw on a computer, or tap the round bomb button on phones' },
       { zh: '守護大壯：上方顯示大壯的血量百分比；血量低於一半、低於 25% 會跳出大提示和音效，你不在大壯附近而他被攻擊時也會提醒；血量低時畫面邊緣的大壯箭頭變紅閃爍', en: 'Guard Dazhuang: his HP percentage is shown at the top; big alerts and sounds at 50% and 25% HP, a reminder when he is attacked while you are away, and his edge arrow blinks red when low' },
       { zh: '派對遊戲區裡所有人移動速度一樣（不吃強化商店的速度、也不看寶可夢原本的速度），比的是操作', en: 'Everyone moves at the same speed in the Party Plaza (no shop speed upgrades, no species speed differences)' },
