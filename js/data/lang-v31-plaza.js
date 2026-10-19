@@ -53,7 +53,15 @@ G.I18n.add({
   '{x} se une al partido en lugar de la CPU': '{x} 加入了，換下電腦',
   'Plancha': '撲球',
   'Botón «Plancha»: te lanzas a por la pelota': '「撲球」按鈕：往前撲出去救球',
-  'Espacio: te lanzas a por la pelota hacia donde vas': '空白鍵：往移動方向撲出去救球'
+  'Espacio: te lanzas a por la pelota hacia donde vas': '空白鍵：往移動方向撲出去救球',
+  'Fácil (CPU)': '簡單', 'Normal (CPU)': '普通', 'Difícil (CPU)': '困難',
+  'CPU: {x}': '電腦：{x}',
+  'Otra partida': '再來一局',
+  '¿Otra con los mismos? Cada uno en su equipo de antes.': '同一批人再來一局？大家維持原本的隊伍。',
+  'Mitad izquierda: {x} · mitad derecha: {x}': '左半場 {x} 人 · 右半場 {x} 人',
+  'ponte en la mitad del equipo que quieras': '站到想加入那隊的半場',
+  'Equipo: la mitad izquierda o derecha de la pista donde estés': '分隊：開賽時站在球場左半邊就是左隊、右半邊就是右隊',
+  '{x} ha dejado el partido: sigue una CPU': '{x} 離開了比賽，改由電腦接手'
 }, 'zh');
 G.I18n.add({
   'Zona de fiesta': 'Party Plaza',
@@ -109,5 +117,13 @@ G.I18n.add({
   '{x} se une al partido en lugar de la CPU': '{x} joins and replaces a CPU',
   'Plancha': 'Dive',
   'Botón «Plancha»: te lanzas a por la pelota': '"Dive" button: throw yourself at the ball',
-  'Espacio: te lanzas a por la pelota hacia donde vas': 'Space: dive for the ball in the direction you move'
+  'Espacio: te lanzas a por la pelota hacia donde vas': 'Space: dive for the ball in the direction you move',
+  'Fácil (CPU)': 'Easy', 'Normal (CPU)': 'Normal', 'Difícil (CPU)': 'Hard',
+  'CPU: {x}': 'CPU: {x}',
+  'Otra partida': 'Play again',
+  '¿Otra con los mismos? Cada uno en su equipo de antes.': 'Another one with the same players? Everyone keeps their team.',
+  'Mitad izquierda: {x} · mitad derecha: {x}': 'Left half: {x} · right half: {x}',
+  'ponte en la mitad del equipo que quieras': 'stand in the half of the team you want',
+  'Equipo: la mitad izquierda o derecha de la pista donde estés': 'Teams: the left or right half of the court you stand in',
+  '{x} ha dejado el partido: sigue una CPU': '{x} left the match: a CPU takes over'
 });

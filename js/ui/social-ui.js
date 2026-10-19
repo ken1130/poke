@@ -411,7 +411,8 @@
       const o = G.Social.partyOf(room), host = room.isHost;
       const maxCpu = Math.max(0, G.Social.MAX_PLAYERS - ms.length), cpu = Math.min(o.cpu, maxCpu);
       const g = G.Party.game(o.game);
-      const chips = G.Party.games().map(d => `<button class="chip lp-game ${d.id === o.game && !d.soon ? 'on' : ''}" data-pg="${d.id}" ${host && !d.soon ? '' : 'disabled'}>
+      const chips = G.Party.games().filter(d => !d.soon).map(d =>   // (los «próximamente» no se enseñan)
+ `<button class="chip lp-game ${d.id === o.game && !d.soon ? 'on' : ''}" data-pg="${d.id}" ${host && !d.soon ? '' : 'disabled'}>
           ${G.T(d.name)}${d.soon ? ` <small class="lp-soon">${G.T('Próximamente')}</small>` : ''}</button>`).join('');
       const back = !host && G.Party.left ? `<button class="btn small gold" data-pback>${G.T('Volver a la mesa')}</button>` : '';
       const h = `<div class="chips lp-games">${chips}</div>

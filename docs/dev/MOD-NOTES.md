@@ -273,4 +273,10 @@
 |---|---|
 | 集合倒數 | `plaza.js lobbies` + `GATHER = 5`：連線時按開始 → `['plz','lobby',kind,mode,t,by]`，倒數完 `startGame`；`now`／`cancel` 由房主處理（`'lobbyx'` 通知取消）。單人（場上只有 1 人）直接開始。倒數字畫在開始台下方（球場上方會出畫面） |
 | 中途換電腦 | 網球／排球 `phase === 'ready'`（兩球之間）時 `swapIn`：**真的在球場線內**（`insideZone`，不含邊緣 40px）、沒在別場的人，換掉人少那邊的電腦；`['plz','swap',kind,cpuId,part]`，`applySwap` 換 parts/homes/cpus |
-| 撲球 | `DIVE = { t: 0.22, dist: 140, down: 0.45, cd: 1.5 }`；空白鍵或手機 `#pz-dive`；只移動自己的寶可夢（擊球照距離判定，組隊靠位置同步），撲時播 `Hurt` |
+| 撲球 | `DIVE = { t: 0.18, dist: 95, down: 0.45, cd: 1.5 }`（主人覺得 140 太遠）；空白鍵或手機 `#pz-dive`；只移動自己的寶可夢（擊球照距離判定，組隊靠位置同步），撲時播 `Hurt` |
+| 選隊 | `startGame(..., fixed)`：開賽時站在球場線內的人照 `sideOfX` 分左右隊，在開始台上的人補到人少那邊，一邊滿了換邊；倒數面板 `teamCount` 顯示兩邊人數 |
+| 電腦難度 | `CPU_LV`（簡單／普通／困難：失誤率 0.2／0.08／0.03、速度 ×0.8／1／1.15、判斷誤差 34／18／8 px）；`cpuLv` 由房主保存，`['plz','lv',n]` 同步，開局時存進 `g.lv` |
+| 中途離開 | 網球／排球還有其他真人時，`leaveGame` 改成 `applySwap(人→電腦)`，離開的人記在 `g.leftIds`，不會被 `swapIn` 拉回去；沒有真人才結束 |
+| 再來一局 | `applyEnd` 記 `lastMatch[kind] = { at, mode, sides }`；60 秒內、在那個球場或開始台、有參加的人看到「再來一局」→ `rematch` 用原本的隊伍開（`fixed`） |
+| 撲球同步 | 撲的人 `ask(['plz','dive'])`，房主廣播，其他人 `diveFx` 播 `Hurt` + 灰塵 |
+| 其他 | `party.js` 拿掉「Tenis Pokémon · próximamente」的佔位；`social-ui.js` 不顯示 `soon` 的遊戲 |

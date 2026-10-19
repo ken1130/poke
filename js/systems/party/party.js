@@ -197,8 +197,7 @@ G.Party = (() => {
     pub: st => VT().pub(st, Date.now()),
     results: st => VT().results(st)
   });
-  register({ id: 'tennis', name: 'Tenis Pokémon', minPlayers: 2, maxPlayers: 4, soon: true,
-             desc: 'Partidos de tenis con tu Pokémon.' });
+  // (2026-10-19: quitado el «Tenis Pokémon · próximamente»: el tenis ya está en la zona de fiesta, plaza.js.)
 
   // ---------------- estado ----------------
   let S = null;            // sesión del anfitrión (sólo en el anfitrión)

@@ -49,6 +49,14 @@ G.Plaza = (() => {
   // Cuenta atrás para juntarse (2026-10-19, el dueño: «somos 4 y el último aún no había entrado:
   // ¿le toca una CPU?»): al pulsar empezar, GATHER s para que entre quien quiera; luego empieza.
   let lobbies = {};                       // zona -> { mode, t, by }
+  // Dificultad de las CPU de las pistas (la elige quien empieza; la guarda el anfitrión) y el último
+  // partido de cada zona (para «Otra partida» con los mismos). 2026-10-19.
+  const CPU_LV = [
+    { name: 'Fácil (CPU)',   miss: 0.2,  spd: 0.8,  err: 34 },
+    { name: 'Normal (CPU)',  miss: 0.08, spd: 1,    err: 18 },
+    { name: 'Difícil (CPU)', miss: 0.03, spd: 1.15, err: 8 }
+  ];
+  let cpuLv = 1, lastMatch = {};
   const GATHER = 5;
   let hud = null, hudT = 0, snapT = 0, hutTold = 0;
   let lastKey = '';
@@ -111,7 +119,7 @@ G.Plaza = (() => {
   function begin(pl, coop) {
     const mods = coop ? coop.mods || {} : opts || {};
     opts = { zone: mods.plaza || 'plaza', cpu: mods.cpu | 0 };
-    games = {}; views = {}; lobbies = {}; snapT = 0; hutTold = 0; lastKey = '';
+    games = {}; views = {}; lobbies = {}; lastMatch = {}; cpuLv = 1; snapT = 0; hutTold = 0; lastKey = '';
     pl.god = true;
     const [cx, cy] = center();
     G.World.setArena({ tx: TX, ty: TY, room: true, rw: RW, rh: RH, type: 'normal' });
@@ -155,6 +163,9 @@ G.Plaza = (() => {
     if (!on() || !authority()) return;
     if (ev[1] === 'go') gather(ev[2], ev[3] | 0, from);
     else if (ev[1] === 'now') { const l = lobbies[ev[2]]; if (l) { delete lobbies[ev[2]]; startGame(ev[2], l.mode, false, l.by); } }
+    else if (ev[1] === 'again') rematch(ev[2]);
+    else if (ev[1] === 'lv') { cpuLv = (cpuLv + 1) % CPU_LV.length; emit(['plz', 'lv', cpuLv]); lastKey = ''; }
+    else if (ev[1] === 'dive') { emit(['plz', 'dive', from]); if (from !== meId()) diveFx(from); }
     else if (ev[1] === 'cancel') { if (lobbies[ev[2]]) { delete lobbies[ev[2]]; emit(['plz', 'lobbyx', ev[2]]); lastKey = ''; } }
     else if (ev[1] === 'throw') throwBomb(from, +ev[2] || 0);
     else if (ev[1] === 'leave') leaveGame(ev[2], from);
@@ -167,6 +178,8 @@ G.Plaza = (() => {
     if (k === 'start') applyStart(ev[2], ev[3]);
     else if (k === 'lobby') { lobbies[ev[2]] = { mode: ev[3] | 0, t: +ev[4] || GATHER, by: ev[5] }; lastKey = ''; G.Audio.sfx('select'); }
     else if (k === 'lobbyx') { delete lobbies[ev[2]]; lastKey = ''; }
+    else if (k === 'lv') { cpuLv = ev[2] | 0; lastKey = ''; }
+    else if (k === 'dive') { if (ev[2] !== meId()) diveFx(ev[2]); }
     else if (k === 'swap') applySwap(ev[2], ev[3], ev[4]);
     else if (k === 'st') { const g = games[ev[2]]; if (g) Object.assign(g, ev[3]); }
     else if (k === 'fx') fx(ev[2], ev[3], ev[4], ev[5]);
@@ -179,6 +192,21 @@ G.Plaza = (() => {
   }
 
   // ---------------- juegos: empezar ----------------
+
+  /** Anfitrión: otra partida con los mismos (cada uno en su equipo de antes; los que no estén, CPU). */
+  function rematch(kind) {
+    const m = lastMatch[kind];
+    if (!m || (games[kind] && games[kind].phase !== 'over')) return;
+    delete games[kind]; delete views[kind];
+    startGame(kind, m.mode, kind === 'potato', null, m.sides);
+  }
+  /** La plancha de otro (en todas las pantallas): cae al suelo con polvo. */
+  function diveFx(id) {
+    const p = humanById(id);
+    if (!p || p === G.Game.player) return;
+    if (p.anim) p.anim.play('Hurt', { speed: 2 });
+    G.FX.burst(p.x, p.y, '#e8dcc0', 8, 90);
+  }
 
   /** Anfitrión: alguien pulsa empezar → cuenta atrás de GATHER s (o nada, si ya hay una o se juega). */
   function gather(kind, mode, by) {
@@ -210,7 +238,7 @@ G.Plaza = (() => {
     const busy = id => Object.values(games).some(x => x.phase !== 'over' && x.parts.some(q => q.id === id));
     for (const h of G.Game.everyone()) {
       const id = idOf(h);
-      if (h.gone || h.dead || busy(id) || !insideZone(g.kind, h)) continue;
+      if (h.gone || h.dead || busy(id) || !insideZone(g.kind, h) || (g.leftIds && g.leftIds.includes(id))) continue;
       const humans = s => g.parts.filter(p => p.side === s && !p.cpu).length;
       const cpus = g.parts.filter(p => p.cpu).sort((a, b) => humans(a.side) - humans(b.side));
       const c = cpus[0];
@@ -230,6 +258,14 @@ G.Plaza = (() => {
     if (g.homes && g.homes[cid]) { g.homes[np.id] = g.homes[cid]; delete g.homes[cid]; }
     if (g.cpus) delete g.cpus[cid];
     if (views[kind] && views[kind].cpus) delete views[kind].cpus[cid];
+    if (np.cpu) {                                // alguien se ha ido: la CPU sale de donde estaba
+      const q = humanById(cid), [hx, hy] = (g.homes && g.homes[np.id]) || [0, 0];
+      const x = q ? q.x : hx, y = q ? q.y : hy;
+      g.cpus[np.id] = { x, y, ang: 0, mv: 0, think: 0, tx: x, ty: y };
+      G.Spawner.say(G.I18n.f('{x} ha dejado el partido: sigue una CPU', np.left || ''), 2.6, true);
+      G.Audio.sfx('back'); lastKey = '';
+      return;
+    }
     if (np.id === meId() && g.homes && g.homes[np.id]) { const pl = G.Game.player, [x, y] = g.homes[np.id]; pl.x = x; pl.y = y; }
     G.Spawner.say(G.I18n.f('{x} se une al partido en lugar de la CPU', np.name), 2.6, true);
     G.Audio.sfx('confirm'); lastKey = '';
@@ -239,7 +275,7 @@ G.Plaza = (() => {
    * Anfitrión: empieza el juego del rincón `kind`. Juegan las personas que están en el rincón
    * (o en su cartel); las CPU rellenan. mode: 1 = 1 contra 1, 2 = 2 contra 2 (pistas).
    */
-  function startGame(kind, mode, auto, by) {
+  function startGame(kind, mode, auto, by, fixed) {
     if (!authority() || !['tennis', 'volley', 'potato'].includes(kind)) return;
     if (games[kind] && games[kind].phase !== 'over') return;
     const z = zone(kind), [px, py] = padOf(kind);
@@ -250,7 +286,7 @@ G.Plaza = (() => {
     };
     // (Quien ya juega en otro rincón no entra en éste.)
     const busy = id => Object.keys(games).some(k => k !== kind && games[k].phase !== 'over' && games[k].parts.some(q => q.id === id));
-    let humans = G.Game.everyone().filter(p => !p.gone && !busy(idOf(p)) && (auto || inZone(p)));
+    let humans = G.Game.everyone().filter(p => !p.gone && !busy(idOf(p)) && (auto || inZone(p) || (fixed && fixed[idOf(p)] != null)));
     if (by && !busy(by) && !humans.some(p => idOf(p) === by)) { const p = humanById(by); if (p) humans.push(p); }
     humans.sort((a, b) => G.U.dist2(a.x, a.y, px, py) - G.U.dist2(b.x, b.y, px, py));
     const parts = [];
@@ -263,7 +299,20 @@ G.Plaza = (() => {
       while (parts.length < want) cpu(0);
     } else {
       const n = mode === 2 ? 2 : 1;
-      humans.slice(0, n * 2).forEach((p, i) => parts.push({ id: idOf(p), cpu: false, dex: p.dex, name: nameOf(p), side: i % 2 }));
+      // Equipo: revancha → el de antes; si no, la mitad de la pista donde estás (izquierda / derecha);
+      // en el cartel, al que tenga menos. Si un lado se llena, al otro. (2026-10-19: «elegir equipo»)
+      const want = p => {
+        const id = idOf(p);
+        if (fixed && fixed[id] != null) return fixed[id];
+        return insideZone(kind, p) ? sideOfX(z, p.x) : -1;
+      };
+      const picked = humans.slice(0, n * 2).map(p => ({ p, w: want(p) })).sort((a, b) => (a.w < 0) - (b.w < 0));
+      for (const { p, w } of picked) {
+        const cnt = s => parts.filter(q => q.side === s).length;
+        let s = w >= 0 ? w : (cnt(0) <= cnt(1) ? 0 : 1);
+        if (cnt(s) >= n) s = 1 - s;
+        parts.push({ id: idOf(p), cpu: false, dex: p.dex, name: nameOf(p), side: s });
+      }
       for (const s of [0, 1]) while (parts.filter(q => q.side === s).length < n) cpu(s);
     }
     const g = newGame(kind, parts);
@@ -276,7 +325,7 @@ G.Plaza = (() => {
 
   /** Estado nuevo de un juego (anfitrión). */
   function newGame(kind, parts) {
-    const z = zone(kind), g = { kind, parts, phase: 'ready', t: 1.6, cpus: {}, homes: {} };
+    const z = zone(kind), g = { kind, parts, phase: 'ready', t: 1.6, cpus: {}, homes: {}, lv: cpuLv };
     const ts = TS();
     if (kind === 'potato') {
       parts.forEach((p, i) => {
@@ -324,6 +373,8 @@ G.Plaza = (() => {
   function applyEnd(kind, text) {
     const g = games[kind];
     if (g) g.phase = 'over';
+    if (g && g.parts) lastMatch[kind] = { at: now(), mode: g.parts.length > (kind === 'potato' ? 0 : 2) && kind !== 'potato' ? 2 : 1,
+      sides: Object.fromEntries(g.parts.filter(p => !p.cpu).map(p => [p.id, p.side])) };
     const z = zone(kind);
     G.Spawner.say(G.T(text) || text, 3.4, true);
     G.Audio.sfx('legend');
@@ -370,6 +421,15 @@ G.Plaza = (() => {
       if (g.alive.length <= 1) potatoOver(g);
       return;
     }
+    // Pistas (2026-10-19, «que no se acabe para todos»): si quedan personas, una CPU ocupa su sitio.
+    if (g.parts.some(p => !p.cpu && p.id !== who)) {
+      const old = g.parts.find(p => p.id === who);
+      (g.leftIds = g.leftIds || []).push(who);      // (no vuelve a entrar solo en el siguiente punto)
+      const np = { id: 'cpu' + kind[0] + 'r' + Math.floor(Math.random() * 1e6), cpu: true, dex: G.U.pick(CPU_DEX), name: 'CPU', side: old.side, left: name };
+      emit(['plz', 'swap', kind, who, np]);
+      applySwap(kind, who, np);
+      return;
+    }
     g.phase = 'over';
     emit(['plz', 'st', kind, snapshot(g)]);
     const text = G.I18n.f('{x} ha dejado el partido', name);
@@ -389,7 +449,7 @@ G.Plaza = (() => {
     const b = g.ball;
     let tx = z.cx + (s ? -1 : 1) * z.hw * (0.3 + Math.random() * 0.55);
     let ty = z.cy + G.U.clamp((Math.random() * 2 - 1) * 0.7 + aim * 0.5, -0.92, 0.92) * z.hh;
-    if (cpu && Math.random() < CPU_MISS) {                 // fuera: larga o por un lado
+    if (cpu && Math.random() < CPU_LV[g.lv != null ? g.lv : 1].miss) {   // fuera: larga o por un lado (según la dificultad)
       if (Math.random() < 0.5) tx = z.cx + (s ? -1 : 1) * (z.hw + 30 + Math.random() * 30);
       else ty = z.cy + (Math.random() < 0.5 ? -1 : 1) * (z.hh + 24 + Math.random() * 24);
     }
@@ -502,10 +562,10 @@ G.Plaza = (() => {
           const top = mates.indexOf(p) === 0;
           if ((top && ty > z.cy + 10) || (!top && ty < z.cy - 10)) { tx = hx; ty = hy; }
         }
-        if ((c.think -= dt) <= 0) { c.think = 0.25; c.err = (Math.random() * 2 - 1) * 18; }
+        if ((c.think -= dt) <= 0) { c.think = 0.25; c.err = (Math.random() * 2 - 1) * CPU_LV[g.lv != null ? g.lv : 1].err; }
         ty += c.err || 0;
       }
-      const sp = (g.kind === 'volley' ? 175 : 190) * dt, dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy);
+      const sp = (g.kind === 'volley' ? 175 : 190) * CPU_LV[g.lv != null ? g.lv : 1].spd * dt, dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy);
       if (d > 2) { c.x += dx / d * Math.min(d, sp); c.y += dy / d * Math.min(d, sp); c.ang = Math.atan2(dy, dx); c.mv = 1; } else c.mv = 0;
       // Cada uno en su campo.
       const minX = p.side ? z.cx + 14 : z.cx - z.hw - 30, maxX = p.side ? z.cx + z.hw + 30 : z.cx - 14;
@@ -702,7 +762,7 @@ G.Plaza = (() => {
    * en DIVE.t s; luego DIVE.down s en el suelo sin moverte y DIVE.cd s hasta la siguiente.
    * Sólo mueve a tu Pokémon: el golpe es el de siempre (por distancia), y en grupo viaja tu posición.
    */
-  const DIVE = { t: 0.22, dist: 140, down: 0.45, cd: 1.5 };
+  const DIVE = { t: 0.18, dist: 95, down: 0.45, cd: 1.5 };   // (el dueño: «se tira demasiado lejos»: 140 → 95)
   let dive = null, diveCd = 0, dvBtn = null, diveTap = false;
   /** El partido de pista en el que juegas (o null). */
   function myCourt() {
@@ -722,6 +782,7 @@ G.Plaza = (() => {
       dive = { a, t: 0, x: pl.x, y: pl.y };
       diveCd = DIVE.cd;
       pl.anim.play('Hurt', { speed: 2 });
+      if (G.Coop.active) ask(['plz', 'dive']);   // los demás lo ven caer (diveFx)
       G.Audio.sfx('select');
       G.FX.burst(pl.x, pl.y, '#e8dcc0', 8, 90);
     }
@@ -853,6 +914,22 @@ G.Plaza = (() => {
   }
 
   /** Qué rincón tienes delante (cartel) o en el que juegas. */
+  /** Personas en la mitad `s` de la pista `k` (para la cuenta atrás). */
+  function teamCount(k, s) {
+    const z = zone(k);
+    return G.Game.everyone().filter(p => !p.gone && insideZone(k, p) && sideOfX(z, p.x) === s).length;
+  }
+  /** «Otra partida»: la zona cuyo último partido jugaste hace menos de 60 s, si está libre y estás cerca. */
+  function rematchHere(pl) {
+    const me = meId(), h = hereOf(pl);
+    for (const k in lastMatch) {
+      const m = lastMatch[k];
+      if (!m.sides || m.sides[me] == null || now() - m.at > 60) continue;
+      if ((games[k] && games[k].phase !== 'over') || lobbies[k]) continue;
+      if (h === k || insideZone(k, pl)) return k;
+    }
+    return null;
+  }
   /** La cuenta atrás que te toca: la del cartel donde estás o la de la pista en la que has entrado. */
   function lobbyHere(pl) {
     const h = hereOf(pl);
@@ -900,29 +977,41 @@ G.Plaza = (() => {
           <span class="pz-tip">${G.T(G.Touch.active ? 'Botón «Plancha»: te lanzas a por la pelota' : 'Espacio: te lanzas a por la pelota hacia donde vas')}</span>
           ${g.phase === 'over' ? '' : `<button class="btn small ghost" data-pz="leave:${playing}">${G.T('Dejar el partido')}</button>`}</div>`;
       }
+    } else if (rematchHere(pl) && hereOf(pl) !== rematchHere(pl)) {   // (en el cartel van con los botones de siempre)
+      // Acaba de terminar un partido en el que jugabas: otra con los mismos.
+      const k = rematchHere(pl), nm = k === 'tennis' ? 'Tenis' : k === 'volley' ? 'Voleibol' : 'Patata caliente';
+      key = 'again:' + k;
+      html = `<div class="pz-card"><b>${G.T(nm)}</b>
+        <span class="pz-sub">${G.T('¿Otra con los mismos? Cada uno en su equipo de antes.')}</span>
+        <div class="pz-row"><button class="btn gold" data-pz="again:${k}">${G.T('Otra partida')}</button></div></div>`;
     } else if (lobbyHere(pl)) {
       // Cuenta atrás para juntarse: cuántos van, y empezar ya / cancelar.
       const k = lobbyHere(pl), l = lobbies[k], secs = Math.max(0, Math.ceil(l.t)), n = joiners(k);
       const nm = k === 'tennis' ? 'Tenis' : k === 'volley' ? 'Voleibol' : 'Patata caliente';
-      key = 'lobby:' + k + secs + ':' + n;
+      key = 'lobby:' + k + secs + ':' + n + ':' + cpuLv + (k !== 'potato' ? teamCount(k, 0) + '-' + teamCount(k, 1) : '');
       html = `<div class="pz-card"><b>${G.T(nm)}</b>
         <b class="pz-hot">${G.I18n.f('Empieza en {x} s: si quieres jugar, entra en la pista', secs)}</b>
-        <span class="pz-sub">${G.I18n.f('Apuntados ahora: {x}', n)}${k !== 'potato' ? ' · ' + G.T(l.mode === 2 ? '2 contra 2' : '1 contra 1') : ''} · ${G.T('las CPU completan lo que falte')}</span>
+        <span class="pz-sub">${G.I18n.f('Apuntados ahora: {x}', n)}${k !== 'potato' ? ' · ' + G.T(l.mode === 2 ? '2 contra 2' : '1 contra 1') + ' · ' + G.I18n.f('CPU: {x}', G.T(CPU_LV[cpuLv].name)) : ''} · ${G.T('las CPU completan lo que falte')}</span>
+        ${k !== 'potato' ? `<span class="pz-tip">${G.I18n.f('Mitad izquierda: {x} · mitad derecha: {x}', teamCount(k, 0), teamCount(k, 1))} — ${G.T('ponte en la mitad del equipo que quieras')}</span>` : ''}
         <div class="pz-row"><button class="btn gold" data-pz="now:${k}">${G.T('Empezar ya')}</button>
           <button class="btn small ghost" data-pz="cancel:${k}">${G.T('Cancelar')}</button></div></div>`;
     } else if (here === 'tennis' || here === 'volley') {
       const busy = games[here] && games[here].phase !== 'over';
-      key = 'pad:' + here + busy;
+      key = 'pad:' + here + busy + cpuLv + (rematchHere(pl) === here);
       html = `<div class="pz-card"><b>${G.T(here === 'tennis' ? 'Pista de tenis' : 'Pista de voleibol')}</b>
         <span class="pz-sub">${G.T(busy ? 'Ya están jugando: espera a que acaben.' : 'Juegan los que estén en la pista o en el cartel; las CPU completan.')}</span>
-        ${busy ? '' : `<div class="pz-row"><button class="btn gold" data-pz="go:${here}:1">${G.T('1 contra 1')}</button>
-          <button class="btn gold" data-pz="go:${here}:2">${G.T('2 contra 2')}</button></div>`}</div>`;
+        ${busy ? '' : `<span class="pz-tip">${G.T('Equipo: la mitad izquierda o derecha de la pista donde estés')}</span>
+        <div class="pz-row"><button class="btn gold" data-pz="go:${here}:1">${G.T('1 contra 1')}</button>
+          <button class="btn gold" data-pz="go:${here}:2">${G.T('2 contra 2')}</button>
+          <button class="btn small ghost" data-pz="lv">${G.I18n.f('CPU: {x}', G.T(CPU_LV[cpuLv].name))}</button>
+          ${rematchHere(pl) === here ? `<button class="btn" data-pz="again:${here}">${G.T('Otra partida')}</button>` : ''}</div>`}</div>`;
     } else if (here === 'potato') {
       const busy = games.potato && games.potato.phase !== 'over';
-      key = 'pad:potato' + busy;
+      key = 'pad:potato' + busy + (rematchHere(pl) === 'potato');
       html = `<div class="pz-card"><b>${G.T('Patata caliente')}</b>
         <span class="pz-sub">${G.T(busy ? 'Ya están jugando: espera a que acaben.' : 'Pasa la bomba tocando a alguien o lánzala. Explota entre 8 y 15 s: el que la tenga, fuera.')}</span>
-        ${busy ? '' : `<button class="btn gold" data-pz="go:potato:0">${G.T('Empezar la patata caliente')}</button>`}</div>`;
+        ${busy ? '' : `<div class="pz-row"><button class="btn gold" data-pz="go:potato:0">${G.T('Empezar la patata caliente')}</button>
+          ${rematchHere(pl) === 'potato' ? `<button class="btn" data-pz="again:potato">${G.T('Otra partida')}</button>` : ''}</div>`}</div>`;
     } else if (here === 'hut') {
       const can = room && room.isHost;
       key = 'hut' + can;
@@ -943,6 +1032,8 @@ G.Plaza = (() => {
         const [what, a, c] = b.dataset.pz.split(':');
         if (what === 'quit') { if (G.Coop.active && authority()) { closeAll(''); setTimeout(() => G.Game.quit(), 300); } else G.Game.quit(); }
         else if (what === 'go') { G.Audio.sfx('click'); ask(['plz', 'go', a, +c || 0]); }
+        else if (what === 'again') { G.Audio.sfx('confirm'); ask(['plz', 'again', a]); }
+        else if (what === 'lv') { G.Audio.sfx('click'); ask(['plz', 'lv']); }
         else if (what === 'now') { G.Audio.sfx('confirm'); ask(['plz', 'now', a]); }
         else if (what === 'cancel') { G.Audio.sfx('back'); ask(['plz', 'cancel', a]); }
         else if (what === 'throw') throwMine();
