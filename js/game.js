@@ -232,7 +232,7 @@ G.Game = (() => {
     keepAwake(true);
     G.PvP.arenaStart(pl);
     if (G.Modes.run === 'training') G.Training.begin(pl);     // sala de entrenamiento (training.js)
-    G.Evo.reset(); G.Gmax.begin(pl);                          // ventana de evolución y Gigamax (evo.js, gmax.js)
+    G.Evo.reset(); G.Gmax.begin(pl); G.GmaxFoe.reset();                          // ventana de evolución y Gigamax (evo.js, gmax.js)
     if (G.Modes.run === 'guard') G.Guard.begin(pl);           // «Proteger a Dazhuang» (guard.js)
     if (G.Modes.run === 'plaza') G.Plaza.begin(pl, coop);     // zona de fiesta (plaza.js)
   }
@@ -1156,7 +1156,8 @@ G.Game = (() => {
     if (coop && !guard) G.Raid.update(dt, time);
     G.Evo.check(pl);
     G.MegaAb.update(dt, pl);                                     // Megaevolución: Sombra Trampa, Chorro Arena, Impulso (megaability.js)
-    G.Gmax.update(dt, pl);                                       // Gigamax: carga, duración y tecla G (gmax.js)
+    G.Gmax.update(dt, pl);
+    G.GmaxFoe.update(dt);                                        // jefes Dinamax: avisos, golpes y zonas (gmaxfoe.js)                                       // Gigamax: carga, duración y tecla G (gmax.js)
     if (G.Input.tap('keym') && !G.UI.isOpen('scr-pause')) G.Evo.openMega(pl);   // megaevolución cuando quieras (evo.js)
     G.Tips.tick(dt);
     G.Stages.update(dt, time, pl);
@@ -1345,7 +1346,8 @@ G.Game = (() => {
     G.World.drawLiquid(ctx, cam, t);
     G.Hazards.draw(ctx);
     G.Combat.drawGroundFields(ctx);
-    G.MaxMoves.draw(ctx);                     // Gigamax: zonas y rayos de los «Maxi» (maxmoves.js)
+    G.MaxMoves.draw(ctx);
+    G.GmaxFoe.draw(ctx);                      // jefes Dinamax: círculos de aviso y zonas (gmaxfoe.js)                     // Gigamax: zonas y rayos de los «Maxi» (maxmoves.js)
     G.Arts.draw(ctx);
     G.Dungeon.drawGround(ctx);
     G.Plaza.drawGround(ctx);             // zona de fiesta: pistas, círculo de la patata (plaza.js)

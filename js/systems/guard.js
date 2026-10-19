@@ -138,6 +138,7 @@ G.Guard = (() => {
       const floor = Math.round(G.Enemies.bossFloor(vt) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1));
       if (e.maxHp < floor) e.maxHp = e.hp = floor;
       e.dmg *= G.Coop.scaleDmg(n);
+      G.GmaxFoe.guardBoss(e, S.wave);   // jefes de oleada Dinamax desde la 10 (gmaxfoe.js)
     } else {
       const sc = G.Enemies.scale(vt);
       e = new G.Enemy(def, x, y, G.Modes.scale(Object.assign({}, sc, { hp: sc.hp * G.Coop.scaleHp(n) * hpK(vt) })));

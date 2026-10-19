@@ -553,7 +553,7 @@ G.Coop = (() => {
   function applyHostEvent(ev) {
     switch (ev[0]) {
       case 'ne':
-        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], raid: ev[5] === 2, shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9], elite: ev[10] || null, small: !!ev[11] });
+        G.EnemyMgr.addRemote({ id: ev[1], dex: ev[2], x: ev[3], y: ev[4], boss: !!ev[5], raid: ev[5] === 2, shiny: !!ev[6], hp: ev[7], dmg: ev[8], beh: ev[9], elite: ev[10] || null, small: !!ev[11], gm: typeof ev[12] === 'string' ? ev[12] : null });
         break;
       // Se ha hecho élite después de salir (casa de monstruos): afijos y vida nueva (2026-10-16).
       case 'ee': { const e = G.EnemyMgr.get(ev[1]); if (e && e.remote && !e.elite) { e.makeElite(ev[2], true); e.maxHp = ev[3]; } break; }
@@ -611,6 +611,7 @@ G.Coop = (() => {
       case 'pv': G.PvP.onNet(ev); break;
       case 'shl': G.Combat.supportHeal(ev[1], ev[2], ev[3], ev[4], ev[5]); break;      // Deseo / Rocío Vital de un compañero
       case 'mfx': G.Combat.netFx(ev); break;                                           // agujero negro de un compañero
+      case 'gmx': G.GmaxFoe.onNet(ev); break;                                          // «Maxi» de un jefe Dinamax (gmaxfoe.js)
     }
   }
 
@@ -630,7 +631,7 @@ G.Coop = (() => {
   // anfitrión
   function hurtShown(e, d, color) { emitNear(['hn', e.id, d, color], e.x, e.y, hitFrom); }
   function enemyAdded(e) {
-    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? (e.raid ? 2 : 1) : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior, e.affixes ? e.affixes.join('+') : e.elite || 0, e.small ? 1 : 0]);
+    emit(['ne', e.id, e.dex, r1(e.x), r1(e.y), e.boss ? (e.raid ? 2 : 1) : 0, e.shiny ? 1 : 0, Math.ceil(e.maxHp), r2(e.dmg), e.behavior, e.affixes ? e.affixes.join('+') : e.elite || 0, e.small ? 1 : 0, e.gmaxFoe ? e.gmaxFoe.gid : 0]);
   }
   function enemyGone(e, died) { emit([died ? 'ed' : 'eg', e.id]); }
   function enemyShot(p, type) { emit(['es', r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r2(p.dmg), p.r, p.life, type]); }

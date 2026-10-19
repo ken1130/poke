@@ -185,6 +185,7 @@ G.Rift = (() => {
     // rocas, tus disparos no podrían alcanzarle (bug de Celebi).
     e.flying = false;
     if (arena.shiny) e.makeShiny(!G.Modes.on('shiny'));
+    if (rush()) G.GmaxFoe.legendBoss(e, rushWins);   // Desafío legendario: uno de cada 3, Dinamax (gmaxfoe.js)
     G.EnemyMgr.add(e);
     arena.bossId = e.id;
     G.Spawner.say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' te esperaba en la grieta!', 3.2);

@@ -253,3 +253,15 @@
 | 超級特性 | `js/systems/megaability.js`：`ABIL_OF[原寶可夢編號]` → 18 種效果之一（Z-A 新超級型態的特性是我依風格挑的）。`Combat.hit` 乘 `MegaAb.dmgK`；親子愛 30% 再打一次（一半）；踩影／威嚇／夢魘減速、揚沙／夢魘每秒傷害、加速每 10 秒 +5% 在 `MegaAb.update` |
 | 起始招式覺醒 | 開局 `pl.startMoveId`（game.js）；超級進化後該招式 `m.mega`：傷害 ×1.3、冷卻 ×0.85，招式欄彩虹框、名稱前加「超級」 |
 | 練功房 | 木樁不能抓，極致馭風術每次施放改成讓風牆裡 `toss` 隻木樁被「丟過來的敵人」砸中（`throw` 傷害） |
+
+### 極巨化改成敵人頭目的能力（2026-10-19，主人：「玩家有 MEGA 進化就夠了，極巨化放在別的系統」）
+
+| 項目 | 設定 |
+|---|---|
+| 玩家 | `gmax.js` 的 `PLAYER = false`：不再集氣、沒有 G 鍵／按鈕／提示；`maxmoves.js` 玩家的極巨招式不會觸發（程式還在，改 `PLAYER = true` 會回來） |
+| 敵人 | `js/systems/gmaxfoe.js`：`make(e)` 體型 ×1.35、HP ×2、傷害 ×1.15、極巨雲霧（`drawAura`）；每 6～8 秒對最近玩家（460 內）放極巨招式：1.1 秒紅框警告圈，落地時每個人自己判定。32 種有專屬超極巨招式（`G.MaxMoves.GMAX`，`defFor` 換算成打玩家的效果：區域傷害、變慢 `lordSlowT`、攻擊變弱 `lordWeakT`、禁止回血 `lordNoHealT`、吹開、頭目回血、撒金幣、越打越痛） |
+| 出現 | 一般模式定時頭目 25%、無盡塔頭目 40%（`maybe`，排除層主 `floorBoss`、團體戰 `raid`、傳說）；守護大壯第 10 波起的頭目全部（`guardBoss`）；傳說連戰每 3 隻一隻（`legendBoss`） |
+| 組隊 | `'ne'` 第 12 欄放 gid，隊友 `look()` 只變外觀；房主送 `['gmx', id, gid, x, y, r, dmg]`，`coop.js applyHostEvent` 已加 case |
+| 頭目血條 | 前面加「極巨化 ·」 |
+
+**冒險、無盡塔也套一般模式的難度**（同一天，主人選）：`floors.js harder()` = normal／stage／tower；每日、每週（排行榜）、守護大壯不套。

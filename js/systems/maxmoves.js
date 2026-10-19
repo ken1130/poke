@@ -30,6 +30,50 @@ G.MaxMoves = (() => {
     fairy:    ['Maxiestela',   'Lluvia de estrellas que te cura un poco.']
   };
   const COL = t => G.U.TYPE_COLOR[t] || '#ffffff';
+  /*
+   * Movimientos Gigamax (2026-10-19, hoja V3.1 «超極巨化»): los jefes Dinamax de esta lista
+   * (gmaxfoe.js) lanzan su movimiento propio en vez del «Maxi» de su tipo, con su color de nubes.
+   * Aquí, los números «del lado del atacante»; gmaxfoe.js defFor los pasa a lo que te hacen a ti.
+   * Campos: r/k área y daño · single k al blanco · burn/poison capas · slow [f, s] · root/confuse/
+   * freeze s · knock · heal (fracción) · coins · crit (+prob. hasta el final, máx. +20 %) · hits
+   * (golpes al blanco) · zone { r, life, every, k, eff: burn|poison|slow|root|none }.
+   */
+  const GMAX = {
+    3:   { type: 'grass',    name: 'Gigalátigo',        col: '#5fcb6a', r: 120, k: 1.0, zone: { r: 140, life: 4, every: 0.5, k: 0.25, eff: 'none' } },
+    6:   { type: 'fire',     name: 'Gigaincendio',      col: '#ff7b3d', r: 110, k: 1.2, burn: 2, zone: { r: 150, life: 4, every: 0.5, k: 0.3, eff: 'burn' } },
+    9:   { type: 'water',    name: 'Gigacañonazo',      col: '#4b9bff', r: 110, k: 1.1, zone: { r: 140, life: 4, every: 0.5, k: 0.3, eff: 'slow' } },
+    12:  { type: 'bug',      name: 'Gigaaturdimiento',  col: '#e6d3ff', r: 140, k: 0.8, confuse: 1.5, poison: 2 },
+    25:  { type: 'electric', name: 'Gigatrueno',        col: '#ffd33d', r: 150, k: 1.2, root: 1.5 },
+    52:  { type: 'normal',   name: 'Gigamonedas',       col: '#ffd23f', r: 100, k: 1.0, coins: 3 },
+    68:  { type: 'fighting', name: 'Gigagolpe Crítico', col: '#e0533d', single: 2.5, knock: 220, crit: 0.05 },
+    94:  { type: 'ghost',    name: 'Gigaterror',        col: '#7a6bc4', r: 150, k: 0.9, root: 1.2 },
+    99:  { type: 'water',    name: 'Gigaespuma',        col: '#9fd8ff', r: 130, k: 1.0, slow: [0.7, 3] },
+    131: { type: 'ice',      name: 'Gigaaurora',        col: '#7fe0e0', r: 120, k: 0.9, freeze: 1, heal: 0.02 },
+    133: { type: 'normal',   name: 'Gigaabrazo',        col: '#ffb0c8', r: 150, k: 0.8, confuse: 2 },
+    143: { type: 'normal',   name: 'Gigarreciclaje',    col: '#7fbfa0', r: 100, k: 1.2, heal: 0.03 },
+    569: { type: 'poison',   name: 'Gigahedor',         col: '#b45ec4', r: 150, k: 0.7, poison: 4, zone: { r: 150, life: 4, every: 0.6, k: 0.2, eff: 'poison' } },
+    809: { type: 'steel',    name: 'Gigafundido',       col: '#c8d4e0', r: 110, k: 1.5, root: 1 },
+    812: { type: 'grass',    name: 'Gigatamborileo',    col: '#5fcb6a', single: 3, knock: 120, r: 60, k: 0.8 },
+    815: { type: 'fire',     name: 'Gigabalón',         col: '#ff7b3d', single: 3, burn: 3 },
+    818: { type: 'water',    name: 'Gigafrancotirador', col: '#4b9bff', single: 3.2 },
+    823: { type: 'flying',   name: 'Gigaciclón',        col: '#9bb8ff', r: 160, k: 0.9, knock: 300 },
+    826: { type: 'psychic',  name: 'Gigagravedad',      col: '#ff5f9e', r: 160, k: 0.9, slow: [0.6, 3] },
+    834: { type: 'water',    name: 'Gigarrocas',        col: '#bfa96b', r: 100, k: 1.0, zone: { r: 120, life: 4, every: 0.5, k: 0.3, eff: 'none' } },
+    839: { type: 'rock',     name: 'Gigavolcán',        col: '#ff6a3d', r: 110, k: 1.0, burn: 2, zone: { r: 130, life: 4, every: 0.5, k: 0.3, eff: 'burn' } },
+    841: { type: 'grass',    name: 'Gigaacidez',        col: '#c8e05f', r: 120, k: 1.2, slow: [0.4, 3] },
+    842: { type: 'grass',    name: 'Gigadulzura',       col: '#ffd27a', r: 100, k: 0.9, heal: 0.04 },
+    844: { type: 'ground',   name: 'Gigaarena',         col: '#d6b25c', r: 110, k: 1.0, zone: { r: 150, life: 4, every: 0.5, k: 0.3, eff: 'none' } },
+    849: { type: 'electric', name: 'Gigadescarga',      col: '#c9a0ff', r: 130, k: 1.0, poison: 3, root: 1 },
+    851: { type: 'fire',     name: 'Gigaciempiés',      col: '#ff9a3d', r: 110, k: 1.0, burn: 2, root: 1, zone: { r: 120, life: 3, every: 0.5, k: 0.25, eff: 'burn' } },
+    858: { type: 'fairy',    name: 'Gigacastigo',       col: '#ff9ed8', r: 130, k: 1.1, confuse: 1.5 },
+    861: { type: 'dark',     name: 'Gigasopor',         col: '#8a6bb0', r: 150, k: 0.8, confuse: 2.5 },
+    869: { type: 'fairy',    name: 'Gigafinal',         col: '#fff0f8', r: 100, k: 0.9, heal: 0.05 },
+    879: { type: 'steel',    name: 'Gigapúas',          col: '#a8b8c4', r: 100, k: 1.0, zone: { r: 130, life: 5, every: 0.5, k: 0.3, eff: 'none' } },
+    884: { type: 'dragon',   name: 'Gigadesgaste',      col: '#6b58ff', r: 120, k: 1.5, slow: [0.3, 3] },
+    892: { type: 'dark',     name: 'Gigagolpe Único',   col: '#6b5c52', single: 3.5 },
+    '892w': { type: 'water', name: 'Gigacorriente',     col: '#4b9bff', single: 1.3, hits: 3 }
+  };
+
   let zones = [], bolts = [], nameT = 0;
   const PM = {};
   const pm = t => PM[t] || (PM[t] = { id: 'max-' + t, name: INFO[t][0], type: t, kind: 'max', maxFx: true });
@@ -151,7 +195,9 @@ G.MaxMoves = (() => {
   }
 
   /** Lo que se ve de un «Maxi» (el tuyo o el de un compañero: `ghost`, sus zonas no pegan). */
-  function show(type, x, y, bh, ln, pts, ghost) {
+  function show(type, x, y, bh, ln, pts, ghost, gid) {
+    const g = gid && GMAX[gid];
+    if (g) { showG(g, x, y, bh, ghost); return; }
     const col = COL(type), sees = G.Camera.sees(x, y, 160);
     if (ghost && (type === 'fire' || type === 'grass' || type === 'poison'))
       zones.push({ type, x, y, r: type === 'grass' ? 80 : type === 'fire' ? 60 : 70, t: 0, life: 3, every: 9e9, tick: 9e9, pl: null, ghost: true });
@@ -174,11 +220,29 @@ G.MaxMoves = (() => {
       case 'fairy': for (let k = 0; k < 8; k++) G.FX.px(x + G.U.rand(-60, 60), y - 80 + G.U.rand(-20, 20), '#ffd6f0', { vy: 220, life: 0.35 }); break;
     }
   }
+  /** Lo que se ve de un movimiento Gigamax: anillos grandes de su color, su nombre siempre y su zona. */
+  function showG(g, x, y, bh, ghost) {
+    const col = g.col, R = g.r || 70;
+    if (ghost && g.zone) zones.push({ type: g.type, x, y, r: g.zone.r, t: 0, life: g.zone.life, every: 9e9, tick: 9e9, pl: null, ghost: true, eff: g.zone.eff, col });
+    if (!G.Camera.sees(x, y, R + 60)) return;
+    G.FX.ring(x, y, 10, R + 20, col, 0.45, 6);
+    G.FX.ring(x, y, 6, (R + 20) * 0.6, '#ffffff', 0.3, 3);
+    G.FX.burst(x, y - 12, col, 26, 260);
+    G.FX.burst(x, y - 12, COL(g.type), 14, 180);
+    G.FX.dmgText(x, y - 52, G.T(g.name), col, true);
+    nameT = now();
+    G.Camera.kick(0.2);
+    if (g.single) G.FX.sp('impact', g.type, x, y - bh * 0.5, { life: 0.22, scale: 2.4, frameRate: 14 });
+    if (g.coins) for (let k = 0; k < 10; k++) G.FX.px(x + G.U.rand(-40, 40), y - 20 + G.U.rand(-20, 10), '#ffd23f', { vy: -160, life: 0.5 });
+    if (g.heal) G.FX.ring(x, y, 4, 40, '#5fe08a', 0.4, 3);
+    G.Audio.sfx('break');
+  }
   /** El «Maxi» de un compañero (Combat.netFx): sólo se ve. */
   function netFx(ev) {
     const [, , type, x, y, bh, ln, pts] = ev;
     if (!INFO[type] || !isFinite(x) || !isFinite(y)) return;
-    show(type, x, y, bh || 30, Array.isArray(ln) ? ln.slice(0, 64) : [], Array.isArray(pts) ? pts.slice(0, 12) : [], true);
+    const gid = typeof ev[8] === 'string' && GMAX[ev[8]] ? ev[8] : null;
+    show(type, x, y, bh || 30, Array.isArray(ln) ? ln.slice(0, 64) : [], Array.isArray(pts) ? pts.slice(0, 12) : [], true, gid);
   }
 
   /** Cada fotograma: zonas en el suelo y rayos. */
@@ -191,7 +255,13 @@ G.MaxMoves = (() => {
       if (z.tick > 0) continue;
       z.tick = z.every;
       for (const o of near(z.x, z.y, z.r)) {
-        if (z.type === 'grass') { o.applyRoot(0.6); hit(z.pl, o, 0.15, z.type, 0, z.x, z.y); }
+        if (z.eff) {                                 // (las de los Gigamax)
+          hit(z.pl, o, z.k || 0.2, z.type, 0, z.x, z.y);
+          if (o.dead) continue;
+          if (z.eff === 'burn') o.applyBurn(1); else if (z.eff === 'poison') o.applyPoison(1);
+          else if (z.eff === 'slow') o.applySlow(0.4, 0.7); else if (z.eff === 'root') o.applyRoot(0.6);
+        }
+        else if (z.type === 'grass') { o.applyRoot(0.6); hit(z.pl, o, 0.15, z.type, 0, z.x, z.y); }
         else if (z.type === 'fire') { hit(z.pl, o, 0.25, z.type, 0, z.x, z.y); if (!o.dead) o.applyBurn(1); }
         else { hit(z.pl, o, 0.15, z.type, 0, z.x, z.y); if (!o.dead) o.applyPoison(1); }
       }
@@ -204,7 +274,7 @@ G.MaxMoves = (() => {
     const T = performance.now() / 1000;
     for (const z of zones) {
       if (!G.Camera.sees(z.x, z.y, z.r)) continue;
-      const fade = Math.min(1, (z.life - z.t) / 0.4, z.t / 0.15), col = COL(z.type);
+      const fade = Math.min(1, (z.life - z.t) / 0.4, z.t / 0.15), col = z.col || COL(z.type);
       ctx.save();
       ctx.globalAlpha = 0.22 * fade;
       ctx.fillStyle = col;
@@ -237,5 +307,7 @@ G.MaxMoves = (() => {
   /** Para el HUD: nombre y qué hace el «Maxi» de un tipo. */
   const info = t => INFO[t] || INFO.normal;
 
-  return { reset, onHit, update, draw, info, netFx, CD };
+  /** Lo que se ve de un «Maxi» de un jefe Dinamax (gmaxfoe.js): sin zonas (las suyas van aparte). */
+  const fx = (type, x, y, gid) => show(type, x, y, 40, [], [], false, gid && GMAX[gid] ? gid : null);
+  return { reset, onHit, update, draw, info, netFx, fx, GMAX, CD };
 })();
