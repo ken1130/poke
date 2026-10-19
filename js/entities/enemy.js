@@ -22,6 +22,9 @@
   }
 
   const RAGE_TINT = 'sepia(1) saturate(8) hue-rotate(-55deg) brightness(0.95)';
+  // Quemado (2026-10-16, V3.1 «que se vea rojo y parpadee»): rojo anaranjado claro, alternando con el normal.
+  // Como la furia, la hoja teñida se hace UNA vez (G.Sprites tinted) y se guarda: nada de ctx.filter por fotograma.
+  const BURN_TINT = 'sepia(1) saturate(9) hue-rotate(-40deg) brightness(0.9) contrast(1.15)';
   class Enemy {
     constructor(def, x, y, sc, boss = false) {
       this.id = nextId++;
@@ -1007,6 +1010,31 @@
       ctx.restore();
     }
 
+    /**
+     * Iconos de estado encima de la cabeza (2026-10-16, V3.1): llama (quemado), gota morada
+     * (envenenado), gota roja (sangrando). Píxeles de 2×2 dibujados con fillRect (sin imágenes
+     * ni filtros), sólo si está en pantalla.
+     */
+    drawStatus(ctx) {
+      const now = performance.now();
+      const st = [];
+      if (this.burn > 0 || (this.net && this.net.st & 1)) st.push('burn');
+      if (this.poison > 0 || (this.net && this.net.st & 2) || (this.stPoison || 0) > now) st.push('poison');
+      if ((this.stBleed || 0) > now) st.push('bleed');
+      if (!st.length || !G.Camera.sees(this.x, this.y, 40)) return;
+      const P = 3, y0 = Math.round(this.y - this.bodyH - (this.hp < this.maxHp || this.boss ? 32 : 24) - (this.elite ? 12 : 0));
+      let x = Math.round(this.x - (st.length * 15 - 3) / 2);
+      const bob = Math.floor(now / 250) % 2;
+      for (const k of st) {
+        const rows = STATUS_ICON[k];
+        rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) {
+          const c = r[i]; if (c === '.') continue;
+          ctx.fillStyle = STATUS_PAL[k][c]; ctx.fillRect(x + i * P, y0 + j * P - (k === 'burn' ? bob : 0), P, P);
+        } });
+        x += 15;
+      }
+    }
+
     draw(ctx) {
       let alpha = this.dead ? G.U.clamp(this.fade / 0.5, 0, 1) : 1;
       if (alpha <= 0) return;
@@ -1049,7 +1077,9 @@
       // Confundido: gira en el sitio (una dirección cada 0,09 s).
       const conf = !this.dead && (this.confT > 0 || !!(this.net && this.net.st & 32));
       if (conf) this.anim.dir = Math.floor(performance.now() / 90) % 8;
-      this.anim.draw(ctx, this.x, this.y - lift, { flash: this.flash > 0, alpha, tint: raging && Enemy.FILTER ? RAGE_TINT : null });
+      const burning = this.burn > 0 || !!(this.net && this.net.st & 1);
+      const burnBlink = burning && !raging && Enemy.FILTER && Math.floor(performance.now() / 140) % 2 === 0;
+      this.anim.draw(ctx, this.x, this.y - lift, { flash: this.flash > 0, alpha, tint: raging && Enemy.FILTER ? RAGE_TINT : burnBlink ? BURN_TINT : null });
       ctx.restore();
 
       if (this.dead) return;
@@ -1110,6 +1140,8 @@
       const SUP = { healer: 'heart', shielder: 'shield', summoner: 'friends' };
       if (SUP[this.behavior]) G.Icons.draw(ctx, SUP[this.behavior], Math.round(this.x - 6), Math.round(this.y - this.bodyH - (this.hp < this.maxHp ? 26 : 18)), 12);
 
+      if (sneak > 0.5) this.drawStatus(ctx);
+
       if ((this.boss || this.hp < this.maxHp) && sneak > 0.5) {
         const w = this.boss ? 90 : Math.max(22, this.r * 2);
         const y = this.y - this.bodyH - 10;
@@ -1120,6 +1152,18 @@
       }
     }
   }
+
+  // Iconos de estado (4×5 píxeles): k contorno, a/b colores.
+  const STATUS_ICON = {
+    burn:   ['.k..', 'kakk', 'kabk', 'kbbk', '.kk.'],
+    poison: ['.k..', 'kak.', 'kabk', 'kbbk', '.kk.'],
+    bleed:  ['.k..', 'kak.', 'kabk', 'kbbk', '.kk.']
+  };
+  const STATUS_PAL = {
+    burn:   { k: '#3a1206', a: '#ffe14d', b: '#ff6a1f' },
+    poison: { k: '#2e0a3c', a: '#e8b8ff', b: '#a043d0' },
+    bleed:  { k: '#3a0610', a: '#ff9da8', b: '#d0202e' }
+  };
 
   // ---------------- gestor ----------------
 

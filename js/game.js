@@ -140,7 +140,7 @@ G.Game = (() => {
 
   /** @param coop  { seed, host, members } para una partida en grupo */
   function startRun(coop = null) {
-    offerQ.length = 0; orphanT = 0; pendingItems = []; pendingUI(true); clearWin = false;
+    offerQ.length = 0; orphanT = 0; pendingItems = []; bagOpen = false; pendingUI(true); clearWin = false;
     holdBy = []; holdPaused = []; awayBy = null; coopPause = false;
     const save = G.DB.save;
     // PK con personaje al azar: el Pokémon que le ha tocado a cada uno (cfg.members), sin mejoras.
@@ -685,10 +685,45 @@ G.Game = (() => {
     G.Spawner.say(G.I18n.f(G.Touch.active ? '{x}: toca el icono que brilla para cambiarlo' : '{x}: toca el icono (o pulsa I) para cambiarlo', G.T(G.Items.BY[id].name)), 2.8, true);
     pendingUI(true);
   }
-  /** Abre la elección del primer objeto pendiente (si ahora se puede). */
+  /**
+   * Abre la mochila con lo que espera (2026-10-16, V3.1: antes se abría la elección del primero).
+   * Para el juego como cualquier elección; en grupo, como siempre (holdStart / doneChoosing).
+   */
+  let bagOpen = false;
   function openPending() {
     if (!pl || pl.dead || !pendingItems.length || busyChoosing() || (state !== 'playing' && state !== 'held')) return;
-    offerItem(pendingItems.shift(), true);
+    bagOpen = true;
+    state = 'choice';
+    if (G.Coop.active) G.Coop.holdStart();
+    renderBag();
+  }
+  function renderBag() {
+    if (!pendingItems.length) { closeBag(); return; }
+    G.RunUI.showBag(pl.items.slice(), pendingItems.slice(), (t, id, out) => {
+      if (t === 'close') { closeBag(); return; }
+      if (t === 'dropAll') { for (const x of pendingItems.slice()) sellItem(x, 'Tiras {x}: +{x} monedas'); pendingItems = []; closeBag(); return; }
+      if (!pendingItems.includes(id)) return;
+      if (t === 'drop') sellItem(id, 'Tiras {x}: +{x} monedas');
+      else if (t === 'take') {
+        // (las mismas reglas que la ventana de siempre; el botón ya sólo sale si se puede)
+        if (out && (G.Items.tier(out) > G.Items.tier(id) || (G.Items.isArt(out) && !G.Items.isArt(id)))) return;
+        if (!out && pl.items.length >= G.Player.MAX_ITEMS) return;
+        pl.equip(id, out || undefined);
+        G.Spawner.say(G.I18n.f(G.Items.isArt(id) ? '¡Artefacto: {x}!' : '¡Llevas {x}!', G.T(G.Items.BY[id].name)), 2.6, true);
+        if (G.Items.isArt(id)) { G.Audio.sfx('legend'); G.FX.ring(pl.x, pl.y, 8, 120, '#ffd23f', 0.7, 5); }
+        else G.Audio.sfx('confirm');
+        G.Progress.event('item', { id });
+      }
+      pendingItems = pendingItems.filter(x => x !== id);
+      renderBag();
+    });
+  }
+  function closeBag() {
+    if (!bagOpen) return;
+    bagOpen = false;
+    G.UI.hide('scr-item');
+    if (G.Coop.active) doneChoosing();
+    else if (state === 'choice') state = 'playing';
     pendingUI(true);
   }
   let pendingKey = '';
@@ -865,6 +900,7 @@ G.Game = (() => {
       return;
     }
     if (G.UI.isOpen('scr-item')) {
+      if (bagOpen) { if (G.Input.tap('escape') || G.Input.tap('keyi')) closeBag(); return; }
       for (let i = 0; i < 3; i++) {
         const c = document.querySelectorAll('#item-cards .card:not(.locked)')[i];
         if (c && (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1)))) c.click();
@@ -971,7 +1007,7 @@ G.Game = (() => {
         choiceT = 20;
         if (G.UI.isOpen('scr-levelup')) G.RunUI.pick(0);
         else if (G.UI.isOpen('scr-bond')) G.RunUI.pickBond(0);
-        else if (G.UI.isOpen('scr-item')) { const c = document.querySelector('#item-cards .card:not(.locked)'); if (c) c.click(); }
+        else if (G.UI.isOpen('scr-item')) { if (bagOpen) closeBag(); else { const c = document.querySelector('#item-cards .card:not(.locked)'); if (c) c.click(); } }
         else if (G.UI.isOpen('scr-sbox')) document.getElementById('sbox-ok').click();
         else if (G.UI.isOpen('scr-relic')) G.Relics.pick(0);
         else if (G.UI.isOpen('scr-boon')) G.Boons.pick(0);

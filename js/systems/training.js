@@ -5,6 +5,10 @@
  *   - Arriba, el daño: total, últimos 5 s y por segundo (botón «Reiniciar»).
  *   - «Movimientos»: eliges hasta pl.maxMoves de TODOS los movimientos (también los
  *     exclusivos), con su nivel (1-5) o evolucionado, y se aplica sin volver a empezar.
+ *   - (2026-10-16, hoja V3.1) Cada movimiento puede ir «enlazado con el de arriba» (un vínculo,
+ *     como los de los legendarios: se lanzan a la vez); objetos y artefactos a elegir (los 2
+ *     huecos); filtro por tipo en la lista; el buscador ya deja escribir en chino (IME: no se
+ *     repinta nada mientras se compone, y sólo se repinta la lista).
  *   - Nada más: sin enemigos, jefes, eventos, grietas, tienda, escaleras ni clima
  *     (game.js usa un bucle reducido: trainingUpdate), sin experiencia ni cartas,
  *     invencible y sin premios ni récords al salir (game.js endRun).
@@ -22,7 +26,7 @@ G.Training = (() => {
   let dummies = [];
   let hits = [];                          // [tiempo de juego, daño]
   let total = 0, firstAt = null, hudT = 0;
-  let hud = null, panel = null, draft = null, query = '';
+  let hud = null, panel = null, draft = null, query = '', typeF = null, composing = false;
 
   function load() {
     let c = null;
@@ -31,7 +35,8 @@ G.Training = (() => {
     return {
       n: COUNTS.includes(c.n) ? c.n : 5,
       hp: HPS.includes(c.hp) ? c.hp : 10000,
-      moves: Array.isArray(c.moves) ? c.moves.filter(x => Array.isArray(x) && G.Moves.BY_ID[x[0]]).slice(0, 5) : null
+      moves: Array.isArray(c.moves) ? c.moves.filter(x => Array.isArray(x) && G.Moves.BY_ID[x[0]]).slice(0, 5) : null,
+      items: Array.isArray(c.items) ? c.items.filter(id => G.Items.BY[id]).slice(0, 2) : []
     };
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* nada */ } }
@@ -126,7 +131,8 @@ G.Training = (() => {
   /** Lista [[id, nivel, evolucionado], ...] de lo que llevas ahora. */
   function current(pl) {
     const out = [];
-    for (const g of pl.slots) for (const m of g) out.push([m.id, m.lvl, m.evolved ? 1 : 0]);
+    // 4.º campo: 1 = enlazado con el anterior (va en su mismo hueco).
+    for (const g of pl.slots) g.forEach((m, k) => out.push([m.id, m.lvl, m.evolved ? 1 : 0, k > 0 ? 1 : 0]));
     return out;
   }
 
@@ -140,19 +146,38 @@ G.Training = (() => {
     // Lo que dejan puesto algunos pasivos / apoyos (se recalcula cada fotograma si siguen).
     pl.bulkArmor = 0; pl.bulkRed = 0; pl.bulkField = false; pl.supRed = 0; pl.calmN = 0;
     if (pl.bulkHp) { pl.maxHp = Math.max(1, pl.maxHp - pl.bulkHp); pl.bulkHp = 0; }
-    for (const [id, lvl, evo] of list.slice(0, pl.maxMoves)) {
+    const added = [];                               // [movimiento, enlazado con el anterior]
+    for (const [id, lvl, evo, link] of list.slice(0, pl.maxMoves)) {
       if (!pl.addMove(id)) continue;
       const m = pl.moves[pl.moves.length - 1];
       const want = evo ? m.def.maxLvl : Math.max(1, Math.min(m.def.maxLvl, lvl | 0));
       while (m.lvl < want && G.Moves.levelUp(m)) { /* sube */ }
       if (evo && canEvolve(m.id)) G.Moves.evolve(m);
+      added.push([m, !!link]);
     }
     pl.arrange();
+    // Vínculos: cada uno marcado se une al hueco del anterior (como Player.fuse; los pasivos, nunca).
+    added.forEach(([m, link], i) => {
+      if (!link || !i || !canLink(m.id) || !canLink(added[i - 1][0].id)) return;
+      const g = pl.slots.find(s => s.includes(added[i - 1][0]));
+      if (!g || g.includes(m) || g.length >= G.Player.BOND_MAX) return;
+      const bonds = pl.bonds; pl.fuse([m], g); pl.bonds = bonds;   // (aquí no se gasta ningún vínculo)
+    });
     pl.active = -1;
     const i = pl.slots.findIndex((g, k) => !pl.passiveSlot(k));
     if (i >= 0) pl.setActive(i); else pl.active = 0;
     pl.hp = pl.maxHp;
     cfg.moves = current(pl);
+    save();
+  }
+  /** Los pasivos y los de apoyo no se enlazan (como en la partida, Player.bondOptions). */
+  const canLink = id => { const d = G.Moves.BY_ID[id]; return !!d && !G.Moves.isPassive(G.Moves.instance(id, 1)); };
+  /** Objetos: quita todos y pone los de la lista (artefactos incluidos). */
+  function applyItems(pl, ids) {
+    for (const id of pl.items) G.Items.BY[id].off(pl);
+    pl.items = [];
+    for (const id of ids.slice(0, G.Player.MAX_ITEMS)) if (G.Items.BY[id]) pl.equip(id);
+    cfg.items = pl.items.slice();
     save();
   }
   const canEvolve = id => { const d = G.Moves.BY_ID[id]; return !!(d && G.Moves.EVO[id] && G.Moves.EVO_MODS[d.kind]); };
@@ -164,6 +189,7 @@ G.Training = (() => {
     pl.god = true;
     resetStats();
     if (cfg.moves && cfg.moves.length) applyMoves(pl, cfg.moves);
+    if (cfg.items && cfg.items.length) applyItems(pl, cfg.items);
     placeDummies(pl.x, pl.y);
     showHud();
     G.Spawner.say(G.T('Sala de entrenamiento'), 2.4, true);
@@ -229,8 +255,8 @@ G.Training = (() => {
   function openPanel() {
     const pl = G.Game.player;
     if (!on() || !pl || panel) return;
-    draft = { moves: current(pl), n: cfg.n, hp: cfg.hp };
-    query = '';
+    draft = { moves: current(pl), n: cfg.n, hp: cfg.hp, items: pl.items.slice() };
+    query = ''; typeF = null;
     panel = document.createElement('div');
     panel.id = 'training-panel';
     panel.className = 'pn-ov';
@@ -260,15 +286,23 @@ G.Training = (() => {
           ${d.only ? `<small style="color:#ff9ed8">${G.T('Exclusivo')}</small>` : ''}</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">${lv.join('')}</div>
         <div style="display:flex;gap:4px">
+          ${i > 0 && canLink(id) && canLink(draft.moves[i - 1][0]) ? `<button class="btn small ${draft.moves[i][3] ? 'gold' : 'ghost'}" data-link="${i}" title="${esc(G.T('Se lanza a la vez que el de arriba (vínculo)'))}">${G.T(draft.moves[i][3] ? 'Enlazado al de arriba' : 'Enlazar al de arriba')}</button>` : ''}
           <button class="btn small ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''} title="${esc(G.T('Subir'))}">▲</button>
           <button class="btn small ghost" data-del="${i}" title="${esc(G.T('Quitar movimiento'))}">✕</button></div></div>`;
     }).join('') || `<p class="sub">${G.T('Ningún movimiento: elige alguno de la lista de abajo.')}</p>`;
-    const q = query.trim().toLowerCase();
-    const list = G.Moves.ALL.filter(d => {
-      if (!q) return true;
-      return [d.name, G.T(d.name), d.id, G.U.TYPE_NAME[d.type] || '', G.T(G.U.TYPE_NAME[d.type] || '')].some(s => String(s).toLowerCase().includes(q));
-    });
     const full = draft.moves.length >= max;
+    // Objetos: los 2 huecos, cada uno con su desplegable (de todos, artefactos aparte).
+    const itemOpt = (sel) => `<option value="">${esc(G.T('— Ninguno —'))}</option>` +
+      [[G.Items.LIST, 'Objetos normales'], [G.Items.ARTS, 'Artefactos']].map(([l, lab]) => `<optgroup label="${esc(G.T(lab))}">` +
+        l.slice().sort((a, b) => a.tier - b.tier).map(it => `<option value="${it.id}" ${it.id === sel ? 'selected' : ''}>${esc(G.T(G.Items.TIER_NAME[it.tier]))} · ${esc(G.T(it.name))}</option>`).join('') + '</optgroup>').join('');
+    const itemRows = Array.from({ length: G.Player.MAX_ITEMS }, (_, k) => {
+      const id = draft.items[k] || '';
+      return `<div class="set-row tr-item" style="gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="tr-ico">${id ? G.Icons.html(id, 24) : ''}</span>
+        <select data-item="${k}" style="flex:1;min-width:180px;padding:6px 8px;border-radius:8px;border:1px solid #ffffff33;background:#0b1430;color:#fff">${itemOpt(id)}</select>
+        ${id ? `<small style="flex-basis:100%;color:var(--muted)">${esc(G.T(G.Items.BY[id].desc))}</small>` : ''}</div>`;
+    }).join('');
+    const types = Object.keys(G.U.TYPE_NAME);
     panel.innerHTML = `
       <div class="box pn-sheet pn-train" style="width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:16px 18px">
         <div class="row between pn-bar"><h3 style="margin:0">${G.T('Sala de entrenamiento')} · ${G.T('Movimientos')}</h3>
@@ -280,20 +314,18 @@ G.Training = (() => {
           <span style="margin-left:10px">${G.T('Vida de cada muñeco')}</span>${HPS.map(h => `<button class="btn small ${draft.hp === h ? 'gold' : ''}" data-hp="${h}">${num(h)}</button>`).join('')}
         </div>
         <small style="color:var(--muted)">${G.T('La vida sólo cambia lo que quita un % de la vida (veneno...). Los muñecos nunca caen.')}</small>
+        <h3 class="set-h" style="margin-top:12px">${G.T('Objetos equipados')} <small style="color:var(--muted)">${G.T('(también artefactos)')}</small></h3>
+        ${itemRows}
         <div class="row" style="gap:8px;margin-top:10px;justify-content:flex-end">
           <button class="btn small ghost" data-clear>${G.T('Quitar todos')}</button>
           <button class="btn gold" data-apply>${G.T('Aplicar')}</button></div></div>
         <div class="pn-col"><h3 class="set-h" style="margin-top:12px">${G.T('Todos los movimientos')} <small style="color:var(--muted)">${full ? G.I18n.f('(máximo {x})', max) : ''}</small></h3>
-        <input type="search" data-q value="${esc(query)}" placeholder="${esc(G.T('Buscar por nombre o tipo…'))}" style="width:100%;margin:4px 0 8px;padding:6px 8px;border-radius:8px;border:1px solid #ffffff33;background:#0b1430;color:#fff">
-        <div data-list style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">
-          ${list.map(d => {
-            const has = draft.moves.some(x => x[0] === d.id);
-            return `<button class="btn small ${has ? 'gold' : ''}" data-add="${d.id}" ${!has && full ? 'disabled' : ''}
-              style="display:flex;align-items:center;gap:6px;justify-content:flex-start;text-align:left">
-              <i style="flex:0 0 10px;height:10px;border-radius:50%;background:${G.U.TYPE_COLOR[d.type] || '#888'}"></i>
-              <span>${esc(G.T(d.name))}${d.only ? ' ✦' : ''}</span></button>`;
-          }).join('')}
-        </div></div>
+        <input type="search" data-q value="${esc(query)}" placeholder="${esc(G.T('Buscar por nombre o tipo…'))}" style="width:100%;margin:4px 0 6px;padding:6px 8px;border-radius:8px;border:1px solid #ffffff33;background:#0b1430;color:#fff">
+        <div class="tr-types" style="display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px">
+          <button class="chip ${typeF ? '' : 'on'}" data-type="">${G.T('Todos')}</button>
+          ${types.map(t => `<button class="chip ${typeF === t ? 'on' : ''}" data-type="${t}" style="border-color:${G.U.TYPE_COLOR[t]};${typeF === t ? `background:${G.U.TYPE_COLOR[t]};color:#10131c` : `color:${G.U.TYPE_COLOR[t]}`}">${esc(G.T(G.U.TYPE_NAME[t]))}</button>`).join('')}
+        </div>
+        <div data-list style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">${listHtml(full)}</div></div>
       </div>`;
     const $$ = s => panel.querySelectorAll(s);
     panel.querySelector('[data-close]').onclick = closePanel;
@@ -305,30 +337,73 @@ G.Training = (() => {
         G.Audio.sfx('click'); render();
       };
     });
+    $$('[data-link]').forEach(b => { b.onclick = () => { const r = draft.moves[+b.dataset.link]; r[3] = r[3] ? 0 : 1; G.Audio.sfx('click'); render(); }; });
+    $$('[data-item]').forEach(sel => {
+      sel.onchange = () => {
+        const k = +sel.dataset.item, v = sel.value;
+        draft.items[k] = v || null;
+        // El mismo dos veces no; y sin huecos en medio.
+        draft.items = draft.items.filter((x, j) => x && draft.items.indexOf(x) === j);
+        G.Audio.sfx('click'); render();
+      };
+    });
+    $$('[data-type]').forEach(b => { b.onclick = () => { typeF = b.dataset.type || null; G.Audio.sfx('click'); render(); }; });
     $$('[data-up]').forEach(b => { b.onclick = () => { const i = +b.dataset.up; if (i > 0) { const m = draft.moves; [m[i - 1], m[i]] = [m[i], m[i - 1]]; render(); } }; });
     $$('[data-del]').forEach(b => { b.onclick = () => { draft.moves.splice(+b.dataset.del, 1); G.Audio.sfx('click'); render(); }; });
     $$('[data-n]').forEach(b => { b.onclick = () => { draft.n = +b.dataset.n; render(); }; });
     $$('[data-hp]').forEach(b => { b.onclick = () => { draft.hp = +b.dataset.hp; render(); }; });
-    $$('[data-add]').forEach(b => {
-      b.onclick = () => {
-        const id = b.dataset.add, i = draft.moves.findIndex(x => x[0] === id);
-        if (i >= 0) draft.moves.splice(i, 1);
-        else if (draft.moves.length < max) draft.moves.push([id, 1, 0]);
-        G.Audio.sfx('click'); render();
-      };
-    });
+    bindList();
     panel.querySelector('[data-clear]').onclick = () => { draft.moves = []; render(); };
     panel.querySelector('[data-apply]').onclick = apply;
     const inp = panel.querySelector('[data-q]');
     // Las teclas del buscador no llegan al juego (el espacio y las flechas no se pierden).
     inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') closePanel(); });
-    inp.oninput = () => {
+    // Chino / japonés (IME): mientras se compone no se toca nada; al acabar, se filtra.
+    // Y sólo se repinta la lista: rehacer el buscador cortaba la composición.
+    inp.addEventListener('compositionstart', () => { composing = true; });
+    inp.addEventListener('compositionend', () => { composing = false; query = inp.value; refreshList(); });
+    inp.oninput = e => {
+      if (composing || e.isComposing) return;
       query = inp.value;
-      const pos = inp.selectionStart;
-      render();
-      const again = panel && panel.querySelector('[data-q]');
-      if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) { /* nada */ } }
+      refreshList();
     };
+  }
+
+  /** La lista de todos los movimientos (con el buscador y el filtro de tipo). */
+  function listHtml(full) {
+    const q = query.trim().toLowerCase();
+    const list = G.Moves.ALL.filter(d => {
+      if (typeF && d.type !== typeF) return false;
+      if (!q) return true;
+      return [d.name, G.T(d.name), d.id, G.U.TYPE_NAME[d.type] || '', G.T(G.U.TYPE_NAME[d.type] || '')].some(s => String(s).toLowerCase().includes(q));
+    });
+    if (!list.length) return `<p class="sub" style="grid-column:1/-1">${G.T('Ningún movimiento con ese filtro.')}</p>`;
+    return list.map(d => {
+      const has = draft.moves.some(x => x[0] === d.id);
+      return `<button class="btn small ${has ? 'gold' : ''}" data-add="${d.id}" ${!has && full ? 'disabled' : ''}
+        style="display:flex;align-items:center;gap:6px;justify-content:flex-start;text-align:left">
+        <i style="flex:0 0 10px;height:10px;border-radius:50%;background:${G.U.TYPE_COLOR[d.type] || '#888'}"></i>
+        <span>${esc(G.T(d.name))}${d.only ? ' ✦' : ''}</span></button>`;
+    }).join('');
+  }
+  function bindList() {
+    const pl = G.Game.player, max = pl ? pl.maxMoves : 5;
+    panel.querySelectorAll('[data-add]').forEach(b => {
+      b.onclick = () => {
+        const id = b.dataset.add, i = draft.moves.findIndex(x => x[0] === id);
+        if (i >= 0) draft.moves.splice(i, 1);
+        else if (draft.moves.length < max) draft.moves.push([id, 1, 0, 0]);
+        G.Audio.sfx('click'); render();
+      };
+    });
+  }
+  function refreshList() {
+    if (!panel) return;
+    const pl = G.Game.player, max = pl ? pl.maxMoves : 5;
+    const el = panel.querySelector('[data-list]');
+    if (!el) return;
+    el.innerHTML = listHtml(draft.moves.length >= max);
+    bindList();
   }
 
   function apply() {
@@ -337,6 +412,7 @@ G.Training = (() => {
     const reDummies = draft.n !== cfg.n || draft.hp !== cfg.hp;
     cfg.n = draft.n; cfg.hp = draft.hp;
     applyMoves(pl, draft.moves);
+    applyItems(pl, draft.items);
     if (reDummies || !dummies.length) placeDummies(pl.x, pl.y);
     resetStats();
     G.Audio.sfx('confirm');

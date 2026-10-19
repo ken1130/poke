@@ -345,3 +345,13 @@ body:has(#scr-over:not(.hidden)) #scr-shop { display: none !important; }
 @media (pointer: coarse) {
   #item-pending { min-height: 40px; padding: 4px 12px 4px 6px; font-size: 14px; }
 }
+
+/* Mochila (V3.1, 2026-10-16) en móvil horizontal: dos columnas (llevas | encontrados), cada una con su scroll. */
+@media (max-height: 520px) {
+  #scr-item.bagmode > .box { width: 100%; max-height: 100%; display: flex; flex-direction: column; }
+  #scr-item.bagmode #item-cards { flex: 1; min-height: 0; overflow-y: auto; }
+  .bag-held { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bag-slot { padding: 5px 8px; } .bag-slot .ds { font-size: 12px; }
+  .bag-acts .btn { min-height: 40px; font-size: 13px; }
+  .bag-foot { position: sticky; bottom: 0; padding-top: 4px; background: linear-gradient(transparent, var(--box2) 30%); }
+}

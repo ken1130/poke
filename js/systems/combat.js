@@ -341,12 +341,14 @@ G.Combat = (() => {
       if (d.pUntil > now) {
         keep = true;
         hit(pl, e, d.pDps * 0.5 * pl.atk, '#c46cf0', 0, 0, 0, d.pm, NOCRIT);
+        e.stPoison = performance.now() + 700;          // icono de estado (enemy.js drawStatus)
         if (!e.dead && d.slow) e.applySlow(d.slow, 0.7);
       }
       if (d.bleed && d.bleedUntil && d.bleedUntil < now) d.bleed = 0;       // (Cruzada: sangrado de 3 s; Puño Lee: hasta que caiga)
       if (d.bleed && !e.dead) {
         keep = true;
         hit(pl, e, d.bleed * 0.5 * pl.atk, '#e0303a', 0, 0, 0, d.bm, NOCRIT);
+        e.stBleed = performance.now() + 700;           // icono de estado (enemy.js drawStatus)
         // Gotas de sangre en píxeles que caen (en vez de una nube de puntos).
         if (G.Camera.sees(e.x, e.y, 20)) for (let k = 0; k < 3; k++) {
           G.FX.px(e.x + G.U.rand(-e.r, e.r) * 0.5, e.y - e.bodyH * G.U.rand(0.4, 0.7), k ? '#8a0f18' : '#ff4a4a',

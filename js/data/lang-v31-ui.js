@@ -1,0 +1,48 @@
+/* ============ lang-v31-ui.js — hoja V3.1: mochila, estados de los enemigos, sala de entrenamiento ============ */
+G.I18n.add({
+  'Mochila': '背包',
+  'Elige qué cambias o tira los que no quieras (el que cambias desaparece)': '選要換掉哪一個，或丟掉不要的（被換掉的會直接消失）',
+  'Llevas ({x}/{x})': '身上的道具（{x}/{x}）',
+  'Hueco libre': '空格',
+  'Objetos encontrados': '撿到的道具',
+  'Equipar en el hueco': '裝進空格',
+  'Cambiar por {x}': '換掉 {x}',
+  'Lo que llevas es de más rango': '身上的都比較高級，只能丟掉',
+  'Tirar (+{x})': '丟掉（+{x} 金幣）',
+  'Tirar todo (+{x} monedas)': '全部丟棄（+{x} 金幣）',
+  'Cerrar (decido luego)': '關閉（之後再選）',
+  'Tiras {x}: +{x} monedas': '丟掉 {x}，換到 {x} 金幣',
+  // sala de entrenamiento
+  'Enlazado al de arriba': '已和上一招連結',
+  'Enlazar al de arriba': '和上一招連結',
+  'Se lanza a la vez que el de arriba (vínculo)': '跟上一招一起施放（技能連結）',
+  '— Ninguno —': '— 不帶 —',
+  'Objetos equipados': '攜帶道具',
+  'Objetos normales': '一般道具',
+  'Artefactos': '神器',
+  '(también artefactos)': '（也可以選神器）',
+  'Ningún movimiento con ese filtro.': '沒有符合篩選的招式。'
+}, 'zh');
+G.I18n.add({
+  'Mochila': 'Backpack',
+  'Elige qué cambias o tira los que no quieras (el que cambias desaparece)': 'Choose what to swap, or drop what you don’t want (the swapped one is gone)',
+  'Llevas ({x}/{x})': 'Carrying ({x}/{x})',
+  'Hueco libre': 'Empty slot',
+  'Objetos encontrados': 'Found items',
+  'Equipar en el hueco': 'Put in the empty slot',
+  'Cambiar por {x}': 'Swap out {x}',
+  'Lo que llevas es de más rango': 'What you carry is higher rank: you can only drop it',
+  'Tirar (+{x})': 'Drop (+{x} coins)',
+  'Tirar todo (+{x} monedas)': 'Drop all (+{x} coins)',
+  'Cerrar (decido luego)': 'Close (decide later)',
+  'Tiras {x}: +{x} monedas': 'You drop {x}: +{x} coins',
+  'Enlazado al de arriba': 'Bonded to the one above',
+  'Enlazar al de arriba': 'Bond to the one above',
+  'Se lanza a la vez que el de arriba (vínculo)': 'Fires together with the one above (bond)',
+  '— Ninguno —': '— None —',
+  'Objetos equipados': 'Held items',
+  'Objetos normales': 'Items',
+  'Artefactos': 'Artifacts',
+  '(también artefactos)': '(artifacts too)',
+  'Ningún movimiento con ese filtro.': 'No moves match this filter.'
+});
