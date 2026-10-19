@@ -21,6 +21,7 @@ G.MODNEWS = [
       { zh: '派對遊戲區：連線時按下開始會先倒數 5 秒集合（球場顯示倒數、可按「馬上開始」或「取消」），走進球場的人都會加入，不夠才補電腦；單人照樣馬上開始', en: 'Party Plaza: online, pressing start now gives a 5 s gathering countdown (shown on the court, with Start now / Cancel); everyone who walks onto the court joins and CPUs only fill the rest; solo still starts at once' },
       { zh: '網球、排球：比賽中有人走進球場，下一球就會換掉電腦加入（比分照算）', en: 'Tennis and volleyball: someone who walks onto the court mid-match replaces a CPU at the next serve (score kept)' },
       { zh: '網球、排球新增撲球：空白鍵（手機是藍色「撲球」按鈕）往移動方向撲出去救球，撲完趴地 0.45 秒、冷卻 1.5 秒', en: 'Tennis and volleyball: new dive — Space (the blue Dive button on phones) throws you toward where you move to save the ball; you lie down 0.45 s and it recharges in 1.5 s' },
+      { zh: '強化商店的「禁用」從 3 級加到 8 級：每隻寶可夢最多可以禁用 8 個招式；漲價幅度調低，8 級的價格是 300 → 5130 金幣（全買 14790）', en: 'The Ban upgrade goes from 3 to 8 levels: each Pokémon can now ban up to 8 moves; prices rise more gently, 300 → 5,130 coins for the 8 levels (14,790 in total)' },
       { zh: '火花、水槍、污泥炸彈、落石、暗影球等單發招式會稍微追著敵人轉彎，比較不會擦過去；火花飛得更快', en: 'Single-shot moves (Ember, Water Gun, Sludge, Rock Throw, Shadow Ball...) now curve slightly toward enemies so they miss less; Ember flies faster' },
       { zh: '燙手山芋的炸彈改成 8～15 秒才爆炸（原本 5～10 秒太短）', en: 'Hot Potato: the bomb now blows up after 8–15 s (was 5–10 s, too short)' },
       { zh: '守護大壯的大壯換成黑色的怪力', en: 'Dazhuang in Guard Dazhuang is now a black Machamp' },
