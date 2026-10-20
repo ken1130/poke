@@ -1294,16 +1294,7 @@ G.Combat = (() => {
     for (const e of list) {
       const a = Math.atan2(e.y - pl.y, e.x - pl.x), ca = Math.cos(a), sa = Math.sin(a);
       const ex = e.x, ey = e.y - e.bodyH * 0.5;
-      if (G.Camera.sees(ex, ey, SR)) {
-        G.FX.sp('fist', 'water', ex - ca * 26, ey - sa * 26, { vx: ca * 180, vy: sa * 180, life: 0.13, angle: a, fade: false, scale: 1.5 });
-        G.FX.sp('impact', 'water', ex, ey, { life: 0.18, scale: 1.6, frameRate: 14 });
-        G.FX.ring(e.x, e.y, 6, SR, '#8ccaff', 0.35, 3);
-        for (let k = 0; k < 7; k++) {
-          const b = Math.random() * 6.2832, d = Math.random() * SR * 0.8;
-          G.FX.sp('bubble', 'water', e.x + Math.cos(b) * d, e.y + Math.sin(b) * d * 0.6 - 6,
-                  { vy: -30 - Math.random() * 30, life: 0.45 + Math.random() * 0.3, scale: 1 + Math.random() * 0.6, frameRate: 6 });
-        }
-      }
+      if (G.Camera.sees(ex, ey, SR)) G.ExVFX.foam(e, a, SR, !!m.evolved);   // dibujo: vfx-exclusive.js
       if (ghost) continue;
       hit(pl, e, row.dmg * pl.atk, G.U.TYPE_COLOR.water, ca, sa, row.knock ? row.knock * 0.5 : 30, m);
       // Salpicadura: a los de alrededor del golpeado (no a él otra vez).
@@ -1321,16 +1312,8 @@ G.Combat = (() => {
     const near = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead);
     if (!near.length) return;
     const dmg = (row.dmg + row.per * Math.min(row.cap, near.length)) * pl.atk;
-    const P = G.VFX.PAL.normal;
-    G.FX.ring(pl.x, pl.y, 8, R, '#fff3c0', 0.35, 5);
-    G.FX.ring(pl.x, pl.y, 4, R * 0.7, P[3], 0.25, 3);
-    // Pelos de punta: púas de píxel que salen disparadas en todas direcciones, y el «¡!» del susto.
-    for (let k = 0; k < 14; k++) {
-      const a = k / 14 * 6.2832;
-      G.FX.sp('needle', 'normal', pl.x + Math.cos(a) * 10, pl.y - pl.bodyH * 0.5 + Math.sin(a) * 10,
-              { vx: Math.cos(a) * R * 2.4, vy: Math.sin(a) * R * 2.4, angle: a, life: 0.28, scale: 1.4 });
-    }
-    G.FX.dmgText(pl.x, pl.y - pl.bodyH - 14, '!!', '#fff36a', true);
+    // Pelos de punta, el «¡¡!!» del susto y la onda que aparta (dibujo: vfx-exclusive.js).
+    G.ExVFX.scare(pl, R, !!m.evolved);
     if (ghost) return;
     for (const e of near) {
       hit(pl, e, dmg, G.U.TYPE_COLOR.normal, e.x - pl.x, e.y - pl.y, row.knock, m);
@@ -1354,15 +1337,12 @@ G.Combat = (() => {
     pl._aiX = pl.x; pl._aiY = pl.y;
     if (!moved) {
       // Onda fantasma alrededor.
-      G.FX.ring(pl.x, pl.y, 6, R * 1.3, '#9e8aea', 0.25, 3);
+      G.ExVFX.ghostWave(pl, R * 1.3, !!m.evolved);
       if (!ghost) for (const e of enemiesIn(pl.x, pl.y, R * 1.3)) if (!e.dead) hit(pl, e, row.dmg * 0.6 * pl.atk, G.U.TYPE_COLOR.ghost, e.x - pl.x, e.y - pl.y, 30, m);
       return;
     }
     // El tramo recorrido: un rastro violeta y daño a lo que pilla.
-    if (G.Camera.sees(pl.x, pl.y, 200)) for (let k = 1; k <= 4; k++) {
-      const t = k / 5;
-      G.FX.px(px + (pl.x - px) * t + G.U.rand(-4, 4), py + (pl.y - py) * t - 12 + G.U.rand(-6, 6), Math.random() < 0.5 ? '#c8b8ff' : '#9e8aea', { life: 0.3 });
-    }
+    G.ExVFX.dashTrail(px, py, pl.x, pl.y);
     if (!ghost) {
       const mx = (px + pl.x) / 2, my = (py + pl.y) / 2, half = Math.hypot(pl.x - px, pl.y - py) / 2;
       for (const e of enemiesIn(mx, my, half + R)) {
@@ -1381,8 +1361,7 @@ G.Combat = (() => {
   }
   function shadeEnd(f) {
     if (!f.row.boom) return;
-    G.FX.burst(f.x, f.y - 14, '#9e8aea', 8, 120);
-    G.FX.ring(f.x, f.y, 4, f.r * 1.4, '#c8b8ff', 0.25, 3);
+    G.ExVFX.shadeBoom(f);
     if (f.ghost) return;
     for (const e of enemiesIn(f.x, f.y, f.r * 1.4)) if (!e.dead) hit(f.owner, e, f.row.boom * f.owner.atk, G.U.TYPE_COLOR.ghost, e.x - f.x, e.y - f.y, 40, f.m);
   }
@@ -1397,11 +1376,7 @@ G.Combat = (() => {
     while (e) {
       done.add(e);
       const a = Math.atan2(e.y - fy, e.x - fx), ex = e.x, ey = e.y - e.bodyH * 0.5;
-      if (G.Camera.sees(ex, ey, 30)) for (let k = 0; k < row.n; k++) {
-        // Zarpazos cruzados, cada uno un poco girado (se ven como una ráfaga).
-        G.FX.sp('claw', 'dark', ex + G.U.rand(-6, 6), ey + G.U.rand(-6, 6), { life: 0.16 + k * 0.05, scale: 1.4, angle: a - Math.PI / 4 + (k - (row.n - 1) / 2) * 0.5 });
-      }
-      if (G.Camera.sees(ex, ey, 30)) G.FX.spark(ex, ey, '#d4c4cc', Math.cos(a), Math.sin(a), 4);
+      if (G.Camera.sees(ex, ey, 30)) G.ExVFX.pounce(e, a, row.n, !!m.evolved);   // zarpazos (vfx-exclusive.js)
       if (!ghost) {
         for (let k = 0; k < row.n && !e.dead; k++) hit(pl, e, row.dmg * pl.atk, G.U.TYPE_COLOR.dark, Math.cos(a), Math.sin(a), k === row.n - 1 ? 40 : 0, m);
         if (row.bleed && !e.dead && !isFoe(e)) { const d = dotOf(pl, e); d.bleed = row.bleed; d.bm = m; }
@@ -1410,7 +1385,7 @@ G.Combat = (() => {
       if (ghost || !e.dead || hops-- <= 0) break;
       fx = e.x; fy = e.y;
       const nx = enemiesIn(fx, fy, R * 0.8).filter(o => !o.dead && !done.has(o)).sort((p, q) => G.U.dist2(p.x, p.y, fx, fy) - G.U.dist2(q.x, q.y, fx, fy))[0];
-      if (nx) G.FX.sp('streak', 'dark', (fx + nx.x) / 2, (fy + nx.y) / 2 - 10, { life: 0.15, angle: Math.atan2(nx.y - fy, nx.x - fx), scale: 1.6 });
+      if (nx) G.ExVFX.pounceHop(fx, fy, nx);
       e = nx;
     }
   }
@@ -1427,18 +1402,15 @@ G.Combat = (() => {
     for (const e of list) {
       const a = Math.atan2(e.y - pl.y, e.x - pl.x), ex = e.x, ey = e.y - e.bodyH * 0.6;
       const seen = G.Camera.sees(ex, ey, 30);
-      if (seen) for (let k = 0; k < row.hits; k++) {
-        // La sartén baja girando sobre la cabeza (una por golpe, un poco después cada una).
-        G.FX.sp('pan', 'steel', ex - Math.cos(a) * 8, ey - 10, { life: 0.2 + k * 0.12, scale: 1.7, angle: a - 1.3 + k * 0.3, spin: 7 });
-        G.FX.sp('impact', 'normal', ex + G.U.rand(-4, 4), ey + G.U.rand(-4, 4), { life: 0.14 + k * 0.12, scale: 1.6 });
-      }
+      if (seen) G.ExVFX.pan(e, a, row.hits, !!m.evolved);   // la sartén cae y «¡PAM!» (vfx-exclusive.js)
       if (ghost) continue;
       for (let k = 0; k < row.hits && !e.dead; k++) hit(pl, e, row.dmg * pl.atk, '#d8d8e0', Math.cos(a), Math.sin(a), k === row.hits - 1 ? 30 : 0, m);
       if (!e.dead && !isFoe(e) && Math.random() < row.stun) {
         if (e.boss) e.applySlow(0.5, row.st * 2); else e.applyRoot(row.st);
-        if (seen) for (let k = 0; k < 3; k++) G.FX.twinkle(ex + G.U.rand(-14, 14), ey - 14 - G.U.rand(0, 8));
+        if (seen) G.ExVFX.stunStars(e, e.boss ? row.st * 2 : row.st);
       }
       if (row.splash) {
+        if (seen) G.ExVFX.panSplash(e, row.splash * TILE);
         for (const o of enemiesIn(e.x, e.y, row.splash * TILE)) if (o !== e && !o.dead) hit(pl, o, row.dmg * 0.5 * pl.atk, '#d8d8e0', o.x - e.x, o.y - e.y, 20, m);
       }
     }
@@ -1455,6 +1427,7 @@ G.Combat = (() => {
       const a = Math.atan2(tg.y - pl.y, tg.x - pl.x) + (i ? 0.35 : 0);
       const len = Math.min(R, Math.hypot(tg.x - pl.x, tg.y - pl.y) + 24);
       fields.push({ kind: 'tongue', owner: pl, ghost, m, row, x: pl.x, y: pl.y, t: 0, life: 0.3, a, len });
+      G.ExVFX.tongueDrool(pl.x, pl.y, a, len, row.n > 1);
       if (ghost) continue;
       const cx = Math.cos(a), cy = Math.sin(a);
       for (const e of enemiesIn(pl.x + cx * len / 2, pl.y + cy * len / 2, len / 2 + row.w)) {
@@ -1474,13 +1447,9 @@ G.Combat = (() => {
     const row = G.Moves.stat(m), R = row.r * TILE;
     const list = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl)).slice(0, row.all ? 999 : row.n);
     if (!list.length) return;
-    if (row.all) G.FX.ring(pl.x, pl.y, 8, R, '#ece6dc', 0.35, 3);
+    // «?» volando y bocadillo de «pensando» (dibujo: vfx-exclusive.js).
+    G.ExVFX.question(pl, list, R, row.stun, !!row.all);
     for (const e of list) {
-      const ex = e.x, ey = e.y - e.bodyH - 6;
-      if (G.Camera.sees(ex, ey, 20)) {
-        G.FX.dmgText(ex, ey - 6, '?', '#fff36a', true);
-        G.FX.sp('note', 'normal', (pl.x + ex) / 2, (pl.y + ey) / 2 - 10, { vx: (ex - pl.x) * 3, vy: (ey - pl.y) * 3, life: 0.2, scale: 1.3 });
-      }
       if (ghost) continue;
       hit(pl, e, row.dmg * pl.atk, G.U.TYPE_COLOR.normal, e.x - pl.x, e.y - pl.y, 0, m);
       if (!e.dead && !isFoe(e)) { if (e.boss) e.applySlow(0.5, row.stun * 2); else e.applyRoot(row.stun); }
@@ -1497,18 +1466,20 @@ G.Combat = (() => {
       G.Projectiles.spawn(Object.assign({
         x: pl.x + Math.cos(a) * 8, y: pl.y + Math.sin(a) * 8, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
         dmg: row.dmg * pl.atk, r: 7 * row.size, life: R / sp + 0.2, pierce: row.pierce, color: G.U.TYPE_COLOR.electric,
-        hits: new Set(), vis: G.VFX.forType('electric'), ghost, owner: pl, zap: row.zap || 0
+        hits: new Set(), vis: G.ExVFX.SPUD, scale: row.zap ? 2 : 1.5, ghost, owner: pl, zap: row.zap || 0
       }, payload(m)));
     }
+    G.ExVFX.rollStart(pl, a0, !!row.zap);
   }
   /** Descarga del Boniato evolucionado: a los de alrededor del golpeado. */
   function zapAround(p, e, pl) {
-    G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#fff36a', 6, 120);
+    const near = [];
     for (const o of enemiesIn(e.x, e.y, 70)) {
       if (o === e || o.dead) continue;
-      G.FX.spark(o.x, o.y - o.bodyH * 0.5, '#fff36a', 0, -1, 3);
+      near.push(o);
       hit(pl, o, p.zap * pl.atk, G.U.TYPE_COLOR.electric, o.x - e.x, o.y - e.y, 0, { type: 'electric' });
     }
+    G.ExVFX.zap(e, near.slice(0, 6));                         // estallido y rayos de píxel (vfx-exclusive.js)
   }
 
   // ---------------- 2026-10-16 (V3.1): los 5 de la hoja del dueño ----------------
@@ -2146,31 +2117,13 @@ G.Combat = (() => {
         continue;
       }
       if (f.kind === 'shade') {
-        // Sombra de la Turbo Abuela: su propio sprite, transparente y con un halo violeta de píxeles.
-        const fade = Math.max(0, 1 - f.t / f.life);
-        const an = f.owner.anim;
-        if (an) { const d = an.dir; an.dir = f.dir; an.draw(ctx, f.x, f.y, { alpha: 0.45 * fade, flash: true, softFlash: true }); an.dir = d; }
-        ctx.fillStyle = '#9e8aea';
-        for (let k = 0; k < 6; k++) {
-          const b = k / 6 * 6.2832 + now * 3;
-          ctx.globalAlpha = 0.6 * fade;
-          ctx.fillRect(Math.round(f.x + Math.cos(b) * f.r * 0.7), Math.round(f.y - 10 + Math.sin(b) * f.r * 0.35), 2, 2);
-        }
-        ctx.globalAlpha = 1;
+        // Sombra de la Turbo Abuela (2026-10-20: dibujo en vfx-exclusive.js).
+        G.ExVFX.drawShade(ctx, f, now);
         continue;
       }
       if (f.kind === 'tongue') {
-        // Lengua de Lika: sale y vuelve (0,3 s), segmentos de 4 px con borde oscuro.
-        const k = f.t < 0.12 ? f.t / 0.12 : Math.max(0, 1 - (f.t - 0.12) / 0.18);
-        const L = f.len * k, cx = Math.cos(f.a), cy = Math.sin(f.a);
-        const ox = f.owner.x, oy = f.owner.y - (f.owner.bodyH || 20) * 0.55;
-        const step = 4, wave = Math.sin(now * 30) * 3;
-        for (let d = 0; d < L; d += step) {
-          const w = Math.sin(d / 18 + now * 20) * wave * (d / (L + 1));
-          const x = Math.round(ox + cx * d - cy * w), y = Math.round(oy + cy * d + cx * w);
-          ctx.fillStyle = '#3a0a14'; ctx.fillRect(x - 3, y - 3, 6, 6);
-          ctx.fillStyle = d > L - 10 ? '#ff9db0' : '#d0405a'; ctx.fillRect(x - 2, y - 2, 4, 4);
-        }
+        // Lengua de Lika: sale y vuelve (0,3 s) (2026-10-20: dibujo en vfx-exclusive.js).
+        G.ExVFX.drawTongue(ctx, f, now);
         continue;
       }
       if (f.kind === 'heart') {

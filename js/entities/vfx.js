@@ -35,7 +35,12 @@ G.VFX = (() => {
     // 2026-10-16: Rayo Destructor (naranja de hiperrayo) y su evolución (púrpura); agujero negro.
     hyper:    ['#5a2200', '#b8520e', '#ff8f2e', '#ffd27a', '#fff6dc'],
     void:     ['#14042a', '#43127a', '#8a3ce0', '#c890ff', '#f4e8ff'],
-    hole:     ['#000000', '#120424', '#3a0f6e', '#8a3ce0', '#e0c4ff']
+    hole:     ['#000000', '#120424', '#3a0f6e', '#8a3ce0', '#e0c4ff'],
+    // 2026-10-20: exclusivos de los personajes originales (más claros que el tipo para que se lean sobre la hierba).
+    spud:     ['#4a2606', '#b8661c', '#f0a838', '#ffd77a', '#fff6c8'],   // bola de boniato frita
+    scratch:  ['#1a0a1e', '#4a2058', '#a04aa0', '#e8b0ff', '#ffffff'],   // zarpazo (siniestro)
+    tongue:   ['#3a0a14', '#8a1a34', '#d0405a', '#ff8fa6', '#ffd6e0'],   // lengua de Lika
+    spirit:   ['#1c0e3a', '#5a3cb0', '#9a7cff', '#d2c4ff', '#ffffff']    // fuego fantasma de la Turbo Abuela
   };
   const IDX = { o: 0, d: 1, m: 2, l: 3, w: 4 };
   const H = (a, b, c) => G.U.hash(a, b, c);
@@ -478,6 +483,109 @@ G.VFX = (() => {
         if (f === 2 && H(x, y, 11) < 0.3) return null;
         return y > 7 ? 'm' : y < 5 && x < 7 ? 'w' : 'l';
       });
+      P.outline();
+    } },
+
+    // ---- 2026-10-20 · exclusivos de los personajes originales («no se notan», dijo el dueño) ----
+    // Interrogación gorda del Panda (paleta eléctrica: amarilla con contorno dorado oscuro).
+    qmark: { w: 11, h: 15, gen(P) {
+      rows(P, ['...........', '...lllll...', '..lwwwwwl..', '.lwwmmmwwm.', '.mwm...wwm.', '.mm....wwm.', '......wwmd.',
+               '.....wwmd..', '....lwmd...', '....lwm....', '....mmd....', '...........', '....lwm....', '....mmd....']);
+      P.outline();
+    } },
+    // Bocadillo de «pensando» con su interrogación (encima del enemigo que se queda quieto).
+    thinkbub: { w: 19, h: 17, cols: { Q: '#e0560a' }, gen(P) {
+      const bumps = [[5, 5, 3.4], [9.5, 3.6, 3.6], [14, 5, 3.4], [9.5, 7.5, 5.2], [5.5, 8.2, 3], [13.5, 8.2, 3]];
+      P.fill((x, y) => bumps.some(([a, b, r]) => Math.hypot(x - a, y - b) < r) ? (y > 9 ? 'l' : 'w') : null);
+      P.fill((x, y) => Math.hypot(x - 4.5, y - 13) < 1.7 ? 'w' : null);
+      P.set(2, 15, 'w');
+      rows(P, ['.QQQ.', 'Q...Q', '....Q', '..QQ.', '..Q..', '.....', '..Q..'], 7, 2);
+      P.outline();
+    } },
+    // Bola de boniato frita y electrizada (rueda: las motas giran con el fotograma; chispas fuera).
+    spud: { w: 18, h: 18, frames: 4, cols: { Y: '#fff36a', Z: '#ffffff' }, gen(P, f) {
+      const c = 8.5, R = 5.3, rot = f * Math.PI / 2;
+      P.fill((x, y) => {
+        const dx = x - c, dy = y - c, d = Math.hypot(dx, dy);
+        if (d > R) return null;
+        const lit = (-dx * 0.6 - dy * 0.8) / R;
+        return lit > 0.55 ? 'l' : lit < -0.4 ? 'd' : 'm';
+      });
+      for (const [r, a] of [[2.6, 0], [2.9, 2.3], [1.4, 4.1], [3.4, 4.9]]) {          // motas tostadas
+        const x = Math.round(c + Math.cos(a + rot) * r), y = Math.round(c + Math.sin(a + rot) * r);
+        P.set(x, y, 'd'); if (r > 2) P.set(x + 1, y, 'd');
+      }
+      P.set(6, 6, 'w'); P.set(7, 5, 'w');
+      P.outline();
+      for (const a of [f * 1.9, f * 1.9 + 2.1, f * 1.9 + 4.2]) {                       // chispas en zigzag
+        const ca = Math.cos(a), sa = Math.sin(a);
+        P.set(c + ca * 6.6, c + sa * 6.6, 'Y');
+        P.set(c + ca * 7.5 - sa, c + sa * 7.5 + ca, 'Z');
+        P.set(c + ca * 8.4, c + sa * 8.4, 'Y');
+        P.set(c + ca * 8.4 + sa, c + sa * 8.4 - ca, 'Z');
+      }
+    } },
+    // Estallido de espuma de Didi: chorro blanco -> corona de pompas -> burbujas sueltas.
+    foamburst: { w: 21, h: 21, frames: 3, gen(P, f) {
+      const c = 10;
+      if (f === 0) {
+        for (let k = 0; k < 8; k++) {
+          const a = k * Math.PI / 4 + 0.3, L = k % 2 ? 6.5 : 8.5;
+          P.line(c + Math.cos(a) * 3, c + Math.sin(a) * 3, c + Math.cos(a) * L, c + Math.sin(a) * L, 'l');
+          P.set(c + Math.cos(a) * L, c + Math.sin(a) * L, 'w');
+        }
+        P.fill((x, y) => { const d = Math.hypot(x - c, y - c); return d < 2.6 ? 'w' : d < 4.6 ? 'l' : null; });
+      } else if (f === 1) {
+        P.fill((x, y) => Math.hypot(x - c, y - c) < 3.4 ? 'L' : null);
+        for (let k = 0; k < 7; k++) {
+          const a = k / 7 * 6.2832, px = c + Math.cos(a) * 5.8, py = c + Math.sin(a) * 5.8;
+          P.fill((x, y) => Math.hypot(x - px, y - py) < 2.9 ? (y < py ? 'w' : 'l') : null);
+        }
+      } else {
+        for (let k = 0; k < 9; k++) {
+          const a = k / 9 * 6.2832 + 0.35, px = c + Math.cos(a) * 7.8, py = c + Math.sin(a) * 7.8;
+          P.fill((x, y) => { const d = Math.hypot(x - px, y - py); return d < 1.9 && d >= 0.9 ? 'l' : null; });
+          P.set(px - 1, py - 1, 'w');
+        }
+      }
+      P.outline();
+    } },
+    suds: { w: 10, h: 8, gen(P) {                                // pompa de espuma suelta
+      P.fill((x, y) => (Math.hypot(x - 3.5, y - 4.5) < 2.6 || Math.hypot(x - 6, y - 3.5) < 2.9) ? (y < 4 ? 'w' : 'l') : null);
+      P.set(5, 2, 'L');
+      P.outline();
+    } },
+    // «¡¡!!» del susto de Héroe (paleta eléctrica).
+    exclaim: { w: 9, h: 12, gen(P) {
+      rows(P, ['.........', '.lw...lw.', '.ww...ww.', '.wm...wm.', '.wm...wm.', '.mm...mm.', '.mm...mm.', '.md...md.', '.........', '.lw...lw.', '.md...md.']);
+      P.outline();
+    } },
+    // Mechón de pelo de punta (tres púas en abanico, la base abajo).
+    hairspike: { w: 13, h: 12, gen(P) {
+      for (const [a, L] of [[-0.62, 8.5], [0, 10], [0.62, 8.5]]) {
+        const bx = 6 + Math.sin(a) * 1.5, by = 11, tx = 6 + Math.sin(a) * L, ty = 11 - Math.cos(a) * L;
+        P.line(bx, by, bx + (tx - bx) * 0.55, by + (ty - by) * 0.55, 'w', 1, 'l');
+        P.line(bx + (tx - bx) * 0.55, by + (ty - by) * 0.55, tx, ty, 'w');
+      }
+      P.outline();
+    } },
+    // Tres arañazos de Tom, curvos y separados (f0 a medias, f1 enteros, f2 apagándose).
+    scratch: { w: 19, h: 19, frames: 3, gen(P, f) {
+      const reach = f === 0 ? 0.55 : 1, core = f === 2 ? 'l' : 'w';
+      for (let i = 0; i < 3; i++) {
+        const sx = 2 + i * 5, sy = 16.5, ex = 8 + i * 5, ey = 1.5, n = 30;
+        for (let s = 0; s <= n * reach; s++) {
+          const t = s / n, bow = Math.sin(Math.PI * t) * 2.2;            // un poco curvo, como una uña
+          const x = sx + (ex - sx) * t + bow, y = sy + (ey - sy) * t + bow * 0.3;
+          P.set(x, y, core);
+          if (Math.sin(Math.PI * t) > 0.5) P.set(x + 1, y, 'l');
+        }
+      }
+      P.outline();
+    } },
+    // Punta de la lengua de Lika (mira a la derecha), con su surco en medio.
+    ttip: { w: 10, h: 8, dir: true, gen(P) {
+      rows(P, ['..........', '.mmmmm....', 'mllllllm..', 'lwwllllmm.', 'dddddllmm.', 'mllllllmm.', '.mmmmmmm..']);
       P.outline();
     } }
   };
