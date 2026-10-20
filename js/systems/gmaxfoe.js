@@ -81,7 +81,10 @@ G.GmaxFoe = (() => {
   function make(e) {
     if (!e || e.gmaxFoe) return;
     look(e, defFor(e.dex, e.types).id);
-    e.maxHp = e.hp = Math.round(e.maxHp * HP);
+    // Vida ×HP sobre la de antes del medidor de daño (spawner.js dpsFloor); si el medidor ya la subía,
+    // como mínimo ×1,5 sobre eso (20 s → 30 s de vuestro daño), no ×2 encima (2026-10-20: eran 40 s).
+    const up = e._dpsUp || 1;
+    e.maxHp = e.hp = Math.round(e.maxHp * Math.min(HP, Math.max(HP / up, 1.5)));
     e.dmg *= DMG;
   }
   /** ¿Sale Dinamax este jefe? (spawner.js: jefes de siempre de la partida normal y de la torre) */

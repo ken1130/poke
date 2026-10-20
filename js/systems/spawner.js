@@ -53,7 +53,7 @@ G.Spawner = (() => {
   function dpsFloor(e, sec) {
     if (G.Modes.run === 'stage' || G.Modes.on('boss')) return;
     const want = Math.round(Math.min(teamDps() * sec, e.maxHp * DPS_CAP));
-    if (e.maxHp < want) e.maxHp = e.hp = want;
+    if (e.maxHp < want) { e._dpsUp = want / e.maxHp; e.maxHp = e.hp = want; }   // (gmaxfoe.js: cuánto ha subido)
   }
 
   // Modo jefes (ajuste bossMode): sólo salen jefes, uno cada BOSS_EVERY s,
