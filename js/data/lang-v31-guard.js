@@ -53,7 +53,7 @@ G.I18n.add({
   'Un huevo que eclosiona al momento: tu mascota te sigue y dispara.': '馬上孵化的蛋：寵物會跟著你、幫你射擊。',
   'Ya tienes mascota': '已經有寵物',
   'Ayudante': '幫手',
-  'Un Pokémon que se queda junto a Dazhuang y dispara a los enemigos que se acercan.': '一隻待在大壯旁邊的寶可夢，會射擊靠近的敵人。',
+  'Un Pokémon que se queda junto a Dazhuang y dispara a los enemigos que se acercan.': '一隻待在大壯旁邊的小精靈，會射擊靠近的敵人。',
   'Máximo {x} ayudantes': '最多 {x} 個幫手',
   'Ayudantes: {x}/{x}': '幫手：{x}／{x}',
   '¡{x} protegerá a Dazhuang!': '{x}會保護大壯！',

@@ -1,4 +1,4 @@
-/* ============ typecards.js — "Cartas de tipos" (寶可夢屬性牌) para el modo fiesta ============
+/* ============ typecards.js — "Cartas de tipos" (小精靈屬性牌) para el modo fiesta ============
  * Juego de descartes por tipos/números. Sólo reglas y lógica (sin DOM): la usan el anfitrión
  * (que manda), cada jugador (para validar antes de enviar y para la "Pista") y la prueba de
  * Node (tools/test/typecards_rules.js).

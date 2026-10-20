@@ -43,8 +43,8 @@ G.I18n.add({
   'Difícil': '困難',
   'Muy difícil': '極難',
   'Como siempre.': '跟平常一樣。',
-  'Legendarios ×1,6 de vida y daño. Premio ×1,5 y un ticket extra por cada uno.': '傳說寶可夢血量與傷害 ×1.6。獎勵 ×1.5，每打倒一隻多送一張扭蛋券。',
-  'Legendarios ×2,5 de vida y daño. Premio ×2,5 y tickets extra (a veces ×10).': '傳說寶可夢血量與傷害 ×2.5。獎勵 ×2.5，並多送扭蛋券（有時是 ×10）。',
+  'Legendarios ×1,6 de vida y daño. Premio ×1,5 y un ticket extra por cada uno.': '傳說小精靈血量與傷害 ×1.6。獎勵 ×1.5，每打倒一隻多送一張扭蛋券。',
+  'Legendarios ×2,5 de vida y daño. Premio ×2,5 y tickets extra (a veces ×10).': '傳說小精靈血量與傷害 ×2.5。獎勵 ×2.5，並多送扭蛋券（有時是 ×10）。',
 }, 'zh');
 G.I18n.add({
   '¡Una reliquia!': 'A relic!',

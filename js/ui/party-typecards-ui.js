@@ -1,4 +1,4 @@
-/* ============ party-typecards-ui.js — mesa de las Cartas de tipos (寶可夢屬性牌) ============
+/* ============ party-typecards-ui.js — mesa de las Cartas de tipos (小精靈屬性牌) ============
  * Se engancha a la mesa del modo fiesta (party-game-ui.js) como RENDER.types. Estilo de
  * juego de cartas de móvil (2026-10-17, pedido del dueño):
  *   - cada rival: retrato grande en un cuadro con su placa de nombre, y sus cartas boca abajo

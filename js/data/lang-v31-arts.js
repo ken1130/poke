@@ -11,7 +11,7 @@ G.I18n.add({
     '你的攻擊附帶中毒：每秒 18 × 攻擊力，持續 3 秒，並且緩速。原本就有中毒效果的話，只疊加傷害。',
   'La Caña Mágica de Ben Simmons': '本哥西蒙斯的神奇釣竿', 'Caña de Ben Simmons': '神奇釣竿',
   'Cada 15 s pescas un Pokémon de tipo Agua que lucha a tu lado durante 40 s (hasta 3 a la vez).':
-    '每 15 秒釣出一隻水屬性寶可夢幫你作戰，每隻待 40 秒（最多同時 3 隻）。',
+    '每 15 秒釣出一隻水屬性小精靈幫你作戰，每隻待 40 秒（最多同時 3 隻）。',
   '¡Has pescado a {x}!': '釣到了{x}！',
   'La Corona de Cabra de LeBron': '雷霸龍的山羊王冠', 'Corona de Cabra': '山羊王冠',
   'Todo a lo grande: ×1,6 de daño, ×2 de curación y regeneración, ×1,5 de vida máxima, −25 % de recarga y ×1,3 de velocidad.':

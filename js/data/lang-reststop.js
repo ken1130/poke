@@ -18,7 +18,7 @@ G.I18n.add({
   'Siguiente piso en {x}': '{x} 後前往下一層',
   '¡10 s para dejar el piso del tesoro!': '寶藏層剩 10 秒！',
   'Monedas y tickets por todas partes · sin enemigos · 60 s': '滿地金幣和扭蛋券 · 沒有怪物 · 60 秒',
-  'Un piso escondido lleno de monedas y tickets, sin Pokémon salvajes ni jefe.': '隱藏的樓層：滿地金幣和扭蛋券，沒有野生寶可夢也沒有層主。',
+  'Un piso escondido lleno de monedas y tickets, sin Pokémon salvajes ni jefe.': '隱藏的樓層：滿地金幣和扭蛋券，沒有野生小精靈也沒有層主。',
   'A los 60 s todo el grupo baja solo a B{x}F.': '60 秒後全隊自動前往 B{x}F。'
 }, 'zh');
 G.I18n.add({

@@ -32,7 +32,7 @@ G.Funny = (() => {
   const LINES = {
     es: ['Sólo pasaba por aquí…', 'Hoy no quería trabajar', '¡Se lo diré a mi hermano mayor!', 'Mi madre me llama para cenar', '¿Me dejas pasar?', '¡Es mi primer día!', 'Espera, ¡aún no estaba listo!', 'No en la cara, por favor', 'Qué Pokémon tan guapo…', '¿Has visto mis llaves?', 'Yo sólo quería un abrazo', '¡Esto no es lo que parece!'],
     en: ['Just passing by…', 'I didn’t want to work today', 'I’m telling my big brother!', 'Mom’s calling me for dinner', 'Can I get through?', 'It’s my first day!', 'Wait, I wasn’t ready!', 'Not the face, please', 'Such a handsome Pokémon…', 'Have you seen my keys?', 'I just wanted a hug', 'This isn’t what it looks like!'],
-    zh: ['我只是路過的…', '今天不想上班', '我要去跟我哥告狀！', '我媽叫我回家吃飯了', '可以借過一下嗎？', '今天是我第一天上班！', '等等我還沒準備好！', '拜託不要打臉', '你的寶可夢好帥喔…', '你有看到我的鑰匙嗎？', '我只是想要一個抱抱', '事情不是你想的那樣！']
+    zh: ['我只是路過的…', '今天不想上班', '我要去跟我哥告狀！', '我媽叫我回家吃飯了', '可以借過一下嗎？', '今天是我第一天上班！', '等等我還沒準備好！', '拜託不要打臉', '你的小精靈好帥喔…', '你有看到我的鑰匙嗎？', '我只是想要一個抱抱', '事情不是你想的那樣！']
   };
   const lines = () => LINES[G.I18n.lang] || LINES.es;
 

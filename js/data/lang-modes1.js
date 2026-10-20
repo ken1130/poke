@@ -5,7 +5,7 @@ G.I18n.add({
   'Disco de regalo': '禮物光碟',
   'Abres ahora mismo un disco de movimientos (1-4 mejoras).': '馬上打開一片技能光碟（1～4 個強化）。',
   'Compañero desde el principio': '開局就有夥伴',
-  'Un huevo que eclosiona enseguida: empiezas con un compañero.': '一顆馬上孵化的蛋：開局就有寶可夢夥伴。',
+  'Un huevo que eclosiona enseguida: empiezas con un compañero.': '一顆馬上孵化的蛋：開局就有小精靈夥伴。',
   'Aprendiz veloz': '學得快',
   '+30% de experiencia toda la partida.': '整場經驗值 +30%。',
   'Ventaja inicial': '起跑優勢',

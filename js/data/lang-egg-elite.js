@@ -12,10 +12,10 @@ G.I18n.add({
 });
 
 G.I18n.add({
-  '¡Ha aparecido un huevo Pokémon cerca! Búscalo en el minimapa': '附近出現了寶可夢蛋！看右上角的小地圖去找它',
-  '¡Tienes un huevo! Eclosionará tras {x} derrotados': '拿到寶可夢蛋了！再打倒 {x} 隻敵人就會孵化',
+  '¡Ha aparecido un huevo Pokémon cerca! Búscalo en el minimapa': '附近出現了小精靈蛋！看右上角的小地圖去找它',
+  '¡Tienes un huevo! Eclosionará tras {x} derrotados': '拿到小精靈蛋了！再打倒 {x} 隻敵人就會孵化',
   '¡El huevo ha eclosionado! ¡{x} se une a ti!': '蛋孵化了！{x} 成為你的夥伴！',
-  'HUEVO POKÉMON': '寶可夢蛋',
+  'HUEVO POKÉMON': '小精靈蛋',
   'Huevo': '蛋',
   'Élite': '精英',
   'Veloz': '迅捷',

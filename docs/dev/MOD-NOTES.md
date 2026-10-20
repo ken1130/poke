@@ -288,3 +288,13 @@
 | 守護大壯錢包 | `guard.js wallet`（每個人自己電腦上的商店金幣，**不是** `pl.coins`）：開局 100；過關 `payAll`（房主廣播 `['gd','inc',n]`）；打倒敵人 `pay(e.lastHitBy)`，給隊友的累積在 `owed`，隨 `sendState` 送出；買東西先扣自己的錢再請房主套用，沒貨就 `['gd','refund',n]` 退款；結算時剩下的錢記成 `parts.tienda`（「商店剩餘」） |
 | 價格 | `pm()` 固定 1；大壯強化每級 200／220／200、幫手每隻 260，不再越買越貴 |
 | 首頁殘留 | `game.js`：回首頁時 HUD 那層 canvas（`hctx`）要清掉；`hudDirty` 在遊戲中畫過 HUD 才清一次 |
+
+## 十一、改名「小精靈迷宮倖存者」，畫面上不提寶可夢（2026-10-20，主人：「全面改 不要提到寶可夢」）
+
+| 項目 | 設定 |
+|---|---|
+| 中文 | 所有翻譯檔與中文字面（lang-*.js、modnews、dev.html、manifest、legal、404、main.js）的「寶可夢」→「小精靈」，「寶可夢圖像」→「角色圖像」；含任天堂／Nintendo／GAME FREAK 的免責聲明行不動 |
+| 英文、西班牙文 | 不改原始字串，在 `i18n.js brand()` 顯示時替換：Pokémon→Monster(s)／monstruo(s)、Pokédex→Monsterdex／Monstruodex、PokéCoins／Pokémonedas→Coins／Monedas、Poké Ball→Capture Ball／Bola de captura；提到 Nintendo／The Pokémon Company／GAME FREAK 的句子不換。西班牙文現在也會跑 DOM 走訪（`startDom` 不再 `es` 就 return） |
+| 版權 | 主畫面下方那行拿掉「Pokémon © Nintendo/Creatures/GAME FREAK」，只留 SpriteCollab 授權；設定「關於」改成「版權與素材來源請見法律聲明」；法律聲明頁（legal/、遊戲內 #scr-legal）保留完整免責聲明 |
+| 新增文字注意 | 中文直接寫「小精靈」；英西寫 Pokémon 也會被 brand() 換掉，但 `<head>` 的 meta、JSON-LD 不經過翻譯，要直接寫 Monster |
+| 還有的 | 原作留下的舊 SEO 頁（en/、guia/、pokedex/ 等）沒有改，裡面還有 Pokémon |

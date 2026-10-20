@@ -9,7 +9,7 @@ G.I18n.add({
   'Roca del Rey': '王者之證',
   'Tus ataques tienen un 10% de probabilidad de hacer retroceder (inmovilizar un momento) a los enemigos normales.': '攻擊時有 10% 機率讓一般敵人畏縮（短暫定身）。',
   'Mineral Evolutivo': '進化奇石',
-  'Si tu Pokémon aún puede evolucionar, recibe un 35% menos de daño.': '如果你的寶可夢還能進化，受到的傷害 -35%。',
+  'Si tu Pokémon aún puede evolucionar, recibe un 35% menos de daño.': '如果你的小精靈還能進化，受到的傷害 -35%。',
   'Globo Helio': '漂浮氣球',
   '+25% de velocidad. Si te golpean, explota y vuelve a los 30 s.': '移動速度 +25%。被打到就會破掉，30 秒後恢復。',
   '¡Esquivado!': '閃避！',

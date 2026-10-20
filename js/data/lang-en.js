@@ -270,7 +270,9 @@ G.I18n.add({
   '{x} solicitud': '{x} request', '{x} solicitudes': '{x} requests',
   'Runs': 'Runs', '· Mejor tiempo': '· Best time', 'Mejor nivel': 'Best level', '· Derrotados': '· Defeated', 'Modo invitado: no se guarda': 'Guest mode: not saved',
   'Salir': 'Log out', 'Eres invitado: se perderá todo el progreso. ¿Salir?': 'You\'re a guest: all your progress will be lost. Log out?',
-  'Proyecto de fan sin ánimo de lucro · Sprites: SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo/Creatures/GAME FREAK ·': 'Non-profit fan project · Sprites: SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo/Creatures/GAME FREAK ·',
+  ': sin anuncios ni compras. Derechos de autor y origen de los gráficos: en el aviso legal.': ': no ads and no purchases. Copyright and where the graphics come from: see the legal notice.',
+  'Juego de fans {x}: sin anuncios ni compras. Derechos de autor y origen de los gráficos: en el aviso legal.': 'Fan game {x}: no ads and no purchases. Copyright and where the graphics come from: see the legal notice.',
+  'Proyecto de fan sin ánimo de lucro · Sprites: SpriteCollab (CC BY-NC 4.0) ·': 'Non-profit fan project · Sprites: SpriteCollab (CC BY-NC 4.0) ·',
   'Aviso legal': 'Legal notice',
   // colección
   'Volver': 'Back', 'Todos': 'All', 'Tengo': 'Owned', 'Me faltan': 'Missing', 'Legendaria': 'Legendary', 'Épica': 'Epic', 'Rara': 'Rare',
@@ -1385,7 +1387,7 @@ G.I18n.add({
   'Cada carta que queda es un punto de castigo: menos es mejor.': 'Each card left is a penalty point: fewer is better.',
   'Otra ronda': 'Another round',
   'Esperando al anfitrión…': 'Waiting for the host…',
-  // Cartas de tipos (寶可夢屬性牌, typecards.js / party-typecards-ui.js, 2026-10-17)
+  // Cartas de tipos (小精靈屬性牌, typecards.js / party-typecards-ui.js, 2026-10-17)
   'Tipo de cartas Fuego': 'Fire',
   'Tipo de cartas Agua': 'Water',
   'Tipo de cartas Planta': 'Grass',

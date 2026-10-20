@@ -19,7 +19,7 @@ G.I18n.add({
   'Salida': '出口',
   'Esperando a los demás…': '等其他人……',
   'Estás dentro de la tienda: aquí no hay enemigos. Sales por la puerta del sur (o con «Salir de la tienda»). Lo que no gastes se suma a tus Pokémonedas al acabar.':
-    '你在卡克隆的店裡：這裡沒有怪物。從南邊的門（或按「離開商店」）出去。沒花掉的金幣，結算時會加進寶可夢幣。'
+    '你在卡克隆的店裡：這裡沒有怪物。從南邊的門（或按「離開商店」）出去。沒花掉的金幣，結算時會加進小精靈幣。'
 }, 'zh');
 G.I18n.add({
   'Has entrado en la sala misteriosa…': 'You entered the mystery room…',

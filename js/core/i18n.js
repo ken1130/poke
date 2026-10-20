@@ -61,13 +61,38 @@ G.I18n = (() => {
     return en;
   }
 
+  /*
+   * Sin la palabra «Pokémon» en lo que se ve (2026-10-20, el dueño: «小精靈迷宮倖存者, que no salga 寶可夢»).
+   * El chino ya está traducido con 小精靈; en inglés y español (los textos de origen) se cambia aquí, al
+   * mostrarlos: Monster / monstruo (en plural tras números, all, los, todos...), Monsterdex, Coins... Lo que
+   * nombra a Nintendo o a The Pokémon Company (el aviso legal) no se toca.
+   */
+  const LEGAL = /Nintendo|Pok[ée]mon Company|GAME FREAK/;
+  const capIf = (str, i) => (i === 0 || /[.!?¡¿:·]\s*$/.test(str.slice(0, i)) ? s2 => s2.charAt(0).toUpperCase() + s2.slice(1) : s2 => s2);
+  function brand(s, l) {
+    if (!s || s.indexOf('Pok') < 0 || LEGAL.test(s)) return s;
+    if (l === 'zh') return s.replace(/Pokédex/g, '圖鑑').replace(/Pok[ée]mon/g, '小精靈');
+    if (l === 'en') {
+      return s.replace(/Pok[ée]mon Dungeon Survivors/g, 'Monster Dungeon Survivors').replace(/PokéSurvivor/g, 'Monster Survivor')
+        .replace(/Pok[ée]Coins|Pokécoins|Pokémonedas/g, 'Coins').replace(/Pokédex/g, 'Monsterdex').replace(/Poké Ball/g, 'Capture Ball')
+        .replace(/\b(\d[\d.,]*|all|more|other|many|several|these|those|wild|both|two|three|four|five|six|eight|fewer|most)(\s+)Pok[ée]mon\b/gi, '$1$2Monsters')
+        .replace(/Pok[ée]mon/g, 'Monster');
+    }
+    // español
+    return s.replace(/Pok[ée]mon Dungeon Survivors/g, 'Monster Dungeon Survivors').replace(/PokéSurvivor/g, 'Monster Survivor')
+      .replace(/Pokémonedas/g, 'Monedas').replace(/Pok[ée]Coins|Pokécoins/g, 'Monedas').replace(/Pokédex/g, 'Monstruodex').replace(/Poké Ball/g, 'Bola de captura')
+      .replace(/\b(\d[\d.,]*|los|unos|todos los|otros|más|varios|muchos|tus|sus|mis|nuestros|vuestros|dos|tres|cuatro|cinco|ocho)(\s+)Pok[ée]mon\b/gi, '$1$2monstruos')
+      .replace(/Pok[ée]mon/g, (w, i, str) => capIf(str, i)('monstruo'));
+  }
+
   /** Traduce un texto (sin espacios de los lados) al idioma actual. */
   function t(s) {
-    if (lang === 'es' || !s || typeof s !== 'string') return s;
+    if (!s || typeof s !== 'string') return s;
+    if (lang === 'es') return brand(s, 'es');
     if (!/\p{L}/u.test(s)) return s;
     const c = cache.get(s);
     if (c !== undefined) return c;
-    let r = core(s);
+    let r = brand(core(s), lang);
     if (cache.size > 4000) cache.clear();
     cache.set(s, r);
     return r;
@@ -103,7 +128,7 @@ G.I18n = (() => {
 
   // ---------------- DOM ----------------
   const ATTRS = ['placeholder', 'title', 'alt', 'aria-label'];
-  const skipEl = el => !!(el && el.closest && el.closest('[translate="no"], script, style, code'));
+  const skipEl = el => !!(el && el.closest && el.closest('[translate="no"], script, style, code, noscript'));
 
   function doText(n) {
     const p = n.parentElement;
@@ -131,7 +156,7 @@ G.I18n = (() => {
   }
 
   function startDom() {
-    if (lang === 'es') return;
+    // (En español también se recorre: t() sólo cambia lo de «Pokémon» → monstruo, ver brand.)
     // Los enlaces a las páginas de la web, a su versión en inglés.
     const EN_LINKS = { 'guia/': 'en/guide/', 'pokedex/': 'en/pokedex/' };
     if (lang === 'en') document.querySelectorAll('a[href]').forEach(a => { const h = a.getAttribute('href'); if (EN_LINKS[h]) a.setAttribute('href', EN_LINKS[h]); });

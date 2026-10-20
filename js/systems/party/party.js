@@ -74,7 +74,7 @@ G.Party = (() => {
                   first: st.first, must: st.first ? st.must : -1, last: st.last, over: st.over, winner: st.winner }),
     results: st => B().results(st)
   });
-  // Cartas de tipos (寶可夢屬性牌, typecards.js, 2026-10-17).
+  // Cartas de tipos (小精靈屬性牌, typecards.js, 2026-10-17).
   const T = () => G.TypeCards;
   const typesPlans = new WeakMap();   // estado de la ronda -> (vulnSeq -> lo que harán las CPU)
   register({

@@ -104,7 +104,7 @@ G.SettingsUI = (() => {
       renderAccount(box);
     } else {
       box.innerHTML = `<div class="about-logo">Pokémon Dungeon Survivors</div><p class="sub center">Versión ${esc(VERSION)}</p>`
-        + `<p class="sub">Juego de fans <b>gratuito y sin ánimo de lucro</b>: sin anuncios ni compras. Pokémon y sus personajes son propiedad de Nintendo, Creatures y GAME FREAK; este proyecto no está afiliado a ellos.</p>`
+        + `<p class="sub">Juego de fans <b>gratuito y sin ánimo de lucro</b>: sin anuncios ni compras. Derechos de autor y origen de los gráficos: en el aviso legal.</p>`
         + section('Créditos')
         + `<ul class="credits">
              <li><b>${G.T('Creador principal:')}</b> <span translate="no">ken</span></li>

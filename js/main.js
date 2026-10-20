@@ -29,15 +29,15 @@
     el.setAttribute('translate', 'no');
     const zh = /^zh/.test(document.documentElement.lang);
     if (zh) {
-      el.innerHTML = '<div class="boot-in"><h1>寶可夢迷宮倖存者</h1><p><b>維護中</b></p><p>我們正在把遊戲搬到新的伺服器，讓大家可以繼續免費玩。你的帳號、存檔和寶可夢都很安全，請過幾個小時再回來！</p>' +
+      el.innerHTML = '<div class="boot-in"><h1>小精靈迷宮倖存者</h1><p><b>維護中</b></p><p>我們正在把遊戲搬到新的伺服器，讓大家可以繼續免費玩。你的帳號、存檔和小精靈都很安全，請過幾個小時再回來！</p>' +
         '<button class="btn gold" style="margin-top:12px" onclick="location.reload()">再試一次</button></div>';
       return true;
     }
-    el.innerHTML = '<div class="boot-in"><h1>Pokémon Dungeon Survivors</h1>' + (en
+    el.innerHTML = '<div class="boot-in"><h1>Monster Dungeon Survivors</h1>' + (en
       ? '<p><b>We are under maintenance.</b></p><p>We are moving the game to new servers so it can stay free for everyone. ' +
-        'Your account, your save and your Pokémon are safe. Please come back in a few hours!</p>'
+        'Your account, your save and your monsters are safe. Please come back in a few hours!</p>'
       : '<p><b>Estamos en mantenimiento.</b></p><p>Estamos mudando el juego a servidores nuevos para que siga siendo gratis para todos. ' +
-        'Tu cuenta, tu partida y tus Pokémon están a salvo. ¡Vuelve en unas horas!</p>') +
+        'Tu cuenta, tu partida y tus monstruos están a salvo. ¡Vuelve en unas horas!</p>') +
       '<button class="btn gold" style="margin-top:12px" onclick="location.reload()">' + (en ? 'Try again' : 'Volver a intentarlo') + '</button></div>';
     return true;
   }
