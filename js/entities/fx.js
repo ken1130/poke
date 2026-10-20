@@ -43,12 +43,18 @@ G.FX = (() => {
     }
   }
 
-  /** Sprite de efecto suelto. o: { vx, vy, life, scale, angle, spin, grav, frameRate, fade } */
+  /**
+   * Sprite de efecto suelto. o: { vx, vy, life, scale, angle, spin, grav, frameRate, fade, delay }
+   * 2026-10-20: `follow` (un enemigo) lo pega encima de su cabeza (+ ox, oy) mientras viva; `orbit`
+   * (radio) lo hace girar alrededor (estrellas de aturdido), `bob` lo hace botar (en píxeles de arte).
+   * `delay`: no se ve hasta pasados esos segundos (golpes en cadena del mismo movimiento).
+   */
   function sp(shape, pal, x, y, o = {}) {
     if (sprites.length >= CAP_SPRITES[q()]) return;
-    sprites.push({ shape, pal, x, y, vx: o.vx || 0, vy: o.vy || 0, t: 0, life: o.life || 0.4,
+    sprites.push({ shape, pal, x, y, vx: o.vx || 0, vy: o.vy || 0, t: -(o.delay || 0), life: o.life || 0.4,
                    scale: o.scale || 1, angle: o.angle || 0, spin: o.spin || 0, grav: o.grav || 0,
-                   fr: o.frameRate || 10, fade: o.fade !== false });
+                   fr: o.frameRate || 10, fade: o.fade !== false,
+                   fo: o.follow || null, ox: o.ox || 0, oy: o.oy || 0, orb: o.orbit || 0, ph: o.phase || 0, bob: o.bob || 0 });
   }
 
   /** Centelleo de shiny (cruz de píxeles que nace y se apaga). */
@@ -70,6 +76,10 @@ G.FX = (() => {
       case 'bubbles': px(x + j(), y + j(), P[3], { vy: -35, life: 0.45, size: Math.random() < 0.3 ? 2 : 1 }); break;
       case 'dirt':    px(x + j(), y + j(), P[Math.random() < 0.5 ? 2 : 1], { vx: Math.cos(back) * 25, vy: -20, grav: 300, life: 0.35 }); break;
       case 'wisp':    px(x + j() * 2, y + j() * 2, P[Math.random() < 0.5 ? 1 : 2], { vy: -30, life: 0.5, size: 2 }); break;
+      // Boniato Rodante (2026-10-20): chispas amarillas y blancas que saltan, y migas tostadas en el suelo.
+      case 'zap':     px(x + j() * 2, y + j() * 2, Math.random() < 0.5 ? '#ffffff' : '#fff36a', { vx: G.U.rand(-90, 90), vy: G.U.rand(-90, 40), life: 0.18, size: Math.random() < 0.3 ? 2 : 1 });
+                      if (Math.random() < 0.4) px(x + j(), y + 8, P[1], { vx: Math.cos(back) * 20, life: 0.4 });
+                      break;
     }
   }
 
@@ -129,7 +139,16 @@ G.FX = (() => {
     for (let i = sprites.length - 1; i >= 0; i--) {
       const s = sprites[i];
       s.t += dt;
-      if (s.t >= s.life) { sprites.splice(i, 1); continue; }
+      if (s.t >= s.life || (s.fo && s.fo.dead)) { sprites.splice(i, 1); continue; }
+      if (s.t < 0) continue;                                       // aún esperando (delay)
+      if (s.fo) {
+        const e = s.fo, a = s.ph + s.t * 7;
+        s.x = e.x + s.ox + (s.orb ? Math.cos(a) * s.orb : 0);
+        s.y = e.y - (e.bodyH || 20) - (e.jumpLift || 0) + s.oy + (s.orb ? Math.sin(a) * s.orb * 0.35 : 0)
+            + (s.bob ? Math.round(Math.sin(s.t * 9)) * s.bob * PX : 0);
+        if (s.spin) s.angle += s.spin * dt;
+        continue;
+      }
       s.vy += (s.grav || 0) * dt;
       s.x += s.vx * dt; s.y += s.vy * dt;
       if (s.spin) s.angle += s.spin * dt;
@@ -301,6 +320,7 @@ G.FX = (() => {
     ctx.globalAlpha = 1;
 
     for (const s of sprites) {
+      if (s.t < 0) continue;
       const k = 1 - s.t / s.life;
       if (s.twinkle) { G.Icons.twinkle(ctx, s.x, s.y, s.t / s.life, PX); continue; }
       G.VFX.draw(ctx, s.shape, s.pal, s.x, s.y, {

@@ -141,6 +141,7 @@
 ## 五、踩過的坑
 
 - **特效一律像素風（2026-10-16）**：新招式／頭目攻擊的外觀不要再用 `arc`／`ellipse`／`stroke`／`setLineDash` 畫圓、線、漸層（看起來很廉價）。做法：在 `js/entities/vfx.js` 的 `SHAPES` 加小像素圖（用 `o d m l w` 五階調色盤＋`outline()`，要固定顏色就在形狀上加 `cols`），用 `G.VFX.draw`（`pivot` 可指定旋轉點、`step` 角度格數，縮放只用 1／1.5／2 讓每格都是整數像素）；地面範圍用 `G.VFX.oval`（像素列填滿）、外框用 `G.VFX.dashOval`／`dashLine`（會「走動」的點線）；粒子用 `G.FX.sp`（像素圖）和 `G.FX.px`（方塊）。透明度用三段（1／0.66／0.33）。長條重複圖案（荊棘）先拼成一張快取圖再一次畫。已改：酸雨、李家拳、幽冥矛、大自然的洗禮、俠客歐尼爾力場、頭目刀刃／荊棘／火車衝撞、所有 hazards 警示。
+- **原創角色專屬招式的外觀（2026-10-20）**：八招的「畫法」集中在新檔 `js/entities/vfx-exclusive.js`（`G.ExVFX`），`combat.js` 只決定打誰、打多少，再呼叫 `G.ExVFX.foam/scare/pounce/pan/question/...`；殘影（`shade`）和舌頭（`tongue`）的欄位繪製也交給 `G.ExVFX.drawShade/drawTongue`。新像素圖在 `vfx.js` 的 `SHAPES`：`qmark`、`thinkbub`、`spud`、`foamburst`、`suds`、`exclaim`、`hairspike`、`scratch`、`ttip`；新調色盤 `spud`／`scratch`／`tongue`／`spirit`。`G.FX.sp` 新增 `follow`（黏在敵人頭上，敵人死就消失）、`orbit`（繞圈，暈眩星星）、`bob`（上下跳）、`delay`（晚一點才出現，連續打擊用）；`G.FX.trail` 新增 `zap`。進化版一律比 Lv1 大一階（1.5 → 2，平底鍋 2 → 3）並多一個細節。改數值時不用碰這個檔；改外觀時不用碰 `combat.js` 的判定。
 
 - **不要用瀏覽器原生的 `confirm()`／`alert()`／`prompt()`**（主人覺得很醜）：一律用 `G.Dialog.confirm/alert/prompt`（遊戲風格，async）。
 
@@ -335,7 +336,7 @@
 | 瞬移 | 66% 起、不在蓄力時，每 9 秒：玩家旁 120 處先出現白圈 0.7 秒，再瞬移過去並造成傷害；不會移進牆裡（`G.World.isFree`） | `teleStep`、`tp*` |
 | 詛咒 | 全地圖（`debR` 1e5），每 9 秒、持續 7 秒；第三階段一次兩個（同時最多兩個） | `debEvery`、`debDur` |
 | 極巨化頭目 | 原本 ×2 疊在輸出下限上（變 40 秒）；改成 ×2 只乘在「輸出下限之前」的血量，若下限已經拉高，至少 ×1.5（30 秒） | `gmaxfoe.js make`、`spawner.js dpsFloor` 記的 `e._dpsUp` |
-| 治療型小怪 | 對頭目只補 1/4（見踩坑 #36） | `enemy.js healAround` |
+| 治療型小怪 | 對頭目只補 1/4（見踩坑 #40） | `enemy.js healAround` |
 | 小怪後期 | 10 分鐘後傷害多 +1／1200 秒（20 分鐘約 +15%）；15 分鐘後菁英機率 3%→5% | `enemies.js scale`、`spawner.js spawnOne` |
 
 測試：`scratchpad/lord33.js`（第二個參數可灌假的輸出，例如 30000 → 計量約 1.25 萬、阿爾宙斯約 69 萬血；不灌時約 15 萬，跟以前一樣）。
@@ -348,7 +349,7 @@
 |---|---|
 | 基礎數值 | atk 1.24～1.30（原本 1.04～1.12）、hp 98～112、bst 500（只是標示，原創角色不在 `G.DEX`，敵人池／抽卡都不會用到）。個性：高速婆婆 1.30／98（快、脆）、迪迪 112、利卡 110（耐打） |
 | 六項數值 | `stats6-custom.js`：強的那邊 = 新的 atk；弱的那邊與防禦、特防**同比例**放大，所以物理／特殊的比例、`dp`／`ds` 都跟以前一樣 |
-| 中毒上限 | `enemy.js Enemy.poisonDmg`（`training.js` 木樁共用）：頭目與木樁每層每跳最多 `4 + 1.5×等級`，一般小怪仍是最大血量 1.2%／層（見踩坑 #39） |
+| 中毒上限 | `enemy.js Enemy.poisonDmg`（`training.js` 木樁共用）：頭目與木樁每層每跳最多 `4 + 1.5×等級`，一般小怪仍是最大血量 1.2%／層（見踩坑 #43） |
 | 液體地形 | 岩漿／毒池／電池對頭目 ×0.25 |
 | 熊貓 好奇發問 | 每級傷害提高，進化 120→200 |
 | 地瓜球 地瓜滾滾 | 每顆球朝最近的不同敵人（敵人比球少就平分、窄扇形 0.08），一隻敵人時全部打中；每顆傷害照此重算。進化電擊改成「最近 `zn`=3 隻、`zr`=4.8 格內」（原本 70 px 內全部） |
