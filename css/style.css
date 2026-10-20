@@ -1433,3 +1433,4 @@ body.touch .keys kbd { display: inline-block !important; }
 /* Físico / especial en las cartas de nivel (stats6.js, 2026-10-20) */
 .tag-chip.cat-p { background: #e8743a; color: #fff; }
 .tag-chip.cat-s { background: #3f7fd6; color: #fff; }
+.tag-chip.cat-best { box-shadow: 0 0 0 2px #ffd23f; font-weight: 800; }

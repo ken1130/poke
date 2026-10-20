@@ -136,8 +136,8 @@ G.RunUI = (() => {
     const mm = /^(new|up|evo):(.+)$/.exec(c.key || ''), d = mm && G.Moves.BY_ID[mm[2]];
     const k = d && G.Stats6 && G.Stats6.cat(d);
     if (!k) return '';
-    const pl = G.Game.player, star = pl && pl.k6 && pl.k6.best === k ? '★ ' : '';
-    return ` <span class="tag-chip cat-${k}">${star}${G.T(k === 'p' ? 'Físico (clase de ataque)' : 'Especial (clase de ataque)')}</span>`;
+    const pl = G.Game.player;
+    return ' ' + G.Stats6.chip(d, pl && pl.k6 && pl.k6.best);
   }
 
   function pick(i) {
@@ -357,7 +357,7 @@ G.RunUI = (() => {
       el.className = 'card' + (opt.mode === 'add' || step2 ? ' bond' : '');
       el.innerHTML =
         `<div class="ico" style="background:${col}33">${G.Icons.html('move:' + m.id, 32)}</div>
-         <div class="txt"><div class="nm">${m.name} <span class="tag-chip" style="background:${col}">Lv.${m.lvl}</span></div><div class="ds">${desc}</div></div>
+         <div class="txt"><div class="nm">${m.name} <span class="tag-chip" style="background:${col}">Lv.${m.lvl}</span> ${G.Stats6 ? G.Stats6.chip(m, G.Game.player && G.Game.player.k6 && G.Game.player.k6.best) : ''}</div><div class="ds">${desc}</div></div>
          <div class="key">${i + 1}</div>`;
       el.dataset.sfx = 'none';
       el.onclick = () => pickBond(i);

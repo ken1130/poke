@@ -273,8 +273,9 @@ G.Training = (() => {
   function closePanel() { if (panel) { panel.remove(); panel = null; draft = null; } }
 
   function moveChip(id) {
-    const d = G.Moves.BY_ID[id];
-    return `<span class="type" style="background:${G.U.TYPE_COLOR[d.type] || '#888'}">${G.T(G.U.TYPE_NAME[d.type] || d.type)}</span>`;
+    const d = G.Moves.BY_ID[id], pl = G.Game.player;
+    return `<span class="type" style="background:${G.U.TYPE_COLOR[d.type] || '#888'}">${G.T(G.U.TYPE_NAME[d.type] || d.type)}</span> `
+      + (G.Stats6 ? G.Stats6.chip(d, pl && pl.k6 && pl.k6.best) : '');
   }
 
   function render() {
@@ -387,7 +388,7 @@ G.Training = (() => {
       return `<button class="btn small ${has ? 'gold' : ''}" data-add="${d.id}" ${!has && full ? 'disabled' : ''}
         style="display:flex;align-items:center;gap:6px;justify-content:flex-start;text-align:left">
         <i style="flex:0 0 10px;height:10px;border-radius:50%;background:${G.U.TYPE_COLOR[d.type] || '#888'}"></i>
-        <span>${esc(G.T(d.name))}${d.only ? ' ✦' : ''}</span></button>`;
+        <span>${esc(G.T(d.name))}${d.only ? ' ✦' : ''}</span>${G.Stats6 ? G.Stats6.chip(d, G.Game.player && G.Game.player.k6 && G.Game.player.k6.best) : ''}</button>`;
     }).join('');
   }
   function bindList() {

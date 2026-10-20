@@ -2329,7 +2329,8 @@ G.Combat = (() => {
       : m.critBonus ? Math.random() < (pl.critChance || 0) + m.critBonus : isCrit(pl));
     dmg *= k * (crit ? (opt && opt.cmul) || pl.critMul || CRIT_MUL : 1) * itemK(pl, m.type, e);
     if (pl.megaAb || m.mega) dmg *= G.MegaAb.dmgK(pl, m);
-    if (pl.k6) dmg *= G.Stats6.atkK(pl, m);                       // físico / especial (stats6.js)         // Megaevolución: habilidad y movimiento despertado (megaability.js)
+    if (pl.k6) dmg *= G.Stats6.atkK(pl, m);                       // físico / especial (stats6.js)
+    dmg *= G.Stats6.foeK(e, m);                                   // y la Defensa / Defensa Esp. del enemigo         // Megaevolución: habilidad y movimiento despertado (megaability.js)
     if (G.Arts.zeroed()) { G.Arts.miss(e); return; }          // Dados del Doble o Nada: este golpe no hace nada
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
@@ -2498,7 +2499,8 @@ G.Combat = (() => {
         const src = p.src || (p.mid && pl.moves.find(x => x.id === p.mid)) || null;
         const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? pl.critMul || CRIT_MUL : 1) * itemK(pl, p.mtype, e)
                 * (src && (pl.megaAb || src.mega) ? G.MegaAb.dmgK(pl, src) : 1)
-                * (src && pl.k6 ? G.Stats6.atkK(pl, src) : 1);            // físico / especial (stats6.js)
+                * (src && pl.k6 ? G.Stats6.atkK(pl, src) : 1)             // físico / especial (stats6.js)
+                * (src ? G.Stats6.foeK(e, src) : 1);                       // y la defensa del enemigo
         if (G.Arts.zeroed()) G.Arts.miss(e);                   // Dados: el disparo no hace nada (pero choca igual)
         else {
           e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
