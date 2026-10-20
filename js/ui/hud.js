@@ -844,6 +844,9 @@ G.HUD = (() => {
       const passive = G.Moves.isPassive(m);
       rows.push([G.T(m.name) + '  Lv.' + m.lvl + '/' + m.def.maxLvl + (passive ? '  · ' + G.T(m.kind === 'support' ? 'APOYO' : 'PASIVO') : ''), G.U.TYPE_COLOR[m.type], true]);
       rows.push([G.T(m.def.desc), '#dfe8ff']);
+      const mc = G.Stats6 && G.Stats6.cat(m);                 // físico / especial (stats6.js)
+      if (mc) rows.push([G.T(mc === 'p' ? 'Movimiento físico: usa el Ataque' : 'Movimiento especial: usa el Ataque Esp.')
+        + (pl.k6 && pl.k6.best === mc ? ' ★' : ''), mc === 'p' ? '#ffb27a' : '#8fc4ff']);
       for (let k = 0; k < m.lvl - 1 && m.def.ups[k]; k++) rows.push(['✓ ' + G.T(m.def.ups[k].t), '#9fe0b0']);
       if (m.evolved && G.Moves.EVO_MODS[m.kind]) rows.push(['★ ' + G.T(m.name) + ': ' + G.T(m.def.evoText || G.Moves.EVO_MODS[m.kind].t), '#ffd23f']);
       if (m.mega) rows.push(['✦ ' + G.I18n.f('Despertado por la Megaevolución: daño +{x}% y recarga -{x}%', Math.round((G.MegaAb.AWAKE_DMG - 1) * 100), Math.round((1 - G.MegaAb.AWAKE_CD) * 100)), '#ffb0f0']);

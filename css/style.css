@@ -1429,3 +1429,7 @@ body.touch .keys kbd { display: inline-block !important; }
 #evo-cards.many .evo-pic { width: 72px; height: 62px; }
 #evo-cards.many .evo-stats { gap: 6px; font-size: 12px; }
 @media (max-width: 600px) { #evo-cards.many { grid-template-columns: 1fr; } }
+
+/* Físico / especial en las cartas de nivel (stats6.js, 2026-10-20) */
+.tag-chip.cat-p { background: #e8743a; color: #fff; }
+.tag-chip.cat-s { background: #3f7fd6; color: #fff; }

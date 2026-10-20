@@ -7,7 +7,7 @@ G.I18n.add({
   '¡Velocidad +5%!': '速度 +5%！',
   'Garra Dura': '硬爪', 'Todo tu daño +20%.': '你造成的所有傷害 +20%。',
   'Adaptable': '適應力', 'Los movimientos de tus tipos hacen +33%.': '和你屬性相同的招式傷害 +33%。',
-  'Potencia (habilidad Mega)': '大力士', 'Ataque +30%.': '攻擊 +30%。',
+  'Potencia (habilidad Mega)': '大力士', 'Ataque +30%.': '攻擊與特攻 +30%。',
   'Potencia Bruta': '強行', 'Todo tu daño +25%.': '你造成的所有傷害 +25%。',
   'Amor Filial': '親子愛', 'Cada golpe tiene un 30% de pegar otra vez (a la mitad).': '每次攻擊有 30% 機率再打一次（傷害一半）。',
   'Calco': '複製', 'Probabilidad de crítico +15%.': '暴擊率 +15%。',

@@ -130,7 +130,7 @@ G.GmaxFoe = (() => {
       if (z.t >= z.life) { zones.splice(i, 1); continue; }
       if ((z.tick -= dt) > 0) continue;
       z.tick = 0.5;
-      if (pl && !pl.dead && G.U.dist2(pl.x, pl.y, z.x, z.y) < (z.r + pl.r) ** 2) pl.hurt(z.dmg, z.type);
+      if (pl && !pl.dead && G.U.dist2(pl.x, pl.y, z.x, z.y) < (z.r + pl.r) ** 2) pl.hurt(z.dmg, z.type, 's');
     }
   }
   /** Blanco: el jugador más cercano o, en Proteger a Dazhuang, Dazhuang si está más cerca (2026-10-19). */
@@ -166,7 +166,7 @@ G.GmaxFoe = (() => {
     if (G.Modes.run === 'guard' && authority()) G.Guard.blast(w.x, w.y, w.r, w.dmg);   // también a Dazhuang (guard.js)
     const pl = G.Game.player;
     if (!pl || pl.dead || G.U.dist2(pl.x, pl.y, w.x, w.y) > (w.r + pl.r * 0.5) ** 2) return;
-    pl.hurt(w.dmg, d.type);
+    pl.hurt(w.dmg, d.type, 's');                              // «Maxi»: Defensa Esp.
     if (pl.dead) return;
     let msg = null;
     if (d.slow) { pl.lordSlowT = Math.max(pl.lordSlowT || 0, d.slow); msg = '¡Más lento!'; }

@@ -2328,7 +2328,8 @@ G.Combat = (() => {
     const crit = !ghost && (opt && opt.crit != null ? opt.crit
       : m.critBonus ? Math.random() < (pl.critChance || 0) + m.critBonus : isCrit(pl));
     dmg *= k * (crit ? (opt && opt.cmul) || pl.critMul || CRIT_MUL : 1) * itemK(pl, m.type, e);
-    if (pl.megaAb || m.mega) dmg *= G.MegaAb.dmgK(pl, m);         // Megaevolución: habilidad y movimiento despertado (megaability.js)
+    if (pl.megaAb || m.mega) dmg *= G.MegaAb.dmgK(pl, m);
+    if (pl.k6) dmg *= G.Stats6.atkK(pl, m);                       // físico / especial (stats6.js)         // Megaevolución: habilidad y movimiento despertado (megaability.js)
     if (G.Arts.zeroed()) { G.Arts.miss(e); return; }          // Dados del Doble o Nada: este golpe no hace nada
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
@@ -2396,7 +2397,7 @@ G.Combat = (() => {
         if (G.U.dist2(p.x, p.y, pl.x, pl.y) < (p.r + pl.r) * (p.r + pl.r)) {
           // Hígado del Ingeniero (artefacto): los proyectiles no te hacen nada.
           if (pl.hasItem('liver') && !pl.dead) G.Arts.blocked(pl);
-          else pl.hurt(p.dmg, p.mtype);
+          else pl.hurt(p.dmg, p.mtype, 's');                   // disparo: Defensa Esp.
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 7, 110);
           projectiles.splice(i, 1);
         }
@@ -2496,7 +2497,8 @@ G.Combat = (() => {
         // que antes sólo miraban Combat.hit y los disparos se los saltaban (2026-10-19).
         const src = p.src || (p.mid && pl.moves.find(x => x.id === p.mid)) || null;
         const k = (p.mtype ? typeK(p.mtype, e) : 1) * (crit ? pl.critMul || CRIT_MUL : 1) * itemK(pl, p.mtype, e)
-                * (src && (pl.megaAb || src.mega) ? G.MegaAb.dmgK(pl, src) : 1);
+                * (src && (pl.megaAb || src.mega) ? G.MegaAb.dmgK(pl, src) : 1)
+                * (src && pl.k6 ? G.Stats6.atkK(pl, src) : 1);            // físico / especial (stats6.js)
         if (G.Arts.zeroed()) G.Arts.miss(e);                   // Dados: el disparo no hace nada (pero choca igual)
         else {
           e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
@@ -2562,7 +2564,7 @@ G.Combat = (() => {
       e.touchCd = 0.55;
       e.strike(pl);
       // Peso Pesado: la armadura quita parte del daño de los choques.
-      pl.hurt(e.dmg * (1 - (pl.bulkArmor || 0)), e.atkType);
+      pl.hurt(e.dmg * (1 - (pl.bulkArmor || 0)), e.atkType, 'p');   // contacto: Defensa
       // Poción de gigante: aplastas a los que te tocan (y salen despedidos).
       if (pl.giant && !e.boss) e.hurt((20 + pl.level * 4) * pl.atk / Math.max(1, pl.baseAtk), '#ff7b3d', e.x - pl.x, e.y - pl.y, 320);
       // Casco Dentado: crece con tu ataque (antes se quedaba corto al final de la run).

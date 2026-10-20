@@ -13,6 +13,7 @@ G.Player = class Player {
   constructor(mon, perks = {}, shiny = false) {
     this.mon = mon;
     this.dex = mon.dex;
+    if (G.Stats6) G.Stats6.setup(this);        // ataque / ataque esp. / defensas (stats6.js)
     this.shiny = shiny && G.Sprites.hasShiny(mon.dex);
     this.anim = new G.Sprites.Animator(mon.dex, 1, this.shiny);
     this.x = 0; this.y = 0;
@@ -270,7 +271,8 @@ G.Player = class Player {
 
   // ---------------- daño y curación ----------------
   /** @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual */
-  hurt(amount, type = null) {
+  hurt(amount, type = null, cat = null) {   // cat: 'p' contacto (Defensa) · 's' disparo/rayo (Defensa Esp.)
+    if (cat && G.Stats6) amount *= G.Stats6.hurtK(this, cat);
     // god: truco de invencible · picking: eligiendo cartas en grupo (no le llega nada, ni los ataques con aviso)
     // (won: fase de la Aventura ya superada, en los 2 s antes del resumen)
     // star: poción de estrella (loot.js)
@@ -384,6 +386,7 @@ G.Player = class Player {
     const old = this.mon, mon = G.DEX_BY[dex];
     if (!mon) return;
     this.mon = mon; this.dex = dex;
+    if (G.Stats6) G.Stats6.setup(this);        // la nueva forma trae sus stats
     this.shiny = this.shiny && G.Sprites.hasShiny(dex);
     this.anim = new G.Sprites.Animator(dex, 1, this.shiny);
     this.r = G.Sprites.bodyRadius(dex) * (this.artSize || 1) * (this.gmaxK || 1);

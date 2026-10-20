@@ -248,6 +248,22 @@ G.MenuUI = (() => {
     openDex();
   }
 
+
+  /**
+   * Los seis stats (2026-10-20, como el autor original): Vida, Ataque y Ataque Esp. (en × de combate),
+   * Defensa y Defensa Esp. (los de los juegos) y Velocidad; debajo, el tipo de ataque que domina.
+   */
+  function sixStats(dex, mon, bar) {
+    const s = G.Stats6 && G.Stats6.of(dex);
+    if (!s) return bar('Vida', mon.hp, 183, mon.hp) + bar('Ataque', mon.atk, 1.55, '×' + mon.atk.toFixed(2)) + bar('Velocidad', mon.spd, 137, mon.spd);
+    const pa = G.Stats6.gAtk(s.atk), sa = G.Stats6.gAtk(s.spa);
+    return bar('Vida', mon.hp, 183, mon.hp)
+      + bar('Ataque', pa, 1.55, '×' + pa.toFixed(2)) + bar('Ataque Esp.', sa, 1.55, '×' + sa.toFixed(2))
+      + bar('Defensa', s.def, 200, s.def) + bar('Defensa Esp.', s.spdef, 200, s.spdef)
+      + bar('Velocidad', mon.spd, 137, mon.spd)
+      + `<p class="dex-best">${G.T('Tipo de ataque que domina:')} <b class="gold">${G.T(s.atk >= s.spa ? 'Físico (clase de ataque)' : 'Especial (clase de ataque)')}</b></p>`;
+  }
+
   /** ¿Coincide el Pokémon con lo buscado? Nombre (como se ve o el original) o número. */
   function matches(p, q) {
     if (/^\d+$/.test(q)) return p.dex === +q || p.base === +q;   // (las formas regionales, por su especie)   // número exacto: 25 o 025 -> Pikachu
@@ -310,9 +326,7 @@ G.MenuUI = (() => {
         <div style="margin:6px 0">${G.UI.typeChips(c.types || [])}</div>
         ${c.desc ? `<p>${G.T(c.desc)}</p>` : ''}
       </div></div><div class="dex-info">
-      ${bar('Vida', c.hp, max.hp, c.hp)}
-      ${bar('Ataque', c.atk, max.atk, '×' + c.atk.toFixed(2))}
-      ${bar('Velocidad', c.spd, max.spd, c.spd)}
+      ${sixStats(dex, c, bar)}
       <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
       <div class="dex-acts">${usingThis
         ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
@@ -436,9 +450,7 @@ G.MenuUI = (() => {
         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
       </div></div><div class="dex-info">
       ${own ? `
-        ${bar('Vida', p.hp, max.hp, p.hp)}
-        ${bar('Ataque', p.atk, max.atk, '×' + p.atk.toFixed(2))}
-        ${bar('Velocidad', p.spd, max.spd, p.spd)}
+        ${sixStats(dex, p, bar)}
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
         <p class="move-icons" title="Movimientos que puede aprender">
           ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>

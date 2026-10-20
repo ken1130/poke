@@ -79,12 +79,12 @@ G.Hazards = (() => {
       h.t += dt;
       if (h.kind === 'thorn') {
         const len = thornLen(h);
-        if (!h.hit && len > 0 && pl && !pl.dead && inside(Object.assign({}, h, { len }), pl.x, pl.y, pl.r)) { h.hit = true; pl.hurt(h.dmg, h.type); }
+        if (!h.hit && len > 0 && pl && !pl.dead && inside(Object.assign({}, h, { len }), pl.x, pl.y, pl.r)) { h.hit = true; pl.hurt(h.dmg, h.type, 's'); }
         if (h.t >= h.delay + h.grow + h.stay + 0.25) list.splice(i, 1);
         continue;
       }
       if (h.kind === 'blade') {
-        if (!h.hit && pl && !pl.dead && bladeHits(h, pl.x, pl.y, pl.r)) { h.hit = true; pl.hurt(h.dmg, h.type); }
+        if (!h.hit && pl && !pl.dead && bladeHits(h, pl.x, pl.y, pl.r)) { h.hit = true; pl.hurt(h.dmg, h.type, 'p'); }
         if (h.t >= h.life) list.splice(i, 1);
         continue;
       }
@@ -94,7 +94,7 @@ G.Hazards = (() => {
         if (pl && !pl.dead && inside(h, pl.x, pl.y, pl.r)) {
           // Vuelo Celestial (Arte Sin Forma evolucionado): los rayos de los enemigos no le hacen nada.
           if (h.ray && G.Combat.beamImmune(pl)) G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, G.T('¡Inmune!'), '#ffc4e6');
-          else { pl.invuln = 0; pl.hurt(h.dmg, h.type); }
+          else { pl.invuln = 0; pl.hurt(h.dmg, h.type, 's'); }
         }
       }
       if (h.hit && h.t >= h.delay + h.end) list.splice(i, 1);

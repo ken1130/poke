@@ -123,12 +123,21 @@ G.RunUI = (() => {
       if (c.type === 'evo') el.classList.add('evo');
       el.innerHTML =
         `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 32)}</div>
-         <div class="txt"><div class="nm">${c.title} ${tag}</div><div class="ds">${c.desc}</div></div>
+         <div class="txt"><div class="nm">${c.title} ${tag}${catChip(c)}</div><div class="ds">${c.desc}</div></div>
          <div class="key">${i + 1}</div>`;
       el.dataset.sfx = 'none';             // el juego pone su propio sonido al elegir
       el.onclick = () => pick(i);
       box.appendChild(el);
     });
+  }
+
+  /** Físico / especial del movimiento de la carta (stats6.js); ★ si es el que domina tu Pokémon. */
+  function catChip(c) {
+    const mm = /^(new|up|evo):(.+)$/.exec(c.key || ''), d = mm && G.Moves.BY_ID[mm[2]];
+    const k = d && G.Stats6 && G.Stats6.cat(d);
+    if (!k) return '';
+    const pl = G.Game.player, star = pl && pl.k6 && pl.k6.best === k ? '★ ' : '';
+    return ` <span class="tag-chip cat-${k}">${star}${G.T(k === 'p' ? 'Físico (clase de ataque)' : 'Especial (clase de ataque)')}</span>`;
   }
 
   function pick(i) {
@@ -385,10 +394,13 @@ G.RunUI = (() => {
     if (!pl) { box.innerHTML = ''; return; }
     const pct = v => Math.round(v * 100) + '%';
     const mul = v => '×' + (+v.toFixed(2)).toString().replace('.', G.I18n.lang === 'es' ? ',' : '.');
+    const taken = (what, k) => (Math.abs(1 - k) < 0.005 ? '—' : G.T(what) + ' ' + (k < 1 ? '−' : '+') + pct(Math.abs(1 - k)));
     const rows = [
       ['Nivel', 'Lv.' + pl.level],
       ['Vida', Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp)],
-      ['Ataque', mul(pl.atk)],
+      // Ataque y Ataque Esp. (stats6.js): el de los movimientos de cada clase; las defensas, en % de daño recibido.
+      ...(pl.k6 ? [['Ataque', mul(pl.atk * pl.k6.p)], ['Ataque Esp.', mul(pl.atk * pl.k6.s)],
+                   ['Defensa', taken('golpes recibidos', pl.k6.dp)], ['Defensa Esp.', taken('disparos recibidos', pl.k6.ds)]] : [['Ataque', mul(pl.atk)]]),
       ['Velocidad', String(Math.round(pl.spd))],
       ['Recarga', pl.cdK < 1 ? '−' + pct(1 - pl.cdK) : '—'],
       ['Crítico', pct(pl.critChance || 0)],
