@@ -35,8 +35,8 @@ G.Plaza = (() => {
   // Pelotas (2026-10-19, «la pelota es un cuadrado y el tenis no parece tenis»): gravedad y botes de verdad.
   const GRAV = 620;                        // px/s² (la altura z es en píxeles de pantalla)
   const T_HIT_Z = 16, T_BOUNCE = 0.55;     // tenis: altura del golpe y lo que conserva al botar
-  const T_REACH_Z = 46;                    // tenis: más alta que esto, no llegas
-  const V_REACH_Z = 56;                    // voleibol
+  const T_REACH_Z = 60;                    // tenis: más alta que esto, no llegas (2026-10-20: 46 → 60, «cuesta devolverla»)
+  const V_REACH_Z = 64;                    // voleibol (56 → 64)
   const CPU_MISS = 0.08;                   // las CPU la mandan fuera de vez en cuando
   const SIDE_COL = ['#4fb4ff', '#ff6fa8'];
   // (2026-10-19, el dueño: «¿las mejoras de velocidad cuentan en la zona?») Aquí todos igual de rápidos:
@@ -74,9 +74,29 @@ G.Plaza = (() => {
     const ts = TS(), [cx, cy] = center();
     if (kind === 'tennis') return { kind, cx: cx - 11 * ts, cy: cy - 6 * ts, hw: 7 * ts, hh: 3.6 * ts };
     if (kind === 'volley') return { kind, cx: cx - 11 * ts, cy: cy + 6 * ts, hw: 6.5 * ts, hh: 3.6 * ts };
-    if (kind === 'potato') return { kind, cx: cx + 10 * ts, cy: cy - 5.5 * ts, r: 6 * ts };
+    if (kind === 'potato') return { kind, cx: cx + 11.5 * ts, cy: cy - 5 * ts, r: 8 * ts };   // (2026-10-20: radio 6 → 8)
     return { kind: 'hut', cx: cx + 12 * ts, cy: cy + 7.5 * ts };
   }
+  /*
+   * Patata caliente (2026-10-20, el dueño: «más grande, con obstáculos o mecanismos»): 4 rocas en diagonal
+   * (no se pasan; la bomba rebota) y 2 aceleradores a los lados (×BOOST_K de velocidad BOOST_T s).
+   * Salen de zone(), así que todos los ven y chocan igual sin mandar nada.
+   */
+  const PILLAR_R = 22, BOOST_PAD_R = 24, BOOST_K = 1.8, BOOST_T = 0.9, BOOST_CD = 1.6;
+  function potatoProps() {
+    const z = zone('potato');
+    return { pillars: [45, 135, 225, 315].map(d => { const a = d * Math.PI / 180; return [z.cx + Math.cos(a) * z.r * 0.5, z.cy + Math.sin(a) * z.r * 0.5]; }),
+             pads: [0, Math.PI].map(a => [z.cx + Math.cos(a) * z.r * 0.64, z.cy + Math.sin(a) * z.r * 0.64]) };
+  }
+  /** Saca a `o` de las rocas (rad: su radio). */
+  function pushOutPillars(o, rad) {
+    for (const [x, y] of potatoProps().pillars) {
+      const dx = o.x - x, dy = o.y - y, d = Math.hypot(dx, dy) || 1, min = PILLAR_R + rad;
+      if (d < min) { o.x = x + dx / d * min; o.y = y + dy / d * min; }
+    }
+  }
+  const onBoostPad = o => potatoProps().pads.some(([x, y]) => G.U.dist2(o.x, o.y, x, y) < BOOST_PAD_R * BOOST_PAD_R);
+
   /** Donde se pulsa para empezar (el cartel). */
   function padOf(kind) {
     const z = zone(kind), ts = TS();
@@ -329,7 +349,7 @@ G.Plaza = (() => {
     const ts = TS();
     if (kind === 'potato') {
       parts.forEach((p, i) => {
-        const a = i / parts.length * Math.PI * 2;
+        const a = i / parts.length * Math.PI * 2 + Math.PI / 8;   // (no encima de los aceleradores)
         g.homes[p.id] = [Math.round(z.cx + Math.cos(a) * z.r * 0.6), Math.round(z.cy + Math.sin(a) * z.r * 0.6)];
       });
       g.alive = parts.map(p => p.id); g.out = [];
@@ -439,6 +459,13 @@ G.Plaza = (() => {
   // ---------------- tenis y voleibol (anfitrión) ----------------
 
   const sideOfX = (z, x) => (x < z.cx ? 0 : 1);
+  /** Distancia² del punto (px, py) al tramo (ax, ay)-(bx, by). */
+  function segD2(ax, ay, bx, by, px, py) {
+    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+    const k = l2 ? G.U.clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1) : 0;
+    const x = ax + dx * k - px, y = ay + dy * k - py;
+    return x * x + y * y;
+  }
 
   /**
    * Saca o devuelve la pelota desde el lado `s` hacia un punto del otro campo. Tenis: parábola
@@ -492,6 +519,7 @@ G.Plaza = (() => {
       return;
     }
     if (g.phase !== 'play') return;
+    const ox = b.x, oy = b.y;                       // (para mirar todo el tramo, no sólo dónde acaba)
     if (g.kind === 'tennis') {
       b.x += b.vx * dt; b.y += b.vy * dt;
       b.vz -= GRAV * dt; b.z += b.vz * dt;
@@ -525,9 +553,12 @@ G.Plaza = (() => {
         if (p.side !== s) continue;
         const q = posOf(g, p.id);
         if (!q) continue;
-        const reach = radius(q) + (g.kind === 'volley' ? 26 : 20);
+        // (2026-10-20, «el golpe a veces no entra»): más alcance, y a los invitados un poco más (su posición
+        // llega con retraso); y se mira todo el tramo que ha hecho la pelota en este fotograma (si iba rápida,
+        // pasaba por encima de ti entre dos fotogramas y no contaba).
+        const reach = radius(q) + (g.kind === 'volley' ? 34 : 28) + (!p.cpu && q !== G.Game.player ? 10 : 0);
         if (b.z > (g.kind === 'volley' ? V_REACH_Z : T_REACH_Z)) continue;
-        if (G.U.dist2(q.x, q.y, b.x, b.y) > reach * reach) continue;
+        if (segD2(ox, oy, b.x, b.y, q.x, q.y) > reach * reach) continue;
         g.rally++;
         // Personas: si te mueves arriba/abajo al golpear, la pelota sale hacia ese lado.
         const pl = !p.cpu && humanById(p.id);
@@ -589,7 +620,15 @@ G.Plaza = (() => {
     if (!g || g.phase !== 'play' || g.holder !== id || g.bomb) return;
     const q = posOf(g, id);
     if (!q) return;
-    g.bomb = { x: q.x + Math.cos(ang) * 16, y: q.y + Math.sin(ang) * 16, vx: Math.cos(ang) * THROW_SPEED, vy: Math.sin(ang) * THROW_SPEED, ft: THROW_T, from: id, at: now() };
+    // Ayuda de puntería (2026-10-20, «lanzarla cuesta»): al vivo más cercano dentro de ±50° de donde miras.
+    let tg = null, bd = Infinity;
+    for (const o of g.alive) {
+      if (o === id) continue;
+      const oq = posOf(g, o); if (!oq) continue;
+      const a = Math.atan2(oq.y - q.y, oq.x - q.x), da = Math.abs(((a - ang + Math.PI * 3) % 6.2832) - Math.PI), d2 = G.U.dist2(oq.x, oq.y, q.x, q.y);
+      if (da < 0.87 && d2 < 360 * 360 && d2 < bd) { bd = d2; tg = o; ang = a; }
+    }
+    g.bomb = { x: q.x + Math.cos(ang) * 16, y: q.y + Math.sin(ang) * 16, vx: Math.cos(ang) * THROW_SPEED, vy: Math.sin(ang) * THROW_SPEED, ft: THROW_T, from: id, at: now(), tg };
     g.holder = null;
     hostFx('pass', q.x, q.y);
   }
@@ -610,6 +649,7 @@ G.Plaza = (() => {
     if (g.alive.length <= 1) return potatoOver(g);
     g.fuseT += dt;
     g.f = Math.round(Math.min(1, g.fuseT / g.fuse) * 100) / 100;
+    g.rm = Math.round(Math.max(0, g.fuse - g.fuseT) * 10) / 10;   // segundos que quedan (aviso de los últimos 3)
     const alive = g.alive.map(id => [id, posOf(g, id)]).filter(x => x[1]);
     if (g.bomb) {
       const bm = g.bomb;
@@ -617,9 +657,23 @@ G.Plaza = (() => {
       // Que no salga del círculo.
       const d = Math.hypot(bm.x - z.cx, bm.y - z.cy);
       if (d > z.r - 8) { bm.x = z.cx + (bm.x - z.cx) / d * (z.r - 8); bm.y = z.cy + (bm.y - z.cy) / d * (z.r - 8); bm.vx = -bm.vx * 0.4; bm.vy = -bm.vy * 0.4; }
+      for (const [px, py] of potatoProps().pillars) {           // rebota en las rocas
+        const dx = bm.x - px, dy = bm.y - py, dd = Math.hypot(dx, dy) || 1, min = PILLAR_R + 8;
+        if (dd < min) {
+          const nx = dx / dd, ny = dy / dd, dot = bm.vx * nx + bm.vy * ny;
+          bm.x = px + nx * min; bm.y = py + ny * min;
+          if (dot < 0) { bm.vx = (bm.vx - 2 * dot * nx) * 0.7; bm.vy = (bm.vy - 2 * dot * ny) * 0.7; hostFx('bounce', bm.x, bm.y); }
+        }
+      }
+      // Va un poco hacia a quien se la tiraste (ver throwBomb).
+      const tq = bm.ft > 0 && bm.tg && posOf(g, bm.tg);
+      if (tq) {
+        const sp = Math.hypot(bm.vx, bm.vy), [ux, uy] = G.U.norm(tq.x - bm.x, tq.y - bm.y);
+        bm.vx = G.U.damp(bm.vx, ux * sp, 5, dt); bm.vy = G.U.damp(bm.vy, uy * sp, 5, dt);
+      }
       for (const [id, q] of alive) {
         if (id === bm.from && now() - bm.at < 0.35) continue;
-        if (G.U.dist2(q.x, q.y, bm.x, bm.y) < (radius(q) + 12) ** 2) { give(g, id, bm.from); break; }
+        if (G.U.dist2(q.x, q.y, bm.x, bm.y) < (radius(q) + 20) ** 2) { give(g, id, bm.from); break; }   // (antes +12)
       }
     } else if (g.holder) {
       const h = posOf(g, g.holder);
@@ -679,10 +733,13 @@ G.Plaza = (() => {
         const a = Math.atan2(c.y - bombAt.y, c.x - bombAt.x) + (c.jit || 0);
         tx = c.x + Math.cos(a) * 60; ty = c.y + Math.sin(a) * 60;
       }
+      if ((c.padT || 0) > 0) { c.padT -= dt; sp *= BOOST_K; }
+      else if ((c.padCd = (c.padCd || 0) - dt) <= 0 && onBoostPad(c)) { c.padT = BOOST_T; c.padCd = BOOST_CD; }
       const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy);
       if (d > 3) { c.x += dx / d * Math.min(d, sp * dt); c.y += dy / d * Math.min(d, sp * dt); c.ang = Math.atan2(dy, dx); c.mv = 1; } else c.mv = 0;
       const r = Math.hypot(c.x - z.cx, c.y - z.cy), max = z.r - 14;
       if (r > max) { c.x = z.cx + (c.x - z.cx) / r * max; c.y = z.cy + (c.y - z.cy) / r * max; }
+      pushOutPillars(c, 10);
     }
   }
 
@@ -692,7 +749,7 @@ G.Plaza = (() => {
     for (const id in g.cpus) { const c = g.cpus[id]; cpus[id] = { x: Math.round(c.x), y: Math.round(c.y), ang: Math.round(c.ang * 100) / 100, mv: c.mv }; }
     const s = { phase: g.phase, cpus };
     // (Sin null: por la red se pierden los campos null y el invitado se quedaba con el valor viejo.)
-    if (g.kind === 'potato') Object.assign(s, { alive: g.alive, out: g.out, holder: g.holder || '', f: g.f, round: g.round,
+    if (g.kind === 'potato') Object.assign(s, { alive: g.alive, out: g.out, holder: g.holder || '', f: g.f, rm: g.rm == null ? 99 : g.rm, round: g.round,
       bomb: g.bomb ? { x: Math.round(g.bomb.x), y: Math.round(g.bomb.y), vx: Math.round(g.bomb.vx), vy: Math.round(g.bomb.vy), ft: g.bomb.ft, from: g.bomb.from } : 0 });
     else { const b = g.ball; Object.assign(s, { score: g.score, server: g.server, ball: { x: Math.round(b.x), y: Math.round(b.y), z: Math.round(b.z), vz: Math.round(b.vz || 0), vx: Math.round(b.vx), vy: Math.round(b.vy), p: b.p, fl: b.fl, sx: b.sx, sy: b.sy, tx: b.tx, ty: b.ty, from: b.from } }); }
     return s;
@@ -739,7 +796,13 @@ G.Plaza = (() => {
     const pg0 = games.potato, outIds = pg0 && pg0.phase !== 'over' ? pg0.out || [] : [];
     for (const p of G.Game.everyone()) p.spectK = outIds.includes(idOf(p)) ? 0.4 : 1;
     // Misma velocidad para todos (cada fotograma: nada de mejoras, pociones ni acelerones).
-    pl.baseSpd = PLAZA_SPD; pl.spdMul = 1; pl.hasteT = 0;
+    const pgA = games.potato, inPot = pgA && pgA.phase !== 'over' && (pgA.alive || []).includes(meId());
+    if (inPot && !(pl.padT > 0) && (pl.padCd = (pl.padCd || 0) - dt) <= 0 && onBoostPad(pl)) {
+      pl.padT = BOOST_T; pl.padCd = BOOST_CD; G.Audio.sfx('select'); G.FX.burst(pl.x, pl.y, '#7dffb0', 10, 140);
+    }
+    if (pl.padT > 0) pl.padT -= dt;
+    pl.baseSpd = PLAZA_SPD; pl.spdMul = pl.padT > 0 ? BOOST_K : 1; pl.hasteT = 0;   // (acelerador de la patata: ×BOOST_K)
+    potatoBeep(pgA);
     // Tu Pokémon: en tu campo o dentro del círculo mientras juegas.
     keepInside(pl);
     // Lanzar la bomba (F o el botón).
@@ -851,6 +914,7 @@ G.Plaza = (() => {
         }
         const max = z.r - 14;
         if (r > max) { pl.x = z.cx + (pl.x - z.cx) / r * max; pl.y = z.cy + (pl.y - z.cy) / r * max; }
+        pushOutPillars(pl, 10);
       } else {
         const minX = p.side ? z.cx + 14 : z.cx - z.hw - 30, maxX = p.side ? z.cx + z.hw + 30 : z.cx - 14;
         pl.x = G.U.clamp(pl.x, minX, maxX); pl.y = G.U.clamp(pl.y, z.cy - z.hh - 30, z.cy + z.hh + 30);
@@ -1153,26 +1217,76 @@ G.Plaza = (() => {
     // Marcas de explosiones viejas (decorado).
     ctx.fillStyle = 'rgba(30,20,20,.35)';
     for (let i = 0; i < 5; i++) { const a = i * 2.4, d = z.r * (0.25 + (i % 3) * 0.2); ctx.fillRect(R(z.cx + Math.cos(a) * d - 6), R(z.cy + Math.sin(a) * d - 3), 12, 6); }
+    // Aceleradores: baldosa verde con flechas que se encienden por turnos.
+    const P = potatoProps();
+    for (const [x, y] of P.pads) {
+      ctx.fillStyle = '#1f4a34'; ctx.fillRect(R(x - 22), R(y - 13), 44, 26);
+      ctx.fillStyle = '#2f7a54'; ctx.fillRect(R(x - 19), R(y - 10), 38, 20);
+      for (let i = 0; i < 3; i++) {
+        const on = Math.floor(t * 6) % 3 === i;
+        ctx.fillStyle = on ? '#b6ffd2' : '#5fd08f';
+        const ax = R(x - 12 + i * 9);
+        ctx.fillRect(ax, R(y - 5), 3, 3); ctx.fillRect(ax + 3, R(y - 2), 3, 3); ctx.fillRect(ax, R(y + 1), 3, 3);
+      }
+    }
+    // Rocas: sombra, piedra con luz arriba a la izquierda y una grieta.
+    for (const [x, y] of P.pillars) {
+      ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(R(x), R(y + 6), PILLAR_R + 2, (PILLAR_R + 2) * 0.5, 0, 0, 6.2832); ctx.fill();
+      disc(ctx, x, y - 6, PILLAR_R, '#5b5f6b', 4);
+      disc(ctx, x - 2, y - 9, PILLAR_R - 5, '#8b909c', 4);
+      ctx.fillStyle = '#b9bdc7'; ctx.fillRect(R(x - 10), R(y - 18), 8, 4); ctx.fillRect(R(x - 12), R(y - 14), 4, 4);
+      ctx.fillStyle = '#3f424b'; ctx.fillRect(R(x + 4), R(y - 10), 3, 8); ctx.fillRect(R(x + 7), R(y - 4), 3, 4);
+    }
     const [px, py] = padOf('potato');
     pad(ctx, px, py, t);
     sign(ctx, px, py - 26, G.T('Patata caliente'), '#ffb06a');
+  }
+
+  /**
+   * Dónde va a caer la pelota (2026-10-20, «cuesta saber dónde ponerse»): sólo si viene a tu campo, un
+   * círculo que late en el suelo (sólo en tu pantalla).
+   */
+  function landMark(ctx, kind, t) {
+    const g = games[kind], me = meId();
+    if (!g || g.phase !== 'play' || !g.ball) return;
+    const p = g.parts.find(q => q.id === me), b = g.ball;
+    if (!p || b.from === p.side || b.tx == null) return;
+    const k = 0.5 + 0.5 * Math.sin(t * 10), r = 14 + k * 5;
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = kind === 'tennis' ? '#e9ff5a' : '#ffffff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(R(b.tx), R(b.ty), r, r * 0.55, 0, 0, 6.2832); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,90,60,.8)';
+    ctx.fillRect(R(b.tx) - 2, R(b.ty) - 2, 4, 4);
+    ctx.restore();
   }
 
   function drawGround(ctx) {
     if (!on()) return;
     const t = performance.now() / 1000;
     ctx.save();
-    court(ctx, 'tennis', t);
-    court(ctx, 'volley', t);
-    potatoGround(ctx, t);
-    // Camino de baldosas entre los rincones (para que se vea que es una plaza).
+    // Camino de baldosas entre los rincones (para que se vea que es una plaza). Primero: las pistas y el
+    // círculo de la patata van encima (2026-10-20: el camino cruzaba por encima del círculo, más grande).
     const [cx, cy] = center();
     ctx.fillStyle = 'rgba(230,220,190,.18)';
     for (let i = -18; i <= 18; i++) ctx.fillRect(R(cx + i * 22 - 8), R(cy - 6), 16, 12);
     for (let i = -10; i <= 10; i++) ctx.fillRect(R(cx - 6), R(cy + i * 22 - 8), 12, 16);
+    court(ctx, 'tennis', t);
+    court(ctx, 'volley', t);
+    landMark(ctx, 'tennis', t); landMark(ctx, 'volley', t);
+    potatoGround(ctx, t);
     const [hx, hy] = padOf('hut');
     pad(ctx, hx, hy, t);
     ctx.restore();
+  }
+
+  /** Los 3 últimos segundos de la mecha: un pitido por segundo (el último, más fuerte). En todas las pantallas. */
+  let beepS = null;
+  function potatoBeep(g) {
+    const rm = g && g.phase === 'play' && g.holder ? g.rm : null;
+    if (rm == null || rm > 3) { beepS = null; return; }
+    const sec = Math.ceil(rm);
+    if (sec !== beepS && sec > 0) { beepS = sec; G.Audio.sfx(sec === 1 ? 'error' : 'select'); }
   }
 
   /** Lo que tiene pies y va ordenado por Y: la caseta y las CPU. */
@@ -1313,14 +1427,24 @@ G.Plaza = (() => {
         if (g.bomb) { bx = g.bomb.x; by = g.bomb.y - (g.bomb.ft > 0 ? 18 : 6); }
         else if (g.holder && g.phase === 'play') { const q = posOf(g, g.holder), s = views.potato && views.potato.cpus[g.holder]; const h = s || q; if (h) { bx = h.x; by = h.y - (q && q.bodyH ? q.bodyH : 34) - 16; } }
         if (bx != null) bombPx(ctx, bx, by, f, t);
+        // ¡Va a explotar! (los 3 últimos segundos): aro rojo que late y cuenta atrás grande encima.
+        if (g.phase === 'play' && g.holder && g.rm != null && g.rm <= 3) {
+          const q = posOf(g, g.holder), s2 = views.potato && views.potato.cpus[g.holder], h = s2 || q;
+          if (h) {
+            const k = 0.5 + 0.5 * Math.sin(t * 18);
+            ctx.save(); ctx.globalAlpha = 0.6 + 0.4 * k; ctx.strokeStyle = '#ff3a3a'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.ellipse(R(h.x), R(h.y), 26 + k * 6, (26 + k * 6) * 0.55, 0, 0, 6.2832); ctx.stroke(); ctx.restore();
+            label(ctx, String(Math.max(1, Math.ceil(g.rm))), bx, by - 22, k > 0.5 ? '#ff4a4a' : '#ffe14d', 26);
+          }
+        }
         // Los que han quedado fuera: una X roja encima.
         for (const id of g.out || []) {
           const s = views.potato && views.potato.cpus[id], q = s || posOf(g, id);
           if (!q) continue;
           label(ctx, '✕', q.x, q.y - 44, '#ff5f6d', 14);
         }
-        if (g.phase === 'ready' || g.phase === 'boom') label(ctx, G.T(g.phase === 'boom' ? '¡BUM!' : 'Preparados…'), z.cx, z.cy - z.r - 20, '#ffb06a', 16);
-        label(ctx, G.I18n.f('Quedan {x}', (g.alive || []).length), z.cx, z.cy + z.r + 2, '#ffe0b0', 11);
+        if (g.phase === 'ready' || g.phase === 'boom') label(ctx, G.T(g.phase === 'boom' ? '¡BUM!' : 'Preparados…'), z.cx, z.cy - z.r - 24, '#ffb06a', 16);
+        label(ctx, G.I18n.f('Quedan {x}', (g.alive || []).length), z.cx, z.cy - z.r - 4, '#ffe0b0', 11);   // (arriba: abajo tapaba el cartel)
       }
     }
     ctx.restore();
