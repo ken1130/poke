@@ -498,6 +498,7 @@ G.Dungeon = (() => {
   // ---------------- interiores ----------------
 
   // (2026-10-16: la tienda, más grande — con 3 jugadores se quedaba pequeña: 7×5 → 10×7)
+  const DOOR_HOLD = 0.8;
   const ROOMS = { shop: { rw: 10, rh: 7, theme: 'fighting' }, myst: { rw: 9, rh: 7, theme: 'ghost' } };
   const TSZ = () => G.Tiles.T * G.Sprites.PX;
   const counterY = () => room.cy - (room.rh - 2.6) * room.ts;
@@ -592,7 +593,7 @@ G.Dungeon = (() => {
     G.World.setArena({ tx: cfg.tx, ty: cfg.ty, room: true, rw: cfg.rw, rh: cfg.rh, r: Math.max(cfg.rw, cfg.rh), type: ROOMS[cfg.kind].theme });
     G.World.setBiome(G.Tiles.arenaBiome(ROOMS[cfg.kind].theme), true);
     const ps = G.Game.everyone();
-    ps.forEach((p, i) => { p.x = room.cx + (i - (ps.length - 1) / 2) * 36; p.y = room.cy + (room.rh - 2.6) * ts; p.safe = false; });
+    ps.forEach((p, i) => { p.x = room.cx + (i - (ps.length - 1) / 2) * 36; p.y = room.cy + (room.rh - 3.4) * ts; p.safe = false; });   // (2026-10-20: antes 2,6, pegado a la puerta)
     G.Camera.x = pl.x; G.Camera.y = pl.y;
     shopSkip = null;
     G.Game.flash(cfg.kind === 'shop' ? '#9fe0b0' : '#c9a6ff', 0.6);
@@ -679,10 +680,16 @@ G.Dungeon = (() => {
       roomFx('trap', room.cx, room.cy); send(['dg', 'room', 'trap', Math.round(room.cx), Math.round(room.cy)]);
     }
     // Salida: con la puerta abierta, cuando todos están en ella (o han pulsado «Salir»).
+    // (2026-10-20, el dueño: «al tocar una flecha me saca enseguida y la sala desaparece»: hay que
+    // quedarse DOOR_HOLD s en la puerta, y nada en el primer segundo; el botón «Salir» sigue siendo al momento.)
     if (!room.locked) {
       const [dx, dy] = doorP();
       const atDoor = p => G.U.dist2(p.x, p.y, dx, dy) < 44 * 44 || room.out.has(myKey(p));
-      if (live.every(atDoor)) { send(['dg', 'exit']); endRoom(); return; }
+      const all = live.every(atDoor), pushed = live.every(p => room.out.has(myKey(p)));
+      const was = room.doorT || 0;
+      room.doorT = all && room.t > 1.2 ? was + dt : 0;
+      if (room.doorT > 0 && was === 0 && !pushed) say('Quédate en la puerta para salir…', 1.2);
+      if (pushed || room.doorT >= DOOR_HOLD) { send(['dg', 'exit']); endRoom(); return; }
       if (G.Coop.active && live.some(atDoor) && Math.floor(room.t / 4) !== Math.floor((room.t - dt) / 4)) say('Esperando a que todos lleguen a la puerta…', 2);
     }
   }

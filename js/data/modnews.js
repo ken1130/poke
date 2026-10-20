@@ -18,6 +18,7 @@ G.MODNEWS = [
       { zh: '守護大壯：商品不再隨波數漲價，大壯強化與幫手也不會越買越貴（強化 200／220／200、幫手 260）', en: 'Guard Dazhuang: prices no longer rise with the waves, and Dazhuang upgrades and helpers no longer get pricier (upgrades 200/220/200, helper 260)' }
     ],
     fix: [
+      { zh: "商店和神秘房間：剛進去不小心按到方向鍵，不會再馬上被傳出去（房間也不會因此消失）。進去時站的位置離門遠一點，要在門口停一下才會離開（按「離開」按鈕還是立刻出去）", en: "Kecleon's shop and mystery rooms: tapping an arrow right after entering no longer throws you out (and the room is no longer lost). You now enter a bit further from the door, and to leave you must stay at it for a moment (or press “Leave”)." },
       { zh: "治療型小怪補頭目跟補小怪一樣是補最大血量的百分比，會讓阿爾宙斯 20 秒內從 60% 回滿；現在對頭目只補四分之一", en: "Healers healed bosses by the same percentage as anyone else, taking Arceus from 60% back to 100% in 20 s. Bosses now get a quarter of it." },
       { zh: "「自動選取」按鈕開啟時（綠色）和商店選中的分頁字很糊：深色字配深色陰影，已改掉", en: "The “Auto pick” button when on (green) and the selected shop tab looked blurry: dark text with a dark shadow." },
       { zh: '打完一局回到首頁時，左上角不再殘留上一局的血條、金幣、招式欄、本局挑戰', en: 'After a run, the home screen no longer shows the last run\'s HP bar, coins, move bar and run goals' }
