@@ -3,8 +3,11 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
-  { d: '2026-10-20', title: { zh: '守護大壯金錢分開、首頁不再殘留戰鬥畫面', en: 'Guard Dazhuang separate coins, clean home screen' },
+  { d: '2026-10-20', title: { zh: '阿爾宙斯變強、頭目依實力調整、守護大壯金錢分開', en: 'Tougher Arceus, bosses scale with your power, Guard Dazhuang separate coins' },
     chg: [
+      { zh: "迷宮之主阿爾宙斯變強：「審判」光圈更大、蓄力稍快，「連環天罰」3 波變 5 波；血量剩 66% 起會瞬移到玩家旁邊（地上會先出現落點）；暴怒時兩招一起放，並加入「十八石板的制裁」（18 種屬性光柱）；詛咒改成全地圖，暴怒時一次兩個。基礎血量不變，但至少要撐得住你們隊伍約 55 秒的輸出，很強的隊伍不會再 20 秒秒殺", en: "Arceus, Lord of the Labyrinth, is tougher: bigger, slightly faster Judgment, 5-wave Chain Punishment; from 66% it teleports next to a player (marked on the ground); enraged it uses both at once plus “Judgment of the 18 Plates” (light pillars of all 18 types); curses reach the whole map and, enraged, come in pairs. Base HP is unchanged, but it lasts at least ~55 s of your team’s damage, so very strong teams no longer melt it in 20 s." },
+      { zh: "頭目和菁英怪會看你們有多強：頭目至少撐你們約 20 秒輸出、菁英怪約 1.5 秒（輸出普通的隊伍不受影響）；15 分鐘後菁英怪變多（3% → 5%），10 分鐘後小怪攻擊稍微變痛（20 分鐘時約 +15%）", en: "Bosses and elites scale with how strong you are: bosses last at least ~20 s of your damage and elites ~1.5 s (no change for weaker teams). From minute 15 there are more elites (5%, was 3%) and from minute 10 enemies hit a bit harder (+15% around minute 20)." },
+      { zh: "燙手山芋：電腦拿到炸彈後不會再一直黏著剛傳給它的人（會去追別人，或在旁邊保持一點距離等），跑速降到跟一般小精靈差不多，而且 1 秒後就能傳回去（原本 1.5 秒）", en: "Hot Potato: a CPU holding the bomb no longer sticks to whoever just passed it (it goes for someone else or waits a step away), runs slower (like a normal Pokémon), and you can pass it back sooner (1 s, was 1.5)." },
       { zh: '選招式的地方都會標示物理／特殊：升級卡片、連結招式、練功房、強化商店的禁用清單；跟你的小精靈擅長的一樣時寫「★ 物理・擅長」並加金框', en: 'Every place where you pick moves shows Physical / Special: level-up cards, linking, the training room and the upgrade shop ban list; when it matches your monster it says "★ Physical · your best" with a gold outline' },
       { zh: '敵人也有防禦和特防了：用物理招打看敵人的防禦、用特殊招打看敵人的特防（例如大鋼蛇怕特殊招、胡地怕物理招），帶一物理一特殊比較吃香；整體平均跟以前一樣，練功房木樁不受影響', en: 'Enemies now have Defense and Sp. Def too: physical moves are reduced by their Defense, special moves by their Sp. Def (Steelix fears special moves, Alakazam physical ones), so mixing both pays off; on average nothing changes, and training dummies are unaffected' },
       { zh: '燙手山芋：場地變大，中間有 4 顆岩石（擋人、炸彈會反彈）和左右 2 個加速墊；丟炸彈會自動瞄準面前最近的人並追過去；最後 3 秒拿炸彈的人身上出現紅圈和大字倒數，每秒嗶一聲', en: 'Hot Potato: a bigger arena with 4 rocks (they block you and the bomb bounces off) and 2 speed pads; throws aim at the nearest player in front of you and curve toward them; in the last 3 s the holder gets a red ring, a big countdown and a beep each second' },
@@ -15,6 +18,8 @@ G.MODNEWS = [
       { zh: '守護大壯：商品不再隨波數漲價，大壯強化與幫手也不會越買越貴（強化 200／220／200、幫手 260）', en: 'Guard Dazhuang: prices no longer rise with the waves, and Dazhuang upgrades and helpers no longer get pricier (upgrades 200/220/200, helper 260)' }
     ],
     fix: [
+      { zh: "治療型小怪補頭目跟補小怪一樣是補最大血量的百分比，會讓阿爾宙斯 20 秒內從 60% 回滿；現在對頭目只補四分之一", en: "Healers healed bosses by the same percentage as anyone else, taking Arceus from 60% back to 100% in 20 s. Bosses now get a quarter of it." },
+      { zh: "「自動選取」按鈕開啟時（綠色）和商店選中的分頁字很糊：深色字配深色陰影，已改掉", en: "The “Auto pick” button when on (green) and the selected shop tab looked blurry: dark text with a dark shadow." },
       { zh: '打完一局回到首頁時，左上角不再殘留上一局的血條、金幣、招式欄、本局挑戰', en: 'After a run, the home screen no longer shows the last run\'s HP bar, coins, move bar and run goals' }
     ] },
   { d: '2026-10-19', title: { zh: '守護大壯、派對遊戲區、新招式與新神器', en: 'Guard Dazhuang, Party Plaza, new moves and artifacts' },

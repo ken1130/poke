@@ -32,6 +32,10 @@ G.Plaza = (() => {
   const CPU_DEX = [25, 133, 39, 52, 54, 143, 7, 175, 172, 197, 196, 470];
   const FUSE_MIN = 8, FUSE_MAX = 15;          // (el dueño, 2026-10-19: antes 5-10 s, muy corto)
   const THROW_SPEED = 380, THROW_T = 0.55;
+  // Patata (2026-10-20, el dueño: «se la paso a la CPU y se me pega, no hay forma de devolvérsela»):
+  // no se puede devolver al que te la acaba de pasar en PASS_BACK s (antes 1,5); las CPU corrían a 190/165
+  // (un Pokémon normal, ~105): ahora 135 con la bomba / 125 huyendo, ×su nivel.
+  const PASS_BACK = 1.0, CPU_CHASE = 135, CPU_FLEE = 125;
   // Pelotas (2026-10-19, «la pelota es un cuadrado y el tenis no parece tenis»): gravedad y botes de verdad.
   const GRAV = 620;                        // px/s² (la altura z es en píxeles de pantalla)
   const T_HIT_Z = 16, T_BOUNCE = 0.55;     // tenis: altura del golpe y lo que conserva al botar
@@ -680,7 +684,7 @@ G.Plaza = (() => {
       if (h) for (const [id, q] of alive) {
         if (id === g.holder) continue;
         if (now() - g.passT < 0.6) break;
-        if (id === g.lastFrom && now() - g.passT < 1.5) continue;
+        if (id === g.lastFrom && now() - g.passT < PASS_BACK) continue;
         if (G.U.dist2(q.x, q.y, h.x, h.y) < (radius(q) + radius(h) + 6) ** 2) { give(g, id, g.holder); break; }
       }
     }
@@ -717,13 +721,27 @@ G.Plaza = (() => {
         if (r < min) { const sp = 190 * dt, k = Math.min(sp, min - r) / r; c.x += (c.x - z.cx) * k; c.y += (c.y - z.cy) * k; c.ang = Math.atan2(c.y - z.cy, c.x - z.cx); c.mv = 1; } else c.mv = 0;
         continue;
       }
-      let tx = c.x, ty = c.y, sp = 165;
+      const lvK = CPU_LV[g.lv != null ? g.lv : 1].spd;
+      let tx = c.x, ty = c.y, sp = CPU_FLEE * lvK;
       if (g.phase === 'play' && g.holder === p.id) {
-        let best = null, bd = Infinity;
-        for (const id of g.alive) { if (id === p.id) continue; const q = posOf(g, id); if (!q) continue; const d = G.U.dist2(q.x, q.y, c.x, c.y); if (d < bd) { bd = d; best = q; } }
+        // A por el más cercano, pero no a quien se la acaba de pasar (si hay otro): antes se le pegaba.
+        const back = now() - g.passT < PASS_BACK + 1.5;
+        let best = null, bd = Infinity, bestId = null;
+        for (const pass of [true, false]) {
+          for (const id of g.alive) {
+            if (id === p.id || (pass && back && id === g.lastFrom)) continue;
+            const q = posOf(g, id); if (!q) continue;
+            const d = G.U.dist2(q.x, q.y, c.x, c.y); if (d < bd) { bd = d; best = q; bestId = id; }
+          }
+          if (best) break;
+        }
         if (best) {
-          tx = best.x; ty = best.y; sp = 190;
-          if (bd < 150 * 150 && Math.random() < dt * 1.1) throwBomb(p.id, Math.atan2(best.y - c.y, best.x - c.x));
+          tx = best.x; ty = best.y; sp = CPU_CHASE * lvK;
+          // Aún no se la puede devolver: espera a un paso, sin pegarse.
+          if (bestId === g.lastFrom && now() - g.passT < PASS_BACK) {
+            const d = Math.sqrt(bd) || 1;
+            tx = best.x + (c.x - best.x) / d * 70; ty = best.y + (c.y - best.y) / d * 70;
+          } else if (bd < 150 * 150 && Math.random() < dt * 1.1) throwBomb(p.id, Math.atan2(best.y - c.y, best.x - c.x));
         }
       } else if (g.phase === 'play' && g.bomb && g.bomb.ft <= 0 && G.U.dist2(g.bomb.x, g.bomb.y, c.x, c.y) < 90 * 90 && g.bomb.from !== p.id) {
         // La bomba en el suelo y cerca: que la coja otro… salvo que quede poca mecha para el que la tiró.

@@ -30,6 +30,31 @@ G.Spawner = (() => {
   let noEase = false;           // para pruebas: sin el comienzo suave
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
+  /*
+   * Medidor de daño del equipo (2026-10-20, «los veteranos lo tumban todo»): lo que han recibido los
+   * enemigos en los últimos 60 s (enemy.js hurt → noteDmg; en grupo sólo el anfitrión, que recibe
+   * los golpes de todos). Con él, los jefes, Arceus y los élite tienen una vida mínima de «N
+   * segundos de tu daño»: al que pega poco no le cambia nada; al que lo arrasa todo, sí.
+   * Es daño a todo (en área cuenta varias veces), así que contra un solo jefe se tarda más.
+   */
+  const DPS_WIN = 60, BOSS_DPS_S = 20, ELITE_DPS_S = 1.5, DPS_CAP = 4;
+  let dmgBuck = [], dmgNow = 0, dmgClock = 0;
+  function noteDmg(d) { if (d > 0 && isFinite(d)) dmgNow += d; }
+  function teamDps() {
+    const n = dmgBuck.length;
+    return n ? dmgBuck.reduce((s, v) => s + v, 0) / Math.max(20, n) : 0;   // (al empezar, como mínimo /20 s)
+  }
+  function meterTick(dt) {
+    if ((dmgClock += dt) < 1) return;
+    dmgClock -= 1; dmgBuck.push(dmgNow); dmgNow = 0;
+    if (dmgBuck.length > DPS_WIN) dmgBuck.shift();
+  }
+  /** Vida mínima por el medidor: `sec` segundos del daño del equipo, como mucho DPS_CAP× la que ya tenía. */
+  function dpsFloor(e, sec) {
+    if (G.Modes.run === 'stage' || G.Modes.on('boss')) return;
+    const want = Math.round(Math.min(teamDps() * sec, e.maxHp * DPS_CAP));
+    if (e.maxHp < want) e.maxHp = e.hp = want;
+  }
 
   // Modo jefes (ajuste bossMode): sólo salen jefes, uno cada BOSS_EVERY s,
   // con un tope a la vez que sube cada 3 min (1 -> 4).
@@ -39,6 +64,7 @@ G.Spawner = (() => {
   function reset() {
     wasCalm = false;
     bossModeT = BOSS_EVERY - 3;
+    dmgBuck = []; dmgNow = 0; dmgClock = 0;
     acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0; roamAt = ROAM_FROM;
     G.Enemies.rollRun();
     G.Sprites.preload(G.Enemies.upcomingDex(0, 80));
@@ -123,7 +149,7 @@ G.Spawner = (() => {
     if (G.Events.golden) e.makeGolden();
     G.Floors.scaleEnemy(e);
     // Élite (2026-10-15): desde el minuto 2, un 3 % sale con un afijo (enemy.js makeElite).
-    if (t >= 120 && Math.random() < 0.03 * (G.Modes.rule('eliteK') || 1) * G.Floors.eliteMul && e.behavior !== 'thief') e.makeElite(G.Enemy.rollAffixes(t));    // (2026-10-16: a veces dos afijos)
+    if (t >= 120 && Math.random() < (t >= 900 ? 0.05 : 0.03) * (G.Modes.rule('eliteK') || 1) * G.Floors.eliteMul && e.behavior !== 'thief') { e.makeElite(G.Enemy.rollAffixes(t)); dpsFloor(e, ELITE_DPS_S); }    // (2026-10-16: a veces dos afijos; 2026-10-20: 5 % desde el min 15)
     G.EnemyMgr.add(e);
     if (shiny && !shinyMode) {
       say('¡Un ' + e.name + ' shiny anda cerca!', 3.4);
@@ -142,6 +168,7 @@ G.Spawner = (() => {
       const floor = Math.round(G.Enemies.bossFloor(t) * G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1));
       if (e.maxHp < floor) e.maxHp = e.hp = floor;
     }
+    dpsFloor(e, BOSS_DPS_S);
     if (rollShiny(b.dex)) e.makeShiny(!G.Modes.on('shiny'));
     if (tweak) tweak(e);
     G.Floors.scaleEnemy(e);
@@ -156,6 +183,7 @@ G.Spawner = (() => {
   /** @param who  el jugador o la lista de jugadores (cooperativo) */
   function update(dt, who, tReal) {
     players = Array.isArray(who) ? who : [who];
+    meterTick(dt);
     // Reloj de la dificultad (2026-10-16): con las escaleras del piso ya fuera, los enemigos
     // dejan de endurecerse (floors.js diffTime). El de los jefes, los avisos y la calma: el real.
     const t = G.Floors.diffTime(tReal);
@@ -285,6 +313,6 @@ G.Spawner = (() => {
   /** Uno normal en (x, y) (casa de monstruos, dungeon.js). */
   function spawnAt(x, y, t) { return spawnOne(null, t, null, [x, y]); }
 
-  return { reset, update, ahead, burst, spawnBossNow, spawnAt, tickBanner, banner, say, rate, SHINY_RATE, CAP,
+  return { noteDmg, teamDps, dpsFloor, reset, update, ahead, burst, spawnBossNow, spawnAt, tickBanner, banner, say, rate, SHINY_RATE, CAP,
            debugForceShiny(n = 1) { forceShiny = n; }, debugNoEase(v = true) { noEase = v; } };
 })();

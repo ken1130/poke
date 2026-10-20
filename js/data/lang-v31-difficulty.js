@@ -9,7 +9,9 @@ G.I18n.add({
   '¡Maldición de Arceus: menos ataque!': '阿爾宙斯的詛咒：攻擊下降！',
   '¡Maldición de Arceus: no puedes curarte!': '阿爾宙斯的詛咒：無法回復！',
   'Escudo Divino {x}%': '神聖護盾 {x}%',
-  '¡Invulnerable!': '無敵中！'
+  '¡Invulnerable!': '無敵中！',
+  '¡Sentencia y Castigo a la vez! ¡Sal y no pares!': '審判與連環天罰同時降臨！快離開而且不要停！',
+  '¡Juicio de las 18 tablas! Esquiva los pilares': '十八石板的制裁！閃開光柱！'
 }, 'zh');
 G.I18n.add({
   'Inmune': 'Immune',
@@ -21,5 +23,7 @@ G.I18n.add({
   '¡Maldición de Arceus: menos ataque!': 'Arceus’s curse: less attack!',
   '¡Maldición de Arceus: no puedes curarte!': 'Arceus’s curse: no healing!',
   'Escudo Divino {x}%': 'Divine Shield {x}%',
-  '¡Invulnerable!': 'Invulnerable!'
+  '¡Invulnerable!': 'Invulnerable!',
+  '¡Sentencia y Castigo a la vez! ¡Sal y no pares!': 'Judgment and Chain Punishment at once! Get out and keep moving!',
+  '¡Juicio de las 18 tablas! Esquiva los pilares': 'Judgment of the 18 Plates! Dodge the pillars!'
 });

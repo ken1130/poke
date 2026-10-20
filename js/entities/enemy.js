@@ -195,6 +195,8 @@
        * los golpes y el Rompescudos no le afecta.
        */
       if (this.lordInv) { if (Math.random() < 0.3) G.FX.dmgText(this.x, this.y - this.bodyH - 4, G.T('Inmune'), '#fff3c0'); this.flash = 0.03; return; }
+      // Medidor de daño del equipo (spawner.js): sólo lo que de verdad le quita (sin el sobrante al rematar).
+      if (!this.dummy) G.Spawner.noteDmg(Math.min(d, this.hp + (this.lordShield || 0) + (this.shield || 0)));
       if (this.lordShield > 0) {
         const a = Math.min(this.lordShield, d);
         this.lordShield -= a;
@@ -900,7 +902,9 @@
       let n = 0;
       for (const e of G.EnemyMgr.queryCircle(this.x, this.y, 150)) {
         if (e.dead || e.hp >= e.maxHp) continue;
-        e.hp = Math.min(e.maxHp, e.hp + e.maxHp * k);
+        // A los jefes, la cuarta parte (2026-10-20: con su vida enorme, un curandero devolvía a Arceus
+        // del 60 % al 100 % en 20 s).
+        e.hp = Math.min(e.maxHp, e.hp + e.maxHp * k * (e.boss ? 0.25 : 1));
         G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#7dffb0', 5, 60);
         n++;
       }

@@ -211,7 +211,9 @@ G.Enemies = (() => {
     const hpT = t <= 1200 ? 1 + t / 110 : 1 + 1200 / 110 + (t - 1200) * 0.85 / 110;
     // (2026-10-15: daño +1 cada 540 s, antes 420; velocidad hasta +15 % en 6 min, antes +35 %:
     // a los 6 min los rápidos ya corrían más que un Pokémon lento y no había forma de escapar.)
-    return { hp: hpT * k, dmg: (1 + t / 540) * Math.pow(k, 0.7), spd: 1 + Math.min(0.15, t / 2400) };
+    // (2026-10-20: desde el minuto 10 el daño sube algo más: otro +1 cada 1200 s; a los 20 min ×3,7 en
+    // vez de ×3,2 (+15 %). Los que llegaban con todo mejorado ya no notaban a los normales.)
+    return { hp: hpT * k, dmg: (1 + t / 540 + Math.max(0, t - 600) / 1200) * Math.pow(k, 0.7), spd: 1 + Math.min(0.15, t / 2400) };
   }
 
   /*

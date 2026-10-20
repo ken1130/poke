@@ -144,6 +144,7 @@ G.Floors = (() => {
     const e = G.Spawner.spawnBossNow(near, t, def, e => {
       const minHp = Math.round(G.Enemies.bossFloor(t) * (lord ? LORD.hpFloor : 1.6) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1));
       if (e.maxHp < minHp) e.maxHp = e.hp = minHp;
+      if (lord) G.Spawner.dpsFloor(e, LORD.dpsSec);       // y que aguante LORD.dpsSec s de vuestro daño (spawner.js)
       e.dmg *= lord ? 1.3 : 1.15;
       e.floorBoss = floor + 1; e.lord = lord;
     });
@@ -151,7 +152,7 @@ G.Floors = (() => {
     bossId = e.id; bossState = 'alive'; lordPh = 0;
     // Escudo Divino (enemy.js hurt): sobre la vida ya definitiva (después de la escala del piso).
     if (lord) e.lordShield = Math.round(e.maxHp * LORD.shield0);
-    if (lord) { lordUltT = LORD.ultFirst; lordDebT = LORD.debFirst; lordCast = null; lordUltN = 0; lordDebN = 0; lstT = 0; }
+    if (lord) { lordUltT = LORD.ultFirst; lordDebT = LORD.debFirst; lordCast = null; lordUltN = 0; lordDebN = 0; lstT = 0; lordTpT = LORD.tpEvery; lordTp = null; }
     if (G.Coop.active) G.Coop.broadcast(['fbs', e.id, floor, lord ? 1 : 0]);
     announceBoss(e.id, lord);
   }
@@ -218,12 +219,24 @@ G.Floors = (() => {
    * Lo decide el anfitrión: los círculos van por G.Hazards ('hz'), las maldiciones con 'ldb' y el
    * escudo/la invulnerabilidad (para dibujarlos) con 'lst'. Números en LORD, para ajustarlos.
    */
+  /*
+   * V3.3 (2026-10-20, «mucha gente ya lo pasa», pero «no lo hagas demasiado difícil»): la vida base
+   * igual; Sentencia más grande (260→340) y algo más rápida (2,2→1,9 s); Castigo en cadena 3→5 tandas; en furia
+   * (33 %) las dos a la vez y además «Juicio de las 18 tablas» (18 pilares de luz, uno de cada tipo);
+   * desde el 66 % se teletransporta junto a un jugador (aviso de 0,7 s donde aparece); maldiciones a
+   * todo el mapa, 7 s, cada 9 s, y en furia dos a la vez. Vida mínima: 55 s del daño del equipo
+   * (spawner.js dpsFloor, como mucho ×4): al que lo arrasa todo ya no se le cae en 20 s.
+   */
   const LORD = { hpMul: 1.5, hpFloor: 3.0, shield0: 0.25, shieldPh: 0.15,
-                 ultFirst: 10, ultEvery: 16, ultEveryRage: 12, chargeT: 2.2, judgeR: 260, judgeK: 1.8,
-                 comboWaves: 3, comboGap: 0.6, comboDelay: 1.0, comboR: 95, comboK: 1.1,
-                 debFirst: 6, debEvery: 11, debDur: 6, debR: 700 };
+                 ultFirst: 8, ultEvery: 14, ultEveryRage: 10, chargeT: 1.9, judgeR: 340, judgeK: 1.8,
+                 comboWaves: 5, comboGap: 0.55, comboDelay: 0.95, comboR: 95, comboK: 1.1,
+                 plWaves: 3, plGap: 0.7, plDelay: 1.2, plR: 72, plK: 1.0,
+                 tpEvery: 9, tpWarn: 0.7, tpDist: 120, tpR: 90, tpK: 0.9,
+                 debFirst: 6, debEvery: 9, debDur: 7, debR: 1e5, dpsSec: 55 };
+  const PL_TYPES = ['normal', 'fire', 'water', 'grass', 'electric', 'ice', 'fighting', 'poison', 'ground',
+                    'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
   const CURSES = ['slow', 'weak', 'noheal'];
-  let lordUltT = 0, lordDebT = 0, lordCast = null, lordUltN = 0, lordDebN = 0, lstT = 0, lordView = { id: 0, sh: 0, inv: 0 };
+  let lordTpT = 0, lordTp = null, lordUltT = 0, lordDebT = 0, lordCast = null, lordUltN = 0, lordDebN = 0, lstT = 0, lordView = { id: 0, sh: 0, inv: 0 };
   function shieldUp(e) {
     e.lordShield = (e.lordShield || 0) + Math.round(e.maxHp * LORD.shieldPh);
     G.FX.ring(e.x, e.y, 10, 150, '#ffe9a0', 0.6, 5);
@@ -241,7 +254,8 @@ G.Floors = (() => {
   function lordTick(e, dt, live) {
     if (lordCast) castStep(e, dt, live);
     else if ((lordUltT -= dt) <= 0) startCast(e, live);
-    if (!lordCast && (lordDebT -= dt) <= 0) { lordDebT = LORD.debEvery; curse(e); }
+    if (!lordCast && (lordDebT -= dt) <= 0) { lordDebT = LORD.debEvery; curse(e); if (lordPh >= 2) curse(e); }
+    teleStep(e, dt, live);
     // Escudo e invulnerabilidad para los demás (sólo si cambian, como mucho 4 veces por segundo).
     const sh = Math.round(Math.max(0, e.lordShield || 0) / e.maxHp * 100), inv = e.lordInv ? 1 : 0;
     lordView = { id: e.id, sh: sh / 100, inv };
@@ -250,26 +264,70 @@ G.Floors = (() => {
       if (G.Coop.active) G.Coop.broadcast(['lst', e.id, sh, inv]);
     }
   }
+  // Furia: «las dos a la vez» y el Juicio de las 18 tablas, alternos. Antes: Sentencia y Castigo, alternos.
   function startCast(e, live) {
-    const kind = lordUltN % 2 === 0 ? 'judge' : 'combo';
-    const dur = kind === 'judge' ? LORD.chargeT : LORD.comboGap * (LORD.comboWaves - 1) + LORD.comboDelay + 0.2;
+    const kind = lordPh >= 2 ? (lordUltN % 2 === 0 ? 'both' : 'pillars') : lordUltN % 2 === 0 ? 'judge' : 'combo';
+    const comboDur = LORD.comboGap * (LORD.comboWaves - 1) + LORD.comboDelay + 0.2;
+    const dur = kind === 'judge' ? LORD.chargeT : kind === 'combo' ? comboDur : kind === 'both' ? Math.max(LORD.chargeT, comboDur)
+              : LORD.plGap * (LORD.plWaves - 1) + LORD.plDelay + 0.2;
     lordCast = { kind, t: 0, dur, wave: 0 };
+    lordTp = null;
     e.lordInv = true; e.rootT = Math.max(e.rootT || 0, dur);
-    if (kind === 'judge') {
+    const say = m => { G.Spawner.say(G.T(m), 2.6); if (G.Coop.active) G.Coop.say(G.T(m), 2.6); };
+    if (kind === 'judge' || kind === 'both')
       G.Hazards.add({ kind: 'zone', x: e.x, y: e.y, r: LORD.judgeR, delay: LORD.chargeT, dmg: e.dmg * LORD.judgeK, type: 'normal', color: '#ffe9a0' });
-      G.Spawner.say(G.T('¡Arceus carga la Sentencia! ¡Sal del círculo!'), 2.6);
-      if (G.Coop.active) G.Coop.say(G.T('¡Arceus carga la Sentencia! ¡Sal del círculo!'), 2.6);
-    } else {
-      G.Spawner.say(G.T('¡Castigo en cadena! No te quedes quieto'), 2.6);
-      if (G.Coop.active) G.Coop.say(G.T('¡Castigo en cadena! No te quedes quieto'), 2.6);
-    }
+    if (kind === 'judge') say('¡Arceus carga la Sentencia! ¡Sal del círculo!');
+    else if (kind === 'combo') say('¡Castigo en cadena! No te quedes quieto');
+    else if (kind === 'both') say('¡Sentencia y Castigo a la vez! ¡Sal y no pares!');
+    else say('¡Juicio de las 18 tablas! Esquiva los pilares');
     G.Audio.sfx('surge');
+  }
+  /** Juicio: 6 pilares por tanda (3 tandas = los 18 tipos): 2 sobre cada jugador y el resto alrededor. */
+  function pillarWave(e, live, w) {
+    const types = PL_TYPES.slice(w * 6, w * 6 + 6);
+    types.forEach((ty, i) => {
+      const p = live[(i + w) % live.length];
+      const near = i < 2 * Math.min(live.length, 3);
+      const a = Math.random() * 6.2832, d = near ? Math.random() * 40 : 90 + Math.random() * 160;
+      const x = (near ? p.x : e.x * 0.3 + p.x * 0.7) + Math.cos(a) * d, y = (near ? p.y : e.y * 0.3 + p.y * 0.7) + Math.sin(a) * d * 0.8;
+      G.Hazards.add({ kind: 'zone', x, y, r: LORD.plR, delay: LORD.plDelay, dmg: e.dmg * LORD.plK, type: ty, color: G.U.TYPE_COLOR[ty] });
+    });
+  }
+  /*
+   * Teletransporte (desde el 66 %, sin estar cargando): marca el sitio junto a un jugador, a los
+   * 0,7 s aparece allí y golpea en un círculo. La posición nueva la reparte la sincronía de enemigos.
+   */
+  function teleStep(e, dt, live) {
+    if (lordPh < 1 || lordCast) return;
+    if (lordTp) {
+      if ((lordTp.t -= dt) > 0) return;
+      G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#fff6d0', 24, 260);
+      e.x = lordTp.x; e.y = lordTp.y; lordTp = null;
+      G.FX.ring(e.x, e.y, 10, LORD.tpR + 30, '#fff6d0', 0.45, 5);
+      G.Audio.sfx('rift');
+      return;
+    }
+    if ((lordTpT -= dt) > 0) return;
+    lordTpT = LORD.tpEvery;
+    const p = G.U.pick(live);
+    for (let k = 0; k < 16; k++) {
+      const dd = LORD.tpDist * (k < 8 ? 1 : 0.5 + Math.random() * 0.5);     // (en un pasillo, más cerca)
+      const a = Math.random() * 6.2832, x = p.x + Math.cos(a) * dd, y = p.y + Math.sin(a) * dd;
+      if (G.World.isFree && !G.World.isFree(x, y, Math.max(12, e.r || 16))) continue;
+      lordTp = { x, y, t: LORD.tpWarn };
+      G.Hazards.add({ kind: 'zone', x, y, r: LORD.tpR, delay: LORD.tpWarn, dmg: e.dmg * LORD.tpK, type: 'normal', color: '#fff6d0' });
+      return;
+    }
+    lordTpT = 1;                                                // no había sitio: otra vez dentro de 1 s
   }
   function castStep(e, dt, live) {
     const c = lordCast;
     c.t += dt;
     e.lordInv = true;
-    if (c.kind === 'combo') {
+    if (c.kind === 'pillars') {
+      while (c.wave < LORD.plWaves && c.t >= c.wave * LORD.plGap) pillarWave(e, live, c.wave++);
+    }
+    if (c.kind === 'combo' || c.kind === 'both') {
       while (c.wave < LORD.comboWaves && c.t >= c.wave * LORD.comboGap) {
         for (const p of live) G.Hazards.add({ kind: 'zone', x: p.x, y: p.y, r: LORD.comboR, delay: LORD.comboDelay, dmg: e.dmg * LORD.comboK, type: 'normal', color: '#ffd23f' });
         c.wave++;
@@ -279,7 +337,7 @@ G.Floors = (() => {
     e.lordInv = false;
     lordCast = null; lordUltN++;
     lordUltT = lordPh >= 2 ? LORD.ultEveryRage : LORD.ultEvery;
-    G.FX.ring(e.x, e.y, 10, c.kind === 'judge' ? LORD.judgeR : 120, '#fff6d0', 0.4, 5);
+    G.FX.ring(e.x, e.y, 10, c.kind === 'judge' || c.kind === 'both' ? LORD.judgeR : 120, '#fff6d0', 0.4, 5);
   }
   /** Una maldición a los que estén cerca (anfitrión: la suya ya; a los demás, 'ldb'). */
   function curse(e) {
@@ -294,6 +352,9 @@ G.Floors = (() => {
     if (!pl || pl.dead || G.U.dist2(pl.x, pl.y, x, y) > r * r) return;
     const k = { slow: 'lordSlowT', weak: 'lordWeakT', noheal: 'lordNoHealT' }[kind];
     if (!k) return;
+    // Como mucho dos a la vez (con tres no había quien jugara).
+    const on = ['lordSlowT', 'lordWeakT', 'lordNoHealT'].filter(c => c !== k && pl[c] > 0).length;
+    if (on >= 2 && !(pl[k] > 0)) return;
     pl[k] = Math.max(pl[k] || 0, dur);
     G.FX.ring(pl.x, pl.y, 6, 70, '#b07cff', 0.5, 4);
     G.FX.burst(pl.x, pl.y - pl.bodyH * 0.6, '#d9b8ff', 12, 120);
