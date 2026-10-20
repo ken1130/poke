@@ -631,8 +631,8 @@
       desc: 'EXCLUSIVO de Didi: un puñetazo al enemigo más cercano que estalla en espuma y moja a los de alrededor.',
       cd: 0.7, dmg: 36, radius: 160 },
     { id: 'scaredy-burst', name: 'Pelos de Punta', type: 'normal', kind: 'scare', only: 10004,
-      desc: 'EXCLUSIVO de Héroe: se asusta tanto que se le eriza todo y aparta a los que tiene cerca. Cuantos más enemigos, más daño.',
-      cd: 1.4, dmg: 28, radius: 102 },
+      desc: 'EXCLUSIVO de Héroe: cuantos más enemigos tiene cerca, más se asusta (barra de miedo). Mientras, ondas pequeñas a su alrededor; con la barra llena, un GRITO enorme que pega mucho, deja a los enemigos paralizados de miedo y le hace invulnerable un momento.',
+      cd: 1.2, dmg: 30, radius: 141 },
     { id: 'turbo-dash', name: 'Turbo Fantasma', type: 'ghost', kind: 'afterimage', only: 10005,
       desc: 'EXCLUSIVO de la Turbo Abuela: va tan rápida que deja sombras de sí misma que dañan a quien las toca (y a todo lo que hay entre una y otra). Parada, suelta ondas fantasma. Si nadie la toca, va y vuelve hasta un enemigo cercano y le deja una sombra pegada (más floja). Más velocidad.',
       cd: 0.3, dmg: 14, radius: 51 },
@@ -879,14 +879,18 @@
       { dmg: 110, sdmg: 34, sr: 3, r: 6, n: 3 },
       { dmg: 140, sdmg: 52, sr: 4.2, r: 7, n: 3, knock: 120, slow: 0.4, cd: 0.55 }
     ],
-    // Héroe: dmg base, per (daño extra por enemigo cerca), cap (hasta cuántos cuenta), r (casillas), knock;
-    // evo: root (inmoviliza s a los normales) e inv (s invulnerable)
-    // (2026-10-20: más base y algo menos por enemigo: contra uno solo era el más flojo; en grupo, igual)
+    // Héroe (rediseño 2026-10-20, el dueño: «Pelos de Punta es malo»; antes: onda de 3 casillas que empujaba
+    // tan lejos que la siguiente ya no llegaba a nadie). Ahora: «miedo» que se llena (fb por segundo, +fe por
+    // cada enemigo a fr casillas, como mucho fcap) y, mientras, cada cd una onda pequeña: dmg + per×enemigos
+    // (hasta cap) en r casillas, que apenas empuja (knock). Lleno: GRITO en br casillas, ×bk de esa onda, deja
+    // a los normales parados `stun` s (a los jefes, frenados) y a ti invulnerable `inv` s. Evo: two (2.º grito ×two).
     'scaredy-burst': [
-      { dmg: 38, per: 4, cap: 12, r: 3.2, knock: 140, cd: 1.4 }, { dmg: 52, per: 5, cap: 12, r: 3.4, knock: 160, cd: 1.3 },
-      { dmg: 64, per: 6, cap: 14, r: 3.6, knock: 170, cd: 1.2 }, { dmg: 80, per: 6, cap: 14, r: 3.8, knock: 180, cd: 1.1 },
-      { dmg: 100, per: 7, cap: 16, r: 4.2, knock: 190, cd: 1.0 },
-      { dmg: 130, per: 5, cap: 18, r: 4.6, knock: 230, root: 0.7, inv: 0.5, cd: 0.8 }
+      { dmg: 40, per: 1, cap: 10, r: 4.4, knock: 30, cd: 1.2,  fb: 0.12, fe: 0.02, fr: 7, fcap: 10, br: 8,   bk: 3,   stun: 0.7, inv: 0.5 },
+      { dmg: 52, per: 1, cap: 10, r: 4.6, knock: 30, cd: 1.15, fb: 0.12, fe: 0.02, fr: 7, fcap: 10, br: 8,   bk: 3,   stun: 0.8, inv: 0.5 },
+      { dmg: 64, per: 1, cap: 10, r: 4.8, knock: 30, cd: 1.1,  fb: 0.12, fe: 0.02, fr: 7, fcap: 10, br: 8.5, bk: 3.5, stun: 0.8, inv: 0.55 },
+      { dmg: 76, per: 1, cap: 10, r: 5,   knock: 30, cd: 1.05, fb: 0.12, fe: 0.02, fr: 7, fcap: 10, br: 8.5, bk: 3.5, stun: 0.9, inv: 0.55 },
+      { dmg: 100, per: 1, cap: 10, r: 5,  knock: 30, cd: 1.0,  fb: 0.12, fe: 0.015, fr: 7, fcap: 10, br: 9,  bk: 3, stun: 1.0, inv: 0.6 },
+      { dmg: 150, per: 1, cap: 10, r: 5.6, knock: 40, cd: 0.85, fb: 0.15, fe: 0.015, fr: 8, fcap: 10, br: 10, bk: 2.2,  stun: 1.0, inv: 0.7, two: 0.5 }
     ],
     // Turbo Abuela: dmg (sombra cada 0,3 s, y el tramo recorrido de una sombra a la siguiente), life (s), ir (casillas),
     // haste (velocidad extra); quieta, una onda alrededor (×0,6); evo: boom (cada sombra estalla al desaparecer)

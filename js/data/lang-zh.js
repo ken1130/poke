@@ -2775,6 +2775,7 @@ G.I18n.add({
   '5 zarpazos que hacen sangrar (14/s); si lo derriba, salta hasta a 4 enemigos': '抓 5 下並造成流血（每秒 14）；抓倒的話最多連跳 4 個敵人',
   'Puño Espuma': '泡泡拳',
   'EXCLUSIVO de Didi: un puñetazo al enemigo más cercano que estalla en espuma y moja a los de alrededor.': '迪迪專屬：一拳打向最近的敵人，炸出泡泡，波及周圍的敵人。',
+  'EXCLUSIVO de Héroe: cuantos más enemigos tiene cerca, más se asusta (barra de miedo). Mientras, ondas pequeñas a su alrededor; con la barra llena, un GRITO enorme que pega mucho, deja a los enemigos paralizados de miedo y le hace invulnerable un momento.': '英雄專屬：身邊敵人越多越害怕（頭上的恐懼條漲越快），平常會放小震波；恐懼條滿了就大叫爆發，大範圍高傷害、把敵人嚇呆，自己短暫無敵。',
   'Pelos de Punta': '嚇到炸毛',
   'EXCLUSIVO de Héroe: se asusta tanto que se le eriza todo y aparta a los que tiene cerca. Cuantos más enemigos, más daño.': '英雄專屬：被嚇到全身炸毛，把身邊的敵人震開。周圍敵人越多，傷害越高。',
   'Turbo Fantasma': '幽靈超高速',

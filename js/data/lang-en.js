@@ -1775,6 +1775,7 @@ G.I18n.add({
   '5 zarpazos que hacen sangrar (14/s); si lo derriba, salta hasta a 4 enemigos': '5 scratches that cause bleeding (14/s); if it knocks one out, it jumps up to 4 enemies',
   'Puño Espuma': 'Foam Punch',
   'EXCLUSIVO de Didi: un puñetazo al enemigo más cercano que estalla en espuma y moja a los de alrededor.': 'Didi only: a punch at the nearest enemy that bursts into foam and splashes those around it.',
+  'EXCLUSIVO de Héroe: cuantos más enemigos tiene cerca, más se asusta (barra de miedo). Mientras, ondas pequeñas a su alrededor; con la barra llena, un GRITO enorme que pega mucho, deja a los enemigos paralizados de miedo y le hace invulnerable un momento.': 'Hero only: the more enemies nearby, the more scared he gets (fear bar). Meanwhile, small shockwaves around him; when the bar is full, a huge SCREAM that hits hard, freezes enemies in fear and makes him briefly invulnerable.',
   'Pelos de Punta': 'Hair-Raiser',
   'EXCLUSIVO de Héroe: se asusta tanto que se le eriza todo y aparta a los que tiene cerca. Cuantos más enemigos, más daño.': 'Hero only: gets so scared his fur stands on end and knocks back everything nearby. The more enemies, the more damage.',
   'Turbo Fantasma': 'Ghost Turbo',

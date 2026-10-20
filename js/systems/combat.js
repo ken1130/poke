@@ -1306,21 +1306,45 @@ G.Combat = (() => {
     }
   }
 
-  /** Héroe · Pelos de Punta: onda alrededor; más daño cuantos más enemigos tenga cerca. */
+  /**
+   * Héroe · Pelos de Punta (rediseño 2026-10-20): barra de miedo (pl.fear, 0-1) que se llena más deprisa
+   * cuantos más enemigos tenga cerca; mientras, una onda pequeña cada cd. Llena: un GRITO grande
+   * (fearShout). Números y su explicación: moves.js 'scaredy-burst'.
+   */
   function scare(pl, m) {
-    const row = G.Moves.stat(m), R = row.r * TILE;
+    const row = G.Moves.stat(m), R = row.r * TILE, t = G.Game.st.time;
+    const el = Math.min(2, Math.max(0, t - (pl._fearAt == null ? t : pl._fearAt))); pl._fearAt = t;
+    const around = enemiesIn(pl.x, pl.y, row.fr * TILE).filter(e => !e.dead).length;
+    pl.fear = Math.min(1, (pl.fear || 0) + el * (row.fb + row.fe * Math.min(row.fcap, around)));
+    if (pl.fear >= 1 && enemiesIn(pl.x, pl.y, row.br * TILE).some(e => !e.dead)) {
+      pl.fear = 0;
+      fearShout(pl, m, row, 1);
+      if (row.two) fields.push({ kind: 'shout', owner: pl, ghost, m, row, t: 0, life: 0.6, at: 0.35 });
+      return;
+    }
     const near = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead);
     if (!near.length) return;
     const dmg = (row.dmg + row.per * Math.min(row.cap, near.length)) * pl.atk;
-    // Pelos de punta, el «¡¡!!» del susto y la onda que aparta (dibujo: vfx-exclusive.js).
+    // Pelos de punta, el «¡¡!!» del susto y la onda (dibujo: vfx-exclusive.js).
     G.ExVFX.scare(pl, R, !!m.evolved);
     if (ghost) return;
+    for (const e of near) hit(pl, e, dmg, G.U.TYPE_COLOR.normal, e.x - pl.x, e.y - pl.y, row.knock, m);
+    G.Camera.kick(0.06);
+  }
+  /** El grito con la barra llena (k: 1 el primero; el 2.º del evolucionado, row.two). */
+  function fearShout(pl, m, row, k) {
+    const R = row.br * TILE;
+    const near = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead);
+    G.ExVFX.scareShout(pl, R, !!m.evolved, k < 1);
+    if (G.Camera.sees(pl.x, pl.y, 40)) { G.Audio.sfx('boss'); G.Camera.kick(k < 1 ? 0.3 : 0.55); }
+    if (ghost) return;
+    const dmg = (row.dmg + row.per * Math.min(row.cap, near.length)) * row.bk * k * pl.atk;
     for (const e of near) {
-      hit(pl, e, dmg, G.U.TYPE_COLOR.normal, e.x - pl.x, e.y - pl.y, row.knock, m);
-      if (row.root && !e.dead && !e.boss && !isFoe(e)) e.applyRoot(row.root);
+      hit(pl, e, dmg, G.U.TYPE_COLOR.normal, e.x - pl.x, e.y - pl.y, 120, m);
+      if (e.dead || isFoe(e)) continue;
+      if (e.boss) e.applySlow(0.5, row.stun * 2); else e.applyRoot(row.stun);
     }
-    if (row.inv) pl.invuln = Math.max(pl.invuln || 0, row.inv);
-    G.Camera.kick(0.08);
+    if (k >= 1) pl.invuln = Math.max(pl.invuln || 0, row.inv);
   }
 
   /**
@@ -1886,6 +1910,9 @@ G.Combat = (() => {
         if (!tossStep(f)) fields.splice(i, 1);
       } else if (f.kind === 'frost') {
         if (!frostStep(f)) fields.splice(i, 1);
+      } else if (f.kind === 'shout') {
+        // 2.º grito del Héroe evolucionado (scare / fearShout).
+        if (f.t >= f.at) { const g0 = ghost; ghost = !!f.ghost; try { fearShout(f.owner, f.m, f.row, f.row.two); } finally { ghost = g0; } fields.splice(i, 1); }
       } else if (f.kind === 'shade') {
         shadeStep(f, dt);
         if (f.t >= f.life - dt) shadeEnd(f);

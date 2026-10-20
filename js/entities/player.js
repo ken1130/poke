@@ -794,6 +794,16 @@ G.Player = class Player {
       ctx.restore();
       an.draw(ctx, this.x, this.y, { flash: true });
     } else this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0 || starFlash, softFlash: true, alpha, color: starFlash ? `hsl(${hue},100%,70%)` : '#ffcb3d' });
+    // Barra de miedo del Héroe (Pelos de Punta, combat.js scare): píxeles, de amarillo a rojo; llena, parpadea.
+    // Se dibuja tras el sprite, así que va encima de su sombra.
+    if (this.fear > 0 && !this.dead && this.moves && this.moves.some(m => m.id === 'scaredy-burst')) {
+      // (bajo los pies: encima de la cabeza lo tapaban los pelos de punta y el «¡¡!!»)
+      const W = 36, x0 = Math.round(this.x - W / 2), y0 = Math.round(this.y + 10), f = Math.min(1, this.fear);
+      ctx.fillStyle = 'rgba(20,10,30,.9)'; ctx.fillRect(x0 - 2, y0 - 2, W + 4, 9);
+      ctx.fillStyle = f > 0.85 && Math.floor(now / 90) % 2 ? '#ffffff' : f > 0.66 ? '#ff5a3d' : f > 0.33 ? '#ffb13d' : '#ffe14d';
+      ctx.fillRect(x0, y0, Math.round(W * f / 2) * 2, 5);
+      ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x0, y0, Math.round(W * f / 2) * 2, 1);
+    }
     // Maldiciones de Arceus (floors.js, 2026-10-19): icono encima, tachado en rojo, y lo que le queda.
     const curses = [['lordSlowT', 'boot'], ['lordWeakT', 'fist'], ['lordNoHealT', 'heart']].filter(([k]) => this[k] > 0);
     if (curses.length && !this.dead) {

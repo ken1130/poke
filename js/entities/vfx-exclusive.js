@@ -98,6 +98,32 @@ G.ExVFX = (() => {
     if (evo) G.FX.ring(pl.x, pl.y, 4, R * 0.7, '#fff36a', 0.26, 4);
   }
 
+  /** El GRITO con la barra de miedo llena (combat.js fearShout): mucho más grande que la onda normal. */
+  function scareShout(pl, R, evo, second) {
+    const hx = pl.x, hy = pl.y - 8;
+    G.FX.sp('exclaim', second ? 'ice' : 'electric', pl.x, pl.y, { follow: pl, oy: -22, life: 0.9, scale: second ? 2.5 : 3.5, bob: 1, fade: false });
+    if (!second) for (let i = 0; i < 7; i++) {
+      G.FX.sp('hairspike', 'normal', pl.x, pl.y, { follow: pl, ox: (i - 3) * 9, oy: 12 - Math.abs(i - 3) * 2, angle: (i - 3) * 0.32, life: 0.8, scale: 2.5, fade: false });
+    }
+    if (!sees(hx, hy, R)) return;
+    const rings = second ? [['ice', 0, 2]] : evo ? [['electric', 0, 3], ['ice', 0.08, 2.5], ['electric', 0.16, 2]] : [['electric', 0, 2.5], ['ice', 0.1, 2]];
+    for (const [pal, delay, sc] of rings) {
+      const n = 22;
+      for (let k = 0; k < n; k++) {
+        const a = k / n * 6.2832 + delay * 3;
+        G.FX.sp('crescent', pal, hx + Math.cos(a) * 16, hy + Math.sin(a) * 12,
+                { vx: Math.cos(a) * R * 2.2, vy: Math.sin(a) * R * 1.6, angle: a, life: 0.45, scale: sc, delay, fade: false });
+      }
+    }
+    for (let k = 0; k < 14; k++) {
+      const a = k / 14 * 6.2832;
+      G.FX.sp('puff', 'normal', hx + Math.cos(a) * 20, pl.y + Math.sin(a) * 10, { vx: Math.cos(a) * 200, vy: Math.sin(a) * 110, life: 0.45, frameRate: 8 });
+    }
+    G.FX.ring(pl.x, pl.y, 10, R, second ? '#bfefff' : '#fff36a', 0.5, 7);
+    G.FX.ring(pl.x, pl.y, 6, R * 0.6, '#ffffff', 0.35, 5);
+    if (!second && G.Game.flash) G.Game.flash('#fff6c0', 0.18);
+  }
+
   // ---------------- Turbo Abuela · Turbo Fantasma ----------------
   /** Parada: anillo de fuegos fantasma que se abre hasta el radio. */
   function ghostWave(pl, R, evo) {
@@ -223,6 +249,6 @@ G.ExVFX = (() => {
     G.FX.ring(e.x, e.y, 8, r, '#ffffff', 0.25, 4);
   }
 
-  return { question, SPUD, rollStart, zap, foam, scare, ghostWave, dashTrail, drawShade, shadeBoom,
+  return { question, SPUD, rollStart, zap, foam, scare, scareShout, ghostWave, dashTrail, drawShade, shadeBoom,
            pounce, pounceHop, tongueDrool, drawTongue, pan, stunStars, panSplash };
 })();
