@@ -20,6 +20,7 @@ G.Game = (() => {
   // pantalla. El mundo puede ir a ×1-1,5 (es pixel art y es lo que cuesta), pero el texto escalado
   // ×2-3 en un iPhone se veía borroso.
   let hcv, hctx, hdpr = 1;
+  let hudDirty = false;                // la capa de la HUD tiene algo dibujado (se borra al salir al menú)
   const wantHudDpr = () => Math.min(window.devicePixelRatio || 1, lowRes ? 2 : 3);
   let state = 'ui';
   let time = 0, last = 0, pendingLevels = 0;
@@ -477,7 +478,9 @@ G.Game = (() => {
     };
     // Regalo de Kecleon: alguna compra y ningún robo en toda la run (dungeon.js).
     if (G.Dungeon.honest) { parts.Kecleon = 40; pl.t1 = (pl.t1 || 0) + 1; }
-    const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas + (parts.Kecleon || 0)) * mul);
+    // Proteger a Dazhuang: lo que te sobra en tu monedero de la tienda (guard.js, cada uno el suyo).
+    if (G.Modes.run === 'guard') parts.tienda = Math.floor(G.Guard.wallet || 0);
+    const coins = Math.round((parts.tiempo + parts.derrotados + parts.jefes + parts.recogidas + (parts.Kecleon || 0) + (parts.tienda || 0)) * mul);
     const record = time > save.stats.bestTime;
 
     save.coins += coins;
@@ -1057,7 +1060,13 @@ G.Game = (() => {
     // La red se atiende siempre (también con las cartas de nivel abiertas).
     if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick(dt);
 
-    if (pl && state !== 'ui') render(); else Backdrop.render(ctx, w, h, dpr, dt);
+    if (pl && state !== 'ui') { render(); hudDirty = true; }
+    else {
+      Backdrop.render(ctx, w, h, dpr, dt);
+      // Fuera de la run: la capa de la HUD se queda con el último fotograma (vida, movimientos, experiencia,
+      // retos...) encima del menú si no se borra (2026-10-20, hoja V3.2 «al acabar siguen ahí»).
+      if (hudDirty && hctx) { hctx.setTransform(1, 0, 0, 1, 0, 0); hctx.clearRect(0, 0, hctx.canvas.width, hctx.canvas.height); hudDirty = false; }
+    }
     G.UI.tick(dt);
 
     G.Input.endFrame();

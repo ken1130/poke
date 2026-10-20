@@ -3,6 +3,14 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-20', title: { zh: '守護大壯金錢分開、首頁不再殘留戰鬥畫面', en: 'Guard Dazhuang separate coins, clean home screen' },
+    chg: [
+      { zh: '守護大壯：每個人有自己的商店金幣（開局各 100、每波過關各拿一份、打倒敵人的錢給打倒的人），買東西扣自己的；被別人先買走會自動退款；打完剩下的金幣會算進結算', en: 'Guard Dazhuang: everyone has their own shop coins (100 each at the start, the same wave reward for all, kill coins to whoever lands the last hit), purchases use your own; if someone bought it first you get refunded; leftovers count in the results' },
+      { zh: '守護大壯：商品不再隨波數漲價，大壯強化與幫手也不會越買越貴（強化 200／220／200、幫手 260）', en: 'Guard Dazhuang: prices no longer rise with the waves, and Dazhuang upgrades and helpers no longer get pricier (upgrades 200/220/200, helper 260)' }
+    ],
+    fix: [
+      { zh: '打完一局回到首頁時，左上角不再殘留上一局的血條、金幣、招式欄、本局挑戰', en: 'After a run, the home screen no longer shows the last run\'s HP bar, coins, move bar and run goals' }
+    ] },
   { d: '2026-10-19', title: { zh: '守護大壯、派對遊戲區、新招式與新神器', en: 'Guard Dazhuang, Party Plaza, new moves and artifacts' },
     new: [
       { zh: '極巨化改成敵人頭目的能力（玩家保留超級進化）：一般模式和無盡塔的頭目有機會極巨化、守護大壯第 10 波起的頭目、傳說連戰每 3 隻一隻。極巨化頭目變大、血量 ×2、身上有極巨雲霧，每 6～8 秒對你放極巨招式（地上先出現紅框警告圈，躲開就沒事）；噴火龍、皮卡丘、卡比獸等 32 種會放專屬超極巨招式（超極巨地獄滅焰、萬雷轟頂…），被打中會燒傷區域、變慢、攻擊變弱或不能回血；守護大壯裡也會瞄準大壯（大壯比你近時就打大壯）', en: 'Dynamax is now a boss ability (players keep Mega Evolution): bosses in normal mode and the endless tower may Dynamax, Guard Dazhuang bosses from wave 10, and every 3rd legendary in the Legend Rush. Dynamax bosses grow, have ×2 HP and red clouds, and every 6–8 s fire a Max Move at you (a red warning circle appears first; dodge it); 32 Pokémon such as Charizard, Pikachu and Snorlax use their own G-Max Move (G-Max Wildfire, Volt Crash...), which can leave burning ground, slow you, lower your attack or stop healing; in Guard Dazhuang they also target Dazhuang when he is closer than you' },

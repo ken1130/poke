@@ -280,3 +280,11 @@
 | 再來一局 | `applyEnd` 記 `lastMatch[kind] = { at, mode, sides }`；60 秒內、在那個球場或開始台、有參加的人看到「再來一局」→ `rematch` 用原本的隊伍開（`fixed`） |
 | 撲球同步 | 撲的人 `ask(['plz','dive'])`，房主廣播，其他人 `diveFx` 播 `Hurt` + 灰塵 |
 | 其他 | `party.js` 拿掉「Tenis Pokémon · próximamente」的佔位；`social-ui.js` 不顯示 `soon` 的遊戲 |
+
+## 十、V3.2（2026-10-20）：守護大壯錢分開、首頁殘留
+
+| 項目 | 設定 |
+|---|---|
+| 守護大壯錢包 | `guard.js wallet`（每個人自己電腦上的商店金幣，**不是** `pl.coins`）：開局 100；過關 `payAll`（房主廣播 `['gd','inc',n]`）；打倒敵人 `pay(e.lastHitBy)`，給隊友的累積在 `owed`，隨 `sendState` 送出；買東西先扣自己的錢再請房主套用，沒貨就 `['gd','refund',n]` 退款；結算時剩下的錢記成 `parts.tienda`（「商店剩餘」） |
+| 價格 | `pm()` 固定 1；大壯強化每級 200／220／200、幫手每隻 260，不再越買越貴 |
+| 首頁殘留 | `game.js`：回首頁時 HUD 那層 canvas（`hctx`）要清掉；`hudDirty` 在遊戲中畫過 HUD 才清一次 |

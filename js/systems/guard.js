@@ -15,7 +15,7 @@
  *
  * Grupo: lo decide todo el anfitrión (oleadas, enemigos, vida de Dazhuang, ayudantes, artículos)
  * y lo manda en ['gd','s',{...}] varias veces por segundo. Comprar: ['gd','b',clave] al anfitrión,
- * que cobra (las monedas son del grupo) y aplica lo de Dazhuang; lo personal se lo devuelve al
+ * que aplica lo de Dazhuang (las monedas son de cada uno: ver pay/payAll); lo personal se lo devuelve al
  * comprador en ['gd','g',clave]. «Empezar ya»: ['gd','go'].
  */
 G.Guard = (() => {
@@ -43,14 +43,40 @@ G.Guard = (() => {
   const POT_PRICE = { heal: 25, giant: 45, fury: 45, star: 60, lucky: 35, dzheal: 60 };
   const ITEM_PRICE = { 1: 60, 2: 100, 3: 160 }, ART_PRICE = 700, ART_EVERY = 300;
   const EGG_PRICE = 120, CANDY_PRICE = 70, GEAR_K = 1.6;
-  const HELP_PRICE = n => 160 + 120 * n;
-  const UP_PRICE = { hp: 90, sh: 110, atk: 90 };
+  // (2026-10-20, hoja V3.2 «los artículos no suben de precio»): todo a precio fijo, sin subir con la oleada
+  // ni con lo que ya hayas comprado (antes: ayudante 160 + 120 por cada uno; mejoras 90/110/90 × nivel).
+  const HELP_PRICE = () => 260;
+  const UP_PRICE = { hp: 200, sh: 220, atk: 200 };
   // Copia de spawner.js (no se exportan): resistencia extra, daño y experiencia de los normales.
   const hpK = t => 3.3 + Math.min(1.7, t / 420), DMG_K = 2.4, XP_K = 5.6;
 
   const on = () => G.Modes.run === 'guard';
   const authority = () => !G.Coop.active || G.Coop.isHost;
-  const pm = () => 1 + (S ? S.wave : 0) / 30;               // los precios suben con las oleadas
+  /*
+   * Dinero de cada uno (2026-10-20, hoja V3.2 «el dinero, separado»): antes todo iba al anfitrión y las compras
+   * de los invitados salían de su bolsa. Ahora cada uno tiene su monedero de la tienda (`wallet`, en su
+   * ordenador; NO pl.coins: en grupo esas son del grupo y el anfitrión las pisa en cada foto). Lo que te
+   * sobre al acabar se suma a las monedas de la partida (game.js, «tienda»):
+   * al empezar y al acabar cada oleada, todos cobran lo mismo; cada derrota, para quien la remata (lastHitBy).
+   * Pagas tú y el anfitrión lo aplica; si ya no estaba (otro lo compró antes), te lo devuelve.
+   */
+  let owed = {};                                             // anfitrión: uid -> monedas por mandar
+  let wallet = 0;                                            // tu monedero de la tienda
+  const meUid = () => (G.Coop.active ? G.Net.uid : null);
+  function pay(uid, n) {
+    if (!n) return;
+    if (!G.Coop.active || !uid || uid === meUid()) { wallet += n; return; }
+    owed[uid] = (owed[uid] || 0) + n;
+  }
+  function payAll(n) {
+    wallet += n;
+    if (G.Coop.active) G.Coop.broadcast(['gd', 'inc', n]);
+  }
+  function flushOwed() {
+    for (const uid in owed) if (owed[uid] > 0) G.Coop.sendTo(uid, ['gd', 'inc', owed[uid]]);
+    owed = {};
+  }
+  const pm = () => 1;                                       // (antes subían con las oleadas: 1 + oleada / 30)
 
   let S = null;          // estado (el anfitrión lo decide; los demás, la copia que llega)
   let dzAnim = null, flashT = 0, counterFx = 0;
@@ -82,9 +108,9 @@ G.Guard = (() => {
       recalc(true);
       rollWares();
       S.art = G.Items.rollArt();
-      pl.coins = (pl.coins || 0) + START_COINS;
       G.Spawner.say('¡Protege a Dazhuang! La primera oleada llega en 25 s: aprovecha los puestos', 4.2);
     }
+    wallet = START_COINS; owed = {};                         // cada uno, sus monedas del principio
     showNext(true);
   }
 
@@ -207,7 +233,7 @@ G.Guard = (() => {
   function waveCleared() {
     const w = S.wave;
     const pl = G.Game.player;
-    pl.coins = (pl.coins || 0) + WAVE_COINS(w);
+    payAll(WAVE_COINS(w));                        // a todos lo mismo
     G.Pickups.pullAll();                          // lo del suelo, para vosotros
     if (w >= WAVES) { win(); return; }
     S.phase = 'prep'; S.prepT = PREP;
@@ -260,7 +286,7 @@ G.Guard = (() => {
       let alive = 0;
       for (const id of waveIds) {
         const e = G.EnemyMgr.get(id);
-        if (!e || e.dead) { waveIds.delete(id); pl.coins = (pl.coins || 0) + KILL_COINS(S.wave); continue; }
+        if (!e || e.dead) { waveIds.delete(id); pay(e && e.lastHitBy, KILL_COINS(S.wave)); continue; }   // a quien lo remata
         alive++;
       }
       S.left = alive + spawnQ.length + (ambushT != null ? Math.round(AMBUSH_N(S.wave)) : 0);
@@ -391,6 +417,7 @@ G.Guard = (() => {
     if (!G.Coop.active || !G.Coop.isHost || !S) return;
     netT = now ? 0.25 : 0.3;
     G.Coop.broadcast(['gd', 's', pack()]);
+    flushOwed();
   }
   /** Invitado: lo que manda el anfitrión. */
   function onNet(ev) {
@@ -398,6 +425,7 @@ G.Guard = (() => {
     if (ev[1] === 'fx') { stompFx(); return; }
     if (ev[1] === 'poor') { G.Spawner.say(G.I18n.f('Faltan monedas: cuesta {x}', ev[2]), 2, true); G.Audio.sfx('error'); return; }
     if (ev[1] === 'g') { applyPersonal(G.Game.player, ev[2]); return; }
+    if (ev[1] === 'inc' || ev[1] === 'refund') { wallet += Math.max(0, +ev[2] || 0); if (ev[1] === 'refund') G.Spawner.say(G.T('Alguien lo compró antes: te devolvemos las monedas'), 2.4, true); return; }
     if (ev[1] !== 's' || !S) return;
     const d = ev[2];
     if (d.hp < S.dz.hp) flashT = 0.12;
@@ -411,7 +439,7 @@ G.Guard = (() => {
   function onClient(from, ev) {
     if (!on() || !S) return;
     if (ev[1] === 'go') startNow();
-    else if (ev[1] === 'b') hostBuy(String(ev[2] || ''), from);
+    else if (ev[1] === 'b') hostBuy(String(ev[2] || ''), from, +ev[3] || 0);
   }
 
   // ---------------- puestos y artículos ----------------
@@ -472,7 +500,7 @@ G.Guard = (() => {
     }
     if (k === 'up') for (const id of ['hp', 'sh', 'atk']) {
       const lv = S.up[id], u = UP_INFO[id];
-      out.push({ key: 'up:' + id, name: u.name, desc: u.desc, icon: u.icon, price: Math.round(UP_PRICE[id] * (lv + 1) * m), host: true,
+      out.push({ key: 'up:' + id, name: u.name, desc: u.desc, icon: u.icon, price: Math.round(UP_PRICE[id] * m), host: true,
                  note: G.I18n.f('Nivel {x}/{x}', lv, UP_MAX[id]), why: lv >= UP_MAX[id] ? 'Nivel máximo' : null });
     }
     return out;
@@ -486,18 +514,21 @@ G.Guard = (() => {
   function buy(key) {
     const pl = G.Game.player, w = wareByKey(key, pl);
     if (!w || w.why) return;
-    if ((pl.coins || 0) < w.price && authority()) { G.Spawner.say(G.I18n.f('Faltan monedas: cuesta {x}', w.price), 2, true); G.Audio.sfx('error'); return; }
+    if (wallet < w.price) { G.Spawner.say(G.I18n.f('Faltan monedas: cuesta {x}', w.price), 2, true); G.Audio.sfx('error'); return; }
+    wallet -= w.price;                                       // pagas tú (tu monedero)
     G.Audio.sfx('coin');
-    if (authority()) hostBuy(key, null);
-    else G.Coop.request(['gd', 'b', key]);
+    if (authority()) hostBuy(key, null, w.price);
+    else G.Coop.request(['gd', 'b', key, w.price]);
   }
   /** Anfitrión: cobra y aplica (lo de Dazhuang aquí; lo personal, en el ordenador de quien compra). */
-  function hostBuy(key, from) {
+  function hostBuy(key, from, paid) {
     const host = G.Game.player, buyer = from ? G.Game.everyone().find(p => p.uid === from) : host;
     const w = wareByKey(key, buyer || host);
-    if (!w || (w.why && w.host)) return;
-    if ((host.coins || 0) < w.price) { if (from) G.Coop.sendTo(from, ['gd', 'poor', w.price]); return; }
-    host.coins -= w.price;
+    if (!w || (w.why && w.host)) {                           // ya no estaba (u otro lo compró antes): se devuelve lo pagado
+      const back = Math.max(0, paid | 0);
+      if (from) G.Coop.sendTo(from, ['gd', 'refund', back]); else wallet += back;
+      return;
+    }
     if (key.startsWith('item:')) S.items = S.items.filter(id => 'item:' + id !== key);
     if (key.startsWith('art:')) S.art = null;
     if (w.host) applyHost(key);
@@ -587,14 +618,14 @@ G.Guard = (() => {
   }
   function refreshPanel() {
     if (!panelK || !S) return;
-    const pl = G.Game.player, coins = Math.floor(pl.coins || 0);
+    const pl = G.Game.player, coins = Math.floor(wallet);
     const list = wares(panelK, pl);
     const key = panelK + ':' + coins + ':' + JSON.stringify(list.map(w => [w.key, w.price, w.why, w.note])) + ':' + S.wave + ':' + S.phase;
     if (key === panelKey) return;
     panelKey = key;
     const scr = $('scr-shop');
     scr.querySelector('h2').textContent = G.T(STALL_INFO[panelK].name);
-    $('shop-sub').textContent = G.I18n.f('Monedas del grupo: {x}', coins) + ' · ' + G.I18n.f('Oleada {x}/{x}', S.wave, WAVES);
+    $('shop-sub').textContent = G.I18n.f('Tus monedas: {x}', coins) + ' · ' + G.I18n.f('Oleada {x}/{x}', S.wave, WAVES);
     const tabs = $('shop-tabs');
     tabs.innerHTML = KINDS.map(k => `<button class="shop-tab${panelK === k ? ' on' : ''}" data-gtab="${k}">${G.T(STALL_INFO[k].name)}</button>`).join('');
     tabs.querySelectorAll('[data-gtab]').forEach(b => { b.onclick = () => { panelK = b.dataset.gtab; panelKey = ''; G.Audio.sfx('select'); refreshPanel(); }; });
@@ -775,6 +806,6 @@ G.Guard = (() => {
   /** Invitado: la oleada a la que se llegó (lo manda el anfitrión al acabar). */
   function setWave(w) { if (S) S.wave = w; }
 
-  return { blast, target, reset, begin, tick, update, drawables, hudLine, markers, onNet, onClient, startNow, buy, summary, end, best, setWave,
+  return { get wallet() { return wallet; }, set wallet(v) { wallet = Math.max(0, +v || 0); }, blast, target, reset, begin, tick, update, drawables, hudLine, markers, onNet, onClient, startNow, buy, summary, end, best, setWave,
            WAVES, get on() { return on() && !!S; }, get dz() { return S && S.dz; }, get state() { return S; } };
 })();
