@@ -195,10 +195,10 @@
       { t: '+18 de daño; golpea a 3 enemigos', m: {} }
     ],
     scare: [
-      { t: '+12 de daño, +1 por enemigo cerca y -0,1 s de recarga',          m: {} },
-      { t: '+8 de daño, +1 por enemigo (hasta 14) y más radio',             m: {} },
-      { t: '+12 de daño, +1 por enemigo y -0,1 s de recarga',                m: {} },
-      { t: '+12 de daño, +1 por enemigo (hasta 16) y más radio',            m: {} }
+      { t: '+14 de daño, +1 por enemigo cerca y -0,1 s de recarga',          m: {} },
+      { t: '+12 de daño, +1 por enemigo (hasta 14) y más radio',             m: {} },
+      { t: '+16 de daño y -0,1 s de recarga',                m: {} },
+      { t: '+20 de daño, +1 por enemigo (hasta 16) y más radio',            m: {} }
     ],
     afterimage: [
       { t: '+2 de daño, sombras más duraderas y +2% de velocidad',           m: {} },
@@ -219,22 +219,22 @@
       { t: '+8 de daño y más alcance', m: {} }
     ],
     whip: [
-      { t: '+10 de daño, lengua más larga y +1 de veneno', m: {} },
-      { t: '+14 de daño', m: {} },
-      { t: '+16 de daño, lengua más larga y gruesa y +1 de veneno', m: {} },
+      { t: '+10 de daño y lengua más larga', m: {} },
+      { t: '+14 de daño y +1 de veneno', m: {} },
+      { t: '+16 de daño y lengua más larga y gruesa', m: {} },
       { t: '+10 de daño', m: {} }
     ],
     question: [
-      { t: '+15 de daño y pregunta a 3 enemigos',                           m: {} },
-      { t: '+15 de daño, más alcance y se quedan pensando más rato',        m: {} },
-      { t: '+18 de daño y pregunta a 4 enemigos',                           m: {} },
-      { t: '+22 de daño, 5 enemigos y más rato pensando',                   m: {} }
+      { t: '+16 de daño y pregunta a 3 enemigos',                           m: {} },
+      { t: '+18 de daño, más alcance y se quedan pensando más rato',        m: {} },
+      { t: '+21 de daño y pregunta a 4 enemigos',                           m: {} },
+      { t: '+25 de daño, 5 enemigos y más rato pensando',                   m: {} }
     ],
     roll: [
-      { t: '+4 de daño y +1 bola', m: {} },
-      { t: '+8 de daño, bolas más grandes que atraviesan 5', m: {} },
-      { t: '+10 de daño y +1 bola', m: {} },
-      { t: '+14 de daño, bolas más grandes que atraviesan 8', m: {} }
+      { t: '+1 bola (34 de daño cada una)', m: {} },
+      { t: '+10 de daño por bola, bolas más grandes que atraviesan 5', m: {} },
+      { t: '+1 bola (38 de daño cada una)', m: {} },
+      { t: '+12 de daño por bola, bolas más grandes que atraviesan 8', m: {} }
     ],
     // ---- 2026-10-16 (V3.1): los 5 de la hoja del dueño ----
     clay: [
@@ -634,7 +634,7 @@
       desc: 'EXCLUSIVO de Héroe: se asusta tanto que se le eriza todo y aparta a los que tiene cerca. Cuantos más enemigos, más daño.',
       cd: 1.4, dmg: 28, radius: 102 },
     { id: 'turbo-dash', name: 'Turbo Fantasma', type: 'ghost', kind: 'afterimage', only: 10005,
-      desc: 'EXCLUSIVO de la Turbo Abuela: va tan rápida que deja sombras de sí misma que dañan a quien las toca (y a todo lo que hay entre una y otra). Parada, suelta ondas fantasma. Más velocidad.',
+      desc: 'EXCLUSIVO de la Turbo Abuela: va tan rápida que deja sombras de sí misma que dañan a quien las toca (y a todo lo que hay entre una y otra). Parada, suelta ondas fantasma. Si nadie la toca, va y vuelve hasta un enemigo cercano y le deja una sombra pegada (más floja). Más velocidad.',
       cd: 0.3, dmg: 14, radius: 51 },
     { id: 'cat-pounce', name: 'Caza Ratones', type: 'dark', kind: 'pounce', only: 10006,
       desc: 'EXCLUSIVO de Tom: zarpazos seguidos al enemigo más cercano.',
@@ -649,7 +649,7 @@
       desc: 'EXCLUSIVO del Panda: lanza preguntas a los enemigos cercanos; los que reciben una se quedan pensando un momento (inmóviles).',
       cd: 1.0, dmg: 26, radius: 192 },
     { id: 'potato-roll', name: 'Boniato Rodante', type: 'electric', kind: 'roll', only: 10002,
-      desc: 'EXCLUSIVO del Boniato: rueda bolas de boniato electrizadas que atraviesan a los enemigos.',
+      desc: 'EXCLUSIVO del Boniato: rueda bolas de boniato electrizadas, cada una hacia un enemigo cercano distinto, que atraviesan a los enemigos.',
       cd: 1.0, dmg: 22, radius: 256 },
     // ---------------- 2026-10-16 (V3.1): los 5 de la hoja del dueño (números en TABLE) ----------------
     { id: 'unstable-element', name: 'Elemento Inestable', type: 'rock', kind: 'clay',
@@ -881,19 +881,21 @@
     ],
     // Héroe: dmg base, per (daño extra por enemigo cerca), cap (hasta cuántos cuenta), r (casillas), knock;
     // evo: root (inmoviliza s a los normales) e inv (s invulnerable)
+    // (2026-10-20: más base y algo menos por enemigo: contra uno solo era el más flojo; en grupo, igual)
     'scaredy-burst': [
-      { dmg: 28, per: 4, cap: 12, r: 3.2, knock: 140, cd: 1.4 }, { dmg: 40, per: 5, cap: 12, r: 3.4, knock: 160, cd: 1.3 },
-      { dmg: 48, per: 6, cap: 14, r: 3.6, knock: 170, cd: 1.2 }, { dmg: 60, per: 7, cap: 14, r: 3.8, knock: 180, cd: 1.1 },
-      { dmg: 72, per: 8, cap: 16, r: 4, knock: 190, cd: 1.0 },
-      { dmg: 110, per: 12, cap: 18, r: 4.6, knock: 230, root: 0.7, inv: 0.5, cd: 0.8 }
+      { dmg: 38, per: 4, cap: 12, r: 3.2, knock: 140, cd: 1.4 }, { dmg: 52, per: 5, cap: 12, r: 3.4, knock: 160, cd: 1.3 },
+      { dmg: 64, per: 6, cap: 14, r: 3.6, knock: 170, cd: 1.2 }, { dmg: 80, per: 6, cap: 14, r: 3.8, knock: 180, cd: 1.1 },
+      { dmg: 100, per: 7, cap: 16, r: 4.2, knock: 190, cd: 1.0 },
+      { dmg: 130, per: 5, cap: 18, r: 4.6, knock: 230, root: 0.7, inv: 0.5, cd: 0.8 }
     ],
     // Turbo Abuela: dmg (sombra cada 0,3 s, y el tramo recorrido de una sombra a la siguiente), life (s), ir (casillas),
     // haste (velocidad extra); quieta, una onda alrededor (×0,6); evo: boom (cada sombra estalla al desaparecer)
+    // (2026-10-20) lr: casillas a las que va y vuelve si nadie la toca (sombra pegada al enemigo, a ×lk)
     'turbo-dash': [
-      { dmg: 6, life: 0.9, ir: 1.6, haste: 0.12 },  { dmg: 8, life: 1.1, ir: 1.7, haste: 0.14 },
-      { dmg: 11, life: 1.2, ir: 1.8, haste: 0.17 }, { dmg: 14, life: 1.3, ir: 2.0, haste: 0.20 },
-      { dmg: 18, life: 1.4, ir: 2.1, haste: 0.22 },
-      { dmg: 24, life: 1.8, ir: 2.5, haste: 0.28, boom: 50 }
+      { dmg: 6, life: 0.9, ir: 1.6, haste: 0.12, lr: 4.5, lk: 0.5 },  { dmg: 8, life: 1.1, ir: 1.7, haste: 0.14, lr: 4.5, lk: 0.5 },
+      { dmg: 11, life: 1.2, ir: 1.8, haste: 0.17, lr: 5, lk: 0.5 },   { dmg: 14, life: 1.3, ir: 2.0, haste: 0.20, lr: 5, lk: 0.5 },
+      { dmg: 18, life: 1.4, ir: 2.1, haste: 0.22, lr: 5.5, lk: 0.5 },
+      { dmg: 22, life: 1.8, ir: 2.5, haste: 0.28, boom: 40, lr: 6, lk: 0.5 }
     ],
     // Jerry: dmg por golpe, r alcance, n enemigos, hits golpes a cada uno, stun (probabilidad de
     // aturdir), st (s aturdido; a los jefes sólo los frena); evo: splash (casillas: la mitad a los de al lado)
@@ -911,25 +913,30 @@
       { dmg: 58, n: 5, r: 7.5, chain: 4, bleed: 14, cd: 0.65 }
     ],
     // Lika: dmg, r alcance (casillas), w ancho, poison (acumulaciones); evo: n lenguas, pull (atrae hacia ti)
+    // (2026-10-20) Menos acumulaciones por latigazo: con 3-4 llegaba al tope (8) en dos golpes.
     'tongue-lash': [
-      { dmg: 40, r: 6.5, w: 22, poison: 1, n: 1 }, { dmg: 50, r: 7, w: 22, poison: 2, n: 1 },
-      { dmg: 64, r: 7, w: 22, poison: 2, n: 1 },   { dmg: 80, r: 8, w: 26, poison: 3, n: 1 },
-      { dmg: 90, r: 8, w: 26, poison: 3, n: 1 },
-      { dmg: 125, r: 9.5, w: 34, poison: 4, n: 3, pull: 120, cd: 0.7 }
+      { dmg: 40, r: 6.5, w: 22, poison: 1, n: 1 }, { dmg: 50, r: 7, w: 22, poison: 1, n: 1 },
+      { dmg: 64, r: 7, w: 22, poison: 2, n: 1 },   { dmg: 80, r: 8, w: 26, poison: 2, n: 1 },
+      { dmg: 90, r: 8, w: 26, poison: 2, n: 1 },
+      { dmg: 115, r: 9.5, w: 34, poison: 3, n: 3, pull: 120, cd: 0.7 }
     ],
     // Panda: dmg por pregunta, n enemigos, r alcance, stun (s que se quedan pensando); evo: all (todos los del radio)
+    // (2026-10-20: contra un jefe se quedaba corto: más daño por pregunta)
     'curious-question': [
-      { dmg: 40, n: 2, r: 6, stun: 0.35 }, { dmg: 55, n: 3, r: 6, stun: 0.35 },
-      { dmg: 70, n: 3, r: 6.5, stun: 0.45 }, { dmg: 88, n: 4, r: 6.5, stun: 0.45 },
-      { dmg: 110, n: 5, r: 7, stun: 0.55 },
-      { dmg: 120, n: 99, r: 7.5, stun: 0.8, all: true, cd: 1.0 }
+      { dmg: 50, n: 2, r: 6, stun: 0.35 }, { dmg: 66, n: 3, r: 6, stun: 0.35 },
+      { dmg: 84, n: 3, r: 6.5, stun: 0.45 }, { dmg: 105, n: 4, r: 6.5, stun: 0.45 },
+      { dmg: 130, n: 5, r: 7, stun: 0.55 },
+      { dmg: 200, n: 99, r: 7.5, stun: 0.8, all: true, cd: 1.0 }
     ],
-    // Boniato: dmg por bola, n bolas, pierce (atraviesa), size, r alcance; evo: zap (descarga a los de alrededor al golpear)
+    // Boniato: dmg por bola, n bolas, pierce (atraviesa), size, r alcance; evo: zap (descarga a los zn más
+    // cercanos al golpeado, a zr casillas)
+    // (2026-10-20: cada bola va a un enemigo distinto, y contra uno solo aciertan todas; daño por bola
+    // ajustado a eso. Era el más flojo: ~1/3 de Puño Lee.)
     'potato-roll': [
-      { dmg: 40, n: 1, pierce: 3, size: 1.2, r: 8 }, { dmg: 44, n: 2, pierce: 3, size: 1.2, r: 8 },
-      { dmg: 52, n: 2, pierce: 5, size: 1.4, r: 8.5 }, { dmg: 62, n: 3, pierce: 5, size: 1.4, r: 8.5 },
-      { dmg: 76, n: 3, pierce: 8, size: 1.6, r: 9 },
-      { dmg: 110, n: 5, pierce: 99, size: 2, r: 10, zap: 40, cd: 0.8 }
+      { dmg: 50, n: 1, pierce: 3, size: 1.2, r: 8 }, { dmg: 34, n: 2, pierce: 3, size: 1.2, r: 8 },
+      { dmg: 44, n: 2, pierce: 5, size: 1.4, r: 8.5 }, { dmg: 38, n: 3, pierce: 5, size: 1.4, r: 8.5 },
+      { dmg: 50, n: 3, pierce: 8, size: 1.6, r: 9 },
+      { dmg: 46, n: 5, pierce: 99, size: 2, r: 10, zap: 35, zn: 3, zr: 4.8, cd: 0.8 }
     ],
     // ---- 2026-10-16 (V3.1): hoja del dueño ×2 (como los demás de la hoja); CD elegido para quedar cerca de Puño Lee ----
     // Elemento Inestable: dmg al pegar, boom al explotar (a los 2,5 s), n arcillas, r alcance, br radio de la explosión;
@@ -1216,13 +1223,13 @@
     tornado:     { t: 'Daño continuo mientras están en el aire, +2 s en el aire y al caer una mano azul les da una bofetada de 70', m: {} },
     bladestorm:  { t: 'La tormenta empuja y hace sangrar (+1 casilla); cuchillas en 8 direcciones que se parten en dos a ±90° al atravesar al primero (y esas dos, otra vez)', m: {} },
     foampunch:   { t: 'Gran ola: +2 casillas de salpicadura que empuja y frena; más daño y menos recarga', m: {} },
-    scare:       { t: 'Inmoviliza 0,7 s a los normales y te vuelves invulnerable 0,5 s; +12 por enemigo (hasta 18), cada 0,8 s', m: {} },
-    afterimage:  { t: 'Sombras más grandes y duraderas que estallan (50) al desaparecer; +28% de velocidad', m: {} },
+    scare:       { t: 'Inmoviliza 0,7 s a los normales y te vuelves invulnerable 0,5 s; +30 de daño, +5 por enemigo (hasta 18), cada 0,8 s', m: {} },
+    afterimage:  { t: 'Sombras más grandes y duraderas que estallan (40) al desaparecer; +4 de daño y +28% de velocidad', m: {} },
     pounce:      { t: '5 zarpazos que hacen sangrar (14/s); si lo derriba, salta hasta a 4 enemigos', m: {} },
     pan:         { t: '3 sartenazos seguidos a 3 enemigos: siempre aturden y salpican a los de al lado', m: {} },
-    whip:        { t: 'Tres lenguas a la vez que atraen a los enemigos hacia ti y envenenan ×4; mucho más daño', m: {} },
-    question:    { t: 'Pregunta a TODOS los enemigos del radio a la vez y se quedan pensando 0,8 s', m: {} },
-    roll:        { t: '5 bolas enormes que lo atraviesan todo y electrocutan (40) a los de alrededor al golpear', m: {} },
+    whip:        { t: 'Tres lenguas a la vez que atraen a los enemigos hacia ti y envenenan ×3 (las que no tienen blanco propio barren a los lados); más daño', m: {} },
+    question:    { t: 'Pregunta a TODOS los enemigos del radio a la vez (+70 de daño) y se quedan pensando 0,8 s', m: {} },
+    roll:        { t: '5 bolas enormes que lo atraviesan todo; al golpear electrocutan (35) a los 3 más cercanos', m: {} },
     clay:        { t: 'La arcilla salta a 2 enemigos cercanos y los pega; con 3 pegados explota al momento (frena y quema); +2 arcillas y +2 casillas', m: {} },
     rockfist:    { t: '+2 puños; los lanza por los aires 3 veces seguidas, luego los empuja lejos y se quedan aturdidos 1 s', m: {} },
     windwall:    { t: 'Muro de 6 casillas que atrapa a los que lo tocan (hasta 8): giran a tu alrededor sin poder atacar y los lanzas de dos en dos contra otros enemigos a 10 casillas (110 de daño; el lanzado pierde la mitad de su vida)', m: {} },

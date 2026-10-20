@@ -1352,6 +1352,24 @@ G.Combat = (() => {
     const px = pl._aiX == null ? pl.x : pl._aiX, py = pl._aiY == null ? pl.y : pl._aiY;
     const moved = G.U.dist2(px, py, pl.x, pl.y) > 14 * 14;
     pl._aiX = pl.x; pl._aiY = pl.y;
+    // (2026-10-20, «sin evolucionar casi no hace nada»: sólo dañaba lo que la tocaba, y un jefe que
+    // dispara de lejos o un muñeco nunca la tocan.) Si nadie está pegado a ella pero hay alguien a `lr`
+    // casillas, va y vuelve en un instante: el tramo hasta él y una sombra pegada a él, a ×`lk`
+    // (pegarse a los enemigos sigue rindiendo más).
+    const tg = row.lr ? enemiesIn(pl.x, pl.y, row.lr * TILE).filter(e => !e.dead).sort(byDist(pl))[0] : null;
+    if (tg && G.U.dist2(pl.x, pl.y, tg.x, tg.y) > (R * 0.8 + tg.r) ** 2) {
+      const k = row.lk || 0.5;
+      if (!ghost) {
+        const mx = (pl.x + tg.x) / 2, my = (pl.y + tg.y) / 2, half = Math.hypot(tg.x - pl.x, tg.y - pl.y) / 2;
+        for (const e of enemiesIn(mx, my, half + R)) {
+          if (e.dead || segDist2(pl.x, pl.y, tg.x, tg.y, e.x, e.y) > (R * 0.7 + e.r) ** 2) continue;
+          hit(pl, e, row.dmg * 0.6 * k * pl.atk, G.U.TYPE_COLOR.ghost, e.x - pl.x, e.y - pl.y, 20, m);
+        }
+      }
+      fields.push({ kind: 'shade', owner: pl, ghost, m, row, x: tg.x, y: tg.y, t: 0, life: row.life, tick: 0,
+                    dir: G.Sprites.dirFromAngle(Math.atan2(tg.y - pl.y, tg.x - pl.x)), r: R, k, fx: pl.x, fy: pl.y });
+      return;
+    }
     if (!moved) {
       // Onda fantasma alrededor.
       G.FX.ring(pl.x, pl.y, 6, R * 1.3, '#9e8aea', 0.25, 3);
@@ -1377,14 +1395,14 @@ G.Combat = (() => {
     if ((f.tick -= dt) > 0) return;
     f.tick = 0.3;
     if (f.ghost) return;
-    for (const e of enemiesIn(f.x, f.y, f.r)) if (!e.dead) hit(f.owner, e, f.row.dmg * f.owner.atk, G.U.TYPE_COLOR.ghost, 0, 0, 0, f.m);
+    for (const e of enemiesIn(f.x, f.y, f.r)) if (!e.dead) hit(f.owner, e, f.row.dmg * (f.k || 1) * f.owner.atk, G.U.TYPE_COLOR.ghost, 0, 0, 0, f.m);
   }
   function shadeEnd(f) {
     if (!f.row.boom) return;
     G.FX.burst(f.x, f.y - 14, '#9e8aea', 8, 120);
     G.FX.ring(f.x, f.y, 4, f.r * 1.4, '#c8b8ff', 0.25, 3);
     if (f.ghost) return;
-    for (const e of enemiesIn(f.x, f.y, f.r * 1.4)) if (!e.dead) hit(f.owner, e, f.row.boom * f.owner.atk, G.U.TYPE_COLOR.ghost, e.x - f.x, e.y - f.y, 40, f.m);
+    for (const e of enemiesIn(f.x, f.y, f.r * 1.4)) if (!e.dead) hit(f.owner, e, f.row.boom * (f.k || 1) * f.owner.atk, G.U.TYPE_COLOR.ghost, e.x - f.x, e.y - f.y, 40, f.m);
   }
 
   /** Tom · Caza Ratones: `n` zarpazos al más cercano; si lo derriba, salta al siguiente (`chain`). */
@@ -1451,8 +1469,10 @@ G.Combat = (() => {
     const near = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl));
     if (!near.length) return;
     for (let i = 0; i < row.n; i++) {
-      const tg = near[Math.min(i * 2, near.length - 1)];
-      const a = Math.atan2(tg.y - pl.y, tg.x - pl.x) + (i ? 0.35 : 0);
+      // (2026-10-20) Sin un blanco propio, las lenguas de más barren a los lados (±0,6 rad) en vez de
+      // pegar las tres al mismo: contra un jefe triplicaba el daño.
+      const own = i * 2 < near.length, tg = own ? near[i * 2] : near[0];
+      const a = Math.atan2(tg.y - pl.y, tg.x - pl.x) + (!i ? 0 : own ? 0.35 : i % 2 ? 0.6 : -0.6);
       const len = Math.min(R, Math.hypot(tg.x - pl.x, tg.y - pl.y) + 24);
       fields.push({ kind: 'tongue', owner: pl, ghost, m, row, x: pl.x, y: pl.y, t: 0, life: 0.3, a, len });
       if (ghost) continue;
@@ -1490,22 +1510,28 @@ G.Combat = (() => {
   /** Boniato · Boniato Rodante: bolas electrizadas que ruedan y atraviesan (evolucionado: descargan a los de alrededor). */
   function potatoRoll(pl, m) {
     const row = G.Moves.stat(m), R = row.r * TILE, sp = 280;
-    const tg = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl))[0];
-    const a0 = tg ? Math.atan2(tg.y - pl.y, tg.x - pl.x) : pl.aim || 0;
+    // (2026-10-20, «el Boniato es flojo»: con el abanico de 0,32 rad casi sólo acertaba la bola del medio)
+    // Cada bola va a uno de los más cercanos; si hay menos enemigos que bolas, se reparten entre ellos
+    // con un abanico estrecho (así contra un jefe pegan todas).
+    const near = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead).sort(byDist(pl)).slice(0, row.n);
+    const a0 = near.length ? Math.atan2(near[0].y - pl.y, near[0].x - pl.x) : pl.aim || 0;
     for (let i = 0; i < row.n; i++) {
-      const a = a0 + (i - (row.n - 1) / 2) * 0.32;
+      const tg = near.length ? near[i % near.length] : null, per = near.length ? Math.ceil(row.n / near.length) : row.n;
+      const j = near.length ? Math.floor(i / near.length) : i;
+      const a = (tg ? Math.atan2(tg.y - pl.y, tg.x - pl.x) : a0) + (j - (per - 1) / 2) * (tg ? 0.08 : 0.32);
       G.Projectiles.spawn(Object.assign({
         x: pl.x + Math.cos(a) * 8, y: pl.y + Math.sin(a) * 8, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
         dmg: row.dmg * pl.atk, r: 7 * row.size, life: R / sp + 0.2, pierce: row.pierce, color: G.U.TYPE_COLOR.electric,
-        hits: new Set(), vis: G.VFX.forType('electric'), ghost, owner: pl, zap: row.zap || 0
+        hits: new Set(), vis: G.VFX.forType('electric'), ghost, owner: pl, zap: row.zap || 0, zn: row.zn || 3, zr: (row.zr || 2.2) * TILE
       }, payload(m)));
     }
   }
-  /** Descarga del Boniato evolucionado: a los de alrededor del golpeado. */
+  /** Descarga del Boniato evolucionado: a los `zn` más cercanos al golpeado (a `zr` px; antes, a todos a 70 px). */
   function zapAround(p, e, pl) {
     G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#fff36a', 6, 120);
-    for (const o of enemiesIn(e.x, e.y, 70)) {
-      if (o === e || o.dead) continue;
+    const zl = enemiesIn(e.x, e.y, p.zr || 70).filter(o => o !== e && !o.dead)
+      .sort((a, b) => G.U.dist2(a.x, a.y, e.x, e.y) - G.U.dist2(b.x, b.y, e.x, e.y)).slice(0, p.zn || 99);
+    for (const o of zl) {
       G.FX.spark(o.x, o.y - o.bodyH * 0.5, '#fff36a', 0, -1, 3);
       hit(pl, o, p.zap * pl.atk, G.U.TYPE_COLOR.electric, o.x - e.x, o.y - e.y, 0, { type: 'electric' });
     }

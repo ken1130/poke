@@ -83,7 +83,7 @@ G.Training = (() => {
       }
       if (this.poison > 0) {
         this.poisonT -= dt; this.poisonTick -= dt;
-        if (this.poisonTick <= 0) { this.poisonTick = 0.6; this.hurt(this.maxHp * 0.012 * this.poison + 1, '#d47cf0'); }
+        if (this.poisonTick <= 0) { this.poisonTick = 0.6; this.hurt(G.Enemy.poisonDmg(this, pl), '#d47cf0'); }
         if (this.poisonT <= 0) this.poison = 0;
       }
       // Quieto en su sitio (empujones, atracciones y separación no lo mueven).

@@ -441,7 +441,7 @@
       }
       if (this.poison > 0) {
         this.poisonT -= dt; this.poisonTick -= dt;
-        if (this.poisonTick <= 0) { this.poisonTick = 0.6; this.hurt(this.maxHp * 0.012 * this.poison + 1, '#d47cf0'); }
+        if (this.poisonTick <= 0) { this.poisonTick = 0.6; this.hurt(Enemy.poisonDmg(this, pl), '#d47cf0'); }
         if (this.poisonT <= 0) this.poison = 0;
       }
       if (this.dead) return;
@@ -456,7 +456,8 @@
         const le = G.World.liquidEffect(this.types);
         if (le.dmg) {
           this.lavaTick -= dt;
-          if (this.lavaTick <= 0) { this.lavaTick = le.every; this.hurt(6 + this.maxHp * 0.04, le.color); }
+          // (2026-10-20) A los jefes, ×0,25: su vida puede ser enorme (spawner.js dpsFloor).
+          if (this.lavaTick <= 0) { this.lavaTick = le.every; this.hurt(6 + this.maxHp * 0.04 * (this.boss ? 0.25 : 1), le.color); }
           if (this.dead) return;
         } else if (le.slow) terrainMul = le.slow < 0.5 ? 0.45 : 0.55;
       }
@@ -1195,6 +1196,19 @@
    */
   Enemy.AFX = { shield: 0.4, splitHp: 0.5, boomR: 70, boomDelay: 0.8, boomDmg: 1.6, seeR: 160, reveal: 1.5,
                 rageAt: 0.3, rageSpd: 1.4, rageDmg: 1.25 };
+  /*
+   * Un tic de veneno (cada 0,6 s): 1,2 % de la vida MÁXIMA por acumulación (hasta 8: 16 %/s).
+   * (2026-10-20) A los jefes y a los muñecos del entrenamiento, con tope por acumulación según tu
+   * nivel: su vida sale del medidor de daño (spawner.js dpsFloor, hasta ~700 000) y un % de ella se
+   * comía ese mínimo entero (8 acumulaciones = 112 000/s a un jefe así; Lengüetazo Látigo marcaba
+   * 15 000/s contra un muñeco de 100 000). A los normales, igual que siempre.
+   */
+  Enemy.POISON_PCT = 0.012;
+  Enemy.poisonDmg = (e, pl) => {
+    let per = e.maxHp * Enemy.POISON_PCT;
+    if (e.boss || e.dummy) per = Math.min(per, 4 + 1.5 * ((pl && pl.level) || 1));
+    return per * e.poison + 1;
+  };
   Enemy.FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d'); return !!c && 'filter' in c; } catch (e) { return false; } })();
   /** Afijos para un élite nuevo: uno siempre; a veces un segundo distinto. */
   Enemy.rollAffixes = t => {
