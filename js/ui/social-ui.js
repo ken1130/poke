@@ -291,7 +291,7 @@
 
       // Las tarjetas sólo se rehacen si cambian los miembros (los sprites no parpadean).
       const nCpu = room.mode === 'party' ? Math.min(G.Social.partyOf(room).cpu, G.Social.MAX_PLAYERS - ms.length) : 0;
-      const key = ms.map(m => m.uid + ':' + m.dex + ':' + (m.shiny ? 1 : 0)).join('|') + '#' + nCpu;
+      const key = ms.map(m => m.uid + ':' + m.dex + ':' + (m.shiny ? 1 : 0) + ':' + (m.title || '')).join('|') + '#' + nCpu;
       const box = $('lobby-members');
       if (key !== membersKey) {
         membersKey = key;
@@ -303,7 +303,7 @@
           if (m) {
             c.style.setProperty('--pc', G.Coop.COLORS[i]);
             c.appendChild(G.UI.spriteCanvas(m.dex, 120, 96, { scale: 2, lively: true, shiny: !!m.shiny }));
-            c.insertAdjacentHTML('beforeend', `<b translate="no">${esc(m.name)}</b><small>${esc((G.DEX_BY[m.dex] || {}).name || '')}</small><span class="conn" data-u="${m.uid}"></span>`);
+            c.insertAdjacentHTML('beforeend', `<b translate="no">${esc(m.name)}</b>${m.title && G.Titles ? G.Titles.chip(m.title) : ''}<small>${esc((G.DEX_BY[m.dex] || {}).name || '')}</small><span class="conn" data-u="${m.uid}"></span>`);
           } else if (i < ms.length + nCpu) {
             c.classList.add('cpu');
             c.innerHTML = `<span class="lob-cpu">${G.T('Jugador CPU')}</span><small>${G.T('Lo controla el juego')}</small>`;
@@ -531,7 +531,7 @@
           if (room.members.length < 2) { close(); G.Plaza.soloStart(o.game, cpu); return; }   // sólo tú: sin red
           const cfg = { k: 'start', seed: Math.floor(Math.random() * 1e6), host: room.host, pvp: false, scene: null, rand: false,
             mods: { plaza: o.game, cpu }, teams: false, arena: false, pkx: null,
-            members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny, team: G.Social.teamOf(m, i) })) };
+            members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny, title: m.title || '', team: G.Social.teamOf(m, i) })) };
           G.Social.setOpen(false);
           G.Net.broadcast(cfg);
           G.Flow.startCoop(cfg);
@@ -540,7 +540,7 @@
         // Fiesta: no se entra en el mundo; se abre la mesa para todos (la sala sigue abierta
         // para que quien se corte pueda volver a entrar y recuperar su plaza).
         const r = G.Party.hostStart({ game: o.game, cpu: Math.min(o.cpu, G.Social.MAX_PLAYERS - room.members.length), roomId: room.id, teams: o.teams, mix: o.mix, seat: o.seat,
-          members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny })) });
+          members: room.members.map(m => ({ uid: m.uid, name: m.name, dex: m.dex, shiny: !!m.shiny, title: m.title || '' })) });
         if (!r.ok) G.UI.toast(G.I18n.f(r.error, r.x || ''), 2600);
         return;
       }
@@ -556,7 +556,8 @@
         teams: room.mode === 'pvp' && !!room.teams,
         arena: room.mode === 'pvp' && room.arena !== false,
         pkx: room.mode === 'pvp' ? G.Social.pkxOf(room) : null,      // extras del PK (pvp-extra.js)
-        members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny, team: G.Social.teamOf(m, i) }))
+        // (title: el título del perfil, titles.js; viaja con el nombre hasta coop.js begin)
+        members: room.members.map((m, i) => ({ uid: m.uid, name: m.name, dex: rand ? picks[i].dex : m.dex, shiny: rand ? false : !!m.shiny, title: m.title || '', team: G.Social.teamOf(m, i) }))
       };
       G.Social.setOpen(false);
       G.Net.broadcast(cfg);

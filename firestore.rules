@@ -93,7 +93,9 @@ service cloud.firestore {
     // Una entrada sólo se puede mejorar, nunca empeorar.
     function validEntry(board, id) {
       let d = request.resource.data;
-      return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at'])
+      // titles (2026-10-21, data/titles.js): opcional, el id del título de cada jugador ('' = ninguno).
+      return d.keys().hasOnly(['t', 'uids', 'names', 'dex', 'shiny', 'lv', 'kills', 'at', 'titles'])
+        && (!('titles' in d) || (d.titles is list && d.titles.size() == d.uids.size()))
         && d.t is int && d.t > 0
         && d.lv is int && d.kills is int
         && d.uids is list && me() in d.uids

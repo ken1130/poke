@@ -2,7 +2,8 @@
  * Firestore (pensado para gastar lo mínimo del plan gratuito):
  *
  *   lbs/{tabla}        RESUMEN: el top 50 de la tabla en UN documento
- *                      { top: { id: { t, uids, names, dex, shiny, lv, kills } }, me, ev }
+ *                      { top: { id: { t, uids, names, dex, shiny, lv, kills, titles? } }, me, ev }
+ *                      (titles: el título de cada jugador, data/titles.js; las marcas viejas no lo tienen)
  *                      Ver una pestaña del ranking = 1 lectura (antes ~52).
  *   lb/{tabla}/e/{id}  la marca de cada jugador o equipo (la que sirve para
  *                      calcular tu puesto si no estás en el top 50)
@@ -40,6 +41,11 @@ G.Ranking = (() => {
   // y eran muchas lecturas y escrituras para nada).
   const MIN_T = 60;
   const TTL = 30 * 60 * 1000;            // caché de lo leído (30 min: menos lecturas de Firestore)
+  // Títulos (titles.js, 2026-10-21): se guardan con la marca (`titles`, uno por jugador; '' = ninguno).
+  // Las reglas de Firestore (firestore.rules, validEntry) tienen que admitir el campo: hasta que estén
+  // desplegadas se manda la marca SIN él (si no, Firestore rechaza la marca entera). Poner true después.
+  const SEND_TITLES = false;
+  const withTitles = (entry, titles) => (SEND_TITLES ? Object.assign(entry, { titles }) : entry);
 
   const fbx = () => G.DB.online ? G.DB.fb : null;
 
@@ -115,7 +121,7 @@ G.Ranking = (() => {
 
   // ---------------- guardar ----------------
 
-  const rowOf = (id, v) => ({ id, t: v.t, uids: v.uids || [], names: v.names || [], dex: v.dex || [], shiny: v.shiny || [], lv: v.lv, kills: v.kills });
+  const rowOf = (id, v) => ({ id, t: v.t, uids: v.uids || [], names: v.names || [], dex: v.dex || [], shiny: v.shiny || [], lv: v.lv, kills: v.kills, titles: v.titles || [] });
   const sorted = top => Object.entries(top || {}).map(([id, v]) => rowOf(id, v)).sort((a, b) => b.t - a.t);
 
   /** Guarda la entrada en cada tabla donde mejore. → periodos mejorados */
@@ -156,6 +162,7 @@ G.Ranking = (() => {
             const s = await tx.get(sumRef(b));
             const top = Object.assign({}, s.exists ? s.data().top : {});
             const mine = { t: entry.t, uids: entry.uids, names: entry.names, dex: entry.dex, shiny: entry.shiny, lv: entry.lv, kills: entry.kills };
+            if (entry.titles) mine.titles = entry.titles;
             let ev = '';
             // Ya estabas con una marca mejor (otro ordenador): nada que escribir.
             if (id in top && top[id].t >= entry.t) { entered = false; newTop = top; return; }
@@ -196,7 +203,8 @@ G.Ranking = (() => {
     const fb = fbx();
     if (!fb || !G.Social.me || r.t < MIN_T) return [];
     const ids = periodIds();
-    const entry = { t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills };
+    const entry = withTitles({ t: r.t, uids: [fb.uid], names: [G.Social.me.name], dex: [r.dex], shiny: [!!r.shiny], lv: r.lv, kills: r.kills },
+                             [G.Titles ? G.Titles.myId() : '']);
     const boards = PERIODS.map(([p]) => ['s_' + ids[p], p]);
     boards.push(['s_all_p' + r.dex, 'p']);
     const better = await store(boards, fb.uid, entry);
@@ -210,8 +218,8 @@ G.Ranking = (() => {
     if (!fb || r.t < MIN_T || !r.members || r.members.length < 2) return [];
     const ms = r.members.slice().sort((a, b) => (a.uid < b.uid ? -1 : 1));
     const id = ms.map(m => m.uid).join('_');
-    const entry = { t: r.t, uids: ms.map(m => m.uid), names: ms.map(m => m.name), dex: ms.map(m => m.dex),
-                    shiny: ms.map(m => !!m.shiny), lv: r.lv, kills: r.kills };
+    const entry = withTitles({ t: r.t, uids: ms.map(m => m.uid), names: ms.map(m => m.name), dex: ms.map(m => m.dex),
+                               shiny: ms.map(m => !!m.shiny), lv: r.lv, kills: r.kills }, ms.map(m => m.title || ''));
     const ids = periodIds();
     const boards = PERIODS.map(([p]) => ['g_' + ids[p], p]);
     for (const d of new Set(entry.dex)) boards.push(['g_all_p' + d, 'p']);

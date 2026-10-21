@@ -800,6 +800,7 @@ G.Guard = (() => {
   function end() {
     const sm = summary();
     if (sm) { try { if (sm.cleared > best()) localStorage.setItem(KEY_BEST, String(sm.cleared)); } catch (e) { /* nada */ } }
+    if (sm && G.Progress) G.Progress.event('guard', { waves: sm.cleared });   // (título «Guardián de Dazhuang», titles.js)
     closePanel(true); showNext(false);
     return sm;
   }

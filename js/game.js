@@ -507,7 +507,7 @@ G.Game = (() => {
     save.lastRun = { dex: pl.dex, shiny: !!pl.shiny, time: Math.floor(time), level: pl.level, kills: pl.kills, bosses: pl.bosses,
       floor: G.Floors.floor || 0, clear: !!clearWin, dead: !!dead && !clearWin, mode: G.Modes.run, group: coop, coins, at: Date.now(),
       moves: pl.moves.filter(m => !G.Moves.isPassive(m)).slice(0, 4).map(m => [m.name, m.lvl]) };
-    G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop });
+    G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop, dex: pl.dex });
     G.Progress.checkAch();
     G.DB.commit();
     if (G.Social.me) G.Social.publishProfile();

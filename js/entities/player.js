@@ -856,6 +856,8 @@ G.Player = class Player {
       ctx.strokeText(this.tag, this.x, y);
       ctx.fillStyle = this.dead ? '#ff8a96' : G.Cosmetic.nameColor(this) || this.tagColor || '#fff';   // (color de nombre de los logros)
       ctx.fillText(this.tag, this.x, y);
+      // Título del perfil (titles.js, 2026-10-21): fichita encima del nombre (caído: ahí va «Quédate a su lado»).
+      if (this.title && !this.dead && G.Titles) G.Titles.drawTag(ctx, this.title, this.x, y - 7);
       // "Quédate a su lado" sólo si se le puede levantar (en PK, sólo los de tu equipo).
       const me = G.Coop.local;
       if (this.dead && (!G.PvP.on || (G.PvP.teams && me && this.team === me.team))) {

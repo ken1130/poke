@@ -1438,3 +1438,25 @@ body.touch .keys kbd { display: inline-block !important; }
 .tag-chip.cat-p { background: #e8743a; color: #fff; }
 .tag-chip.cat-s { background: #3f7fd6; color: #fff; }
 .tag-chip.cat-best { box-shadow: 0 0 0 2px #ffd23f; font-weight: 800; }
+
+/* ---------- Títulos del perfil (data/titles.js, 2026-10-21): fichita junto al nombre ---------- */
+.title-chip { display: inline-block; margin-left: 5px; vertical-align: 1px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.3; }
+.title-chip.none { background: rgba(244,248,255,.18); color: var(--muted); }
+#user-pill .title-chip { font-size: 10px; padding: 1px 5px; max-width: 96px; flex: none; }   /* (flex: none: si no, la pastilla la aplasta a 15 px) */
+.lob-card .title-chip { display: block; margin: 1px auto 2px; width: max-content; max-width: 100%; font-size: 10px; padding: 1px 6px; }
+.rk-row .who .title-chip { font-size: 10px; padding: 0 5px; vertical-align: 2px; }
+.title-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.title-card .title-chip { margin: 2px 0; font-size: 12px; max-width: 100%; }
+.title-card small { max-width: 100%; }
+.title-legacy { display: flex; flex-wrap: wrap; gap: 6px; }
+.title-legacy .title-chip { margin: 0; font-size: 12px; padding: 4px 8px; border: 2px solid transparent; cursor: pointer; font-family: inherit; }
+.title-legacy .title-chip.on { border-color: #ffd23f; box-shadow: 0 0 0 1px #ffd23f66; }
+@media (max-width: 600px), (max-height: 520px) {
+  /* Móvil: la pastilla del nombre es estrecha (128 px). Con ficha se deja algo más ancha; el apodo manda
+     y es la ficha la que se recorta con «…» (el título entero se ve en la sala, encima de ti y en el perfil).
+     En horizontal la pastilla ya esconde el apodo: la ficha también (es un span). */
+  #user-pill { max-width: 176px; }
+  #user-pill > span { flex: none; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+  #user-pill .title-chip { flex: 0 1 auto; min-width: 0; margin-left: 3px; }
+  .title-row { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+}

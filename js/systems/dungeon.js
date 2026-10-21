@@ -805,6 +805,8 @@ G.Dungeon = (() => {
       if ((host.coins || 0) < w.price) { if (from) G.Coop.sendTo(from, ['dg', 'poor', w.price]); return; }
       host.coins -= w.price;
       kRep.buys++;
+      // Título «Cliente de Kecleon» (titles.js, 2026-10-21): cada compra honrada, sólo para quien compra.
+      if (!kRep.stole) { if (from) G.Coop.sendTo(from, ['dg', 'ach', 'kbuy']); else G.Progress.event('kbuy'); }
       if (kRep.buys === LOYAL && !kRep.robbed) say('¡Ya eres cliente fiel de Kecleon! Las próximas tiendas: −20 % y un artículo especial', 3.5);
       sendRep();
     }

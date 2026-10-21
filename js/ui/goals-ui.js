@@ -168,15 +168,9 @@
       }
       box.appendChild(favs);
 
-      const titles = G.Progress.titles();
-      box.insertAdjacentHTML('beforeend', `<h3 style="margin-top:14px">Título</h3>`);
-      const sel = document.createElement('select');
-      sel.className = 'field';
-      sel.style.maxWidth = '320px';
-      sel.innerHTML = `<option value="">(sin título)</option>` + titles.map(t => `<option ${t === P.title ? 'selected' : ''}>${esc(t)}</option>`).join('');
-      sel.onchange = () => { P.title = sel.value; save(); };
-      box.appendChild(sel);
-      if (!titles.length) box.insertAdjacentHTML('beforeend', '<p class="note">Consigue logros para desbloquear títulos.</p>');
+      // Título (2026-10-21, data/titles.js): los de las estadísticas y los de los logros, en fichas.
+      // (Antes era un <select> con los títulos de los logros guardado en profile.title.)
+      G.Titles.renderPicker(box, () => { save(); render(); });
       // Aspecto (2026-10-16): aura y color del nombre (cosmetic.js).
       G.Cosmetic.renderPicker(box, () => { save(); render(); });
 
