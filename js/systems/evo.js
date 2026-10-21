@@ -196,6 +196,9 @@ G.Evo = (() => {
       el.onclick = () => choose(-1);
       box.appendChild(el);
     }
+    // Título grande: «¡Despertar!» para los originales, «¡Megaevolución!» si sólo hay Mega (2026-10-21).
+    const onlyMega = opts.some(o => o.kind === 'mega') && !opts.some(o => o.kind === 'evo');
+    $('evo-title').textContent = G.T(onlyMega ? (allAwk ? '¡Despertar!' : '¡Megaevolución!') : '¡Evolución!');
     $('evo-sub').textContent = G.I18n.f(opts.some(o => o.kind === 'mega') && !opts.some(o => o.kind === 'evo')
       ? allAwk ? '¡{x} puede despertar!' : '¡{x} puede megaevolucionar!' : '¡{x} puede evolucionar! Elige el camino', G.T(pl.mon.name));
     G.UI.show('scr-evo');

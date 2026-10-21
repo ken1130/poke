@@ -5,6 +5,7 @@
  * interfaz, gana la traducción de la interfaz (se añade después).
  */
 G.I18n.add({
+  '¡Despertar!': '覺醒！', '¡Megaevolución!': '超級進化！',
   // ---------------- nombres de Pokémon (PokeAPI, zh-Hant) ----------------
   'Bulbasaur': '妙蛙種子',
   'Ivysaur': '妙蛙草',
