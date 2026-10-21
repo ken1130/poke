@@ -17,6 +17,8 @@
  * los 1,2 s (se puede parar, como las cartas de nivel).
  * Megaevolución: dura toda la run; vida, ataque y velocidad ×MEGA_BOOST; la animación es la de
  * evolucionar, con luz de arcoíris. No en PK.
+ * Despertar (2026-10-21, data/custom-awaken.js): los personajes originales no evolucionan; su «Mega» es la
+ * forma despierta (G.MEGA_BY_BASE[1000x], con `awaken`). Todo igual que la Mega, sólo cambian los textos.
  */
 G.Evo = (() => {
   const LEVELS = [10, 20, 30];
@@ -81,12 +83,14 @@ G.Evo = (() => {
     return true;
   }
 
+  /** ¿Esa forma es un Despertar (personaje original) y no una Mega? */
+  const awk = dex => !!(G.DEX_BY[dex] && G.DEX_BY[dex].awaken);
   function start(pl, opt) {
     const to = opt.to, shiny = pl.shiny && G.Sprites.hasShiny(to), mega = opt.kind === 'mega';
     G.Sprites.preload([to], 8000, shiny);
     pl.evoAnim = { t0: performance.now(), to, mega, toAnim: new G.Sprites.Animator(to, 1, shiny) };
     pl.invuln = Math.max(pl.invuln || 0, DUR + 0.4);
-    G.Spawner.say(G.I18n.f(mega ? '¡{x} está megaevolucionando!' : '¿Eh? ¡{x} está evolucionando!', G.T(pl.mon.name)), DUR, true);
+    G.Spawner.say(G.I18n.f(mega ? awk(to) ? '¡{x} está despertando!' : '¡{x} está megaevolucionando!' : '¿Eh? ¡{x} está evolucionando!', G.T(pl.mon.name)), DUR, true);
     G.Audio.sfx('surge');
   }
   /** 0..1 de la animación (o null). */
@@ -106,7 +110,7 @@ G.Evo = (() => {
     const from = pl.mon.name;
     if (mega) megaEvolve(pl, to);
     else pl.evolveTo(to);
-    G.Spawner.say(G.I18n.f(mega ? '¡{x} ha megaevolucionado a {x}!' : '¡{x} ha evolucionado a {x}!', G.T(from), G.T(pl.mon.name)), 3.2, true);
+    G.Spawner.say(G.I18n.f(mega ? awk(to) ? '¡{x} ha despertado: {x}!' : '¡{x} ha megaevolucionado a {x}!' : '¡{x} ha evolucionado a {x}!', G.T(from), G.T(pl.mon.name)), 3.2, true);
     G.Audio.sfx('legend');
     G.Game.flash('#ffffff', 0.6);
     G.FX.ring(pl.x, pl.y, 8, 120, mega ? '#ff8ad8' : '#ffffff', 0.8, 6);
@@ -167,32 +171,33 @@ G.Evo = (() => {
     box.innerHTML = '';
     box.classList.toggle('many', opts.length + (canSkip ? 1 : 0) > 4);   // Eevee: 8 caminos, en dos columnas
     opts.forEach((o, i) => {
-      const to = G.DEX_BY[o.to], mega = o.kind === 'mega';
+      const to = G.DEX_BY[o.to], mega = o.kind === 'mega', aw = mega && !!to.awaken;
       const el = document.createElement('div');
       el.className = 'card evo-card' + (mega ? ' evo mega' : '');
       const canvas = G.UI.spriteCanvas(o.to, 96, 84, { scale: 2, shiny: pl.shiny && G.Sprites.hasShiny(o.to), lively: true });
       canvas.className = 'evo-pic';
       const later = !mega && G.MEGA_BY_BASE && G.MEGA_BY_BASE[o.to] ? `<span class="tag-chip evo-later">${G.T('Luego puede megaevolucionar')}</span>` : '';
-      el.innerHTML = `<div class="txt"><div class="nm"><span class="tag-chip ${mega ? 'evo-tag-mega' : 'evo-tag'}">${G.T(mega ? 'Megaevolución' : 'Evolución')}</span> ${G.T(to.name)}</div>
+      el.innerHTML = `<div class="txt"><div class="nm"><span class="tag-chip ${mega ? 'evo-tag-mega' : 'evo-tag'}">${G.T(mega ? aw ? 'Despertar' : 'Megaevolución' : 'Evolución')}</span> ${G.T(to.name)}</div>
         <div class="evo-types">${G.UI.typeChips(to.types)}${later}</div>
         <div class="evo-stats">${deltas(pl, o).map(([k, v]) => `<span>${G.T(k)} <b>${v}</b></span>`).join('')}</div>
-        ${mega ? `<div class="evo-ab">${G.I18n.f('Habilidad Mega: {x}', `<b>${G.T(G.MegaAb.of(to.base).name)}</b>`)} — ${G.T(G.MegaAb.of(to.base).desc)}<br>${G.I18n.f('{x} se despierta: daño +{x}%', G.T(G.Moves.BY_ID[pl.startMoveId] ? G.Moves.BY_ID[pl.startMoveId].name : ''), Math.round((G.MegaAb.AWAKE_DMG - 1) * 100))}</div>` : ''}</div>
+        ${mega ? `<div class="evo-ab">${G.I18n.f(aw ? 'Habilidad despierta: {x}' : 'Habilidad Mega: {x}', `<b>${G.T(G.MegaAb.of(to.base).name)}</b>`)} — ${G.T(G.MegaAb.of(to.base).desc)}<br>${G.I18n.f('{x} se despierta: daño +{x}%', G.T(G.Moves.BY_ID[pl.startMoveId] ? G.Moves.BY_ID[pl.startMoveId].name : ''), Math.round((G.MegaAb.AWAKE_DMG - 1) * 100))}</div>` : ''}</div>
         <div class="key">${i + 1}</div>`;
       el.insertBefore(canvas, el.firstChild);
       el.dataset.sfx = 'none';
       el.onclick = () => choose(i);
       box.appendChild(el);
     });
+    const allAwk = opts.every(o => o.kind === 'mega' && awk(o.to));     // personaje original: «despertar»
     if (canSkip) {
       const el = document.createElement('div');
       el.className = 'card evo-skip';
-      el.innerHTML = `<div class="txt"><div class="nm">${G.T('Ahora no (Mega)')}</div><div class="ds">${G.T('Puedes megaevolucionar luego: tecla M, el botón de la pantalla o el de la pausa.')}</div></div><div class="key">${opts.length + 1}</div>`;
+      el.innerHTML = `<div class="txt"><div class="nm">${G.T(allAwk ? 'Ahora no (Despertar)' : 'Ahora no (Mega)')}</div><div class="ds">${G.T(allAwk ? 'Puedes despertar luego: tecla M, el botón de la pantalla o el de la pausa.' : 'Puedes megaevolucionar luego: tecla M, el botón de la pantalla o el de la pausa.')}</div></div><div class="key">${opts.length + 1}</div>`;
       el.dataset.sfx = 'none';
       el.onclick = () => choose(-1);
       box.appendChild(el);
     }
     $('evo-sub').textContent = G.I18n.f(opts.some(o => o.kind === 'mega') && !opts.some(o => o.kind === 'evo')
-      ? '¡{x} puede megaevolucionar!' : '¡{x} puede evolucionar! Elige el camino', G.T(pl.mon.name));
+      ? allAwk ? '¡{x} puede despertar!' : '¡{x} puede megaevolucionar!' : '¡{x} puede evolucionar! Elige el camino', G.T(pl.mon.name));
     G.UI.show('scr-evo');
     G.Audio.sfx('surge');
     planAuto();
@@ -224,7 +229,7 @@ G.Evo = (() => {
     if (i < 0) {
       pl.megaSkip = true;
       G.Audio.sfx('back');
-      G.Spawner.say('Cuando quieras: M o el botón «Mega» para megaevolucionar', 3, true);
+      G.Spawner.say(opts.every(o => o.kind === 'mega' && awk(o.to)) ? 'Cuando quieras: M o el botón «Despertar» para despertar' : 'Cuando quieras: M o el botón «Mega» para megaevolucionar', 3, true);
       return;
     }
     G.Audio.sfx('confirm');
@@ -241,8 +246,12 @@ G.Evo = (() => {
 
   // ---------------- HUD: botón «Mega» (M) ----------------
 
+  let pauseTxt = null;
   function drawHud(ctx, w, h, pl, F) {
     if (!pl || pl.remote || !megaReady(pl) || pl.evoAnim || pl.evoAsk) return;
+    // El botón de la pausa (#pause-mega, run-ui.js) dice «Megaevolucionar»; a un personaje original, «Despertar».
+    const pt = G.CUSTOM_BY && G.CUSTOM_BY[pl.dex] ? G.T('Despertar (pausa)') : G.T('Megaevolucionar');
+    if (pt !== pauseTxt) { pauseTxt = pt; const pm = $('pause-mega'); if (pm) pm.innerHTML = `${pt} <kbd>M</kbd>`; }
     const touch = G.Touch.active, S = touch ? 58 : 44;
     let bx = w - S - 16 - G.HUD.SR - (touch ? 2 * (S + 14) : 0), by = h - S - 18 - G.HUD.SB - (touch ? 0 : 64);
     if (bx < G.HUD.barRight + 10) by -= S + 34;
@@ -254,7 +263,7 @@ G.Evo = (() => {
     ctx.fillStyle = g; ctx.fill();
     ctx.lineWidth = 3; ctx.strokeStyle = '#1b1528'; ctx.stroke();
     ctx.textAlign = 'center'; ctx.font = F(800, touch ? 13 : 11); ctx.fillStyle = '#1b1528';
-    ctx.fillText(G.T('Mega (botón)'), bx + S / 2, by + S / 2 + 1);
+    ctx.fillText(G.T(G.CUSTOM_BY && G.CUSTOM_BY[pl.dex] ? 'Despertar (botón)' : 'Mega (botón)'), bx + S / 2, by + S / 2 + 1);
     ctx.font = F(700, 9); ctx.fillText(touch ? '' : '[M]', bx + S / 2, by + S / 2 + 12);
     ctx.restore();
     G.Touch.addButton(bx, by, S, S, () => openMega(pl), 8);

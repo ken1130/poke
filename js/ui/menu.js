@@ -330,11 +330,13 @@ G.MenuUI = (() => {
       </div></div><div class="dex-info">
       ${sixStats(dex, c, bar)}
       <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
+      ${megaBox(dex)}
       <div class="dex-acts">${usingThis
         ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
         : '<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero</button>'}</div>
       ${petBtn(dex)}</div>`;
     wireSheet(box);
+    wireMega(box);
     wirePet(dex, G.T(c.name), () => showCustom(c));
     $('dex-big').style.setProperty('--stage-c', G.U.TYPE_COLOR[(c.types || ['normal'])[0]]);
     G.UI.sprite($('dex-big'), dex, { lively: true, spin: true, scale: 3, hero: true });
@@ -410,11 +412,13 @@ G.MenuUI = (() => {
   function megaBox(dex) {
     const list = megaLine(dex);
     if (!list.length) return '';
-    const self = list.every(m => m.base === dex);
-    const txt = self ? G.I18n.f('Puede megaevolucionar en la partida (Nv. {x})', G.Evo.MEGA_LV)
+    const self = list.every(m => m.base === dex), aw = list.every(m => m.awaken);   // Despertar (custom-awaken.js)
+    const txt = aw ? G.I18n.f('Puede despertar en la partida (Nv. {x})', G.Evo.MEGA_LV)
+      : self ? G.I18n.f('Puede megaevolucionar en la partida (Nv. {x})', G.Evo.MEGA_LV)
       : G.I18n.f('Al evolucionar a {x} podrá megaevolucionar (Nv. {x})', [...new Set(list.map(m => G.T(G.DEX_BY[m.base].name)))].join(' / '), G.Evo.MEGA_LV);
-    return `<div class="dex-mega"><b>${G.T('Megaevolución')}</b><small>${txt}</small>
-      <div class="dex-mega-pics">${list.map(m => `<span data-mega="${m.dex}" title="${G.T(m.name)}"></span>`).join('')}</div></div>`;
+    const ab = aw && G.MegaAb ? `<small>${G.I18n.f('Habilidad despierta: {x}', `<b>${G.T(G.MegaAb.of(dex).name)}</b>`)} — ${G.T(G.MegaAb.of(dex).desc)}</small>` : '';
+    return `<div class="dex-mega"><b>${G.T(aw ? 'Despertar' : 'Megaevolución')}</b><small>${txt}</small>
+      <div class="dex-mega-pics">${list.map(m => `<span data-mega="${m.dex}" title="${G.T(m.name)}"></span>`).join('')}</div>${ab}</div>`;
   }
   function wireMega(box) {
     box.querySelectorAll('[data-mega]').forEach(el => {

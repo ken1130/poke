@@ -649,7 +649,7 @@ G.HUD = (() => {
         ctx.font = F(800, fs);
         ctx.textAlign = 'center';
         const gmx = pl.gmaxT > 0 && !G.Moves.isPassive(m);
-        const label = (gmx ? G.T('Máx. (prefijo de Gigamax)') + ' ' : m.mega ? G.T('Mega (prefijo del movimiento despertado)') + ' ' : '') + G.T(fused ? m.name + ' +' + (g.length - 1) : m.name);
+        const label = (gmx ? G.T('Máx. (prefijo de Gigamax)') + ' ' : m.mega ? G.T(pl.mon && pl.mon.awaken ? 'Despierto (prefijo del movimiento despertado)' : 'Mega (prefijo del movimiento despertado)') + ' ' : '') + G.T(fused ? m.name + ' +' + (g.length - 1) : m.name);
         const lw = ctx.measureText(label).width + 12;
         roundRect(ctx, x + S / 2 - lw / 2, y - 5 - lh, lw, lh, 7);
         ctx.fillStyle = 'rgba(8,12,24,.85)'; ctx.fill();
@@ -849,7 +849,7 @@ G.HUD = (() => {
         + (pl.k6 && pl.k6.best === mc ? ' ★' : ''), mc === 'p' ? '#ffb27a' : '#8fc4ff']);
       for (let k = 0; k < m.lvl - 1 && m.def.ups[k]; k++) rows.push(['✓ ' + G.T(m.def.ups[k].t), '#9fe0b0']);
       if (m.evolved && G.Moves.EVO_MODS[m.kind]) rows.push(['★ ' + G.T(m.name) + ': ' + G.T(m.def.evoText || G.Moves.EVO_MODS[m.kind].t), '#ffd23f']);
-      if (m.mega) rows.push(['✦ ' + G.I18n.f('Despertado por la Megaevolución: daño +{x}% y recarga -{x}%', Math.round((G.MegaAb.AWAKE_DMG - 1) * 100), Math.round((1 - G.MegaAb.AWAKE_CD) * 100)), '#ffb0f0']);
+      if (m.mega) rows.push(['✦ ' + G.I18n.f(pl.mon && pl.mon.awaken ? 'Movimiento despertado: daño +{x}% y recarga -{x}%' : 'Despertado por la Megaevolución: daño +{x}% y recarga -{x}%', Math.round((G.MegaAb.AWAKE_DMG - 1) * 100), Math.round((1 - G.MegaAb.AWAKE_CD) * 100)), '#ffb0f0']);
       const next = G.Moves.nextUpText(m);
       if (next) rows.push(['→ ' + G.I18n.f('Siguiente nivel: {x}', G.T(next)), '#8fa3c4']);
     }

@@ -6,7 +6,10 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-21', title: ['Arreglos del grupo y del móvil', 'Co-op and phone fixes'], chg: [
+  { d: '2026-10-21', title: ['Despertar de los personajes originales, arreglos del grupo y del móvil', 'Awakening for the original characters, co-op and phone fixes'], new: [
+    ["Despertar: los 8 personajes originales (Panda, Pollito, Didi, Héroe, Turbo Abuela, Tom, Lika y Jerry) no evolucionan, así que al Nv. 35 pueden despertar, como una Megaevolución: forma nueva (recolor y aura), vida y ataque +30%, velocidad +10%, una habilidad despierta cada uno (Panda Adaptable, Pollito Motor Eléctrico, Didi Potencia, Héroe Valor Tardío, Turbo Abuela Impulso, Tom Sombra Trampa, Lika Mal Sueño, Jerry Piel Feérica) y su movimiento exclusivo despertado (daño +30%, recarga -15%). Se elige en la misma ventana que la Mega (o luego con M); la ficha de «Otros» enseña la forma despierta.",
+     "Awakening: the 8 original characters (Panda, Sweet Potato Ball, Didi, Hero, Turbo Granny, Tom, Licker and Jerry) cannot evolve, so at Lv. 35 they can awaken, like a Mega Evolution: a new form (recolor and aura), HP and attack +30%, speed +10%, an awakened ability each (Panda Adaptability, Sweet Potato Ball Volt Engine, Didi Huge Power, Hero Late Courage, Turbo Granny Speed Boost, Tom Shadow Tag, Licker Bad Dreams, Jerry Pixilate) and their exclusive move awakened (damage +30%, recharge -15%). Chosen in the same window as a Mega (or later with M); the “Other” tab shows the awakened form."]
+  ], chg: [
     ["Pausa: debajo de tus estadísticas salen tus movimientos con su clase (físico / especial) y el nivel de cada uno (★ si está evolucionado).", "Pause: below your stats, your moves are listed with their class (physical / special) and each one's level (★ if evolved)."],
   ], fix: [
     ["Gran Dos: «Pass» se dice «跳過» en chino.", "Big Two: “Pass” is now “跳過” in Chinese."],
