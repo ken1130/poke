@@ -61,3 +61,10 @@
 #pz-dive.hidden { display: none; }
 #pz-dive .pz-dive-ico { width: 30px; height: 12px; background: #fff; border-radius: 6px 2px 2px 6px; box-shadow: 0 0 0 2px #0c2a4a; position: relative; }
 #pz-dive .pz-dive-ico::after { content: ''; position: absolute; right: -8px; top: 2px; border: 4px solid transparent; border-left: 6px solid #fff; }
+
+/* Balón prisionero (2026-10-21): el mismo botón redondo, con la pelota roja; en modo «Atrapar», verde y sin parpadeo. */
+#pz-throw.hidden { display: none; }
+#pz-throw.pz-ball { animation: none; }
+#pz-throw.pz-ball .pz-throw-ico { background: radial-gradient(circle at 38% 35%, #ff9a8a, #d8343a 55%, #6a1016); box-shadow: 0 0 0 2px #4a0e12; }
+#pz-throw.pz-ball .pz-throw-ico::after { display: none; }
+#pz-throw.pz-catch { border-color: #0c3a2a; background: radial-gradient(circle at 40% 35%, #c8ffe0, #4fd48a 55%, #1c7a4a); box-shadow: 0 4px 0 #0c3a2a, 0 0 14px rgba(80,220,140,.55); color: #063a22; }
