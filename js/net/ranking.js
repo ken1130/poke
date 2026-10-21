@@ -44,7 +44,7 @@ G.Ranking = (() => {
   // Títulos (titles.js, 2026-10-21): se guardan con la marca (`titles`, uno por jugador; '' = ninguno).
   // Las reglas de Firestore (firestore.rules, validEntry) tienen que admitir el campo: hasta que estén
   // desplegadas se manda la marca SIN él (si no, Firestore rechaza la marca entera). Poner true después.
-  const SEND_TITLES = false;
+  const SEND_TITLES = true;      // (reglas desplegadas el 2026-10-21: el campo `titles` ya se acepta)
   const withTitles = (entry, titles) => (SEND_TITLES ? Object.assign(entry, { titles }) : entry);
 
   const fbx = () => G.DB.online ? G.DB.fb : null;

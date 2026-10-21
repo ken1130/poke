@@ -77,7 +77,7 @@ G.Plaza = (() => {
   const CPU_LV = [
     { name: 'Fácil (CPU)',   miss: 0.2,  spd: 0.8,  err: 34, catch: 0.12, react: 0.38, aim: 0.2 },
     { name: 'Normal (CPU)',  miss: 0.08, spd: 1,    err: 18, catch: 0.28, react: 0.2,  aim: 0.1 },
-    { name: 'Difícil (CPU)', miss: 0.03, spd: 1.15, err: 8,  catch: 0.45, react: 0.09, aim: 0.04 }
+    { name: 'Difícil (CPU)', miss: 0.03, spd: 1.15, err: 8,  catch: 0.35, react: 0.09, aim: 0.04 }   // (catch 0,45 → 0,35: contra humanos era un muro)
   ];
   let cpuLv = 1, lastMatch = {};
   const GATHER = 5;

@@ -39,7 +39,7 @@
  *   ['fclr', t]                              mazmorra superada (premio para todos)
  *   ['fcn']                                  el anfitrión sigue jugando (sin fin)
  *   ['l2s', id, oculto] ['l2p', [[id,x,y]...], dur] ['l2c', id, porJugador] ['l2r', aviso, dur] ['l2w']
- *                                            Señor del Mundo Distorsión (B10F, 2026-10-21): se desvanece,
+ *                                            Señor del Mundo Distorsión (B6F, 2026-10-21): se desvanece,
  *                                            grietas, Mundo Distorsión (controles al revés) y victoria
  * El ataque combinado lo hace cada uno (su daño va al anfitrión como cualquier golpe) y
  * los demás sólo ven el efecto (['cb', ...]).
@@ -57,9 +57,9 @@ G.Floors = (() => {
   // otro sitio de la run (rift.js lo quita de los legendarios). Antes, uno al azar de esta lista.
   const LORD_DEX = 493;
   const LORDS = [150, 384, 487, 483, 484, 249, 250, 382, 383, 644, 643, 716, 717, 800, 890];   // (por si faltara su sprite)
-  // Segundo señor escondido (2026-10-21, para los que ya arrasan): en B10F (índice 9, modo sin fin)
+  // Segundo señor escondido (2026-10-21, para los que ya arrasan): en B6F (índice 5, modo sin fin, justo tras Arceus)
   // el Señor del Mundo Distorsión, Giratina (o Dialga/Palkia si faltara su sprite). Números en LORD2.
-  const LORD2_FLOOR = 9, LORD2_DEX = 487, LORD2_ALT = [483, 484];
+  const LORD2_FLOOR = 5, LORD2_DEX = 487, LORD2_ALT = [483, 484];   // (2026-10-21: B6F → B6F, el piso justo después de Arceus; el dueño quiere que se vea)
 
   /*
    * Temas de piso. safe: ruta segura. Multiplicadores (1 si no está):
@@ -150,7 +150,7 @@ G.Floors = (() => {
     // Más duro que un jefe normal de su hueco (×1,3); el Señor ×1,2 del último hueco más su
     // suelo de vida (×2,5 del de jefe); sin fin (B6F+): +10 % por piso.
     // (2026-10-19, V3.1 «el jefe final con más vida»: el Señor ×1,2 → ×1,5 y su suelo ×2,5 → ×3.)
-    // (2026-10-21: el Señor del Mundo Distorsión, B10F: lo de Arceus más el +10 % por piso del sin fin.)
+    // (2026-10-21: el Señor del Mundo Distorsión, B6F: lo de Arceus más el +10 % por piso del sin fin.)
     const hpMul = lord2 ? LORD2.hpMul * (1 + 0.1 * (floor - LAST)) : lord ? LORD.hpMul : floor > LAST ? 1.3 * (1 + 0.1 * (floor - LAST)) : 1.3;
     const def = G.Enemies.bossFor(bossDex || pickBossDex(), slot, hpMul);
     const n = G.Game.everyone().length;
@@ -160,7 +160,7 @@ G.Floors = (() => {
       if (e.maxHp < minHp) e.maxHp = e.hp = minHp;
       if (lord) G.Spawner.dpsFloor(e, LORD.dpsSec);       // y que aguante LORD.dpsSec s de vuestro daño (spawner.js)
       if (lord2) G.Spawner.dpsFloor(e, LORD2.dpsSec);
-      e.dmg *= lord || lord2 ? 1.3 : 1.15;
+      e.dmg *= lord2 ? LORD2.dmgK : lord ? 1.3 : 1.15;
       e.floorBoss = floor + 1; e.lord = lord; e.lord2 = lord2;
     });
     if (!e) return;
@@ -385,9 +385,9 @@ G.Floors = (() => {
     G.Audio.sfx('error');
   }
 
-  // ---------------- Señor del Mundo Distorsión (B10F, 2026-10-21) ----------------
+  // ---------------- Señor del Mundo Distorsión (B6F, 2026-10-21) ----------------
   /*
-   * Segundo señor escondido, para los que ya pasan a Arceus sin despeinarse: en B10F (modo sin fin,
+   * Segundo señor escondido, para los que ya pasan a Arceus sin despeinarse: en B6F (modo sin fin,
    * índice 9) sale Giratina en vez del jefe del piso. Vida: la de Arceus más el +10 % por piso del sin
    * fin, suelo ×3 del de jefe y al menos LORD2.dpsSec s del daño del equipo (un veterano solo, ~70 s).
    * Lo decide el anfitrión; todo lo que se ve va por G.Hazards ('hz'), G.Spawner.say y los eventos l2*.
@@ -408,7 +408,8 @@ G.Floors = (() => {
    *                    eligen una reliquia (relics.js) y el logro «lord2» (progress.js). Luego, las
    *                    escaleras de siempre (B11F...).
    */
-  const LORD2 = { hpMul: 1.5, hpFloor: 3.0, dpsSec: 70, coins: 500,
+  // (2026-10-21, el dueño: «que no sea más flojo que Arceus»: vida ×1,8 y suelo ×3,5 (Arceus 1,5 / 3), 70 s de vuestro daño (Arceus 55), daño ×1,4.)
+  const LORD2 = { hpMul: 1.8, hpFloor: 3.5, dpsSec: 70, dmgK: 1.4, coins: 500,
                   sfFirst: 6, sfEvery: 11, sfEveryRage: 8, sfVanish: 1.2, sfR: 110, sfK: 1.5,
                   portFirst: 10, portEvery: 24, portN: 2, portDur: 10, portEach: 2.5, portD0: 200, portD1: 340, portR: 48, portClose: 2, portMax: 12,
                   rwAt: 0.5, rwWarn: 2, rwDur: 6, rwEvery: 30,
@@ -1348,7 +1349,7 @@ G.Floors = (() => {
                 route ? G.T(route === 'danger' ? 'Llegaste por la ruta peligrosa.' : 'Llegaste por la ruta segura.') : '',
                 G.T('Mazmorra de 5 pisos: vence al jefe de cada piso para abrir dos escaleras (ruta segura o peligrosa). En B5F espera el Señor del Laberinto.'),
                 G.T('Con las escaleras abiertas el piso deja de endurecerse; si os quedáis más de 3 min, experiencia y monedas ×0,5 (5 min: ×0,25).'),
-                endless && !lord2Done ? G.T('En B10F (modo sin fin) espera el Señor del Mundo Distorsión: Giratina.') : '',
+                endless && !lord2Done ? G.T('En B6F (modo sin fin) espera el Señor del Mundo Distorsión: Giratina.') : '',
                 age >= 0 ? G.I18n.f('Escaleras abiertas hace {x}', G.U.mmss(age)) : ''] }));
     }
     if (G.Coop.active && !G.PvP.on && pl && !pl.dead) {
@@ -1443,7 +1444,7 @@ G.Floors = (() => {
 
   return { reset, update, onNet, scaleEnemy, canCurse, graceMul, get inGrace() { return graceT > 0; }, drawable, drawAir, drawHud, drawComboRow, drawFade, drawDark, fireCombo, comboFx, descend,
            diffTime, holdBoss, pickDef, biomeAt, pickClear, floorBoss, THEMES, LAST, LORD2_FLOOR,
-           /** Señor del Mundo Distorsión (B10F): vivo ahora (hud.js) / ya vencido en esta run (game.js resumen). */
+           /** Señor del Mundo Distorsión (B6F): vivo ahora (hud.js) / ya vencido en esta run (game.js resumen). */
            get lord2() { return bossLord2; }, get lord2Done() { return lord2Done; }, get portals() { return portals; }, get dark() { return darkT; },
            get floor() { return floor; }, get coinMul() { return coinMul(); },
            /** Compatibilidad: la primera escalera (tips.js). Todas: stairsAll. */

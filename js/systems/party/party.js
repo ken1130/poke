@@ -456,7 +456,9 @@ G.Party = (() => {
     if (v.res && scoredRound !== v.sid + ':' + v.round) {
       scoredRound = v.sid + ':' + v.round;
       const r = v.res.find(x => x.seat === v.you);
-      if (r && r.place === 1 && G.Progress) G.Progress.event('partyWin', { game: v.game });
+      // Sólo cuenta si había algún rival humano (2026-10-21, el dueño: ganar a las CPU no vale).
+      const rival = (v.seats || []).some((s, j) => j !== v.you && !s.cpu && !(v.teams && v.teams[j] === v.teams[v.you]));
+      if (r && r.place === 1 && rival && G.Progress) G.Progress.event('partyWin', { game: v.game });
     }
     if (!amHost()) saveRejoin();
     if (!active) { active = true; emit('open', V); }

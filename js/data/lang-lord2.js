@@ -1,11 +1,11 @@
-/* ============ lang-lord2.js — Señor del Mundo Distorsión, Giratina en B10F (2026-10-21, floors.js) ============ */
+/* ============ lang-lord2.js — Señor del Mundo Distorsión, Giratina en B6F (2026-10-21, floors.js) ============ */
 G.I18n.add({
   'Señor del Mundo Distorsión': '異界之主',
   'SEÑOR DEL MUNDO DISTORSIÓN': '異界之主',
   '¡SEÑOR DEL MUNDO DISTORSIÓN!': '異界之主！',
   '¡El Señor del Mundo Distorsión se acerca! (10 s)': '異界之主要來了！（10 秒）',
   'Señor del Mundo Distorsión: ¡véncelo!': '異界之主：打倒牠！',
-  'En B10F (modo sin fin) espera el Señor del Mundo Distorsión: Giratina.': 'B10F（無盡模式）有異界之主「騎拉帝納」等著你。',
+  'En B6F (modo sin fin) espera el Señor del Mundo Distorsión: Giratina.': 'B6F（無盡模式）有異界之主「騎拉帝納」等著你。',
   '¡El Señor del Mundo Distorsión se desvanece! Garra Umbría: ¡sal de la marca!': '異界之主消失了！影子突襲：快離開黑色印記！',
   '¡Se desvanece! Dos Garras Umbrías: ¡muévete!': '牠又消失了！兩道影子突襲：快跑！',
   '¡Grietas al Mundo Distorsión! Ponte encima 2 s para cerrarlas': '異界裂口出現了！站在上面 2 秒就能關閉',
@@ -20,7 +20,7 @@ G.I18n.add({
   '¡MUNDO DISTORSIÓN PACIFICADO!': '異界已平定！',
   '+{x} monedas · todos elegís una reliquia': '+{x} 金幣・每個人選一件遺物',
   'Más allá del laberinto': '迷宮之外',
-  'Vence a Giratina, Señor del Mundo Distorsión, en B10F.': '在 B10F 打倒異界之主「騎拉帝納」。',
+  'Vence a Giratina, Señor del Mundo Distorsión, en B6F.': '在 B6F 打倒異界之主「騎拉帝納」。',
   'Domador del Mundo Distorsión': '異界征服者'
 }, 'zh');
 G.I18n.add({
@@ -29,7 +29,7 @@ G.I18n.add({
   '¡SEÑOR DEL MUNDO DISTORSIÓN!': 'LORD OF THE DISTORTION WORLD!',
   '¡El Señor del Mundo Distorsión se acerca! (10 s)': 'The Lord of the Distortion World approaches! (10 s)',
   'Señor del Mundo Distorsión: ¡véncelo!': 'Distortion World Lord: defeat it!',
-  'En B10F (modo sin fin) espera el Señor del Mundo Distorsión: Giratina.': 'On B10F (endless) the Lord of the Distortion World, Giratina, awaits.',
+  'En B6F (modo sin fin) espera el Señor del Mundo Distorsión: Giratina.': 'On B6F (endless) the Lord of the Distortion World, Giratina, awaits.',
   '¡El Señor del Mundo Distorsión se desvanece! Garra Umbría: ¡sal de la marca!': 'The Distortion World Lord vanishes! Shadow Force: get off the mark!',
   '¡Se desvanece! Dos Garras Umbrías: ¡muévete!': 'It vanishes again! Two Shadow Forces: move!',
   '¡Grietas al Mundo Distorsión! Ponte encima 2 s para cerrarlas': 'Rifts to the Distortion World! Stand on one for 2 s to close it',
@@ -44,6 +44,6 @@ G.I18n.add({
   '¡MUNDO DISTORSIÓN PACIFICADO!': 'DISTORTION WORLD PACIFIED!',
   '+{x} monedas · todos elegís una reliquia': '+{x} coins · everyone picks a relic',
   'Más allá del laberinto': 'Beyond the labyrinth',
-  'Vence a Giratina, Señor del Mundo Distorsión, en B10F.': 'Defeat Giratina, Lord of the Distortion World, on B10F.',
+  'Vence a Giratina, Señor del Mundo Distorsión, en B6F.': 'Defeat Giratina, Lord of the Distortion World, on B6F.',
   'Domador del Mundo Distorsión': 'Tamer of the Distortion World'
 });

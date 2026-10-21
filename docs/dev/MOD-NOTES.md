@@ -331,7 +331,7 @@
 | 人數 | 固定 3 對 3（`startGame` 的 `n`），真人照站的半場分隊，電腦補滿；從房間「派對 → 躲避球」進來 1.5 秒自動開（跟燙手山芋一樣，`begin`） |
 | 球 | 只有一顆，`g.ball = { x, y, vx, vy, st: 'held'/'fly'/'loose', h: 持有者, from: 丟的那隊, by: 丟的人, sp, ht: 握了幾秒 }`。丟出 `DB_SPEED` 380 px/s，飛行中每秒減 `DB_DRAG` 160，低於 `DB_FLY_MIN` 170 就變「鬆球」（不會打中人），鬆球每秒減 `DB_ROLL` 240 滾到停；碰到場邊（含外圈）反彈 ×0.45 並變鬆球 |
 | 丟球 | `dodgeAct(id, ang)`：持有者 → 瞄準輔助 ±50°（`DB_AIM` 0.87 rad）、480 px 內最近的站著的對手；非持有者 → 記 `g.catchAt[id]`（接球嘗試）。事件 `['plz','dthrow',角度]`，F 鍵／手機同一顆 `#pz-throw`（持球顯示「丟出」、沒球顯示綠色「接球」；躲避球裡不顯示撲球鈕，空白鍵撲球同時也算接球嘗試） |
-| 打中 | 飛行中的球，整段路徑 `segD2` 離對方（站著、`side !== from`）小於 半徑+14（遠端真人再 +8）→ 判定：真人 `catchAt` 在 `CATCH_WIN` 0.25 秒內、或球速 < `CATCH_SLOW` 220 且面向球（`aim` 與來球夾角 cos > 0.5）→ **接住**；電腦看見來球時就擲骰 `CPU_LV.catch`（0.12／0.28／0.45）決定要接還是閃。接住：丟的人出局（如果他還站著）、接球那隊最早出局的一人回場（`'dback'` 事件，自己那台把自己搬回家）；沒接住：被打中的人出局（`'dhit'`），球變鬆球彈開 |
+| 打中 | 飛行中的球，整段路徑 `segD2` 離對方（站著、`side !== from`）小於 半徑+14（遠端真人再 +8）→ 判定：真人 `catchAt` 在 `CATCH_WIN` 0.25 秒內、或球速 < `CATCH_SLOW` 220 且面向球（`aim` 與來球夾角 cos > 0.5）→ **接住**；電腦看見來球時就擲骰 `CPU_LV.catch`（0.12／0.28／0.35，困難原 0.45：對真人太硬）決定要接還是閃。接住：丟的人出局（如果他還站著）、接球那隊最早出局的一人回場（`'dback'` 事件，自己那台把自己搬回家）；沒接住：被打中的人出局（`'dhit'`），球變鬆球彈開 |
 | 出局 | `g.out` 清單；真人由 `keepInside → dbClamp` 夾到外圈、電腦 `dbSendOut`。外圈的人可以撿滾進外圈的鬆球（`dbCanReach`）再丟（球從對方半場後面飛過去一樣會打中）。鬆球停住 `DB_IDLE` 2 秒沒人撿 → 給最近的站著的人。持球超過 `DB_HOLD_MAX` 8 秒 → 自動朝最近的對手丟（最後 3 秒頭上倒數） |
 | 回合 | `DB_ROUND_T` 60 秒；一隊沒人或時間到（人多的贏，平手不計）→ `'dround'` 橫幅、`phase 'rest'` 2.6 秒 → `dodgeNewRound`（`'drnd'` 事件：每台把自己搬回家，出局清空，由第 `round%2` 隊的隨機一人開球）。`DB_ROUNDS` 3 → 先拿 2 回合贏；`DB_MAX_ROUNDS` 5 仍平手 → 「平手」。結束文字沿用 `¡Gana {x}! ({x})`（名字、回合數）。再來一局 `lastMatch` 照舊 |
 | 電腦 | `dodgeCpu`：持球 → 走到離中線 `hw×0.4` 處、對齊最近對手的 y，`DB_CPU_HOLD` 1.5／1.0／0.7 秒後丟（誤差 `CPU_LV.aim` 0.2／0.1／0.04 rad）；沒球、來球會從 52 px 內經過 → `CPU_LV.react` 0.38／0.2／0.09 秒後垂直閃 90 px（方向在看到球時決定一次、閃到球飛過為止，見踩坑 #49），或擲骰決定接球就站著；鬆球在自己可到的區域 → 同隊最近的電腦去撿；其他時間在家附近晃。速度 165×`spd`（持球 150） |
@@ -424,13 +424,13 @@
 
 待主人決定：覺醒特性的選擇（尤其兩個新的：電氣引擎、遲來的勇氣）；覺醒型態要不要順便換屬性（目前不換）；進化視窗的大標題仍是「進化！」。
 
-## 十六、B10F 隱藏頭目「異界之主 騎拉帝納」（2026-10-21，給已經打穿阿爾宙斯的玩家）
+## 十六、B6F 隱藏頭目「異界之主 騎拉帝納」（2026-10-21，給已經打穿阿爾宙斯的玩家）
 
-無盡模式下到 B10F（`floors.js` 索引 9，`LORD2_FLOOR`）時，層主換成騎拉帝納（圖鑑 487；沒圖就帝牙盧卡／帕路奇亞）。只在一般模式、每局一次（`lord2Done`）。全部由房主決定；畫面上的東西走 `G.Hazards`（'hz'）、`G.Spawner.say` 與新事件 `l2s`／`l2p`／`l2c`／`l2r`／`l2w`（`coop.js` 轉給 `Floors.onNet`）。數值都在 `floors.js` 的 `LORD2`。
+無盡模式下到 B6F（`floors.js` 索引 5，`LORD2_FLOOR`；原本 B10F，主人要改到打完阿爾宙斯的下一層）時，層主換成騎拉帝納（圖鑑 487；沒圖就帝牙盧卡／帕路奇亞）。只在一般模式、每局一次（`lord2Done`）。全部由房主決定；畫面上的東西走 `G.Hazards`（'hz'）、`G.Spawner.say` 與新事件 `l2s`／`l2p`／`l2c`／`l2r`／`l2w`（`coop.js` 轉給 `Floors.onNet`）。數值都在 `floors.js` 的 `LORD2`。
 
 | 項目 | 內容 | 數值位置 |
 |---|---|---|
-| 血量 | 阿爾宙斯的倍率（1.5）再乘無盡的 +10%／層（B10F ×1.5＝2.25）、下限 `bossFloor×3`，再加「至少 70 秒的全隊輸出」（`G.Spawner.dpsFloor`，最多 ×4）；傷害 ×1.3 | `LORD2.hpMul/hpFloor/dpsSec` |
+| 血量 | 倍率 1.8（阿爾宙斯 1.5）再乘無盡的 +10%／層（B6F ×1.1）、下限 `bossFloor×3.5`（阿爾宙斯 3），再加「至少 70 秒的全隊輸出」（阿爾宙斯 55）；傷害 ×1.4（阿爾宙斯 1.3）。主人：「不能比阿爾宙斯爛」（`G.Spawner.dpsFloor`，最多 ×4） | `LORD2.hpMul/hpFloor/dpsSec/dmgK` |
 | 影子突襲 | 第 6 秒起每 11 秒：消失 1.2 秒（`e.l2hide`：幾乎透明、`lordInv` 免疫、`combat.js` 不會碰撞傷害），隨機一位玩家腳下出現紫色印記（半徑 110 的 zone，`delay` 1.2），時間到牠出現在印記上、印記爆炸（傷害 ×1.5）。隊友端用 `l2s`（隱藏旗標）和 `ltp`（第 5 個參數 1＝紫色特效）同步 | `sfFirst/sfEvery/sfVanish/sfR/sfK` |
 | 異界裂口 | 第 10 秒起每 24 秒（上一批關完才算）：2 個（每多一人 +1，最多 4）距牠 200～340 的裂口，開 10 秒，每 2.5 秒各跑出一隻幽靈／惡屬性小怪（`hordeDefs('ghost'/'dark')`，一半是菁英），場上最多 12 隻；都是 `lordMinion`（牠死全死）。任一玩家站在半徑 48 內累積 2 秒就關閉（房主判定，`l2c`；畫面上每台電腦自己算「關閉中… x 秒」） | `portFirst/portEvery/portN/portDur/portEach/portR/portClose/portMax` |
 | 反轉世界 | 血量 ≤50% 後每 30 秒：預告 2 秒（玩家頭上像素圖示 `vfx.js flip` + 倒數），接著 6 秒：畫面變暗只剩周圍（`game.js` 呼叫 `Floors.drawDark`，五段階梯式暗角）、方向顛倒（`player.js pl.l2MirrorT`，跟「顛倒藥水」同一行）。每台電腦自己跑計時（`l2r`） | `rwAt/rwWarn/rwDur/rwEvery` |
@@ -438,7 +438,7 @@
 | 擊倒 | 小怪全滅、裂口關閉、大字「異界已平定！」6 秒、全隊 +500 金幣（房主加在 `pl.coins`）、每個人選一件遺物（`G.Relics.offer`，開局現在也會 `Relics.reset`）、`G.Progress.event('lord2')` → `stats.lord2`、成就 `lord2`「迷宮之外」（t10×3，稱號「異界征服者」）、`save.lastRun.lord2`。之後照舊出兩座樓梯 | `LORD2.coins`、`achievements.js` 最後一條 |
 | 提示 | 出現前 10 秒「異界之主要來了」；大字橫幅、皇冠標籤、HUD 血條「異界之主 · 騎拉帝納」（`hud.js` 用 `G.Floors.lord2`）；樓層標籤點開有一行說明 | `lang-lord2.js` |
 
-實測（`scratchpad/lord2/solo.js`、`coop.js`、`look.js`，截圖在 `scratchpad/lord2/`）：t≈19 分到 B10F 時基礎血量 34 萬～51 萬；灌 1 萬輸出時下限 70 萬。單人和兩分頁組隊：隊友看到同座標的裂口、消失旗標、印記、瞬移、反轉世界，隊友站上裂口房主會關；擊倒後兩邊都開遺物視窗、成就與 `stats.lord2` 各自記；提示各只出現一次；無主控台錯誤。
+實測（`scratchpad/lord2/solo.js`、`coop.js`、`look.js`，截圖在 `scratchpad/lord2/`）：t≈19 分到 B6F 時基礎血量 34 萬～51 萬；灌 1 萬輸出時下限 70 萬。單人和兩分頁組隊：隊友看到同座標的裂口、消失旗標、印記、瞬移、反轉世界，隊友站上裂口房主會關；擊倒後兩邊都開遺物視窗、成就與 `stats.lord2` 各自記；提示各只出現一次；無主控台錯誤。
 
 ## 十七、稱號（2026-10-21）
 
@@ -451,7 +451,7 @@
 | 挑選 | 任務 → 個人檔案 → 「稱號」：`renderPicker`（卡片 `.title-card`，鎖住的灰掉＋條件＋進度；成就稱號只列已拿到的，用 chip） |
 | 顯示 | `chip(id)` → `<span class="tag-chip title-chip">`：右上角 `#user-pill`（ui.js refreshCoins）、組隊房間卡片（social-ui.js）、排行榜列（ranking-ui.js）、公開檔案 `profileData().title`（西文字串，顯示時翻譯）。隊友頭上：`player.js draw` → `drawTag`（像素小牌，死掉時不畫，那個位置給「留在他身邊」） |
 | 組隊 | **不走每幀狀態**：`social.js memberInfo()` 多送 `title`（RTDB 房間成員，規則沒限制欄位）→ `social-ui.js` 開局的 `cfg.members` 帶 `title` → `coop.js begin` 設 `p.title`。在房間裡改稱號：`refreshMember()` 也會更新 |
-| 排行榜 | 讀：`rowOf` 多 `titles[]`（舊紀錄沒有就不顯示）。**寫：`ranking.js` 的 `SEND_TITLES` 目前 `false`**，因為 `firestore.rules` 的 `validEntry` 用 `hasOnly`，多一個欄位整筆會被拒。規則已在 repo 改好（`titles` 可選、長度＝`uids`）；主人 `firebase deploy --only firestore:rules`（免費）後再把旗標改 `true` |
+| 排行榜 | 讀：`rowOf` 多 `titles[]`（舊紀錄沒有就不顯示）。**寫：`ranking.js` 的 `SEND_TITLES` 目前 `false`**，因為 `firestore.rules` 的 `validEntry` 用 `hasOnly`，多一個欄位整筆會被拒。規則已在 repo 改好（`titles` 可選、長度＝`uids`）；主人 `firebase deploy --only firestore:rules`（免費）後再把旗標改 `true` | **2026-10-21 已用 `firebase deploy --only firestore:rules --project pokesurvivor-ken1130` 部署（.firebaserc 的預設 pokesurvivor-free 是舊的，要加 --project），`SEND_TITLES = true`。**
 | 手機 | 右上角藥丸 `(max-width: 600px)` 放寬到 176px：名字優先、chip 用「…」截；橫式藥丸本來就藏名字，chip 一起藏 |
 
 | id | 名稱（繁中／西／英） | 條件 | 統計在哪裡算 |
@@ -461,7 +461,7 @@
 | legends | 傳說獵人／Cazador de leyendas／Legend Hunter | `legends{}` ≥ 10 | progress.js kill |
 | kills1k | 千人斬／Mil tajos／Thousand Cuts | `stats.totalKills` ≥ 1000 | game.js endRun |
 | custom | 原創收藏家／Coleccionista original／Original Collector | `customRuns{}` 有全部 `G.CUSTOM`（8 隻）| **新**：runEnd 帶 `dex`，progress.js 記 `save.customRuns[dex]`（db.js merge 聯集）。原創角色人人都有，所以改成「各玩過一場」 |
-| party | 派對之星／Estrella de la fiesta／Party Star | `stats.partyWins` ≥ 5 | **新**：party.js `onView`：`v.res` 裡自己 `place === 1`，每回合算一次（`scoredRound`）；電腦對手也算 |
+| party | 派對之星／Estrella de la fiesta／Party Star（只算有真人對手的勝場，2026-10-21） | `stats.partyWins` ≥ 5 | **新**：party.js `onView`：`v.res` 裡自己 `place === 1`，每回合算一次（`scoredRound`）；電腦對手也算 |
 | shiny | 異色獵人／Cazador de brillos／Shiny Hunter | `shiny{}` ≥ 5 | 既有 |
 | phoenix | 不死鳥／Fénix／Phoenix | `stats.bestTime` ≥ 1800 | 既有 |
 | kecleon | 卡克隆常客／Cliente de Kecleon／Kecleon Regular | `stats.kecleonBuys` ≥ 10 | **新**：dungeon.js 購買（房主判定）：那間店還沒偷過才算，房客用 `['dg','ach','kbuy']` 回傳 |
