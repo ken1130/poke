@@ -300,9 +300,13 @@ G.Spawner = (() => {
 
   /** Aviso grande en pantalla (también lo usan el bioma y los shinies). */
   /** @param local  sólo en este ordenador (no se manda a los compañeros) */
-  function say(text, secs = 2.6, local = false) {
-    announce = text; announceT = secs;
-    if (G.Coop.isHost && !local) G.Coop.say(text, secs);
+  /** @param raw    ya está en mi idioma: no se traduce (coop.js, aviso del anfitrión en el mismo idioma) */
+  function say(text, secs = 2.6, local = false, raw = false) {
+    // (2026-10-21) Se traduce aquí (si no venía ya traducido) y a los compañeros se les manda tal cual con el
+    // idioma del anfitrión: cada uno en el suyo (antes un texto montado con '+', como '¡X salvaje apareció!',
+    // les llegaba en español).
+    announce = raw || G.I18n.done(text) ? text : G.T(text); announceT = secs;
+    if (G.Coop.isHost && !local) G.Coop.say(text, secs, raw || G.I18n.done(text));
   }
 
   function banner() { return announceT > 0 ? { text: announce, t: announceT } : null; }

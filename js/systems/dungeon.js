@@ -218,7 +218,7 @@ G.Dungeon = (() => {
     const [rx, ry] = roulP(), nearR = G.U.dist2(pl.x, pl.y, rx, ry + 12) < 70 * 70;
     if (nearR && !room.atRoul && !G.Roulette.busy) {      // (con una elección abierta ya se ha salido arriba)
       if ((shop.spins == null ? 3 : shop.spins) > 0) openRoulette(shop);
-      else G.Spawner.say(G.T('Ya no quedan tiradas en esta ruleta'), 2, true);
+      else G.Spawner.say('Ya no quedan tiradas en esta ruleta', 2, true);
     }
     room.atRoul = nearR;
     if (G.Roulette.busy) return;
@@ -490,7 +490,7 @@ G.Dungeon = (() => {
     }
   }
   function houseStartFx() {
-    G.Spawner.say(G.T('¡Es una casa de monstruos! Aguanta 30 s'), 3, true);
+    G.Spawner.say('¡Es una casa de monstruos! Aguanta 30 s', 3, true);
     G.Audio.sfx('boss');
     G.Camera.kick(0.8);
   }
@@ -688,7 +688,7 @@ G.Dungeon = (() => {
       const all = live.every(atDoor), pushed = live.every(p => room.out.has(myKey(p)));
       const was = room.doorT || 0;
       room.doorT = all && room.t > 1.2 ? was + dt : 0;
-      if (room.doorT > 0 && was === 0 && !pushed) say('Quédate en la puerta para salir…', 1.2);
+      if (room.doorT > 0 && was === 0 && !pushed && !room.doorSaid) { room.doorSaid = true; say('Quédate en la puerta para salir…', 1.2); }   // (una vez: en grupo se repetía)
       if (pushed || room.doorT >= DOOR_HOLD) { send(['dg', 'exit']); endRoom(); return; }
       if (G.Coop.active && live.some(atDoor) && Math.floor(room.t / 4) !== Math.floor((room.t - dt) / 4)) say('Esperando a que todos lleguen a la puerta…', 2);
     }
@@ -872,34 +872,34 @@ G.Dungeon = (() => {
     switch (w.kind) {
       case 'potion': G.Loot.drink(pl, G.Loot.rollPotion()); break;
       case 'item': G.Game.offerItem(w.item, true); break;      // (comprado: la ventana ya, no el icono)
-      case 'heal': pl.heal(pl.maxHp * 0.6); G.Spawner.say(G.T('¡Te has curado!'), 2, true); break;
-      case 'rerolls': pl.rerollBonus = (pl.rerollBonus || 0) + 3; G.Spawner.say(G.T('+3 cambios de cartas de nivel'), 2.4, true); break;
+      case 'heal': pl.heal(pl.maxHp * 0.6); G.Spawner.say('¡Te has curado!', 2, true); break;
+      case 'rerolls': pl.rerollBonus = (pl.rerollBonus || 0) + 3; G.Spawner.say('+3 cambios de cartas de nivel', 2.4, true); break;
       case 'disc': G.Game.offerBox(); break;
       case 'tm': {
         const list = G.LevelUp.offer(pl, 12);
         const c = list.find(o => o.type === 'new') || list.find(o => o.type === 'up') || list[0];
-        if (c) { c.apply(pl); G.Spawner.say(G.T('MT') + ': ' + G.T(c.title), 2.6, true); }
+        if (c) { c.apply(pl); G.Spawner.say('MT' + ': ' + G.T(c.title), 2.6, true); }
         break;
       }
-      case 'protein': pl.atkMul *= 1.1; G.Spawner.say(G.T('+10% de daño (resto de la run)'), 2.4, true); break;
-      case 'carbos': pl.spdMul *= 1.08; G.Spawner.say(G.T('+8% de velocidad (resto de la run)'), 2.4, true); break;
-      case 'iron': pl.dmgReduce += 0.05; G.Spawner.say(G.T('+5% de reducción de daño (resto de la run)'), 2.4, true); break;
-      case 'ppup': pl.cdMul *= 0.94; G.Spawner.say(G.T('-6% de recarga (resto de la run)'), 2.4, true); break;
-      case 'magnet': pl.magnet *= 1.3; G.Spawner.say(G.T('+30% de alcance del imán (resto de la run)'), 2.4, true); break;
-      case 'incense': pl.coinMul *= 1.15; G.Spawner.say(G.T('+15% de Pokémonedas al acabar la run'), 2.4, true); break;
+      case 'protein': pl.atkMul *= 1.1; G.Spawner.say('+10% de daño (resto de la run)', 2.4, true); break;
+      case 'carbos': pl.spdMul *= 1.08; G.Spawner.say('+8% de velocidad (resto de la run)', 2.4, true); break;
+      case 'iron': pl.dmgReduce += 0.05; G.Spawner.say('+5% de reducción de daño (resto de la run)', 2.4, true); break;
+      case 'ppup': pl.cdMul *= 0.94; G.Spawner.say('-6% de recarga (resto de la run)', 2.4, true); break;
+      case 'magnet': pl.magnet *= 1.3; G.Spawner.say('+30% de alcance del imán (resto de la run)', 2.4, true); break;
+      case 'incense': pl.coinMul *= 1.15; G.Spawner.say('+15% de Pokémonedas al acabar la run', 2.4, true); break;
       case 'pgear': G.Companion.addGear(pl, w.gear); break;
       case 'pcandy': G.Companion.addLevels(pl, 3); break;
       case 'pstone': G.Companion.evoStone(pl); break;
-      case 'hpup': pl.addMaxHp(30); G.Spawner.say(G.T('+30 de vida máxima'), 2.4, true); break;
-      case 'revive': pl.reviveSeed = true; G.Spawner.say(G.T('Llevas una Semilla Revivir: si caes, vuelves'), 2.8, true); break;
+      case 'hpup': pl.addMaxHp(30); G.Spawner.say('+30 de vida máxima', 2.4, true); break;
+      case 'revive': pl.reviveSeed = true; G.Spawner.say('Llevas una Semilla Revivir: si caes, vuelves', 2.8, true); break;
       case 'egg':
-        if (pl.buddy || pl.egg) G.Spawner.say(G.T('Ya tienes compañero (o un huevo)'), 2.4, true);
+        if (pl.buddy || pl.egg) G.Spawner.say('Ya tienes compañero (o un huevo)', 2.4, true);
         else G.Companion.gotEgg(pl);
         break;
       case 'upgrade': {
         const list = G.LevelUp.offer(pl, 6);
         const c = list.find(o => o.type !== 'stat') || list[0];
-        if (c) { c.apply(pl); G.Spawner.say(G.T('Mejora') + ': ' + G.T(c.title), 2.6, true); }
+        if (c) { c.apply(pl); G.Spawner.say('Mejora' + ': ' + G.T(c.title), 2.6, true); }
         break;
       }
     }

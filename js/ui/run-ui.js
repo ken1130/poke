@@ -43,7 +43,7 @@ G.RunUI = (() => {
     for (const id of ['lvl-auto', 'pause-auto']) {
       const b = $(id);
       if (!b) continue;
-      b.textContent = G.T(AUTO_NAME[m]) + (id === 'lvl-auto' && autoT ? ' · ' + G.T('toca para parar') : '');
+      b.textContent = G.T(AUTO_NAME[m] || AUTO_NAME.off) + (id === 'lvl-auto' && autoT ? ' · ' + G.T('toca para parar') : '');
       b.classList.toggle('on', m !== 'off');
     }
   }

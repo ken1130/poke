@@ -3,6 +3,19 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-21', title: { zh: '組隊連線與手機版面修正', en: 'Co-op and phone layout fixes' },
+    fix: [
+      { zh: "派對廣場：上方那條列（球場、比分、「離開比賽」）在手機上會壓住血條和時鐘，在電腦上壓到時鐘下面那行：現在移到下面一點", en: "Party Plaza: the top strip (court, score, “Leave match”) covered the HP bar and clock on phones, and the line under the clock on desktop. It now sits lower." },
+      { zh: "守護大壯：「立刻開始第 N 波」按鈕會壓住大字提示和大壯本人：現在放在下方招式欄上面", en: "Guard Dazhuang: the “Start the wave now” button covered the big notice and Dazhuang. It is now at the bottom, above the moves." },
+      { zh: "如果存檔裡沒有選夥伴，回到首頁時畫面會壞掉：現在會自動選你擁有的第一隻", en: "If the save ended up with no partner selected, returning to the menu broke the screen; it now picks the first one you own." },
+      { zh: "組隊時，隊友的英雄大叫會讓每個人的畫面都閃白、震動、播頭目音效：現在只有自己的大叫才會", en: "In co-op, a teammate's Hero scream flashed and shook everyone's screen with the boss sound: now only your own does." },
+      { zh: "組隊時，阿爾宙斯的提示（審判、十八石板、護盾破了）隊友會收到兩次", en: "In co-op, Arceus's announcements (Judgment, Judgment of the 18 Plates, shield broken) reached teammates twice." },
+      { zh: "組隊時，阿爾宙斯瞬移在隊友畫面上是「滑過去」而且沒有特效：現在會直接出現在新位置，並有特效和音效", en: "In co-op, when Arceus teleported, teammates saw it slide to the spot without the burst or ring: now it appears instantly, with its effects." },
+      { zh: "阿爾宙斯可能在瞬移白圈出現後直接改放蓄力招，白圈會炸但牠沒過來：現在會先完成瞬移", en: "Arceus could start charging an attack with a teleport already marked: the white circle went off but it never arrived. The teleport now completes first." },
+      { zh: "阿爾宙斯召喚的兩隻小頭目可能極巨化，牠們的減益不受「同時最多兩個詛咒」限制（會疊到三個）：現在牠們不會極巨化，而且所有極巨化頭目的減益都照上限", en: "Arceus's two lesser bosses could spawn Dynamaxed and their curses bypassed the two-at-once cap (you could have three). They no longer Dynamax, and any Dynamax boss's curses respect the cap." },
+      { zh: "組隊時，房主組合出來的提示（「野生的 X 出現了！」「附近有異色的 X」…）隊友看到的是西班牙文：現在每個人都看自己的語言。英文版有些提示被翻兩次會變形（「Kecleon’s thanks has opened…」），也修了", en: "In co-op, announcements the host builds with a name (\"A wild X appeared!\", \"A shiny X is nearby!\"…) reached teammates in Spanish: everyone now sees them in their own language. And in English, some announcements translated twice came out garbled (\"Kecleon’s thanks has opened…\")." },
+      { zh: "組隊進商店或神秘房間時，「停在門口就會離開」的提示有人碰到門就會重複出現：現在每個房間只提示一次", en: "Shop and mystery rooms in co-op: the “Stay at the door” notice repeated every time someone brushed the door; now once per room." },
+    ] },
   { d: '2026-10-20', title: { zh: '阿爾宙斯變強、頭目依實力調整、守護大壯金錢分開', en: 'Tougher Arceus, bosses scale with your power, Guard Dazhuang separate coins' },
     chg: [
       { zh: "英雄的「嚇到炸毛」重新設計：腳下有恐懼條，身邊敵人越多漲越快；平常放小震波（範圍變大、不會再把敵人推出範圍）；恐懼條滿了就大叫爆發，大範圍高傷害、把敵人嚇呆，自己短暫無敵（進化後連叫兩次）", en: "Hair-Raiser (Hero) redesigned: a fear bar under his feet fills faster the more enemies are nearby; meanwhile, small shockwaves (longer reach, no longer push enemies out of range); when full, a huge SCREAM that hits hard, freezes enemies in fear and makes him briefly invulnerable (evolved: two screams)." },

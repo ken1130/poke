@@ -62,7 +62,7 @@ G.Interact = (() => {
     G.FX.ring(p.x, p.y - 8, 6, 80, '#7dffb0', 0.6, 4);
     for (let i = 0; i < 16; i++) G.FX.px(pl.x + G.U.rand(-pl.r, pl.r), pl.y - G.U.rand(0, pl.bodyH), '#7dffb0', { vy: -60, life: 0.6 });
     G.Audio.sfx('heal');
-    G.Spawner.say(G.T('¡El manantial te ha curado del todo! (y se ha secado)'), 2.6, true);
+    G.Spawner.say('¡El manantial te ha curado del todo! (y se ha secado)', 2.6, true);
   }
 
   function usePower(pl, p) {

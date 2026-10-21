@@ -1336,8 +1336,8 @@ G.Combat = (() => {
     const R = row.br * TILE;
     const near = enemiesIn(pl.x, pl.y, R).filter(e => !e.dead);
     G.ExVFX.scareShout(pl, R, !!m.evolved, k < 1);
+    if (ghost) return;                                    // (el grito de un compañero: sólo se ve; antes también sacudía y sonaba)
     if (G.Camera.sees(pl.x, pl.y, 40)) { G.Audio.sfx('boss'); G.Camera.kick(k < 1 ? 0.3 : 0.55); }
-    if (ghost) return;
     const dmg = (row.dmg + row.per * Math.min(row.cap, near.length)) * row.bk * k * pl.atk;
     for (const e of near) {
       hit(pl, e, dmg, G.U.TYPE_COLOR.normal, e.x - pl.x, e.y - pl.y, 120, m);

@@ -63,7 +63,7 @@ G.Funny = (() => {
       karps.add(e.id); n++;
     }
     if (n) {
-      G.Spawner.say(G.T('¡La gran migración de Magikarp! (no hacen nada… pero dan monedas)'), 3.5, true);
+      G.Spawner.say('¡La gran migración de Magikarp! (no hacen nada… pero dan monedas)', 3.5, true);
       if (G.Coop.active) G.Coop.say('¡La gran migración de Magikarp! (no hacen nada… pero dan monedas)', 3.5);
       G.Audio.sfx('surge');
     }
@@ -79,7 +79,7 @@ G.Funny = (() => {
       if (!G.World.isFree(x, y, 40)) continue;
       setSnorlax(x, y);
       if (G.Coop.active && G.Coop.isHost) G.Coop.broadcast(['dg', 'fn', 'snor', Math.round(x), Math.round(y)]);
-      G.Spawner.say(G.T('Un Snorlax duerme en el camino… quédate a su lado para despertarlo'), 3.5, true);
+      G.Spawner.say('Un Snorlax duerme en el camino… quédate a su lado para despertarlo', 3.5, true);
       return;
     }
   }
@@ -113,7 +113,7 @@ G.Funny = (() => {
     G.Camera.kick(1.2);
     G.Audio.sfx('boss');
     if (pl && !pl.dead) { pl.heal(pl.maxHp * 0.5); G.FX.ring(pl.x, pl.y, 6, 80, '#5fe08a', 0.6, 4); }
-    G.Spawner.say(G.T('¡Snorlax se ha despertado! Aplastamiento y curación para todos'), 3, true);
+    G.Spawner.say('¡Snorlax se ha despertado! Aplastamiento y curación para todos', 3, true);
     snorlax = null;
   }
 

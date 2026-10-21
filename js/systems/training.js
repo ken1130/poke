@@ -196,7 +196,7 @@ G.Training = (() => {
     if (cfg.items && cfg.items.length) applyItems(pl, cfg.items);
     placeDummies(pl.x, pl.y);
     showHud();
-    G.Spawner.say(G.T('Sala de entrenamiento'), 2.4, true);
+    G.Spawner.say('Sala de entrenamiento', 2.4, true);
     setTimeout(() => { if (on() && G.Game.state === 'playing' && !cfg.moves) openPanel(); }, 400);
   }
 

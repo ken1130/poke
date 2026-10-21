@@ -345,7 +345,7 @@ G.PvP = (() => {
     for (const h of hitDirs) h.t -= dt;
     hitDirs = hitDirs.filter(h => h.t > 0);
     const t = G.Game.st.time;
-    if (t >= ZONE_FROM && t - dt < ZONE_FROM) { G.Spawner.say(G.T('¡La zona empieza a cerrarse! Ve hacia el centro'), 3.5, true); G.Audio.sfx('boss'); }
+    if (t >= ZONE_FROM && t - dt < ZONE_FROM) { G.Spawner.say('¡La zona empieza a cerrarse! Ve hacia el centro', 3.5, true); G.Audio.sfx('boss'); }
     for (const f of feed) f.t -= dt;
     feed = feed.filter(f => f.t > 0);
     if (hitMark > 0) hitMark -= dt;
@@ -479,7 +479,7 @@ G.PvP = (() => {
     pl.slots = pl.slots.map(g => g.map(m => up.get(m)));
     pl.setActive(0);
     G.Audio.sfx('confirm');
-    G.Spawner.say(G.T('¡Listo! Cambia de movimiento con 1-3 (o tocando su icono)'), 3, true);
+    G.Spawner.say('¡Listo! Cambia de movimiento con 1-3 (o tocando su icono)', 3, true);
     rerollMode = false;
   }
   /** Cada fotograma: cuenta atrás de la elección. */

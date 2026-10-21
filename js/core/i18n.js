@@ -95,8 +95,13 @@ G.I18n = (() => {
     let r = brand(core(s), lang);
     if (cache.size > 4000) cache.clear();
     cache.set(s, r);
+    if (r !== s) { if (made.size > 4000) made.clear(); made.add(r); }
     return r;
   }
+  // Lo que ya ha salido de t(): volver a traducirlo lo estropea en inglés («Kecleon has opened…» →
+  // «Kecleon’s thanks has opened…», por los trozos sueltos). spawner.say lo mira (2026-10-21).
+  const made = new Set();
+  function done(s) { return made.has(s); }
 
   function core(s) {
     // Respeta los espacios de alrededor (nodos de texto del DOM).
@@ -124,7 +129,7 @@ G.I18n = (() => {
   }
 
   /** Texto con huecos para el código: T('Nivel {x}', 5). */
-  function f(es, ...vals) { let i = 0; return t(es).replace(/\{x\}/g, () => vals[i++]); }
+  function f(es, ...vals) { let i = 0; const r = t(es).replace(/\{x\}/g, () => vals[i++]); if (r !== es) made.add(r); return r; }
 
   // ---------------- DOM ----------------
   const ATTRS = ['placeholder', 'title', 'alt', 'aria-label'];
@@ -188,6 +193,6 @@ G.I18n = (() => {
     location.reload();
   }
 
-  return { lang, add, t, f, set, startDom, walk };
+  return { lang, add, t, f, set, startDom, walk, done };
 })();
 G.T = G.I18n.t;

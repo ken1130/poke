@@ -224,7 +224,7 @@ G.Evo = (() => {
     if (i < 0) {
       pl.megaSkip = true;
       G.Audio.sfx('back');
-      G.Spawner.say(G.T('Cuando quieras: M o el botón «Mega» para megaevolucionar'), 3, true);
+      G.Spawner.say('Cuando quieras: M o el botón «Mega» para megaevolucionar', 3, true);
       return;
     }
     G.Audio.sfx('confirm');

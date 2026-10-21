@@ -175,7 +175,7 @@ G.Floors = (() => {
         m.lordMinion = true;
         if (!m.elite) m.makeElite(G.Enemy.rollAffixes(t));
       }
-      G.Spawner.say(G.T('¡Arceus llama a sus guardianes!'), 3.2);
+      G.Spawner.say('¡Arceus llama a sus guardianes!', 3.2);
       shieldUp(e);
       G.Audio.sfx('boss'); G.Camera.kick(0.9);
       G.FX.ring(e.x, e.y, 20, 260, '#f2e6b0', 0.7, 6);
@@ -195,7 +195,7 @@ G.Floors = (() => {
       }
       // Furia: más rápido y más fuerte.
       e.spd *= 1.2; e.dmg *= 1.15;
-      G.Spawner.say(G.T('¡Arceus se enfurece! Llegan dos jefes más'), 3.4);
+      G.Spawner.say('¡Arceus se enfurece! Llegan dos jefes más', 3.4);
       shieldUp(e);
       G.Audio.sfx('legend'); G.Camera.kick(1.4);
       G.FX.ring(e.x, e.y, 20, 320, '#ffd23f', 0.8, 8);
@@ -206,7 +206,7 @@ G.Floors = (() => {
     let k = 0;
     // (sin escudo y de un golpe: un élite con burbuja se quedaba vivo)
     for (const m of G.EnemyMgr.all()) if (m.lordMinion && !m.dead) { m.shield = 0; m.shieldT = 0; m.hurt(m.maxHp * 10 + m.hp, '#ffffff'); k++; }
-    if (k) G.Spawner.say(G.T('¡Sus guardianes huyen con él!'), 2.6);
+    if (k) G.Spawner.say('¡Sus guardianes huyen con él!', 2.6);
   }
   /*
    * Arceus más duro (2026-10-19, V3.1, pedido del dueño):
@@ -240,20 +240,19 @@ G.Floors = (() => {
   function shieldUp(e) {
     e.lordShield = (e.lordShield || 0) + Math.round(e.maxHp * LORD.shieldPh);
     G.FX.ring(e.x, e.y, 10, 150, '#ffe9a0', 0.6, 5);
-    G.Spawner.say(G.T('¡El Escudo Divino de Arceus se renueva!'), 2.8);
+    G.Spawner.say('¡El Escudo Divino de Arceus se renueva!', 2.8);
   }
   /** enemy.js (anfitrión): se le ha roto el Escudo Divino. */
   function lordShieldBroken(e) {
     G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#ffe9a0', 40, 300);
     G.FX.ring(e.x, e.y, 10, 220, '#fff6d0', 0.6, 6);
     G.Camera.kick(0.9); G.Audio.sfx('break');
-    G.Spawner.say(G.T('¡El Escudo Divino se ha roto!'), 2.6);
-    if (G.Coop.active) G.Coop.say(G.T('¡El Escudo Divino se ha roto!'), 2.6);
+    G.Spawner.say('¡El Escudo Divino se ha roto!', 2.6);
   }
   /** Anfitrión, cada fotograma con Arceus vivo: ataques cargados, maldiciones y sincronía. */
   function lordTick(e, dt, live) {
     if (lordCast) castStep(e, dt, live);
-    else if ((lordUltT -= dt) <= 0) startCast(e, live);
+    else if ((lordUltT -= dt) <= 0 && !lordTp) startCast(e, live);     // (con un teletransporte avisado, primero se completa)
     if (!lordCast && (lordDebT -= dt) <= 0) { lordDebT = LORD.debEvery; curse(e); if (lordPh >= 2) curse(e); }
     teleStep(e, dt, live);
     // Escudo e invulnerabilidad para los demás (sólo si cambian, como mucho 4 veces por segundo).
@@ -273,7 +272,7 @@ G.Floors = (() => {
     lordCast = { kind, t: 0, dur, wave: 0 };
     lordTp = null;
     e.lordInv = true; e.rootT = Math.max(e.rootT || 0, dur);
-    const say = m => { G.Spawner.say(G.T(m), 2.6); if (G.Coop.active) G.Coop.say(G.T(m), 2.6); };
+    const say = m => G.Spawner.say(m, 2.6);          // (spawner.say ya lo manda a los compañeros; antes llegaba dos veces)
     if (kind === 'judge' || kind === 'both')
       G.Hazards.add({ kind: 'zone', x: e.x, y: e.y, r: LORD.judgeR, delay: LORD.chargeT, dmg: e.dmg * LORD.judgeK, type: 'normal', color: '#ffe9a0' });
     if (kind === 'judge') say('¡Arceus carga la Sentencia! ¡Sal del círculo!');
@@ -301,10 +300,9 @@ G.Floors = (() => {
     if (lordPh < 1 || lordCast) return;
     if (lordTp) {
       if ((lordTp.t -= dt) > 0) return;
-      G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#fff6d0', 24, 260);
+      if (G.Coop.active) G.Coop.broadcast(['ltp', e.id, Math.round(lordTp.x), Math.round(lordTp.y)]);
+      teleFx(e, lordTp.x, lordTp.y);
       e.x = lordTp.x; e.y = lordTp.y; lordTp = null;
-      G.FX.ring(e.x, e.y, 10, LORD.tpR + 30, '#fff6d0', 0.45, 5);
-      G.Audio.sfx('rift');
       return;
     }
     if ((lordTpT -= dt) > 0) return;
@@ -319,6 +317,12 @@ G.Floors = (() => {
       return;
     }
     lordTpT = 1;                                                // no había sitio: otra vez dentro de 1 s
+  }
+  /** Todos: estallido donde estaba, aro donde aparece. Los invitados ('ltp') además lo colocan ya (sin deslizarse). */
+  function teleFx(e, x, y) {
+    G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#fff6d0', 24, 260);
+    G.FX.ring(x, y, 10, LORD.tpR + 30, '#fff6d0', 0.45, 5);
+    if (G.Camera.sees(x, y, 60) || G.Camera.sees(e.x, e.y, 60)) G.Audio.sfx('rift');
   }
   function castStep(e, dt, live) {
     const c = lordCast;
@@ -345,6 +349,11 @@ G.Floors = (() => {
     if (G.Coop.active) G.Coop.broadcast(['ldb', kind, LORD.debDur, Math.round(e.x), Math.round(e.y), LORD.debR]);
     applyCurse(kind, LORD.debDur, e.x, e.y, LORD.debR);
   }
+  /** Como mucho dos maldiciones a la vez (con tres no había quien jugara); también las de los jefes Dinamax (gmaxfoe.js). */
+  function canCurse(pl, k) {
+    const on = ['lordSlowT', 'lordWeakT', 'lordNoHealT'].filter(c => c !== k && pl[c] > 0).length;
+    return on < 2 || pl[k] > 0;
+  }
   const CURSE_MSG = { slow: '¡Maldición de Arceus: más lento!', weak: '¡Maldición de Arceus: menos ataque!', noheal: '¡Maldición de Arceus: no puedes curarte!' };
   /** Cada uno, a su Pokémon: la maldición si está a su alcance. */
   function applyCurse(kind, dur, x, y, r) {
@@ -352,9 +361,7 @@ G.Floors = (() => {
     if (!pl || pl.dead || G.U.dist2(pl.x, pl.y, x, y) > r * r) return;
     const k = { slow: 'lordSlowT', weak: 'lordWeakT', noheal: 'lordNoHealT' }[kind];
     if (!k) return;
-    // Como mucho dos a la vez (con tres no había quien jugara).
-    const on = ['lordSlowT', 'lordWeakT', 'lordNoHealT'].filter(c => c !== k && pl[c] > 0).length;
-    if (on >= 2 && !(pl[k] > 0)) return;
+    if (!canCurse(pl, k)) return;
     pl[k] = Math.max(pl[k] || 0, dur);
     G.FX.ring(pl.x, pl.y, 6, 70, '#b07cff', 0.5, 4);
     G.FX.burst(pl.x, pl.y - pl.bodyH * 0.6, '#d9b8ff', 12, 120);
@@ -540,10 +547,10 @@ G.Floors = (() => {
   function remindTick(dt) {
     remindT -= dt;
     const age = stairsAge();
-    if (farmTold < 1 && age >= FARM_A - 30) { farmTold = 1; G.Spawner.say(G.T('En 30 s este piso dará la mitad de experiencia y monedas: ¡baja ya!'), 3.4, true); G.Audio.sfx('error'); remindT = REMIND; return; }
-    if (farmTold < 2 && age >= FARM_A) { farmTold = 2; G.Spawner.say(G.T('Lleváis mucho en este piso: experiencia y monedas ×0,5'), 3.4, true); remindT = REMIND; return; }
-    if (farmTold < 3 && age >= FARM_B) { farmTold = 3; G.Spawner.say(G.T('Experiencia y monedas ×0,25: ¡bajad al siguiente piso!'), 3.4, true); remindT = REMIND; return; }
-    if (remindT <= 0) { remindT = REMIND; G.Spawner.say(G.T('¡Las escaleras al siguiente piso ya están abiertas!'), 3, true); G.Audio.sfx('confirm'); }
+    if (farmTold < 1 && age >= FARM_A - 30) { farmTold = 1; G.Spawner.say('En 30 s este piso dará la mitad de experiencia y monedas: ¡baja ya!', 3.4, true); G.Audio.sfx('error'); remindT = REMIND; return; }
+    if (farmTold < 2 && age >= FARM_A) { farmTold = 2; G.Spawner.say('Lleváis mucho en este piso: experiencia y monedas ×0,5', 3.4, true); remindT = REMIND; return; }
+    if (farmTold < 3 && age >= FARM_B) { farmTold = 3; G.Spawner.say('Experiencia y monedas ×0,25: ¡bajad al siguiente piso!', 3.4, true); remindT = REMIND; return; }
+    if (remindT <= 0) { remindT = REMIND; G.Spawner.say('¡Las escaleras al siguiente piso ya están abiertas!', 3, true); G.Audio.sfx('confirm'); }
   }
 
   /** Bajar al piso n (todos lo hacen igual; el anfitrión además recoloca discos y pociones). */
@@ -661,7 +668,7 @@ G.Floors = (() => {
     graceT = GRACE;                                      // tregua todo el rato: ni enemigos ni jefes
     if (G.Rift.inArena || (G.Dungeon && G.Dungeon.inRoom)) return;      // (por si acaso: el reloj espera)
     treasureT -= dt;
-    if (!treasureWarn && treasureT <= 10) { treasureWarn = true; G.Spawner.say(G.T('¡10 s para dejar el piso del tesoro!'), 2.6, true); G.Audio.sfx('error'); }
+    if (!treasureWarn && treasureT <= 10) { treasureWarn = true; G.Spawner.say('¡10 s para dejar el piso del tesoro!', 2.6, true); G.Audio.sfx('error'); }
     if (treasureT > 0 || !authority()) return;
     const t = treasure;
     if (G.Coop.active) G.Coop.broadcast(['fl', t.seed, t.next, t.th, t.danger]);
@@ -721,7 +728,7 @@ G.Floors = (() => {
         else {
           endless = true;
           if (G.Coop.active) G.Coop.broadcast(['fcn']);
-          G.Spawner.say(G.T('¡Sigue la aventura! Modo sin fin: los pisos se endurecen'), 3.4, true);
+          G.Spawner.say('¡Sigue la aventura! Modo sin fin: los pisos se endurecen', 3.4, true);
         }
       };
       box.appendChild(el);
@@ -845,7 +852,7 @@ G.Floors = (() => {
     G.FX.burst(x, y - 20, '#fff3b0', 24, 200);
     if (G.U.dist2(x, y, G.Camera.x, G.Camera.y) < 900 * 900) G.Camera.kick(1.1);
     G.Audio.sfx('legend');
-    G.Spawner.say(G.T('¡ATAQUE COMBINADO!'), 1.8, true);
+    G.Spawner.say('¡ATAQUE COMBINADO!', 1.8, true);
   }
 
   // ---------------- red ----------------
@@ -858,9 +865,10 @@ G.Floors = (() => {
       case 'ftr': enterTreasure(ev[1], ev[2], ev[3], ev[4], ev[5]); break;
       case 'fbs': floor = ev[2]; announceBoss(ev[1], !!ev[3]); break;
       case 'fclr': onClear(ev[1]); break;
-      case 'fcn': endless = true; G.Spawner.say(G.T('¡Sigue la aventura! Modo sin fin: los pisos se endurecen'), 3.4, true); break;
+      case 'fcn': endless = true; G.Spawner.say('¡Sigue la aventura! Modo sin fin: los pisos se endurecen', 3.4, true); break;
       case 'cb': comboFx(ev[1], ev[2], ev[3], ev[4]); break;
       case 'lst': lordView = { id: ev[1], sh: (ev[2] || 0) / 100, inv: ev[3] ? 1 : 0 }; break;     // escudo/invulnerable de Arceus
+      case 'ltp': { const e = G.EnemyMgr.get(ev[1]); if (e) { teleFx(e, ev[2], ev[3]); e.x = ev[2]; e.y = ev[3]; if (e.net && e.net.buf) e.net.buf.length = 0; } break; }   // teletransporte (2026-10-21)
       case 'ldb': applyCurse(ev[1], ev[2], ev[3], ev[4], ev[5]); break;                             // maldición de Arceus
     }
   }
@@ -1148,7 +1156,7 @@ G.Floors = (() => {
     ctx.restore();
   }
 
-  return { reset, update, onNet, scaleEnemy, graceMul, get inGrace() { return graceT > 0; }, drawable, drawAir, drawHud, drawComboRow, drawFade, fireCombo, comboFx, descend,
+  return { reset, update, onNet, scaleEnemy, canCurse, graceMul, get inGrace() { return graceT > 0; }, drawable, drawAir, drawHud, drawComboRow, drawFade, fireCombo, comboFx, descend,
            diffTime, holdBoss, pickDef, biomeAt, pickClear, floorBoss, THEMES, LAST,
            get floor() { return floor; }, get coinMul() { return coinMul(); },
            /** Compatibilidad: la primera escalera (tips.js). Todas: stairsAll. */

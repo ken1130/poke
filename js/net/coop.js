@@ -570,7 +570,7 @@ G.Coop = (() => {
       case 'st2': case 'fbs': case 'fclr': case 'fcn': G.Floors.onNet(ev); break;   // dos escaleras, jefe del piso, mazmorra superada, seguir (floors.js)
       // Piso del tesoro (2026-10-16): faltaba aquí y el invitado se quedaba en el mapa viejo con sus enemigos.
       case 'ftr': G.Floors.onNet(ev); break;
-      case 'lst': case 'ldb': G.Floors.onNet(ev); break;   // Arceus: escudo/invulnerable y maldiciones (2026-10-19)
+      case 'lst': case 'ldb': case 'ltp': G.Floors.onNet(ev); break;   // Arceus: escudo/invulnerable y maldiciones (2026-10-19)
       case 'sbox': api.sbox && api.sbox(); break;
       case 'fbox': api.fbox && api.fbox(); break;
       case 'ms': api.milestone && api.milestone(ev[1]); break;            // hito de tiempo (boons.js)
@@ -585,7 +585,8 @@ G.Coop = (() => {
         G.Audio.sfx('break');
         break;
       case 'pb': G.World.breakAt(ev[1], ev[2]); break;
-      case 'say': G.Spawner.say(ev[1], ev[2]); break;
+      // ev[3]: idioma del anfitrión; ev[4]: ya iba en ese idioma (no en español). Se traduce sólo lo que viene en español.
+      case 'say': G.Spawner.say(ev[1], ev[2], false, !!ev[4] || ev[3] === G.I18n.lang); break;
       case 'heal': if (!local.dead) { local.heal(local.maxHp * ev[1]); G.FX.ring(local.x, local.y, 6, 60, '#5fe08a', 0.4, 3); } break;
       case 'lu': api.levelStart(ev[1]); break;
       case 'xg': api.gainXp && api.gainXp(ev[1]); break;
@@ -637,7 +638,7 @@ G.Coop = (() => {
   function enemyShot(p, type) { emit(['es', r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), r2(p.dmg), p.r, p.life, type]); }
   function pickupAdded(o) { emit(['pk', o.id, o.kind, r1(o.x), r1(o.y), o.value]); }
   function pickupGone(id) { emit(['pc', id]); }
-  function say(text, secs) { emit(['say', text, secs]); }
+  function say(text, secs, done) { emit(['say', text, secs, G.I18n.lang, done ? 1 : 0]); }
 
   function propBroken(p) {
     if (host) emit(['pb', p.tx, p.ty]);

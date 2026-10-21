@@ -152,7 +152,7 @@ G.Stages = (() => {
       st.done = true; st.endT = 2.2; sendT = 0;      // que les llegue ya a los demás
       // Estrellas con lo de este momento (no con lo de 2 s después).
       st.winT = time; st.winHp = pl.hp / pl.maxHp;
-      G.Spawner.say(G.T('¡Fase superada!'), 2.4);
+      G.Spawner.say('¡Fase superada!', 2.4);
       G.Audio.sfx('shinyGet');
       G.Game.flash('#fff6c0', 0.5);
     }
@@ -167,7 +167,7 @@ G.Stages = (() => {
     G.Pickups.drop('item', x - 20, y - 8, G.Items.roll());
     const first = !starsOf(st.s.id) || (st.hard && !hardDone(st.s.id));
     if (first) G.Pickups.drop('ticket10', x + 20, y - 8, 1);
-    G.Spawner.say(G.T('¡Premio del líder!') + (first ? ' ' + G.T('(ticket ×10 la primera vez)') : ''), 3);
+    G.Spawner.say('¡Premio del líder!' + (first ? ' ' + G.T('(ticket ×10 la primera vez)') : ''), 3);
   }
 
   function spawnTokens(pl, n) {

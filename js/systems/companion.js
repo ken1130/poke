@@ -35,7 +35,7 @@ G.Companion = (() => {
   function addGear(pl, id) {
     if (!pl || !GEAR[id]) return;
     pl.petGear = pl.petGear || [];
-    if (pl.petGear.includes(id)) { G.Spawner.say(G.T('Tu compañero ya lleva eso'), 2, true); return; }
+    if (pl.petGear.includes(id)) { G.Spawner.say('Tu compañero ya lleva eso', 2, true); return; }
     pl.petGear.push(id);
     G.Spawner.say(G.I18n.f('Equipo de compañero: {x}', G.T(GEAR[id].name)) + (pl.buddy ? '' : ' · ' + G.T('se lo pondrá al eclosionar')), 2.8, true);
     G.FX.ring(pl.x, pl.y, 6, 90, '#9fe0b0', 0.5, 4);

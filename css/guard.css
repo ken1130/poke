@@ -1,15 +1,16 @@
 /* «Proteger a Dazhuang» (guard.js, 2026-10-16): botón «Empezar la oleada ya» durante la preparación.
  * Arriba en el centro, debajo de la línea de la oleada (hud.js); los puestos usan el panel de la
  * tienda de Kecleon (#scr-shop) con sus estilos de escritorio y de móvil (rwd-run.css). */
+/* (2026-10-21: abajo, encima de los movimientos; arriba tapaba el aviso grande y a Dazhuang) */
 #guard-next {
-  position: fixed; z-index: 18; left: 50%; top: 128px; transform: translateX(-50%);
+  position: fixed; z-index: 18; left: 50%; bottom: 118px; transform: translateX(-50%);
   padding: 8px 16px; font-size: 15px; white-space: nowrap;
   box-shadow: inset 0 2px 0 rgba(255,255,255,.35), 0 4px 0 #4a2208, 0 0 18px rgba(255,159,67,.35);
 }
 #guard-next.hidden { display: none; }
-/* Móvil en horizontal: más pequeño y un poco más arriba (la línea de la oleada está en el carril central). */
+/* Móvil en horizontal: más pequeño y un poco más abajo (encima de la fila de movimientos). */
 @media (max-height: 520px) {
-  #guard-next { top: 104px; padding: 5px 12px; font-size: 13px; min-height: 40px; }
+  #guard-next { bottom: 84px; padding: 5px 12px; font-size: 13px; min-height: 40px; }
 }
 /* Con el panel de los puestos abierto en el móvil (hoja de abajo), el botón no estorba arriba. */
 body:has(#scr-over:not(.hidden)) #guard-next { display: none; }

@@ -967,8 +967,8 @@ G.Plaza = (() => {
     const inside = G.U.dist2(pl.x, pl.y, hx, hy) < 46 * 46;
     if (inside && performance.now() - hutTold > 4000) {
       hutTold = performance.now();
-      if (!G.Social.room) G.Spawner.say(G.T('Las mesas de cartas se juegan en una sala: entra en «Jugar con amigos».'), 3.2, true);
-      else if (!(G.Social.room && G.Social.room.isHost)) G.Spawner.say(G.T('Cuando el anfitrión entre en la caseta, elegirá la mesa.'), 3, true);
+      if (!G.Social.room) G.Spawner.say('Las mesas de cartas se juegan en una sala: entra en «Jugar con amigos».', 3.2, true);
+      else if (!(G.Social.room && G.Social.room.isHost)) G.Spawner.say('Cuando el anfitrión entre en la caseta, elegirá la mesa.', 3, true);
     }
   }
 
@@ -977,7 +977,7 @@ G.Plaza = (() => {
     const room = G.Social.room;
     if (!room || !room.isHost) return;
     closeAll(game);
-    G.Spawner.say(G.T('Vamos a la mesa de cartas…'), 2, true);
+    G.Spawner.say('Vamos a la mesa de cartas…', 2, true);
     setTimeout(() => {
       if (on()) G.Game.quit();
       setTimeout(() => { if (G.LobbyUI.startParty) G.LobbyUI.startParty(game); }, 900);

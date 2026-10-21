@@ -121,7 +121,7 @@ G.ExVFX = (() => {
     }
     G.FX.ring(pl.x, pl.y, 10, R, second ? '#bfefff' : '#fff36a', 0.5, 7);
     G.FX.ring(pl.x, pl.y, 6, R * 0.6, '#ffffff', 0.35, 5);
-    if (!second && G.Game.flash) G.Game.flash('#fff6c0', 0.18);
+    if (!second && pl === G.Game.player && G.Game.flash) G.Game.flash('#fff6c0', 0.18);   // (sólo tu propio grito)
   }
 
   // ---------------- Turbo Abuela · Turbo Fantasma ----------------

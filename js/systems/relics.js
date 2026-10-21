@@ -60,7 +60,7 @@ G.Relics = (() => {
         G.Audio.sfx('legend');
         G.FX.ring(pl.x, pl.y, 8, 120, '#c47bff', 0.8, 6);
         G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#e2c6ff', 34, 240);
-        G.Spawner.say(G.T('Reliquia') + ': ' + G.T(r.name), 2.6, true);
+        G.Spawner.say('Reliquia' + ': ' + G.T(r.name), 2.6, true);
         done();
       };
       box.appendChild(el);

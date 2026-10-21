@@ -41,7 +41,9 @@ G.MenuUI = (() => {
 
   function open() {
     const s = G.DB.save;
-    const mon = G.DEX_BY[s.partner];
+    // (2026-10-21: sin compañero en el guardado, el primero que tengas o Bulbasaur; antes petaba aquí)
+    let mon = G.DEX_BY[s.partner];
+    if (!mon) { s.partner = Object.keys(s.owned || {}).map(Number).find(d => G.DEX_BY[d]) || 1; mon = G.DEX_BY[s.partner]; }
     const shiny = !!s.partnerShiny && G.DB.ownsShiny(mon.dex);
     G.UI.chrome(true);
     G.UI.show('scr-menu');

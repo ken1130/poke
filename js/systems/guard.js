@@ -425,7 +425,7 @@ G.Guard = (() => {
     if (ev[1] === 'fx') { stompFx(); return; }
     if (ev[1] === 'poor') { G.Spawner.say(G.I18n.f('Faltan monedas: cuesta {x}', ev[2]), 2, true); G.Audio.sfx('error'); return; }
     if (ev[1] === 'g') { applyPersonal(G.Game.player, ev[2]); return; }
-    if (ev[1] === 'inc' || ev[1] === 'refund') { wallet += Math.max(0, +ev[2] || 0); if (ev[1] === 'refund') G.Spawner.say(G.T('Alguien lo compró antes: te devolvemos las monedas'), 2.4, true); return; }
+    if (ev[1] === 'inc' || ev[1] === 'refund') { wallet += Math.max(0, +ev[2] || 0); if (ev[1] === 'refund') G.Spawner.say('Alguien lo compró antes: te devolvemos las monedas', 2.4, true); return; }
     if (ev[1] !== 's' || !S) return;
     const d = ev[2];
     if (d.hp < S.dz.hp) flashT = 0.12;
@@ -560,7 +560,7 @@ G.Guard = (() => {
     if (!pl) return;
     G.FX.ring(pl.x, pl.y, 6, 70, '#7dffb0', 0.5, 3);
     if (key.startsWith('item:') || key.startsWith('art:')) G.Game.offerItem(key.slice(key.indexOf(':') + 1));
-    else if (key === 'pot:heal') { pl.heal(pl.maxHp * 0.6); G.Spawner.say(G.T('¡Te has curado!'), 2, true); }
+    else if (key === 'pot:heal') { pl.heal(pl.maxHp * 0.6); G.Spawner.say('¡Te has curado!', 2, true); }
     else if (key.startsWith('pot:')) G.Loot.drink(pl, key.slice(4));
     else if (key === 'pet:egg') {
       if (pl.buddy || pl.egg) return;
@@ -673,11 +673,11 @@ G.Guard = (() => {
     const dz = S.dz, k = dz.hp / Math.max(1, dz.mhp);
     if (warnWave !== S.wave || S.phase !== 'fight') { warnLvl = 0; warnWave = S.wave; }
     if (S.phase === 'fight' && !dz.dead) {
-      if (warnLvl < 1 && k < 0.5) { warnLvl = 1; G.Spawner.say(G.T('¡A Dazhuang le queda la mitad de la vida!'), 2.6, true); G.Audio.sfx('error'); G.FX.ring(dz.x, dz.y, 10, 120, '#ffb44a', 0.6, 5); }
-      if (warnLvl < 2 && k < 0.25) { warnLvl = 2; G.Spawner.say(G.T('¡Dazhuang no aguanta más! ¡Ve a protegerlo!'), 3, true); G.Audio.sfx('boss'); G.FX.ring(dz.x, dz.y, 10, 160, '#ff3a4a', 0.8, 6); G.Game.flash && G.Game.flash('#ff3a4a', 0.25); }
+      if (warnLvl < 1 && k < 0.5) { warnLvl = 1; G.Spawner.say('¡A Dazhuang le queda la mitad de la vida!', 2.6, true); G.Audio.sfx('error'); G.FX.ring(dz.x, dz.y, 10, 120, '#ffb44a', 0.6, 5); }
+      if (warnLvl < 2 && k < 0.25) { warnLvl = 2; G.Spawner.say('¡Dazhuang no aguanta más! ¡Ve a protegerlo!', 3, true); G.Audio.sfx('boss'); G.FX.ring(dz.x, dz.y, 10, 160, '#ff3a4a', 0.8, 6); G.Game.flash && G.Game.flash('#ff3a4a', 0.25); }
       // Le pegan y no lo estás viendo: recordatorio.
       const hurt = lastHp != null && dz.hp < lastHp - 0.5;
-      if ((hitWarnT -= dt) <= 0 && hurt && !G.Camera.sees(dz.x, dz.y, -40)) { hitWarnT = 6; G.Spawner.say(G.T('¡Están atacando a Dazhuang!'), 2, true); }
+      if ((hitWarnT -= dt) <= 0 && hurt && !G.Camera.sees(dz.x, dz.y, -40)) { hitWarnT = 6; G.Spawner.say('¡Están atacando a Dazhuang!', 2, true); }
     }
     lastHp = dz.hp;
   }

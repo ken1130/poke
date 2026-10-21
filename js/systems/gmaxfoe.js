@@ -89,7 +89,7 @@ G.GmaxFoe = (() => {
   }
   /** ¿Sale Dinamax este jefe? (spawner.js: jefes de siempre de la partida normal y de la torre) */
   function maybe(e) {
-    if (!e || !e.boss || e.floorBoss || e.raid || e.legend || e.dummy || G.PvP.on) return;
+    if (!e || !e.boss || e.floorBoss || e.lordMinion || e.raid || e.legend || e.dummy || G.PvP.on) return;   // (lordMinion: 2026-10-21)
     const c = CHANCE[G.Modes.run];
     if (c && Math.random() < c) make(e);
   }
@@ -172,9 +172,10 @@ G.GmaxFoe = (() => {
     pl.hurt(w.dmg, d.type, 's');                              // «Maxi»: Defensa Esp.
     if (pl.dead) return;
     let msg = null;
-    if (d.slow) { pl.lordSlowT = Math.max(pl.lordSlowT || 0, d.slow); msg = '¡Más lento!'; }
-    if (d.weak) { pl.lordWeakT = Math.max(pl.lordWeakT || 0, d.weak); msg = '¡Menos ataque!'; }
-    if (d.noheal) { pl.lordNoHealT = Math.max(pl.lordNoHealT || 0, d.noheal); msg = '¡No puedes curarte!'; }
+    // (2026-10-21: con el tope de dos a la vez de floors.js canCurse)
+    if (d.slow && G.Floors.canCurse(pl, 'lordSlowT')) { pl.lordSlowT = Math.max(pl.lordSlowT || 0, d.slow); msg = '¡Más lento!'; }
+    if (d.weak && G.Floors.canCurse(pl, 'lordWeakT')) { pl.lordWeakT = Math.max(pl.lordWeakT || 0, d.weak); msg = '¡Menos ataque!'; }
+    if (d.noheal && G.Floors.canCurse(pl, 'lordNoHealT')) { pl.lordNoHealT = Math.max(pl.lordNoHealT || 0, d.noheal); msg = '¡No puedes curarte!'; }
     if (d.knock) {
       const [nx, ny] = G.U.norm(pl.x - w.x, pl.y - w.y);
       const tx = pl.x + (nx || 1) * d.knock * 0.4, ty = pl.y + (ny || 0) * d.knock * 0.4;

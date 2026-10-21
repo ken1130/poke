@@ -3,7 +3,7 @@
  * puede hacer donde estás. Móvil en horizontal: más compacta y botones de 40 px.
  */
 #plaza-hud {
-  position: fixed; top: 40px; left: 50%; transform: translateX(-50%); z-index: 18;
+  position: fixed; top: 82px; left: 50%; transform: translateX(-50%); z-index: 18;   /* (2026-10-21: 40 → 82, tapaba la línea de debajo del reloj) */
   width: min(460px, calc(100% - 420px)); min-width: 280px;
   display: flex; flex-direction: column; gap: 6px; pointer-events: none;
   font-size: 13px; color: var(--ink, #f6ead2);
@@ -30,7 +30,8 @@
 /* Móvil en horizontal: arriba en el centro, entre el bloque de la izquierda y el minimapa. */
 @media (max-height: 520px) {
   /* Una sola tira baja: el Pokémon está en el centro de la pantalla y no se puede tapar. */
-  #plaza-hud { top: 34px; width: calc(100% - 340px); min-width: 230px; gap: 3px; flex-direction: row; align-items: flex-start; }
+  /* (2026-10-21: 34 → 72, tapaba la barra de vida y el reloj) */
+  #plaza-hud { top: 72px; width: calc(100% - 340px); min-width: 230px; gap: 3px; flex-direction: row; align-items: flex-start; }
   #plaza-hud .pz-top { order: 2; flex: none; }
   #plaza-hud .pz-top b { display: none; }
   #plaza-hud .pz-card { flex: 1; flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 3px 6px; gap: 4px 8px; }

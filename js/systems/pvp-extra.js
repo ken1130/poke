@@ -170,7 +170,7 @@ G.PvPX = (() => {
       }
       case 'ts':
         treasure = { id: ev[2], kind: ev[3] };
-        G.Spawner.say(G.T('¡Ha aparecido un tesoro en el centro de la zona!'), 2.6, true);
+        G.Spawner.say('¡Ha aparecido un tesoro en el centro de la zona!', 2.6, true);
         G.Audio.sfx('shiny');
         break;
       case 'tg': {
