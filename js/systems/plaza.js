@@ -7,6 +7,12 @@
  *            cuánto queda: la mecha chisporrotea y parpadea cada vez más deprisa). Se pasa
  *            tocando a otro o se lanza (F / botón). Al explotar queda fuera quien la tenga (o
  *            quien la lanzó, si está en el suelo). Gana el último que quede.
+ *   balón    «Balón prisionero» (躲避球, 2026-10-21): dos campos, 3 contra 3 (las CPU rellenan) y una
+ *            pelota. Quien la lleva la lanza al otro campo (F / botón): si alcanza a uno, ése cae a la
+ *            banda de detrás del campo rival (desde allí puede recoger las pelotas que lleguen y
+ *            lanzarlas). Si el que recibe pulsa lanzar/plancha justo antes (CATCH_WIN) o la pelota ya
+ *            va lenta y la mira, la atrapa: cae el lanzador y vuelve uno de los suyos. Al mejor de 3
+ *            rondas (DB_ROUNDS); cada ronda DB_ROUND_T s o hasta que un campo se queda vacío.
  *   casita   la caseta de cartas: el anfitrión entra y elige una mesa (Big Two, Cartas de
  *            tipos, Voltorb travieso): se vuelve a la sala y empieza la fiesta de mesa (party.js).
  * Se entra desde la sala (Fiesta → «Zona de fiesta» o «Patata caliente», que empieza ya en la
@@ -22,11 +28,12 @@
  *                       ['plz','close', mesa?]               todos de vuelta a la sala (mesa: la de cartas)
  *   invitado -> anfitrión ['plz','go', zona, modo]           empezar un juego desde su rincón
  *                       ['plz','throw', ángulo]              lanzar la bomba (si la lleva)
+ *                       ['plz','dthrow', ángulo]             balón prisionero: lanzar (si la lleva) o intentar atrapar
  */
 G.Plaza = (() => {
   const TS = () => G.Tiles.T * G.Sprites.PX;
   const TX = 7000, TY = 7000;            // centro de la zona (en casillas): lejos de todo lo demás
-  const RW = 22, RH = 14;                 // medio ancho / medio alto de la sala (casillas)
+  const RW = 22, RH = 22;                 // medio ancho / medio alto de la sala (casillas) (2026-10-21: alto 14 → 22, el balón prisionero va abajo)
   const WIN = 5;                          // puntos para ganar (tenis y voleibol)
   const SNAP = 1 / 12;                    // fotos del estado por segundo
   const CPU_DEX = [25, 133, 39, 52, 54, 143, 7, 175, 172, 197, 196, 470];
@@ -46,6 +53,16 @@ G.Plaza = (() => {
   // (2026-10-19, el dueño: «¿las mejoras de velocidad cuentan en la zona?») Aquí todos igual de rápidos:
   // sin mejoras de la tienda ni la velocidad de cada Pokémon (iban de 91 a 126; las CPU, 165-190).
   const PLAZA_SPD = 170;
+  // Balón prisionero (2026-10-21). La pelota va por el suelo: sale a DB_SPEED y frena DB_DRAG px/s² mientras
+  // «vuela» (puede alcanzar); por debajo de DB_FLY_MIN queda suelta y rueda frenando DB_ROLL hasta pararse.
+  const DB_SPEED = 380, DB_DRAG = 160, DB_FLY_MIN = 170, DB_ROLL = 240;
+  const DB_AIM = 0.87, DB_AIM_D = 480;        // ayuda de puntería: ±50° y hasta 480 px (como la patata)
+  const CATCH_WIN = 0.25, CATCH_SLOW = 220;   // atrapar: pulsado hace < 0.25 s, o la miras y va a < 220 px/s
+  const DB_ROUNDS = 3, DB_ROUND_T = 60, DB_MAX_ROUNDS = 5;   // al mejor de 3; empate a los 60 s → otra ronda (tope 5)
+  const DB_STRIP = 56, DB_LINE = 14;          // banda de fuera (px) y lo que nadie pisa a cada lado de la línea central
+  const DB_IDLE = 2;                          // pelota parada sin nadie que la coja: a los 2 s, al más cercano
+  const DB_CPU_HOLD = [1.5, 1.0, 0.7];        // lo que la CPU se la queda antes de lanzar (por nivel)
+  const DB_HOLD_MAX = 8;                      // nadie se la queda más de 8 s: sale sola hacia el rival más cercano
 
   let opts = null;                        // { zone, cpu } de la sala o del modo solitario
   let games = {};                         // zona -> juego (anfitrión: el estado de verdad; invitado: la foto)
@@ -55,15 +72,18 @@ G.Plaza = (() => {
   let lobbies = {};                       // zona -> { mode, t, by }
   // Dificultad de las CPU de las pistas (la elige quien empieza; la guarda el anfitrión) y el último
   // partido de cada zona (para «Otra partida» con los mismos). 2026-10-19.
+  // (balón prisionero: catch = probabilidad de atrapar en vez de esquivar; react = lo que tarda en reaccionar a
+  // una pelota que le viene, s; aim = error del lanzamiento, rad)
   const CPU_LV = [
-    { name: 'Fácil (CPU)',   miss: 0.2,  spd: 0.8,  err: 34 },
-    { name: 'Normal (CPU)',  miss: 0.08, spd: 1,    err: 18 },
-    { name: 'Difícil (CPU)', miss: 0.03, spd: 1.15, err: 8 }
+    { name: 'Fácil (CPU)',   miss: 0.2,  spd: 0.8,  err: 34, catch: 0.12, react: 0.38, aim: 0.2 },
+    { name: 'Normal (CPU)',  miss: 0.08, spd: 1,    err: 18, catch: 0.28, react: 0.2,  aim: 0.1 },
+    { name: 'Difícil (CPU)', miss: 0.03, spd: 1.15, err: 8,  catch: 0.45, react: 0.09, aim: 0.04 }
   ];
   let cpuLv = 1, lastMatch = {};
   const GATHER = 5;
   let hud = null, hudT = 0, snapT = 0, hutTold = 0;
   let lastKey = '';
+  const metaAsk = {};                     // zona -> cuándo pedí los datos de un juego que no tenía (invitado)
 
   const on = () => G.Modes.run === 'plaza';
   const authority = () => !G.Coop.active || G.Coop.isHost;
@@ -79,6 +99,8 @@ G.Plaza = (() => {
     if (kind === 'tennis') return { kind, cx: cx - 11 * ts, cy: cy - 6 * ts, hw: 7 * ts, hh: 3.6 * ts };
     if (kind === 'volley') return { kind, cx: cx - 11 * ts, cy: cy + 6 * ts, hw: 6.5 * ts, hh: 3.6 * ts };
     if (kind === 'potato') return { kind, cx: cx + 11.5 * ts, cy: cy - 5 * ts, r: 8 * ts };   // (2026-10-20: radio 6 → 8)
+    // Balón prisionero: abajo, un poco a la derecha (el cartel del voleibol queda a su izquierda).
+    if (kind === 'dodge') return { kind, cx: cx + 2 * ts, cy: cy + 15 * ts, hw: 7.5 * ts, hh: 3.8 * ts };
     return { kind: 'hut', cx: cx + 12 * ts, cy: cy + 7.5 * ts };
   }
   /*
@@ -154,16 +176,16 @@ G.Plaza = (() => {
     pl.x = cx + (i - (list.length - 1) / 2) * 40; pl.y = cy + 20;
     G.Camera.x = pl.x; G.Camera.y = pl.y;
     showHud();
-    G.Spawner.say(G.T(opts.zone === 'potato' ? 'Patata caliente' : 'Zona de fiesta'), 2.6, true);
-    // «Patata caliente» desde la sala: empieza en cuanto todos están dentro.
-    if (opts.zone === 'potato' && authority()) setTimeout(() => { if (on()) startGame('potato', 0, true); }, 1500);
+    G.Spawner.say(G.T(opts.zone === 'potato' ? 'Patata caliente' : opts.zone === 'dodge' ? 'Balón prisionero' : 'Zona de fiesta'), 2.6, true);
+    // «Patata caliente» / «Balón prisionero» desde la sala: empieza en cuanto todos están dentro.
+    if ((opts.zone === 'potato' || opts.zone === 'dodge') && authority()) setTimeout(() => { if (on()) startGame(opts.zone, 0, true); }, 1500);
   }
 
   function end() {
     for (const p of G.Game.everyone()) p.spectK = 1;
     if (thBtn) { thBtn.remove(); thBtn = null; }
     if (dvBtn) { dvBtn.remove(); dvBtn = null; }
-    dive = null; diveCd = 0;
+    dive = null; diveCd = 0; banner = null;
     if (hud) { hud.remove(); hud = null; }
     games = {}; views = {}; lobbies = {}; opts = null;
   }
@@ -192,6 +214,8 @@ G.Plaza = (() => {
     else if (ev[1] === 'dive') { emit(['plz', 'dive', from]); if (from !== meId()) diveFx(from); }
     else if (ev[1] === 'cancel') { if (lobbies[ev[2]]) { delete lobbies[ev[2]]; emit(['plz', 'lobbyx', ev[2]]); lastKey = ''; } }
     else if (ev[1] === 'throw') throwBomb(from, +ev[2] || 0);
+    else if (ev[1] === 'dthrow') dodgeAct(from, +ev[2] || 0);
+    else if (ev[1] === 'meta') { const g = games[ev[2]]; if (g && g.phase !== 'over') emit(['plz', 'start', ev[2], { parts: g.parts, homes: g.homes }]); }
     else if (ev[1] === 'leave') leaveGame(ev[2], from);
   }
 
@@ -205,7 +229,12 @@ G.Plaza = (() => {
     else if (k === 'lv') { cpuLv = ev[2] | 0; lastKey = ''; }
     else if (k === 'dive') { if (ev[2] !== meId()) diveFx(ev[2]); }
     else if (k === 'swap') applySwap(ev[2], ev[3], ev[4]);
-    else if (k === 'st') { const g = games[ev[2]]; if (g) Object.assign(g, ev[3]); }
+    else if (k === 'st') {
+      const g = games[ev[2]];
+      if (g) Object.assign(g, ev[3]);
+      // (2026-10-21) Foto de un juego que no tengo (me perdí el 'start': entré tarde o aún cargaba): pido los datos.
+      else if (ev[3] && ev[3].phase !== 'over' && performance.now() - (metaAsk[ev[2]] || 0) > 2000) { metaAsk[ev[2]] = performance.now(); G.Coop.request(['plz', 'meta', ev[2]]); }
+    }
     else if (k === 'fx') fx(ev[2], ev[3], ev[4], ev[5]);
     else if (k === 'end') applyEnd(ev[2], ev[3]);
     else if (k === 'close') {
@@ -234,7 +263,7 @@ G.Plaza = (() => {
 
   /** Anfitrión: alguien pulsa empezar → cuenta atrás de GATHER s (o nada, si ya hay una o se juega). */
   function gather(kind, mode, by) {
-    if (!['tennis', 'volley', 'potato'].includes(kind) || lobbies[kind]) return;
+    if (!['tennis', 'volley', 'potato', 'dodge'].includes(kind) || lobbies[kind]) return;
     if (games[kind] && games[kind].phase !== 'over') return;
     // Sin nadie más en la zona (solo): empieza ya; esperar no sirve de nada.
     if (G.Game.everyone().filter(p => !p.gone).length < 2) { startGame(kind, mode, false, by); return; }
@@ -280,6 +309,10 @@ G.Plaza = (() => {
     if (i < 0) return;
     g.parts[i] = np;
     if (g.homes && g.homes[cid]) { g.homes[np.id] = g.homes[cid]; delete g.homes[cid]; }
+    if (kind === 'dodge') {                        // balón prisionero: si estaba fuera o con la pelota, lo hereda
+      if (g.out) g.out = g.out.map(id => (id === cid ? np.id : id));
+      if (g.ball && g.ball.h === cid) g.ball.h = np.id;
+    }
     if (g.cpus) delete g.cpus[cid];
     if (views[kind] && views[kind].cpus) delete views[kind].cpus[cid];
     if (np.cpu) {                                // alguien se ha ido: la CPU sale de donde estaba
@@ -300,7 +333,7 @@ G.Plaza = (() => {
    * (o en su cartel); las CPU rellenan. mode: 1 = 1 contra 1, 2 = 2 contra 2 (pistas).
    */
   function startGame(kind, mode, auto, by, fixed) {
-    if (!authority() || !['tennis', 'volley', 'potato'].includes(kind)) return;
+    if (!authority() || !['tennis', 'volley', 'potato', 'dodge'].includes(kind)) return;
     if (games[kind] && games[kind].phase !== 'over') return;
     const z = zone(kind), [px, py] = padOf(kind);
     const inZone = p => {
@@ -322,7 +355,7 @@ G.Plaza = (() => {
       const want = auto ? Math.max(parts.length + (opts.cpu | 0), 3) : Math.max(parts.length, 4);
       while (parts.length < want) cpu(0);
     } else {
-      const n = mode === 2 ? 2 : 1;
+      const n = kind === 'dodge' ? 3 : mode === 2 ? 2 : 1;   // (balón prisionero: siempre 3 contra 3)
       // Equipo: revancha → el de antes; si no, la mitad de la pista donde estás (izquierda / derecha);
       // en el cartel, al que tenga menos. Si un lado se llena, al otro. (2026-10-19: «elegir equipo»)
       const want = p => {
@@ -358,6 +391,17 @@ G.Plaza = (() => {
       });
       g.alive = parts.map(p => p.id); g.out = [];
       g.holder = null; g.bomb = null; g.fuse = 0; g.fuseT = 0; g.f = 0; g.passT = -9; g.lastFrom = null; g.round = 0;
+    } else if (kind === 'dodge') {
+      // Tres en columna en cada campo; los que caen van a la banda de detrás del campo contrario.
+      for (const s of [0, 1]) {
+        const mine = parts.filter(p => p.side === s);
+        mine.forEach((p, i) => {
+          g.homes[p.id] = [Math.round(z.cx + (s ? 1 : -1) * z.hw * 0.6), Math.round(z.cy + (i - (mine.length - 1) / 2) * z.hh * 0.6)];
+        });
+      }
+      g.round = 0; g.wins = [0, 0]; g.rt = DB_ROUND_T; g.out = []; g.catchAt = {};
+      g.ball = { x: z.cx, y: z.cy, vx: 0, vy: 0, st: 'loose', h: '', from: -1, sp: 0, idle: 0 };
+      g.t = 0.2;                                   // (enseguida dodgeNewRound: reparte la pelota)
     } else {
       for (const s of [0, 1]) {
         const mine = parts.filter(p => p.side === s);
@@ -376,6 +420,9 @@ G.Plaza = (() => {
   /** En todos: empieza un juego (el invitado crea su copia; cada uno se coloca en su sitio). */
   function applyStart(kind, meta, hostGame) {
     delete lobbies[kind];
+    // (Reenvío del anfitrión a quien lo pidió: si ya tengo este mismo partido, nada.)
+    const cur = games[kind];
+    if (!hostGame && cur && cur.phase !== 'over' && cur.parts.map(p => p.id).join() === meta.parts.map(p => p.id).join()) return;
     const g = hostGame || Object.assign({ kind, parts: meta.parts, homes: meta.homes, cpus: {}, phase: 'ready' }, games[kind] && games[kind].phase !== 'over' ? {} : {});
     if (!hostGame) {
       for (const p of meta.parts) if (p.cpu) { const [x, y] = meta.homes[p.id]; g.cpus[p.id] = { x, y, ang: 0, mv: 0 }; }
@@ -387,10 +434,12 @@ G.Plaza = (() => {
     if (me) {
       const pl = G.Game.player, [x, y] = meta.homes[me.id];
       pl.x = x; pl.y = y;
-      G.Spawner.say(G.T(kind === 'potato' ? '¡Patata caliente! Pásala antes de que explote' : kind === 'tennis' ? '¡Tenis! Devuelve la pelota a la otra pista' : '¡Voleibol! Que no caiga en tu campo'), 2.8, true);
+      G.Spawner.say(G.T(kind === 'potato' ? '¡Patata caliente! Pásala antes de que explote' : kind === 'tennis' ? '¡Tenis! Devuelve la pelota a la otra pista'
+        : kind === 'dodge' ? '¡Balón prisionero! Alcanza con la pelota a los del otro campo' : '¡Voleibol! Que no caiga en tu campo'), 2.8, true);
     }
     const z = zone(kind);
     G.FX.ring(z.cx, z.cy, 10, kind === 'potato' ? z.r : z.hw, '#ffe14d', 0.6, 4);
+    if (kind === 'dodge') banner = null;
     lastKey = '';
   }
 
@@ -420,6 +469,34 @@ G.Plaza = (() => {
     else if (kind === 'point') { G.Audio.sfx('coin'); G.FX.ring(x, y, 6, 70, '#ffe14d', 0.4, 3); }
     else if (kind === 'out') { G.Audio.sfx('error'); G.FX.dmgText(x, y - 20, G.T('¡Fuera!'), '#ff8a95', true); G.FX.ring(x, y, 4, 40, '#ff5f6d', 0.35, 3); }
     else if (kind === 'pass') { G.Audio.sfx('select'); G.FX.ring(x, y, 4, 40, '#ff9a3d', 0.3, 3); }
+    // Balón prisionero: lanzamiento, alcanzado, atrapada, ronda, y «todos a su sitio» (nueva ronda).
+    else if (kind === 'dthrow') { G.Audio.sfx('ball'); G.FX.ring(x, y, 3, 26, '#ff6a6a', 0.22, 2); if (who) swings[who] = performance.now(); }
+    else if (kind === 'dhit') {
+      G.Audio.sfx('hurt'); G.FX.burst(x, y - 10, '#ff5f6d', 18, 180); G.FX.ring(x, y, 6, 46, '#ff5f6d', 0.35, 3);
+      showBanner(G.I18n.f('¡{x} ha caído!', who || '?'), '#ff8a95');
+    }
+    else if (kind === 'dcatch') {
+      G.Audio.sfx('confirm'); G.FX.burst(x, y - 10, '#7dffb0', 18, 180); G.FX.ring(x, y, 6, 46, '#7dffb0', 0.35, 3);
+      showBanner(G.I18n.f('¡{x} atrapa la pelota!', who || '?'), '#9dffc4');
+    }
+    else if (kind === 'dround') {
+      const g = games.dodge, [rn, w] = String(who || '').split(':');
+      const names = g && w !== '-1' ? g.parts.filter(p => p.side === +w).map(p => p.name).join(' / ') : '';
+      G.Audio.sfx(w === '-1' ? 'back' : 'coin');
+      showBanner(w === '-1' ? G.I18n.f('Ronda {x}: empate', rn) : G.I18n.f('¡Ronda {x} para {x}!', rn, names), w === '-1' ? '#ffd88a' : SIDE_COL[+w] || '#ffe14d', 2.4);
+    }
+    else if (kind === 'dback') {
+      // Uno de los caídos vuelve al campo (el suyo se coloca solo; en las demás pantallas llega por la red).
+      const g = games.dodge;
+      if (who === meId() && g && g.homes && g.homes[who]) { const pl = G.Game.player, [hx, hy] = g.homes[who]; pl.x = hx; pl.y = hy; }
+      G.Audio.sfx('heal'); G.FX.ring(x, y, 6, 40, '#9dffc4', 0.4, 3);
+    }
+    else if (kind === 'drnd') {
+      // Nueva ronda: cada uno a su sitio (cada pantalla mueve a su propio Pokémon).
+      const g = games.dodge, me = meId();
+      if (g && g.homes && g.homes[me] && g.parts.some(p => p.id === me)) { const pl = G.Game.player, [hx, hy] = g.homes[me]; pl.x = hx; pl.y = hy; }
+      G.FX.ring(x, y, 10, 60, '#ffe14d', 0.5, 4);
+    }
     else if (kind === 'boom') {
       G.Audio.sfx('break'); G.Camera.kick(0.5);
       G.FX.ring(x, y, 8, 120, '#ff7b3d', 0.5, 6); G.FX.ring(x, y, 4, 70, '#ffe14d', 0.35, 4);
@@ -428,6 +505,9 @@ G.Plaza = (() => {
   }
   function hostFx(kind, x, y, who) { x = Math.round(x); y = Math.round(y); fx(kind, x, y, who); emit(['plz', 'fx', kind, x, y, who || '']); }
   const swings = {};                         // id -> cuándo golpeó (para animar la raqueta)
+  /** Letrero grande encima del campo del balón prisionero (alcanzado, atrapada, ronda). */
+  let banner = null;
+  function showBanner(text, col, secs = 1.7) { banner = { text, col, at: performance.now(), secs }; }
 
   /**
    * Salir del juego en el que estás (2026-10-19, el dueño: «salir de un minijuego sin volver al
@@ -761,6 +841,261 @@ G.Plaza = (() => {
     }
   }
 
+  // ---------------- balón prisionero (anfitrión) ----------------
+
+  // (g.out puede no existir aún en el invitado, hasta la primera foto.)
+  const dbOut = (g, id) => !!g.out && g.out.includes(id);
+  const dbAlive = (g, s) => g.parts.filter(p => p.side === s && !dbOut(g, p.id));
+  /** Dónde espera cada uno fuera: la banda de detrás del campo contrario, a la altura de su sitio. */
+  function dbStripHome(g, z, p) {
+    const [, hy] = g.homes[p.id] || [z.cx, z.cy];
+    return [z.cx + (p.side ? -1 : 1) * (z.hw + DB_STRIP / 2), hy];
+  }
+  /** ¿`x, y` está donde `p` puede coger una pelota suelta? Vivo: su campo; fuera: su banda. */
+  function dbCanReach(g, z, p, x, y) {
+    if (Math.abs(y - z.cy) > z.hh + 6) return false;
+    if (!dbOut(g, p.id)) return sideOfX(z, x) === p.side && Math.abs(x - z.cx) < z.hw + 4;
+    return p.side ? x < z.cx - z.hw + 4 : x > z.cx + z.hw - 4;
+  }
+
+  function dodgeNewRound(g) {
+    const z = zone('dodge');
+    g.round++; g.out = []; g.rt = DB_ROUND_T; g.catchAt = {};
+    for (const p of g.parts) if (p.cpu) { const c = g.cpus[p.id], [hx, hy] = g.homes[p.id]; c.x = hx; c.y = hy; c.thr = false; c.react = 0; c.hold = 0; c.mv = 0; }
+    // La pelota la saca el campo que toca (alternando), uno al azar.
+    const s = (g.round - 1) % 2, who = G.U.pick(dbAlive(g, s));
+    g.ball = { x: z.cx, y: z.cy, vx: 0, vy: 0, st: 'held', h: who ? who.id : '', from: s, sp: 0, idle: 0 };
+    g.phase = 'ready'; g.t = 1.8;
+    hostFx('drnd', z.cx, z.cy);
+  }
+
+  /** `id` ha pulsado lanzar/atrapar: con la pelota, la lanza hacia `ang`; sin ella, cuenta como intento de atrapar. */
+  function dodgeAct(id, ang) {
+    const g = games.dodge;
+    if (!g || g.phase !== 'play' || !g.parts.some(p => p.id === id)) return;
+    const b = g.ball;
+    if (b.h !== id) { g.catchAt[id] = now(); return; }
+    const q = posOf(g, id), me = g.parts.find(p => p.id === id);
+    if (!q) return;
+    // Ayuda de puntería: al rival en pie más cercano dentro de ±50° (DB_AIM) y a menos de DB_AIM_D.
+    let bd = Infinity;
+    for (const o of g.parts) {
+      if (o.side === me.side || dbOut(g, o.id)) continue;
+      const oq = posOf(g, o.id); if (!oq) continue;
+      const a = Math.atan2(oq.y - q.y, oq.x - q.x), da = Math.abs(((a - ang + Math.PI * 3) % 6.2832) - Math.PI), d2 = G.U.dist2(oq.x, oq.y, q.x, q.y);
+      if (da < DB_AIM && d2 < DB_AIM_D * DB_AIM_D && d2 < bd) { bd = d2; ang = a; }
+    }
+    g.ball = { x: q.x + Math.cos(ang) * 18, y: q.y + Math.sin(ang) * 18, vx: Math.cos(ang) * DB_SPEED, vy: Math.sin(ang) * DB_SPEED,
+               st: 'fly', h: '', from: me.side, by: id, sp: DB_SPEED, at: now(), idle: 0 };
+    hostFx('dthrow', q.x, q.y, id);
+  }
+
+  /** Coge la pelota `id` (suelta o atrapada). */
+  function dbTake(g, id) {
+    const b = g.ball;
+    b.st = 'held'; b.h = id; b.vx = b.vy = 0; b.sp = 0; b.idle = 0; b.from = -1; b.ht = 0;
+    const c = g.cpus[id];
+    if (c) c.hold = DB_CPU_HOLD[g.lv != null ? g.lv : 1] * (0.7 + Math.random() * 0.6);
+  }
+
+  function dodgeStep(g, dt) {
+    const z = zone('dodge'), b = g.ball;
+    if (g.phase === 'ready') { if ((g.t -= dt) <= 0) { if (!g.round) dodgeNewRound(g); else g.phase = 'play'; } return; }
+    if (g.phase === 'rest') { if ((g.t -= dt) <= 0) dodgeNewRound(g); return; }
+    if (g.phase !== 'play') return;
+    g.rt = Math.max(0, g.rt - dt);
+    // Quien se ha ido de la zona (sin pasar por «dejar»): fuera.
+    for (const p of g.parts) if (!p.cpu && !dbOut(g, p.id) && !posOf(g, p.id)) g.out.push(p.id);
+    if (b.st === 'held') {
+      const q = posOf(g, b.h);
+      if (!q) { b.st = 'loose'; b.h = ''; b.idle = 0; }
+      else {
+        const p = g.parts.find(x => x.id === b.h); b.x = q.x + (p && p.side ? -14 : 14); b.y = q.y;
+        // Que nadie se la quede para siempre: a los DB_HOLD_MAX s sale sola hacia el rival en pie más cercano.
+        b.ht = (b.ht || 0) + dt;
+        if (b.ht >= DB_HOLD_MAX) {
+          let tq = null, bd = Infinity;
+          for (const o of g.parts) { if (!p || o.side === p.side || dbOut(g, o.id)) continue; const oq = posOf(g, o.id); if (!oq) continue; const d = G.U.dist2(oq.x, oq.y, q.x, q.y); if (d < bd) { bd = d; tq = oq; } }
+          dodgeAct(b.h, tq ? Math.atan2(tq.y - q.y, tq.x - q.x) : (p && p.side ? Math.PI : 0));
+        }
+      }
+    } else {
+      const ox = b.x, oy = b.y;
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      let sp = Math.hypot(b.vx, b.vy);
+      if (sp > 0) {
+        const ns = Math.max(0, sp - (b.st === 'fly' ? DB_DRAG : DB_ROLL) * dt);
+        b.vx *= ns / sp; b.vy *= ns / sp; sp = ns;
+      }
+      b.sp = sp;
+      if (b.st === 'fly' && sp < DB_FLY_MIN) { b.st = 'loose'; b.by = ''; }
+      // Paredes del campo (con las bandas): rebota y queda suelta.
+      const x0 = z.cx - z.hw - DB_STRIP + 8, x1 = z.cx + z.hw + DB_STRIP - 8, y0 = z.cy - z.hh + 8, y1 = z.cy + z.hh - 8;
+      let wall = false;
+      if (b.x < x0) { b.x = x0; b.vx = Math.abs(b.vx) * 0.45; wall = true; } else if (b.x > x1) { b.x = x1; b.vx = -Math.abs(b.vx) * 0.45; wall = true; }
+      if (b.y < y0) { b.y = y0; b.vy = Math.abs(b.vy) * 0.45; wall = true; } else if (b.y > y1) { b.y = y1; b.vy = -Math.abs(b.vy) * 0.45; wall = true; }
+      if (wall) { if (b.st === 'fly') { b.st = 'loose'; b.by = ''; } b.sp = Math.hypot(b.vx, b.vy); hostFx('bounce', b.x, b.y); }
+      if (b.st === 'fly') {
+        // ¿Alcanza a alguien del otro campo (en pie)? Se mira todo el tramo del fotograma.
+        for (const p of g.parts) {
+          if (p.side === b.from || dbOut(g, p.id)) continue;
+          const q = posOf(g, p.id); if (!q) continue;
+          const reach = radius(q) + 14 + (!p.cpu && q !== G.Game.player ? 8 : 0);
+          if (segD2(ox, oy, b.x, b.y, q.x, q.y) > reach * reach) continue;
+          // ¿La atrapa? Persona: ha pulsado hace < CATCH_WIN s, o la mira y ya va lenta. CPU: lo decidió al verla venir.
+          let caught = false;
+          if (p.cpu) caught = !!g.cpus[p.id].ctch;
+          else {
+            const at = g.catchAt[p.id];
+            if (at != null && now() - at <= CATCH_WIN) caught = true;
+            else if (b.sp < CATCH_SLOW) {
+              const face = q.aim != null ? q.aim : q.moveAngle;
+              if (face != null && Math.cos(face - Math.atan2(oy - q.y, ox - q.x)) > 0.5) caught = true;
+            }
+          }
+          if (caught) {
+            dbTake(g, p.id);
+            hostFx('dcatch', q.x, q.y, p.name);
+            // Cae el lanzador (si estaba en pie) y vuelve el primero de los tuyos que cayó.
+            const thrower = g.parts.find(x => x.id === b.by);
+            if (thrower && !dbOut(g, thrower.id)) { g.out.push(thrower.id); const tq = posOf(g, thrower.id); if (tq) { dbSendOut(g, z, thrower); hostFx('out', tq.x, tq.y); } }
+            const back = g.parts.find(x => x.side === p.side && dbOut(g, x.id));
+            if (back) { g.out = g.out.filter(id => id !== back.id); dbSendHome(g, back); }
+          } else {
+            g.out.push(p.id);
+            hostFx('dhit', q.x, q.y, p.name);
+            dbSendOut(g, z, p);
+            b.st = 'loose'; b.by = '';
+            const a = Math.atan2(b.y - q.y, b.x - q.x) + (Math.random() - 0.5);
+            b.vx = Math.cos(a) * 120; b.vy = Math.sin(a) * 120; b.sp = 120;
+          }
+          break;
+        }
+      } else {
+        // Suelta: la coge quien pase por encima (en su campo, o en su banda si está fuera).
+        for (const p of g.parts) {
+          const q = posOf(g, p.id); if (!q) continue;
+          if (!dbCanReach(g, z, p, b.x, b.y)) continue;
+          if (G.U.dist2(q.x, q.y, b.x, b.y) < (radius(q) + 16) ** 2) { dbTake(g, p.id); hostFx('pass', b.x, b.y); break; }
+        }
+        // Parada donde nadie la puede coger (o nadie va): al más cercano en pie.
+        if (b.st === 'loose') {
+          if (b.sp < 1) { b.idle += dt; if (b.idle >= DB_IDLE) { const n = dbNearest(g, b.x, b.y); if (n) { dbTake(g, n.id); hostFx('pass', b.x, b.y); } } }
+          else b.idle = 0;
+        }
+      }
+    }
+    // ¿Se acaba la ronda? Un campo vacío, o el tiempo.
+    const a0 = dbAlive(g, 0).length, a1 = dbAlive(g, 1).length;
+    if (!a0 || !a1 || g.rt <= 0) {
+      const w = a0 === a1 ? -1 : a0 > a1 ? 0 : 1;
+      if (w >= 0) g.wins[w]++;
+      hostFx('dround', z.cx, z.cy, g.round + ':' + w);
+      const need = Math.floor(DB_ROUNDS / 2) + 1;
+      if (g.wins[0] >= need || g.wins[1] >= need || g.round >= DB_MAX_ROUNDS) { dodgeOver(g); return; }
+      g.phase = 'rest'; g.t = 2.6;
+    }
+  }
+  function dbNearest(g, x, y) {
+    let best = null, bd = Infinity;
+    for (const p of g.parts) { if (dbOut(g, p.id)) continue; const q = posOf(g, p.id); if (!q) continue; const d = G.U.dist2(q.x, q.y, x, y); if (d < bd) { bd = d; best = p; } }
+    return best;
+  }
+  /** Al caer: la CPU se va a la banda; las personas van solas (keepInside las lleva). */
+  function dbSendOut(g, z, p) {
+    const c = g.cpus[p.id];
+    if (c) { const [sx, sy] = dbStripHome(g, z, p); c.x = sx; c.y = sy; c.thr = false; c.ctch = false; }
+  }
+  function dbSendHome(g, p) {
+    const c = g.cpus[p.id], [hx, hy] = g.homes[p.id];
+    if (c) { c.x = hx; c.y = hy; c.thr = false; c.ctch = false; }
+    hostFx('dback', hx, hy, p.id);
+  }
+
+  function dodgeOver(g) {
+    g.phase = 'over';
+    const w = g.wins[0] === g.wins[1] ? -1 : g.wins[0] > g.wins[1] ? 0 : 1;
+    emit(['plz', 'st', 'dodge', snapshot(g)]);
+    const names = s => g.parts.filter(p => p.side === s).map(p => p.name).join(' / ');
+    const text = w < 0 ? G.I18n.f('Empate ({x})', g.wins[0] + ' : ' + g.wins[1]) : G.I18n.f('¡Gana {x}! ({x})', names(w), g.wins[w] + ' : ' + g.wins[1 - w]);
+    setTimeout(() => { emit(['plz', 'end', 'dodge', text]); applyEnd('dodge', text); }, 1200);
+  }
+
+  /**
+   * CPU del balón prisionero. Con la pelota: se acerca a la línea central y la lanza al rival más cercano (error
+   * según el nivel). Sin ella: si le viene una pelota, tras reaccionar (react) se aparta en perpendicular, o decide
+   * atraparla (catch) y se queda quieta; si hay una suelta en su campo, la más cercana va a por ella; si no, a su
+   * sitio. Fuera: en su banda, coge las que lleguen y las lanza.
+   */
+  function dodgeCpu(g, dt) {
+    const z = zone('dodge'), b = g.ball, lv = CPU_LV[g.lv != null ? g.lv : 1];
+    for (const p of g.parts) {
+      if (!p.cpu) continue;
+      const c = g.cpus[p.id], out = dbOut(g, p.id), play = g.phase === 'play';
+      const [hx, hy] = out ? dbStripHome(g, z, p) : g.homes[p.id];
+      let tx = hx, ty = hy, sp = 165 * lv.spd;
+      const nearestFoe = () => {
+        let best = null, bd = Infinity;
+        for (const o of g.parts) { if (o.side === p.side || dbOut(g, o.id)) continue; const q = posOf(g, o.id); if (!q) continue; const d = G.U.dist2(q.x, q.y, c.x, c.y); if (d < bd) { bd = d; best = q; } }
+        return best ? [best, Math.sqrt(bd)] : null;
+      };
+      if (play && b.st === 'held' && b.h === p.id) {
+        const nf = nearestFoe();
+        if (nf) {
+          const [q, d] = nf;
+          // Hacia la línea central (sin pegarse a ella: desde tan cerca nadie puede esquivar), a la altura del rival.
+          tx = out ? hx : z.cx + (p.side ? 1 : -1) * z.hw * 0.4; ty = q.y; sp = 150 * lv.spd;
+          c.hold = (c.hold || 0) - dt;                 // (|| 0: una CPU que entra por alguien que se fue con la pelota)
+          if (c.hold <= 0 && d < DB_AIM_D) dodgeAct(p.id, Math.atan2(q.y - c.y, q.x - c.x) + (Math.random() * 2 - 1) * lv.aim);
+        }
+      } else if (play && !out && b.st === 'fly' && b.from !== p.side) {
+        // ¿Viene hacia mí? Distancia de mi posición a la recta de la pelota, y que se acerque.
+        const dx = c.x - b.x, dy = c.y - b.y, dot = dx * b.vx + dy * b.vy;
+        const cross = Math.abs(dx * b.vy - dy * b.vx) / (b.sp || 1);
+        // (Una vez vista, sigue apartada hasta que la pelota pase: si no, al salir de la recta volvía a casa y le daba.)
+        if (dot > 0 && (cross < 52 || c.thr)) {
+          if (!c.thr) {
+            c.thr = true; c.react = lv.react; c.ctch = Math.random() < lv.catch; c.dgo = false;
+            // El lado al que apartarse se decide UNA vez (si se mira cada fotograma, con la pelota justo de frente el
+            // signo cambia a cada paso y la CPU tiembla en el sitio): el lado donde ya estoy; de frente, hacia el centro.
+            const side = dx * b.vy - dy * b.vx;
+            c.dsg = Math.abs(side) > 6 * (b.sp || 1) ? (side > 0 ? 1 : -1) : (c.y > z.cy ? -1 : 1) * (b.vx >= 0 ? 1 : -1);
+          }
+          c.react -= dt;
+          if (c.react <= 0 && !c.ctch) {
+            if (!c.dgo) { c.dgo = true; const sp0 = b.sp || 1; c.dtx = c.x + (-b.vy / sp0) * c.dsg * 90; c.dty = c.y + (b.vx / sp0) * c.dsg * 90; }
+            tx = c.dtx; ty = c.dty;
+          } else { tx = c.x; ty = c.y; }
+        } else { c.thr = false; c.ctch = false; c.dgo = false; }
+      } else {
+        c.thr = false; c.ctch = false;
+        if (play && b.st === 'loose' && dbCanReach(g, z, p, b.x, b.y)) {
+          // Va la CPU de mi equipo (misma situación: en pie / fuera) más cercana a la pelota.
+          let best = null, bd = Infinity;
+          for (const o of g.parts) { if (!o.cpu || o.side !== p.side || dbOut(g, o.id) !== out) continue; const d = G.U.dist2(g.cpus[o.id].x, g.cpus[o.id].y, b.x, b.y); if (d < bd) { bd = d; best = o; } }
+          if (best === p) { tx = b.x; ty = b.y; }
+        } else if (play && !out) {
+          if ((c.think -= dt) <= 0) { c.think = 0.6 + Math.random() * 0.6; c.jx = (Math.random() * 2 - 1) * 50; c.jy = (Math.random() * 2 - 1) * 60; }
+          tx = hx + (c.jx || 0); ty = hy + (c.jy || 0);
+        }
+      }
+      const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy);
+      if (d > 3) { c.x += dx / d * Math.min(d, sp * dt); c.y += dy / d * Math.min(d, sp * dt); c.ang = Math.atan2(dy, dx); c.mv = 1; } else c.mv = 0;
+      dbClamp(z, p.side, out, c);
+    }
+  }
+  /** Cada uno en su campo (sin pisar la línea central); fuera, en la banda de detrás del campo contrario. */
+  function dbClamp(z, side, out, o) {
+    if (out) {
+      const minX = side ? z.cx - z.hw - DB_STRIP + 10 : z.cx + z.hw + 10, maxX = side ? z.cx - z.hw - 10 : z.cx + z.hw + DB_STRIP - 10;
+      o.x = G.U.clamp(o.x, minX, maxX);
+    } else {
+      const minX = side ? z.cx + DB_LINE : z.cx - z.hw + 6, maxX = side ? z.cx + z.hw - 6 : z.cx - DB_LINE;
+      o.x = G.U.clamp(o.x, minX, maxX);
+    }
+    o.y = G.U.clamp(o.y, z.cy - z.hh + 6, z.cy + z.hh - 6);
+  }
+
   /** Lo que se manda a los invitados. */
   function snapshot(g) {
     const cpus = {};
@@ -769,6 +1104,8 @@ G.Plaza = (() => {
     // (Sin null: por la red se pierden los campos null y el invitado se quedaba con el valor viejo.)
     if (g.kind === 'potato') Object.assign(s, { alive: g.alive, out: g.out, holder: g.holder || '', f: g.f, rm: g.rm == null ? 99 : g.rm, round: g.round,
       bomb: g.bomb ? { x: Math.round(g.bomb.x), y: Math.round(g.bomb.y), vx: Math.round(g.bomb.vx), vy: Math.round(g.bomb.vy), ft: g.bomb.ft, from: g.bomb.from } : 0 });
+    else if (g.kind === 'dodge') { const b = g.ball; Object.assign(s, { round: g.round, wins: g.wins, rt: Math.round(g.rt * 10) / 10, out: g.out,
+      ball: { x: Math.round(b.x), y: Math.round(b.y), vx: Math.round(b.vx), vy: Math.round(b.vy), st: b.st, h: b.h || '', from: b.from, by: b.by || '', sp: Math.round(b.sp || 0), ht: Math.round((b.ht || 0) * 10) / 10 } }); }
     else { const b = g.ball; Object.assign(s, { score: g.score, server: g.server, ball: { x: Math.round(b.x), y: Math.round(b.y), z: Math.round(b.z), vz: Math.round(b.vz || 0), vx: Math.round(b.vx), vy: Math.round(b.vy), p: b.p, fl: b.fl, sx: b.sx, sy: b.sy, tx: b.tx, ty: b.ty, from: b.from } }); }
     return s;
   }
@@ -788,8 +1125,10 @@ G.Plaza = (() => {
       for (const k in games) {
         const g = games[k];
         if (g.phase === 'over') continue;
-        if (k !== 'potato' && g.phase === 'ready') swapIn(g);   // entre punto y punto: quien entra ocupa una CPU
-        if (k === 'potato') { potatoCpu(g, dt); potatoStep(g, dt); } else { courtCpu(g, dt); courtStep(g, dt); }
+        if (k !== 'potato' && g.phase === 'ready') swapIn(g);   // entre punto y punto (o ronda y ronda): quien entra ocupa una CPU
+        if (k === 'potato') { potatoCpu(g, dt); potatoStep(g, dt); }
+        else if (k === 'dodge') { dodgeCpu(g, dt); dodgeStep(g, dt); }
+        else { courtCpu(g, dt); courtStep(g, dt); }
       }
       if (G.Coop.active && (snapT -= dt) <= 0) {
         snapT = SNAP;
@@ -799,6 +1138,15 @@ G.Plaza = (() => {
       // Invitado: la pelota y la bomba siguen su camino entre foto y foto.
       for (const k in games) {
         const g = games[k];
+        if (k === 'dodge') {
+          const b = g.ball;
+          if (b && g.phase === 'play' && b.st !== 'held') {
+            b.x += b.vx * dt; b.y += b.vy * dt;
+            const sp = Math.hypot(b.vx, b.vy), ns = Math.max(0, sp - (b.st === 'fly' ? DB_DRAG : DB_ROLL) * dt);
+            if (sp > 0) { b.vx *= ns / sp; b.vy *= ns / sp; b.sp = ns; }
+          }
+          continue;
+        }
         if (g.ball && g.phase === 'play') {
           const b = g.ball;
           if (k === 'tennis') {
@@ -826,9 +1174,13 @@ G.Plaza = (() => {
     // Lanzar la bomba (F o el botón).
     const pg = games.potato;
     if (pg && pg.phase === 'play' && pg.holder === meId() && G.Input.tap('keyf')) throwMine();
+    // Balón prisionero: F lanza (con la pelota) o intenta atrapar (sin ella); en el móvil, el mismo botón.
+    const dg = myDodge();
+    if (dg && dg.phase === 'play' && G.Input.tap('keyf')) throwMine();
     smooth(dt);
     if ((hudT -= dt) <= 0) { hudT = 0.15; drawHud(); }
-    throwButton(!!(pg && pg.phase === 'play' && pg.holder === meId() && G.Touch.active));
+    throwButton(!!G.Touch.active && ((!!pg && pg.phase === 'play' && pg.holder === meId()) || (!!dg && dg.phase === 'play')),
+                dg && dg.ball && dg.ball.h !== meId() ? 'Atrapar' : 'Lanzar');
     diveStep(dt, pl);
     if (hud) hud.style.display = G.UI.isOpen('scr-pause') ? 'none' : '';
     hutCheck(pl);
@@ -848,9 +1200,11 @@ G.Plaza = (() => {
   /** El partido de pista en el que juegas (o null). */
   function myCourt() {
     const me = meId();
-    for (const k of ['tennis', 'volley']) { const g = games[k]; if (g && g.phase !== 'over' && g.parts.some(p => p.id === me)) return g; }
+    for (const k of ['tennis', 'volley', 'dodge']) { const g = games[k]; if (g && g.phase !== 'over' && g.parts.some(p => p.id === me)) return g; }
     return null;
   }
+  /** El balón prisionero en el que juegas (o null). */
+  function myDodge() { const g = games.dodge; return g && g.phase !== 'over' && g.parts.some(p => p.id === meId()) ? g : null; }
   function diveStep(dt, pl) {
     const g = myCourt();
     if (diveCd > 0) diveCd -= dt;
@@ -864,6 +1218,8 @@ G.Plaza = (() => {
       diveCd = DIVE.cd;
       pl.anim.play('Hurt', { speed: 2 });
       if (G.Coop.active) ask(['plz', 'dive']);   // los demás lo ven caer (diveFx)
+      // Balón prisionero: la plancha también cuenta como intento de atrapar (si no llevas la pelota).
+      if (g.kind === 'dodge' && g.phase === 'play' && g.ball && g.ball.h !== meId()) ask(['plz', 'dthrow', Math.round(a * 1000) / 1000]);
       G.Audio.sfx('select');
       G.FX.burst(pl.x, pl.y, '#e8dcc0', 8, 90);
     }
@@ -880,7 +1236,7 @@ G.Plaza = (() => {
       } else dive = null;
     }
     if (!g) dive = null;
-    diveButton(!!g && G.Touch.active);
+    diveButton(!!g && g.kind !== 'dodge' && G.Touch.active);   // (balón prisionero: ahí va el botón de lanzar/atrapar)
   }
   function diveButton(show) {
     if (show && !dvBtn) {
@@ -892,20 +1248,26 @@ G.Plaza = (() => {
     }
     if (dvBtn) { dvBtn.classList.toggle('hidden', !show); dvBtn.classList.toggle('cool', diveCd > 0); }
   }
-  function throwButton(show) {
+  function throwButton(show, txt = 'Lanzar') {
     if (show && !thBtn) {
       thBtn = document.createElement('button');
       thBtn.id = 'pz-throw'; thBtn.type = 'button';
-      thBtn.innerHTML = `<span class="pz-throw-ico"></span><small>${G.T('Lanzar')}</small>`;
+      thBtn.innerHTML = `<span class="pz-throw-ico"></span><small></small>`;
       thBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); throwMine(); });
       document.body.appendChild(thBtn);
     }
-    if (thBtn) thBtn.classList.toggle('hidden', !show);
+    if (thBtn) {
+      thBtn.classList.toggle('hidden', !show);
+      const dodge = !!myDodge(), key = txt + '|' + dodge + '|' + G.I18n.lang;
+      if (thBtn.dataset.k !== key) { thBtn.dataset.k = key; thBtn.querySelector('small').textContent = G.T(txt); thBtn.classList.toggle('pz-ball', dodge); thBtn.classList.toggle('pz-catch', txt === 'Atrapar'); }
+    }
   }
 
   function throwMine() {
     const pl = G.Game.player;
     const a = pl.walking ? pl.moveAngle : (pl.aim != null ? pl.aim : pl.moveAngle || 0);
+    const dg = myDodge();
+    if (dg) { ask(['plz', 'dthrow', Math.round(a * 1000) / 1000]); return; }
     ask(['plz', 'throw', Math.round(a * 1000) / 1000]);
   }
 
@@ -933,6 +1295,8 @@ G.Plaza = (() => {
         const max = z.r - 14;
         if (r > max) { pl.x = z.cx + (pl.x - z.cx) / r * max; pl.y = z.cy + (pl.y - z.cy) / r * max; }
         pushOutPillars(pl, 10);
+      } else if (k === 'dodge') {
+        dbClamp(z, p.side, dbOut(g, me), pl);
       } else {
         const minX = p.side ? z.cx + 14 : z.cx - z.hw - 30, maxX = p.side ? z.cx + z.hw + 30 : z.cx - 14;
         pl.x = G.U.clamp(pl.x, minX, maxX); pl.y = G.U.clamp(pl.y, z.cy - z.hh - 30, z.cy + z.hh + 30);
@@ -1020,7 +1384,7 @@ G.Plaza = (() => {
     return null;
   }
   function hereOf(pl) {
-    for (const k of ['tennis', 'volley', 'potato', 'hut']) {
+    for (const k of ['tennis', 'volley', 'dodge', 'potato', 'hut']) {
       const [x, y] = padOf(k);
       if (G.U.dist2(pl.x, pl.y, x, y) < PAD_R * PAD_R) return k;
     }
@@ -1050,6 +1414,19 @@ G.Plaza = (() => {
           : G.T('¡Huye de quien lleve la bomba!')}
           <span class="pz-sub">${G.I18n.f('Quedan {x}', (g.alive || []).length)}</span>
           ${out || g.phase === 'over' ? '' : `<button class="btn small ghost" data-pz="leave:potato">${G.T('Dejar el partido')}</button>`}</div>`;
+      } else if (playing === 'dodge') {
+        // Tira de arriba: en pie de cada campo (grande), ronda, rondas ganadas y segundos; y qué hacer.
+        const out = dbOut(g, me), mine = g.ball && g.ball.h === me && g.phase === 'play', w = g.wins || [0, 0];
+        const a0 = dbAlive(g, 0).length, a1 = dbAlive(g, 1).length, secs = Math.ceil(g.rt == null ? DB_ROUND_T : g.rt);
+        key = 'dodge:' + out + mine + a0 + '-' + a1 + ':' + (g.round || 0) + w.join('-') + secs + g.phase + G.Touch.active;
+        const tip = out ? 'Estás fuera: en la banda de detrás puedes recoger las pelotas que lleguen y lanzarlas'
+          : mine ? (G.Touch.active ? 'Botón «Lanzar»: la pelota sale hacia donde miras, al rival más cercano' : 'F: lanza la pelota hacia donde miras, al rival más cercano')
+          : (G.Touch.active ? 'Botón «Atrapar» justo cuando te llegue la pelota; si no, apártate' : 'F (o espacio) justo cuando te llegue la pelota la atrapa; si no, apártate');
+        html = `<div class="pz-card"><b>${G.T('Balón prisionero')} · ${G.I18n.f('Ronda {x}', g.round || 1)}</b>
+          <span class="pz-score"><span style="color:${SIDE_COL[0]}">${a0}</span> : <span style="color:${SIDE_COL[1]}">${a1}</span></span>
+          <span class="pz-sub">${G.I18n.f('En pie (izquierda : derecha) · rondas ganadas {x} · {x} s', w[0] + ' : ' + w[1], secs)}</span>
+          <span class="pz-tip">${mine ? `<b class="pz-hot">${G.T('¡Tienes la pelota!')}</b> ` : ''}${G.T(tip)}</span>
+          ${g.phase === 'over' ? '' : `<button class="btn small ghost" data-pz="leave:dodge">${G.T('Dejar el partido')}</button>`}</div>`;
       } else {
         const p = g.parts.find(q => q.id === me), sc = g.score || [0, 0];
         key = 'court:' + playing + sc.join('-') + g.phase;
@@ -1061,7 +1438,7 @@ G.Plaza = (() => {
       }
     } else if (rematchHere(pl) && hereOf(pl) !== rematchHere(pl)) {   // (en el cartel van con los botones de siempre)
       // Acaba de terminar un partido en el que jugabas: otra con los mismos.
-      const k = rematchHere(pl), nm = k === 'tennis' ? 'Tenis' : k === 'volley' ? 'Voleibol' : 'Patata caliente';
+      const k = rematchHere(pl), nm = k === 'tennis' ? 'Tenis' : k === 'volley' ? 'Voleibol' : k === 'dodge' ? 'Balón prisionero' : 'Patata caliente';
       key = 'again:' + k;
       html = `<div class="pz-card"><b>${G.T(nm)}</b>
         <span class="pz-sub">${G.T('¿Otra con los mismos? Cada uno en su equipo de antes.')}</span>
@@ -1069,11 +1446,11 @@ G.Plaza = (() => {
     } else if (lobbyHere(pl)) {
       // Cuenta atrás para juntarse: cuántos van, y empezar ya / cancelar.
       const k = lobbyHere(pl), l = lobbies[k], secs = Math.max(0, Math.ceil(l.t)), n = joiners(k);
-      const nm = k === 'tennis' ? 'Tenis' : k === 'volley' ? 'Voleibol' : 'Patata caliente';
+      const nm = k === 'tennis' ? 'Tenis' : k === 'volley' ? 'Voleibol' : k === 'dodge' ? 'Balón prisionero' : 'Patata caliente';
       key = 'lobby:' + k + secs + ':' + n + ':' + cpuLv + (k !== 'potato' ? teamCount(k, 0) + '-' + teamCount(k, 1) : '');
       html = `<div class="pz-card"><b>${G.T(nm)}</b>
         <b class="pz-hot">${G.I18n.f('Empieza en {x} s: si quieres jugar, entra en la pista', secs)}</b>
-        <span class="pz-sub">${G.I18n.f('Apuntados ahora: {x}', n)}${k !== 'potato' ? ' · ' + G.T(l.mode === 2 ? '2 contra 2' : '1 contra 1') + ' · ' + G.I18n.f('CPU: {x}', G.T(CPU_LV[cpuLv].name)) : ''} · ${G.T('las CPU completan lo que falte')}</span>
+        <span class="pz-sub">${G.I18n.f('Apuntados ahora: {x}', n)}${k !== 'potato' ? ' · ' + G.T(k === 'dodge' ? '3 contra 3' : l.mode === 2 ? '2 contra 2' : '1 contra 1') + ' · ' + G.I18n.f('CPU: {x}', G.T(CPU_LV[cpuLv].name)) : ''} · ${G.T('las CPU completan lo que falte')}</span>
         ${k !== 'potato' ? `<span class="pz-tip">${G.I18n.f('Mitad izquierda: {x} · mitad derecha: {x}', teamCount(k, 0), teamCount(k, 1))} — ${G.T('ponte en la mitad del equipo que quieras')}</span>` : ''}
         <div class="pz-row"><button class="btn gold" data-pz="now:${k}">${G.T('Empezar ya')}</button>
           <button class="btn small ghost" data-pz="cancel:${k}">${G.T('Cancelar')}</button></div></div>`;
@@ -1087,6 +1464,15 @@ G.Plaza = (() => {
           <button class="btn gold" data-pz="go:${here}:2">${G.T('2 contra 2')}</button>
           <button class="btn small ghost" data-pz="lv">${G.I18n.f('CPU: {x}', G.T(CPU_LV[cpuLv].name))}</button>
           ${rematchHere(pl) === here ? `<button class="btn" data-pz="again:${here}">${G.T('Otra partida')}</button>` : ''}</div>`}</div>`;
+    } else if (here === 'dodge') {
+      const busy = games.dodge && games.dodge.phase !== 'over';
+      key = 'pad:dodge' + busy + cpuLv + (rematchHere(pl) === 'dodge');
+      html = `<div class="pz-card"><b>${G.T('Balón prisionero')}</b>
+        <span class="pz-sub">${G.T(busy ? 'Ya están jugando: espera a que acaben.' : 'Dos equipos de 3 (las CPU completan). Alcanza con la pelota a los del otro campo: si te la atrapan, caes tú y vuelve uno de los suyos. Al mejor de 3 rondas (60 s cada una).')}</span>
+        ${busy ? '' : `<span class="pz-tip">${G.T('Equipo: la mitad izquierda o derecha de la pista donde estés')}</span>
+        <div class="pz-row"><button class="btn gold" data-pz="go:dodge:3">${G.T('Empezar el balón prisionero')}</button>
+          <button class="btn small ghost" data-pz="lv">${G.I18n.f('CPU: {x}', G.T(CPU_LV[cpuLv].name))}</button>
+          ${rematchHere(pl) === 'dodge' ? `<button class="btn" data-pz="again:dodge">${G.T('Otra partida')}</button>` : ''}</div>`}</div>`;
     } else if (here === 'potato') {
       const busy = games.potato && games.potato.phase !== 'over';
       key = 'pad:potato' + busy + (rematchHere(pl) === 'potato');
@@ -1102,7 +1488,7 @@ G.Plaza = (() => {
         ${can ? `<div class="pz-row">${G.Party.games().filter(d => !d.world && !d.soon).map(d => `<button class="btn gold" data-pz="table:${d.id}">${G.T(d.name)}</button>`).join('')}</div>` : ''}</div>`;
     } else {
       key = 'free';
-      html = `<div class="pz-card pz-hint">${G.T('Acércate a un cartel: tenis, voleibol, patata caliente o la caseta de cartas.')}</div>`;
+      html = `<div class="pz-card pz-hint">${G.T('Acércate a un cartel: tenis, voleibol, balón prisionero, patata caliente o la caseta de cartas.')}</div>`;
     }
     key += '|' + G.I18n.lang;
     if (key === lastKey) return;
@@ -1219,6 +1605,41 @@ G.Plaza = (() => {
     sign(ctx, px, py - 26, G.T(tennis ? 'Pista de tenis' : 'Pista de voleibol'), tennis ? '#c8ff7a' : '#ffe08a');
   }
 
+  /**
+   * Campo del balón prisionero: suelo de gimnasio (tablones de madera), las dos bandas de detrás en gris,
+   * líneas blancas, línea central con el color de cada equipo a su lado y un círculo central.
+   */
+  function dodgeCourt(ctx, t) {
+    const z = zone('dodge'), x0 = R(z.cx - z.hw), y0 = R(z.cy - z.hh), w = R(z.hw * 2), h = R(z.hh * 2), S = DB_STRIP;
+    const L = (x, y, ww, hh) => ctx.fillRect(R(x), R(y), R(ww), R(hh));
+    // Borde oscuro y bandas de fuera (gris, con tablones más apagados).
+    ctx.fillStyle = '#2a2230'; L(x0 - S - 10, y0 - 10, w + S * 2 + 20, h + 20);
+    ctx.fillStyle = '#6a6474'; L(x0 - S - 6, y0 - 6, w + S * 2 + 12, h + 12);
+    ctx.fillStyle = '#7d7788';
+    for (let yy = y0 - 6; yy < y0 + h + 6; yy += 8) { L(x0 - S - 6, yy, S + 6, 1); L(x0 + w, yy, S + 6, 1); }
+    // Tablones de madera: franjas horizontales de dos tonos, con juntas.
+    for (let yy = y0, i = 0; yy < y0 + h; yy += 10, i++) {
+      ctx.fillStyle = i % 2 ? '#c98a4a' : '#d99a56'; L(x0, yy, w, Math.min(10, y0 + h - yy));
+      ctx.fillStyle = 'rgba(80,40,10,.25)'; L(x0, yy + 9, w, 1);
+      for (let xx = x0 + ((i * 37) % 60); xx < x0 + w; xx += 60) L(xx, yy, 1, 10);
+    }
+    ctx.fillStyle = 'rgba(255,255,255,.05)';
+    for (let yy = y0; yy < y0 + h; yy += 4) for (let xx = x0; xx < x0 + w; xx += 4) if (hash(xx, yy) > 0.9) ctx.fillRect(xx, yy, 2, 2);
+    // Zona de cada equipo junto a la línea central (su color, suave) y las líneas.
+    ctx.fillStyle = 'rgba(79,180,255,.16)'; L(z.cx - 44, y0, 44, h);
+    ctx.fillStyle = 'rgba(255,111,168,.16)'; L(z.cx, y0, 44, h);
+    ctx.fillStyle = '#f4f8ff';
+    L(x0, y0, w, 3); L(x0, y0 + h - 3, w, 3); L(x0, y0, 3, h); L(x0 + w - 3, y0, 3, h);
+    L(z.cx - 2, y0, 4, h);
+    ringPx(ctx, z.cx, z.cy, 30, '#f4f8ff', 3);
+    // El color del equipo que espera en cada banda: los azules (izquierda) caen detrás del campo de la derecha.
+    ctx.fillStyle = SIDE_COL[0]; L(x0 + w + S + 2, y0 - 6, 4, h + 12);
+    ctx.fillStyle = SIDE_COL[1]; L(x0 - S - 6, y0 - 6, 4, h + 12);
+    const [px, py] = padOf('dodge');
+    pad(ctx, px, py, t);
+    sign(ctx, px, py - 26, G.T('Balón prisionero'), '#ff9a9a');
+  }
+
   function pad(ctx, x, y, t) {
     const k = 0.5 + 0.5 * Math.sin(t * 3);
     ctx.globalAlpha = 0.35 + 0.3 * k;
@@ -1279,6 +1700,19 @@ G.Plaza = (() => {
     ctx.restore();
   }
 
+  /** Balón prisionero: si una pelota viene hacia ti, un aro rojo que late bajo tus pies (sólo en tu pantalla). */
+  function dodgeWarn(ctx, t) {
+    const g = games.dodge, me = meId();
+    if (!g || g.phase !== 'play' || !g.ball || g.ball.st !== 'fly') return;
+    const p = g.parts.find(q => q.id === me), b = g.ball, pl = G.Game.player;
+    if (!p || b.from === p.side || dbOut(g, me)) return;
+    const dx = pl.x - b.x, dy = pl.y - b.y, sp = b.sp || Math.hypot(b.vx, b.vy) || 1;
+    if (dx * b.vx + dy * b.vy <= 0 || Math.abs(dx * b.vy - dy * b.vx) / sp > 48) return;
+    const k = 0.5 + 0.5 * Math.sin(t * 16);
+    ctx.save(); ctx.globalAlpha = 0.5 + 0.4 * k; ctx.strokeStyle = '#ff3a3a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(R(pl.x), R(pl.y), 22 + k * 5, (22 + k * 5) * 0.55, 0, 0, 6.2832); ctx.stroke(); ctx.restore();
+  }
+
   function drawGround(ctx) {
     if (!on()) return;
     const t = performance.now() / 1000;
@@ -1288,10 +1722,12 @@ G.Plaza = (() => {
     const [cx, cy] = center();
     ctx.fillStyle = 'rgba(230,220,190,.18)';
     for (let i = -18; i <= 18; i++) ctx.fillRect(R(cx + i * 22 - 8), R(cy - 6), 16, 12);
-    for (let i = -10; i <= 10; i++) ctx.fillRect(R(cx - 6), R(cy + i * 22 - 8), 12, 16);
+    for (let i = -10; i <= 16; i++) ctx.fillRect(R(cx - 6), R(cy + i * 22 - 8), 12, 16);   // (hasta el balón prisionero, abajo)
     court(ctx, 'tennis', t);
     court(ctx, 'volley', t);
     landMark(ctx, 'tennis', t); landMark(ctx, 'volley', t);
+    dodgeCourt(ctx, t);
+    dodgeWarn(ctx, t);
     potatoGround(ctx, t);
     const [hx, hy] = padOf('hut');
     pad(ctx, hx, hy, t);
@@ -1323,10 +1759,10 @@ G.Plaza = (() => {
         if (!p.cpu) continue;
         const s = v.cpus[p.id], an = v.anims[p.id];
         if (!s || !an) continue;
-        const outP = k === 'potato' && g.out && g.out.includes(p.id);
+        const outP = (k === 'potato' || k === 'dodge') && g.out && g.out.includes(p.id);
         out.push({ y: s.y, draw(ctx) {
           G.Sprites.drawShadow(ctx, p.dex, s.x, s.y, 1);
-          an.draw(ctx, s.x, s.y, { alpha: outP ? 0.4 : 1 });
+          an.draw(ctx, s.x, s.y, { alpha: outP ? (k === 'dodge' ? 0.7 : 0.4) : 1 });   // (balón prisionero: fuera aún se juega desde la banda)
           label(ctx, p.name, s.x, s.y - 40, '#cfd8ea', 9);
         } });
       }
@@ -1337,9 +1773,18 @@ G.Plaza = (() => {
   /** Pelota redonda de píxeles: tenis amarilla-verde con la costura blanca; voleibol blanca con gajos azules y amarillos. */
   function ballPx(ctx, x, y, kind, spin) {
     const tennis = kind === 'tennis', r = tennis ? 5 : 7;
+    const a = spin || 0;
+    if (kind === 'dodge') {
+      // Balón prisionero: pelota de goma roja con una banda clara que gira y un brillo.
+      disc(ctx, x, y, 8, '#4a0e12', 1);
+      disc(ctx, x, y, 7, '#d8343a', 1);
+      ctx.fillStyle = '#ff8a7a';
+      for (let k = -4; k <= 4; k++) { const q = a + k * 0.26; ctx.fillRect(R(x + Math.cos(q) * 5), R(y + Math.sin(q) * 5 * 0.5 - 1), 2, 2); }
+      ctx.fillStyle = '#ffd0c8'; ctx.fillRect(R(x - 4), R(y - 4), 2, 2);
+      return;
+    }
     disc(ctx, x, y, r + 1, tennis ? '#2e3a0c' : '#1e2a4a', 1);
     disc(ctx, x, y, r, tennis ? '#c8f04a' : '#f4f8ff', 1);
-    const a = spin || 0;
     if (tennis) {
       // Costura: un arco blanco que gira.
       ctx.fillStyle = '#ffffff';
@@ -1375,9 +1820,12 @@ G.Plaza = (() => {
   }
   /** Marcador de la pista: tablero oscuro con los dos equipos (su color) y quién saca. */
   function scoreboard(ctx, g, z) {
-    const sc = g.score || [0, 0], side = s => g.parts.filter(p => p.side === s).map(p => p.name).join(' / ');
+    const dodge = g.kind === 'dodge';
+    // (balón prisionero: en pie de cada campo; las rondas ganadas, pequeñas debajo)
+    const sc = dodge ? [dbAlive(g, 0).length, dbAlive(g, 1).length] : g.score || [0, 0], side = s => g.parts.filter(p => p.side === s).map(p => p.name).join(' / ');
     // Debajo de la pista, a la izquierda del cartel (arriba lo tapaba el panel de la zona).
-    const W = 260, H = 34, cx = R(z.cx - z.hw + W / 2 - 20), y = R(z.cy + z.hh + 40);
+    const W = 260, H = 34, cx = R(z.cx - z.hw + W / 2 - 20), y = R(z.cy + z.hh + 40 + (dodge ? 10 : 0));
+    if (dodge) { const w = g.wins || [0, 0]; label(ctx, G.I18n.f('Ronda {x}', g.round || 1) + ' · ' + G.I18n.f('Rondas ganadas {x}', w[0] + ' : ' + w[1]), cx, y + H + 16, '#ffd88a', 10); }
     ctx.fillStyle = '#0f0c16'; ctx.fillRect(cx - W / 2 - 3, y - 3, W + 6, H + 6);
     ctx.fillStyle = '#2a2438'; ctx.fillRect(cx - W / 2, y, W, H);
     ctx.fillStyle = SIDE_COL[0]; ctx.fillRect(cx - W / 2, y, 4, H);
@@ -1417,6 +1865,7 @@ G.Plaza = (() => {
     }
     for (const k in games) {
       const g = games[k], z = zone(k);
+      if (k === 'dodge') { dodgeAir(ctx, g, z, t); continue; }
       if (k !== 'potato') {
         const b = g.ball, v = views[k] || (views[k] = { anims: {}, cpus: {} });
         // Raquetas (tenis) en la mano de cada uno, del color de su equipo; giran al golpear.
@@ -1468,6 +1917,51 @@ G.Plaza = (() => {
     ctx.restore();
   }
 
+  /** Balón prisionero: la pelota (en la mano, volando con estela, o rodando), los caídos, el marcador y el letrero. */
+  function dodgeAir(ctx, g, z, t) {
+    const b = g.ball, v = views.dodge || (views.dodge = { anims: {}, cpus: {} });
+    if (b && g.phase !== 'over') {
+      let bx = b.x, by = b.y, hop = 0;
+      if (b.st === 'held' && b.h) {
+        const q = posOf(g, b.h), s = v.cpus[b.h], h = s || q, p = g.parts.find(x => x.id === b.h);
+        if (h) { bx = h.x + (p && p.side ? -14 : 14); by = h.y - 14; }
+      } else if (b.st === 'fly') hop = 10 + Math.abs(Math.sin(t * 14)) * 4;   // (va «por el aire», bajito)
+      else hop = 2;
+      ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(R(bx - 6), R(by - 2 + (b.st === 'held' ? 16 : 0)), 12, 4);
+      const tr = v.trail || (v.trail = []);
+      if (b.st === 'fly') { tr.push([bx, by - hop]); if (tr.length > 6) tr.shift(); } else tr.length = 0;
+      tr.forEach(([tx, ty], i) => { ctx.fillStyle = `rgba(255,120,120,${0.08 + i * 0.06})`; ctx.fillRect(R(tx - 2), R(ty - 2), 4, 4); });
+      v.spin = (v.spin || 0) + (b.sp || 0) / 900;
+      ballPx(ctx, bx, by - hop, 'dodge', v.spin);
+    } else if (v.trail) v.trail.length = 0;
+    // Los caídos: una X roja encima.
+    for (const id of g.out || []) {
+      const s = v.cpus[id], q = s || posOf(g, id);
+      if (q) label(ctx, '✕', q.x, q.y - 44, '#ff5f6d', 14);
+    }
+    scoreboard(ctx, g, z);
+    if (g.phase === 'ready' || g.phase === 'rest') label(ctx, G.T(g.phase === 'rest' ? 'Siguiente ronda…' : 'Preparados…'), z.cx, z.cy - z.hh - 46, '#ffb06a', 16);
+    if (g.phase === 'play' && g.rt != null && g.rt <= 10) label(ctx, String(Math.ceil(g.rt)), z.cx, z.cy - z.hh - 46, Math.sin(t * 8) > 0 ? '#ff4a4a' : '#ffe14d', 22);
+    // Letrero grande (alcanzado / atrapada / ronda): crece un poco al salir y se apaga al final. Va fijo en la
+    // pantalla (bajo los pies de tu Pokémon: arriba lo tapa el panel de la zona), no en el campo: si estás en la
+    // banda, el campo queda a un lado.
+    if (banner) {
+      const k = (performance.now() - banner.at) / 1000;
+      if (k > banner.secs) banner = null;
+      else {
+        const grow = Math.min(1, k / 0.12), fade = k > banner.secs - 0.3 ? (banner.secs - k) / 0.3 : 1;
+        ctx.save(); ctx.globalAlpha = fade;
+        label(ctx, banner.text, G.Camera.x, G.Camera.y + 64 + (1 - grow) * 10, banner.col, Math.round(16 + 8 * grow));
+        ctx.restore();
+      }
+    }
+    // Te la estás quedando: en los 3 últimos segundos, cuenta atrás encima de la pelota.
+    if (b && b.st === 'held' && b.h === meId() && g.phase === 'play' && (b.ht || 0) > DB_HOLD_MAX - 3) {
+      const pl = G.Game.player;
+      label(ctx, String(Math.max(1, Math.ceil(DB_HOLD_MAX - b.ht))), pl.x, pl.y - 50, Math.sin(t * 10) > 0 ? '#ff4a4a' : '#ffe14d', 20);
+    }
+  }
+
   // ---------------- registro en la Fiesta de la sala ----------------
   // world: no es de mesa; social-ui.js empieza una partida en el mundo (G.Modes.run 'plaza').
   function register() {
@@ -1476,9 +1970,11 @@ G.Plaza = (() => {
       desc: 'Un patio para todos: tenis, voleibol, patata caliente y la caseta de las mesas de cartas.' });
     G.Party.register({ id: 'potato', name: 'Patata caliente', world: true, minPlayers: 1, maxPlayers: 4,
       desc: 'Pasa la bomba (tocando a otro o lanzándola) antes de que explote. Gana el último que quede.' });
+    G.Party.register({ id: 'dodge', name: 'Balón prisionero', world: true, minPlayers: 1, maxPlayers: 4,
+      desc: 'Dos equipos de 3: alcanza con la pelota a los del otro campo, o atrápala para que caiga quien la lanzó. Al mejor de 3 rondas.' });
   }
   register();
 
-  return { soloStart, begin, end, update, closeAll, onClient, onNet, drawGround, drawables, drawAir, startGame, throwBomb,
+  return { soloStart, begin, end, update, closeAll, onClient, onNet, drawGround, drawables, drawAir, startGame, throwBomb, dodgeAct,
            zone, padOf, get games() { return games; }, get opts() { return opts; } };
 })();

@@ -6,7 +6,9 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-21', title: ['Arreglos del grupo y del móvil', 'Co-op and phone fixes'], fix: [
+  { d: '2026-10-21', title: ['Arreglos del grupo y del móvil', 'Co-op and phone fixes'], new: [
+    ["Zona de fiesta: nuevo rincón «Balón prisionero», 3 contra 3 (las CPU completan) y al mejor de 3 rondas de 60 s. Lanza la pelota (F o el botón) al otro campo: si alcanza a uno, cae a la banda de detrás (desde allí puede recoger las pelotas que lleguen y lanzarlas). Pulsa lanzar/plancha justo cuando te llegue para atraparla: cae quien la lanzó y vuelve uno de los tuyos. También desde la sala (Fiesta → Balón prisionero).", "Party Plaza: new “Dodgeball” corner, 3 vs 3 (CPUs fill in), best of 3 rounds of 60 s. Throw the ball (F or the button) at the other side: whoever it hits goes to the back strip (from there they can pick up balls that roll in and throw them back). Press throw/dive right as it reaches you to catch it: the thrower is out and one of yours comes back. Also from the room (Party → Dodgeball)."]
+  ], fix: [
     ["Zona de fiesta: la tira de arriba (pista, marcador, «Dejar el partido») tapaba la barra de vida y el reloj en el móvil, y la línea de debajo del reloj en el ordenador. Ahora va más abajo.", "Party Plaza: the top strip (court, score, “Leave match”) covered the HP bar and clock on phones, and the line under the clock on desktop. It now sits lower."],
     ["Proteger a Dazhuang: el botón «Empezar la oleada ya» tapaba el aviso grande y a Dazhuang. Ahora está abajo, encima de los movimientos.", "Guard Dazhuang: the “Start the wave now” button covered the big notice and Dazhuang. It is now at the bottom, above the moves."],
     ["Si el guardado se quedaba sin compañero elegido, al volver al menú se rompía la pantalla; ahora se elige el primero que tengas.", "If the save ended up with no partner selected, returning to the menu broke the screen; it now picks the first one you own."],

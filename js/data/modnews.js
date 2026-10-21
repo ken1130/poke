@@ -4,6 +4,9 @@
  */
 G.MODNEWS = [
   { d: '2026-10-21', title: { zh: '組隊連線與手機版面修正', en: 'Co-op and phone layout fixes' },
+    new: [
+      { zh: "派對廣場新增「躲避球」：3 對 3（人不夠由電腦補上），三戰兩勝、每回合 60 秒。按 F（手機按按鈕）把球丟向對面，打中就讓對方出局（出局的人到對面後方的外圈，撿到滾過來的球還能丟回去）；球快碰到你時按丟球／撲球就能接住，換丟球的人出局、而且自己隊回來一人。也可以從房間的「派對」直接開躲避球", en: "Party Plaza: new “Dodgeball” corner, 3 vs 3 (CPUs fill in), best of 3 rounds of 60 s. Throw the ball (F or the button) at the other side: whoever it hits goes to the back strip (and can throw back balls that roll in). Press throw/dive right as it reaches you to catch it: the thrower is out and one of yours comes back. Also from the room (Party → Dodgeball)." }
+    ],
     fix: [
       { zh: "派對廣場：上方那條列（球場、比分、「離開比賽」）在手機上會壓住血條和時鐘，在電腦上壓到時鐘下面那行：現在移到下面一點", en: "Party Plaza: the top strip (court, score, “Leave match”) covered the HP bar and clock on phones, and the line under the clock on desktop. It now sits lower." },
       { zh: "守護大壯：「立刻開始第 N 波」按鈕會壓住大字提示和大壯本人：現在放在下方招式欄上面", en: "Guard Dazhuang: the “Start the wave now” button covered the big notice and Dazhuang. It is now at the bottom, above the moves." },

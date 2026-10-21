@@ -318,7 +318,7 @@ G.Modes = (() => {
 
         <div class="set-row" style="margin-top:10px"><div class="grow"><b>Sala de entrenamiento</b><small>Muñecos Pikachu que nunca caen: prueba cualquier movimiento y mira tu daño por segundo. Sin premios ni récords.</small></div>
           <button class="btn small gold" data-train ${G.Social.room ? 'disabled' : ''}>Entrar a la sala</button></div>
-        <div class="set-row"><div class="grow"><b>Zona de fiesta</b><small>Tenis, voleibol y patata caliente contra la CPU. Con amigos, desde la sala (Fiesta).</small></div>
+        <div class="set-row"><div class="grow"><b>Zona de fiesta</b><small>Tenis, voleibol, balón prisionero y patata caliente contra la CPU. Con amigos, desde la sala (Fiesta).</small></div>
           <button class="btn small gold" data-plaza ${G.Social.room ? 'disabled' : ''}>Entrar en la zona</button></div>
 
         <h3 class="set-h" style="margin-top:14px">Modos</h3>
