@@ -296,10 +296,10 @@ G.HUD = (() => {
     const boss = fboss || G.EnemyMgr.all().find(e => e.boss && !e.dead);
     if (boss) {
       const bw = Math.min(420, w - 80, lane ? lane.r - lane.l : 1e9), bcx = laneX(bw, w);
-      bar(ctx, bcx - bw / 2, 70, bw, touch ? 14 : 12, boss.hp / boss.maxHp, fboss ? (G.Floors.LAST === G.Floors.floor && !G.Floors.cleared ? '#d98aff' : '#ff9a3d') : '#ffcb3d');
+      bar(ctx, bcx - bw / 2, 70, bw, touch ? 14 : 12, boss.hp / boss.maxHp, fboss ? (G.Floors.lord2 ? '#b08cff' : G.Floors.LAST === G.Floors.floor && !G.Floors.cleared ? '#d98aff' : '#ff9a3d') : '#ffcb3d');
       ctx.font = F(800, 10);
       ctx.fillStyle = '#20160a';
-      const tag = (boss.gmaxFoe ? G.T('DINAMAX') + ' · ' : '') + (fboss ? G.T(fboss.lord || (G.Floors.floor === G.Floors.LAST) ? 'SEÑOR DEL LABERINTO' : 'JEFE DEL PISO') + ' · ' : boss.raid ? G.T('INCURSIÓN') + ' · ' : '');
+      const tag = (boss.gmaxFoe ? G.T('DINAMAX') + ' · ' : '') + (fboss ? G.T(G.Floors.lord2 ? 'SEÑOR DEL MUNDO DISTORSIÓN' : fboss.lord || (G.Floors.floor === G.Floors.LAST) ? 'SEÑOR DEL LABERINTO' : 'JEFE DEL PISO') + ' · ' : boss.raid ? G.T('INCURSIÓN') + ' · ' : '');
       ctx.fillText(tag + G.T(boss.name).toUpperCase(), bcx, touch ? 81.5 : 80);
     }
 

@@ -436,3 +436,19 @@
 | friend | 老朋友／Viejo amigo／Old Friend | `stats.groupRuns` ≥ 10 | 既有 |
 
 測試：`scratchpad/titles/t1.js`（解鎖提示、挑選、首頁、挑選器、大廳卡片、手機直式／橫式）、`t2.js`（假 RTDB 雙分頁：客人看到房主頭上的稱號、`customRuns`）、`t3.js`（統計事件、排行榜列）。沒測到真的 Firestore 寫入。
+
+## 十六、B10F 隱藏頭目「異界之主 騎拉帝納」（2026-10-21，給已經打穿阿爾宙斯的玩家）
+
+無盡模式下到 B10F（`floors.js` 索引 9，`LORD2_FLOOR`）時，層主換成騎拉帝納（圖鑑 487；沒圖就帝牙盧卡／帕路奇亞）。只在一般模式、每局一次（`lord2Done`）。全部由房主決定；畫面上的東西走 `G.Hazards`（'hz'）、`G.Spawner.say` 與新事件 `l2s`／`l2p`／`l2c`／`l2r`／`l2w`（`coop.js` 轉給 `Floors.onNet`）。數值都在 `floors.js` 的 `LORD2`。
+
+| 項目 | 內容 | 數值位置 |
+|---|---|---|
+| 血量 | 阿爾宙斯的倍率（1.5）再乘無盡的 +10%／層（B10F ×1.5＝2.25）、下限 `bossFloor×3`，再加「至少 70 秒的全隊輸出」（`G.Spawner.dpsFloor`，最多 ×4）；傷害 ×1.3 | `LORD2.hpMul/hpFloor/dpsSec` |
+| 影子突襲 | 第 6 秒起每 11 秒：消失 1.2 秒（`e.l2hide`：幾乎透明、`lordInv` 免疫、`combat.js` 不會碰撞傷害），隨機一位玩家腳下出現紫色印記（半徑 110 的 zone，`delay` 1.2），時間到牠出現在印記上、印記爆炸（傷害 ×1.5）。隊友端用 `l2s`（隱藏旗標）和 `ltp`（第 5 個參數 1＝紫色特效）同步 | `sfFirst/sfEvery/sfVanish/sfR/sfK` |
+| 異界裂口 | 第 10 秒起每 24 秒（上一批關完才算）：2 個（每多一人 +1，最多 4）距牠 200～340 的裂口，開 10 秒，每 2.5 秒各跑出一隻幽靈／惡屬性小怪（`hordeDefs('ghost'/'dark')`，一半是菁英），場上最多 12 隻；都是 `lordMinion`（牠死全死）。任一玩家站在半徑 48 內累積 2 秒就關閉（房主判定，`l2c`；畫面上每台電腦自己算「關閉中… x 秒」） | `portFirst/portEvery/portN/portDur/portEach/portR/portClose/portMax` |
+| 反轉世界 | 血量 ≤50% 後每 30 秒：預告 2 秒（玩家頭上像素圖示 `vfx.js flip` + 倒數），接著 6 秒：畫面變暗只剩周圍（`game.js` 呼叫 `Floors.drawDark`，五段階梯式暗角）、方向顛倒（`player.js pl.l2MirrorT`，跟「顛倒藥水」同一行）。每台電腦自己跑計時（`l2r`） | `rwAt/rwWarn/rwDur/rwEvery` |
+| 暴怒 | ≤25%：速度 ×1.25、傷害 ×1.15、影子突襲每 8 秒且一次兩道（兩位玩家；單人時第二道在旁邊 100 處） | `rageAt/rageSpd/rageDmg/sfEveryRage` |
+| 擊倒 | 小怪全滅、裂口關閉、大字「異界已平定！」6 秒、全隊 +500 金幣（房主加在 `pl.coins`）、每個人選一件遺物（`G.Relics.offer`，開局現在也會 `Relics.reset`）、`G.Progress.event('lord2')` → `stats.lord2`、成就 `lord2`「迷宮之外」（t10×3，稱號「異界征服者」）、`save.lastRun.lord2`。之後照舊出兩座樓梯 | `LORD2.coins`、`achievements.js` 最後一條 |
+| 提示 | 出現前 10 秒「異界之主要來了」；大字橫幅、皇冠標籤、HUD 血條「異界之主 · 騎拉帝納」（`hud.js` 用 `G.Floors.lord2`）；樓層標籤點開有一行說明 | `lang-lord2.js` |
+
+實測（`scratchpad/lord2/solo.js`、`coop.js`、`look.js`，截圖在 `scratchpad/lord2/`）：t≈19 分到 B10F 時基礎血量 34 萬～51 萬；灌 1 萬輸出時下限 70 萬。單人和兩分頁組隊：隊友看到同座標的裂口、消失旗標、印記、瞬移、反轉世界，隊友站上裂口房主會關；擊倒後兩邊都開遺物視窗、成就與 `stats.lord2` 各自記；提示各只出現一次；無主控台錯誤。

@@ -164,6 +164,7 @@ G.Game = (() => {
     G.Boons.reset();
     G.Dungeon.reset();
     G.Floors.reset();
+    G.Relics.reset();          // (2026-10-21: también fuera de la torre; la reliquia del Señor del Mundo Distorsión)
     G.RunGoals.reset();
     G.Companion.reset();
     G.Guard.reset();
@@ -505,7 +506,7 @@ G.Game = (() => {
     if (G.Tiles.SCENES.includes(G.World.biome)) save.scenes[G.World.biome] = Date.now();
     // Lápida del menú (2026-10-16, menu.js): lo esencial de esta run, para verlo al volver.
     save.lastRun = { dex: pl.dex, shiny: !!pl.shiny, time: Math.floor(time), level: pl.level, kills: pl.kills, bosses: pl.bosses,
-      floor: G.Floors.floor || 0, clear: !!clearWin, dead: !!dead && !clearWin, mode: G.Modes.run, group: coop, coins, at: Date.now(),
+      floor: G.Floors.floor || 0, clear: !!clearWin, lord2: !!G.Floors.lord2Done, dead: !!dead && !clearWin, mode: G.Modes.run, group: coop, coins, at: Date.now(),
       moves: pl.moves.filter(m => !G.Moves.isPassive(m)).slice(0, 4).map(m => [m.name, m.lvl]) };
     G.Progress.event('runEnd', { time, level: pl.level, coins: pl.coins, types: pl.mon.types, group: coop, dex: pl.dex });
     G.Progress.checkAch();
@@ -1421,6 +1422,7 @@ G.Game = (() => {
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
     }
+    G.Floors.drawDark(ctx, w, h);        // Mundo Distorsión de Giratina (floors.js): a oscuras salvo alrededor tuyo
     // HUD, en su capa nítida.
     const hc = hctx;
     hc.setTransform(hdpr, 0, 0, hdpr, 0, 0);

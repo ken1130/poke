@@ -109,7 +109,9 @@ G.AchDefs = (() => {
     { id: 'streak14', cat: 'modos', tier: 2, name: 'Dos semanas', desc: 'Juega el reto diario 14 días seguidos.', value: st('bestDailyStreak'), goal: 14, reward: { t10: 2 } },
     { id: 'streak30', cat: 'modos', tier: 3, name: 'Un mes sin fallar', desc: 'Juega el reto diario 30 días seguidos.', value: st('bestDailyStreak'), goal: 30, reward: { t10: 5 }, title: 'Leyenda diaria' },
     { id: 'group1', cat: 'otros', tier: 1, name: 'En compañía', desc: 'Juega una partida en grupo.', value: st('groupRuns'), goal: 1, reward: { t1: 2 } },
-    { id: 'group10', cat: 'otros', tier: 2, name: 'Compañero fiel', desc: 'Juega 10 partidas en grupo.', value: st('groupRuns'), goal: 10, reward: { t10: 1 }, title: 'Compañero fiel' }
+    { id: 'group10', cat: 'otros', tier: 2, name: 'Compañero fiel', desc: 'Juega 10 partidas en grupo.', value: st('groupRuns'), goal: 10, reward: { t10: 1 }, title: 'Compañero fiel' },
+    // Señor del Mundo Distorsión (B10F, floors.js, 2026-10-21).
+    { id: 'lord2', cat: 'mazmorra', tier: 3, name: 'Más allá del laberinto', desc: 'Vence a Giratina, Señor del Mundo Distorsión, en B10F.', value: st('lord2'), goal: 1, reward: { t10: 3 }, title: 'Domador del Mundo Distorsión' }
   ];
 
   // Un logro por legendario: "Vence a Mewtwo"...

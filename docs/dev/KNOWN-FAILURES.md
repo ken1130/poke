@@ -460,3 +460,10 @@
 - **原因**：`.pill { display: flex }`，藥丸有 `max-width` + `overflow: hidden`，新加的 chip 被 flex-shrink 壓扁，文字溢出又被藥丸切掉；橫式更慘，名字 span 本來就 `display: none`。
 - **修法**：chip `flex: none`（桌面）；手機名字 `flex: none` + chip `min-width: 0` 用「…」截；橫式跟著名字一起藏。
 - **以後怎麼避免**：往 flex 容器塞東西要給 `flex: none` 或 `min-width`，並用真機尺寸（390×844、844×390）量 chip 的實際寬度，不要只看「有沒有在容器裡」。
+
+## 49. 測試腳本裡呼叫 `G.I18n.set('zh')` 會把整頁重新載入（2026-10-21）
+
+- **症狀**：Playwright 腳本在 `startRun()` 後 `G.Game.player` 變成 null（`Cannot set properties of null (setting 'god')`），主控台沒有任何錯誤。
+- **原因**：`i18n.js` 的 `set(l)` 是「存語言後 `location.reload()`」，不是只換字典；頁面重載後遊戲回到首頁。
+- **修法**：測試不要呼叫它（預設就是繁中）；要換語言就在 `goto` 前設 localStorage 或用網址參數。
+- **以後怎麼避免**：測試裡呼叫沒看過的 API 前先 grep 它的實作；「player 突然變 null 但沒錯誤」八成是頁面被重載了。
