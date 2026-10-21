@@ -299,7 +299,8 @@ G.Social = (() => {
 
   function memberInfo() {
     const s = G.DB.save;
-    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), at: ts() };
+    // `title`: el título puesto (titles.js, 2026-10-21); los demás lo ven en la sala y encima de ti.
+    return { name: me.name, dex: s.partner, shiny: !!s.partnerShiny && G.DB.ownsShiny(s.partner), title: G.Titles ? G.Titles.myId() : '', at: ts() };
   }
 
   /**
@@ -503,10 +504,10 @@ G.Social = (() => {
     if (room && room.isHost) fb.rtdb.ref('rooms/' + room.id + '/open').set(!!open).catch(() => {});
   }
 
-  /** Actualiza tu Pokémon en la sala (si cambias de compañero). */
+  /** Actualiza tu Pokémon (y tu título) en la sala (si cambias de compañero o de título desde el menú). */
   function refreshMember() {
     if (room && me) fb.rtdb.ref('rooms/' + room.id + '/m/' + uid).update(
-      { dex: G.DB.save.partner, shiny: !!G.DB.save.partnerShiny && G.DB.ownsShiny(G.DB.save.partner) }).catch(() => {});
+      { dex: G.DB.save.partner, shiny: !!G.DB.save.partnerShiny && G.DB.ownsShiny(G.DB.save.partner), title: G.Titles ? G.Titles.myId() : '' }).catch(() => {});
   }
 
   // ---------------- invitaciones ----------------
@@ -567,7 +568,7 @@ G.Social = (() => {
     return {
       name: me ? me.name : G.DB.user,
       favs: (prof.favs || []).slice(0, 3).map(f => ({ dex: f.dex | 0, shiny: !!f.shiny })),
-      title: prof.title || '',
+      title: (G.Titles && G.Titles.mine() ? G.Titles.mine().name : '') || prof.title || '',   // (texto en español; se traduce al verlo)
       best: { solo: st.bestTime | 0, group: st.bestGroupTime | 0, level: st.bestLevel | 0, bosses: st.bossesTotal | 0,
               legends: Object.keys(s.legends || {}).length, kills: st.totalKills | 0, medals: unlocked.length },
       medals

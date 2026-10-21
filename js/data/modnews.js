@@ -4,6 +4,9 @@
  */
 G.MODNEWS = [
   { d: '2026-10-21', title: { zh: '組隊連線與手機版面修正', en: 'Co-op and phone layout fixes' },
+    new: [
+      { zh: "新增「稱號」：14 個靠遊玩達成的稱號（迷宮之主殺手、大壯的守護者、千人斬、不死鳥、撲克王……），加上原本成就給的稱號。到「任務 → 個人檔案 → 稱號」挑一個，會跟在名字旁邊：右上角、組隊房間與隊友頭上、排行榜、個人檔案都看得到；達成時會跳提示", en: "New: Titles. 14 tags earned by playing (Lord Slayer, Dazhuang Guardian, Thousand Cuts, Phoenix, Poker King…) plus the achievement titles. Pick one in Missions → Profile → Title; it shows next to your name: top right, in the lobby and above you in co-op, in the ranking and on your profile. You get a notice when you earn one" }
+    ],
     fix: [
       { zh: "派對廣場：上方那條列（球場、比分、「離開比賽」）在手機上會壓住血條和時鐘，在電腦上壓到時鐘下面那行：現在移到下面一點", en: "Party Plaza: the top strip (court, score, “Leave match”) covered the HP bar and clock on phones, and the line under the clock on desktop. It now sits lower." },
       { zh: "守護大壯：「立刻開始第 N 波」按鈕會壓住大字提示和大壯本人：現在放在下方招式欄上面", en: "Guard Dazhuang: the “Start the wave now” button covered the big notice and Dazhuang. It is now at the bottom, above the moves." },

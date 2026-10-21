@@ -382,3 +382,36 @@
 | 畫面 | 腳下的像素恐懼條（黃→橘→紅，快滿閃白；放頭上會被毛和「!!」擋住）；大叫的特效 `G.ExVFX.scareShout` | `player.js draw`、`vfx-exclusive.js` |
 
 量測（攻擊 1；單體／5 隻，每秒）：Lv5 128／1082、進化 209／1770（舊版 85／641、177／1417）。群體比別人高一點，這是它「敵人越多越強」的特色。
+
+## 十七、稱號（2026-10-21）
+
+跟在名字旁邊的短標籤。資料與邏輯都在 **`js/data/titles.js`**（`G.Titles`，在 achievements.js 之後載入）；存檔 `save.title`（id，`null` = 沒有），隨存檔一起上雲端（`saves/{uid}` 整份 `save` 同步，不用改規則）。
+
+| 項目 | 設定 |
+|---|---|
+| 解鎖判定 | 每個稱號 `stat` + `goal`（看 `save.stats`）或 `value(save)`；`need(t)` 回 `{ text, v, goal, ok }`。`checkAch`（結算、回首頁、開任務頁都會跑）→ `G.Titles.check` 跳成就那種提示（`ach-pop`，排在成就後面；一次 3 個以上合成一則「N 個新稱號」），看過的記在 `save.titleSeen` |
+| 成就稱號（舊） | `achievements.js` 的 `title` 也能裝：id `'a:' + 成就`（同名的成就任一個達成即可，如 Explorador）；舊存檔的 `profile.title`（西文名字）在 `mine()` 時自動轉成 id。個人檔案頁的舊下拉選單已拿掉 |
+| 挑選 | 任務 → 個人檔案 → 「稱號」：`renderPicker`（卡片 `.title-card`，鎖住的灰掉＋條件＋進度；成就稱號只列已拿到的，用 chip） |
+| 顯示 | `chip(id)` → `<span class="tag-chip title-chip">`：右上角 `#user-pill`（ui.js refreshCoins）、組隊房間卡片（social-ui.js）、排行榜列（ranking-ui.js）、公開檔案 `profileData().title`（西文字串，顯示時翻譯）。隊友頭上：`player.js draw` → `drawTag`（像素小牌，死掉時不畫，那個位置給「留在他身邊」） |
+| 組隊 | **不走每幀狀態**：`social.js memberInfo()` 多送 `title`（RTDB 房間成員，規則沒限制欄位）→ `social-ui.js` 開局的 `cfg.members` 帶 `title` → `coop.js begin` 設 `p.title`。在房間裡改稱號：`refreshMember()` 也會更新 |
+| 排行榜 | 讀：`rowOf` 多 `titles[]`（舊紀錄沒有就不顯示）。**寫：`ranking.js` 的 `SEND_TITLES` 目前 `false`**，因為 `firestore.rules` 的 `validEntry` 用 `hasOnly`，多一個欄位整筆會被拒。規則已在 repo 改好（`titles` 可選、長度＝`uids`）；主人 `firebase deploy --only firestore:rules`（免費）後再把旗標改 `true` |
+| 手機 | 右上角藥丸 `(max-width: 600px)` 放寬到 176px：名字優先、chip 用「…」截；橫式藥丸本來就藏名字，chip 一起藏 |
+
+| id | 名稱（繁中／西／英） | 條件 | 統計在哪裡算 |
+|---|---|---|---|
+| lord | 迷宮之主殺手／Verdugo del Laberinto／Lord Slayer | `stats.clears` ≥ 1 | floors.js `event('clear')` |
+| guardian | 大壯的守護者／Guardián de Dazhuang／Dazhuang Guardian | `stats.bestGuard` ≥ 50 | **新**：guard.js `end()` → `event('guard', { waves })`（原本只存 localStorage） |
+| legends | 傳說獵人／Cazador de leyendas／Legend Hunter | `legends{}` ≥ 10 | progress.js kill |
+| kills1k | 千人斬／Mil tajos／Thousand Cuts | `stats.totalKills` ≥ 1000 | game.js endRun |
+| custom | 原創收藏家／Coleccionista original／Original Collector | `customRuns{}` 有全部 `G.CUSTOM`（8 隻）| **新**：runEnd 帶 `dex`，progress.js 記 `save.customRuns[dex]`（db.js merge 聯集）。原創角色人人都有，所以改成「各玩過一場」 |
+| party | 派對之星／Estrella de la fiesta／Party Star | `stats.partyWins` ≥ 5 | **新**：party.js `onView`：`v.res` 裡自己 `place === 1`，每回合算一次（`scoredRound`）；電腦對手也算 |
+| shiny | 異色獵人／Cazador de brillos／Shiny Hunter | `shiny{}` ≥ 5 | 既有 |
+| phoenix | 不死鳥／Fénix／Phoenix | `stats.bestTime` ≥ 1800 | 既有 |
+| kecleon | 卡克隆常客／Cliente de Kecleon／Kecleon Regular | `stats.kecleonBuys` ≥ 10 | **新**：dungeon.js 購買（房主判定）：那間店還沒偷過才算，房客用 `['dg','ach','kbuy']` 回傳 |
+| combo | 合體技大師／Maestro del combo／Combo Master | `stats.combos` ≥ 10 | 既有（floors.js） |
+| tower | 無盡塔攀登者／Escalador de la torre／Tower Climber | `stats.bestTower` ≥ 10 | 既有（challenges.js） |
+| poker | 撲克王／Rey del póker／Poker King | `stats.bigtwoWins` ≥ 10 | **新**：同 party，`game === 'bigtwo'` |
+| breeder | 孵蛋達人／Maestro de huevos／Egg Master | `stats.hatches` ≥ 10 | 既有 |
+| friend | 老朋友／Viejo amigo／Old Friend | `stats.groupRuns` ≥ 10 | 既有 |
+
+測試：`scratchpad/titles/t1.js`（解鎖提示、挑選、首頁、挑選器、大廳卡片、手機直式／橫式）、`t2.js`（假 RTDB 雙分頁：客人看到房主頭上的稱號、`customRuns`）、`t3.js`（統計事件、排行榜列）。沒測到真的 Firestore 寫入。

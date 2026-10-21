@@ -446,3 +446,17 @@
 - **原因**：33% 召喚的兩隻小頭目走 `spawnBossNow` → `G.GmaxFoe.maybe`，沒排除 `lordMinion`；極巨招式的減益直接寫 `pl.lordSlowT` 等欄位，不經 `applyCurse` 的上限。
 - **修法**：`maybe` 排除 `lordMinion`；上限抽成 `G.Floors.canCurse(pl, key)`，`gmaxfoe.js` 也用。
 - **以後怎麼避免**：寫同一個玩家狀態欄位的地方不只一處時，把限制抽成共用函式，不要各自判斷。
+
+## 47. 排行榜紀錄多加一個欄位，Firestore 規則會把整筆拒掉（2026-10-21）
+
+- **症狀**：想把稱號存進排行榜紀錄（`lb/{board}/e/{id}` 多一個 `titles`）。
+- **原因**：`firestore.rules` 的 `validEntry` 用 `keys().hasOnly([...])` 白名單；多一個鍵整筆 `set` 失敗，`ranking.js store()` 只會 `console.warn`，玩家的成績就默默沒上榜。`profiles`、`saves` 也都是白名單（`saves` 只看最外層 `save`，裡面加欄位沒關係）。
+- **修法**：規則先在 repo 改好（`titles` 可選），程式用 `SEND_TITLES = false` 先不送；主人部署規則後再開。
+- **以後怎麼避免**：要往 Firestore 的文件加欄位前，先 grep `firestore.rules` 的 `hasOnly`；RTDB（`database.rules.json`）沒有欄位白名單。
+
+## 48. 頂列藥丸是 flex：塞進去的 chip 會被壓到 15px 寬（2026-10-21）
+
+- **症狀**：手機直式右上角的稱號只剩「迷」一個字，`getBoundingClientRect` 看 chip 寬 15px。
+- **原因**：`.pill { display: flex }`，藥丸有 `max-width` + `overflow: hidden`，新加的 chip 被 flex-shrink 壓扁，文字溢出又被藥丸切掉；橫式更慘，名字 span 本來就 `display: none`。
+- **修法**：chip `flex: none`（桌面）；手機名字 `flex: none` + chip `min-width: 0` 用「…」截；橫式跟著名字一起藏。
+- **以後怎麼避免**：往 flex 容器塞東西要給 `flex: none` 或 `min-width`，並用真機尺寸（390×844、844×390）量 chip 的實際寬度，不要只看「有沒有在容器裡」。

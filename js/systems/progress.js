@@ -6,11 +6,13 @@
  *   item      { id }        objeto equipado
  *   evolve    { move }      movimiento evolucionado
  *   rift      { type }      pelea de grieta ganada
- *   runEnd    { time, level, coins, types, group }
+ *   runEnd    { time, level, coins, types, group, dex }
  *   missionDone { daily }   (lo lanza claim)
+ *   guard { waves } · partyWin { game } · kbuy      (títulos, data/titles.js, 2026-10-21)
  *
  * y esto actualiza en la partida guardada:
  *   stats.bossesTotal · riftWins · evolutions · missionsDone · groupRuns
+ *   stats.bestGuard · partyWins · bigtwoWins · kecleonBuys · customRuns{dex}
  *   legends{dex} · arenas{tipo} · itemsFound{id} · evoMoves{id} · ach{id}
  *   missions { day, daily[], rerolled, week, weekly[] }
  *
@@ -158,8 +160,14 @@ G.Progress = (() => {
       case 'hatch': S.hatches = (S.hatches || 0) + 1; if (d.shiny) S.shinyHatches = (S.shinyHatches || 0) + 1; break;
       case 'combo': S.combos = (S.combos || 0) + 1; break;
       case 'eliteKill': S.eliteKills = (S.eliteKills || 0) + 1; break;
+      // Títulos (titles.js, 2026-10-21): oleadas de Dazhuang, juegos de mesa ganados, compras honradas en Kecleon.
+      case 'guard': S.bestGuard = Math.max(S.bestGuard || 0, d.waves | 0); break;
+      case 'partyWin': S.partyWins = (S.partyWins || 0) + 1; if (d.game === 'bigtwo') S.bigtwoWins = (S.bigtwoWins || 0) + 1; break;
+      case 'kbuy': S.kecleonBuys = (S.kecleonBuys || 0) + 1; break;
       case 'runEnd':
         if (d.group) S.groupRuns = (S.groupRuns || 0) + 1;
+        // Runs con cada personaje original (título «Coleccionista original»).
+        if (d.dex && G.CUSTOM_BY && G.CUSTOM_BY[d.dex]) { s.customRuns = s.customRuns || {}; s.customRuns[d.dex] = s.customRuns[d.dex] || Date.now(); }
         break;
     }
     if (G.RunGoals) G.RunGoals.onEvent(kind, d);           // retos de la run (rungoals.js)
@@ -193,6 +201,8 @@ G.Progress = (() => {
     }
     // Aspecto (2026-10-16): auras y colores de nombre que dan los logros.
     if (G.Cosmetic) G.Cosmetic.check((t, sub) => notify(t, sub));
+    // Títulos (2026-10-21, data/titles.js): los que dan las estadísticas de la cuenta.
+    if (G.Titles) G.Titles.check((t, sub) => notify(t, sub));
   }
 
   /** Títulos que tienes (de los logros conseguidos). */

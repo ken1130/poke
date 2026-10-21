@@ -204,6 +204,7 @@ G.Party = (() => {
   let V = null;            // última vista recibida (todos, también el anfitrión)
   let active = false;      // la mesa está abierta
   let leftSid = null;      // dejaste esa mesa a propósito: no se vuelve sola
+  let scoredRound = '';    // ronda ya contada para los títulos (sid:ronda)
   let helloAt = 0;
   const totalsKeep = { room: null, game: null, map: new Map() };   // puntos acumulados mientras la sala sigue junta
   const listeners = new Set();
@@ -451,6 +452,12 @@ G.Party = (() => {
     V = v;
     if (v.note && v.note.seq !== prevNote && (!fresh || amHost())) G.UI.toast(G.I18n.f(v.note.txt, v.note.x), 2600);
     V.at = Date.now();
+    // Títulos (titles.js, 2026-10-21): una victoria por ronda, la del jugador de esta pantalla.
+    if (v.res && scoredRound !== v.sid + ':' + v.round) {
+      scoredRound = v.sid + ':' + v.round;
+      const r = v.res.find(x => x.seat === v.you);
+      if (r && r.place === 1 && G.Progress) G.Progress.event('partyWin', { game: v.game });
+    }
     if (!amHost()) saveRejoin();
     if (!active) { active = true; emit('open', V); }
     emit('view', V);

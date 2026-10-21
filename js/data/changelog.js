@@ -6,7 +6,9 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-21', title: ['Arreglos del grupo y del móvil', 'Co-op and phone fixes'], fix: [
+  { d: '2026-10-21', title: ['Arreglos del grupo y del móvil', 'Co-op and phone fixes'], new: [
+    ["Títulos: 14 etiquetas que se ganan con lo que haces (Verdugo del Laberinto, Guardián de Dazhuang, Mil tajos, Fénix, Rey del póker…) más los de los logros. Se eligen en Misiones → Perfil → Título y van junto a tu nombre: arriba a la derecha, en la sala y encima de ti en grupo, en el ranking y en tu perfil.", "Titles: 14 tags earned by what you do (Lord Slayer, Dazhuang Guardian, Thousand Cuts, Phoenix, Poker King…) plus the achievement titles. Pick one in Missions → Profile → Title; it shows next to your name: top right, in the lobby and above you in co-op, in the ranking and on your profile."]
+  ], fix: [
     ["Zona de fiesta: la tira de arriba (pista, marcador, «Dejar el partido») tapaba la barra de vida y el reloj en el móvil, y la línea de debajo del reloj en el ordenador. Ahora va más abajo.", "Party Plaza: the top strip (court, score, “Leave match”) covered the HP bar and clock on phones, and the line under the clock on desktop. It now sits lower."],
     ["Proteger a Dazhuang: el botón «Empezar la oleada ya» tapaba el aviso grande y a Dazhuang. Ahora está abajo, encima de los movimientos.", "Guard Dazhuang: the “Start the wave now” button covered the big notice and Dazhuang. It is now at the bottom, above the moves."],
     ["Si el guardado se quedaba sin compañero elegido, al volver al menú se rompía la pantalla; ahora se elige el primero que tengas.", "If the save ended up with no partner selected, returning to the menu broke the screen; it now picks the first one you own."],
