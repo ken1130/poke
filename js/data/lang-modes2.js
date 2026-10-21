@@ -2,6 +2,7 @@
 G.I18n.add({
   '¡Una reliquia!': '獲得遺物！',
   'Elige una: dura toda la torre ·': '選一個：整座塔都有效 ·',
+  'Elige una: dura toda la partida ·': '選一個：整局都有效 ·',
   'Reliquia': '遺物',
   'Colmillo Sediento': '嗜血尖牙',
   'Te curas un 3% del daño que haces.': '造成傷害的 3% 轉為回血。',
@@ -49,6 +50,7 @@ G.I18n.add({
 G.I18n.add({
   '¡Una reliquia!': 'A relic!',
   'Elige una: dura toda la torre ·': 'Pick one: it lasts the whole tower ·',
+  'Elige una: dura toda la partida ·': 'Pick one: it lasts the whole run ·',
   'Reliquia': 'Relic',
   'Colmillo Sediento': 'Thirsty Fang',
   'Te curas un 3% del daño que haces.': 'Heal 3% of the damage you deal.',
