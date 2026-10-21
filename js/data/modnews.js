@@ -3,7 +3,10 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
-  { d: '2026-10-21', title: { zh: '組隊連線與手機版面修正', en: 'Co-op and phone layout fixes' },
+  { d: '2026-10-21', title: { zh: '原創角色覺醒、組隊連線與手機版面修正', en: 'Awakening for the original characters, co-op and phone layout fixes' },
+    new: [
+      { zh: "覺醒：8 隻原創角色（熊貓、地瓜球、迪迪、英雄、高速婆婆、湯姆貓、利卡、傑利鼠）不會進化，所以 Lv.35 起可以「覺醒」，跟超級進化一樣：換成覺醒型態（換色＋光點氣場）、HP 與攻擊 +30%、速度 +10%、每隻有自己的覺醒特性（熊貓 適應力、地瓜球 電氣引擎、迪迪 大力士、英雄 遲來的勇氣、高速婆婆 加速、湯姆貓 踩影、利卡 夢魘、傑利鼠 妖精皮膚），專屬招式也覺醒（傷害 +30%、冷卻 -15%）。在跟超級進化同一個視窗選（或之後按 M）；圖鑑「其他」分頁的角色頁會顯示覺醒型態", en: "Awakening: the 8 original characters (Panda, Sweet Potato Ball, Didi, Hero, Turbo Granny, Tom, Licker, Jerry) cannot evolve, so from Lv. 35 they can awaken, just like a Mega Evolution: an awakened form (recolor + aura), HP and attack +30%, speed +10%, an awakened ability each (Panda Adaptability, Sweet Potato Ball Volt Engine, Didi Huge Power, Hero Late Courage, Turbo Granny Speed Boost, Tom Shadow Tag, Licker Bad Dreams, Jerry Pixilate) and their exclusive move awakened (damage +30%, recharge -15%). Chosen in the same window as a Mega (or later with M); the character's page in the “Other” tab shows the awakened form" }
+    ],
     fix: [
       { zh: "派對廣場：上方那條列（球場、比分、「離開比賽」）在手機上會壓住血條和時鐘，在電腦上壓到時鐘下面那行：現在移到下面一點", en: "Party Plaza: the top strip (court, score, “Leave match”) covered the HP bar and clock on phones, and the line under the clock on desktop. It now sits lower." },
       { zh: "守護大壯：「立刻開始第 N 波」按鈕會壓住大字提示和大壯本人：現在放在下方招式欄上面", en: "Guard Dazhuang: the “Start the wave now” button covered the big notice and Dazhuang. It is now at the bottom, above the moves." },

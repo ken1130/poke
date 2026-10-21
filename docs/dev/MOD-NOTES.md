@@ -382,3 +382,24 @@
 | 畫面 | 腳下的像素恐懼條（黃→橘→紅，快滿閃白；放頭上會被毛和「!!」擋住）；大叫的特效 `G.ExVFX.scareShout` | `player.js draw`、`vfx-exclusive.js` |
 
 量測（攻擊 1；單體／5 隻，每秒）：Lv5 128／1082、進化 209／1770（舊版 85／641、177／1417）。群體比別人高一點，這是它「敵人越多越強」的特色。
+
+## 十五、原創角色「覺醒」（2026-10-21，原創角色版的超級進化）
+
+原創角色（custom.js，10001～10008）不會進化也沒有超級型態，所以給他們一個 Lv.35 的「覺醒」型態，**整套走現成的超級進化流程**（`evo.js` 的選擇視窗、`MEGA_BOOST`、`megaability.js` 的特性與起始招式覺醒、組隊同步、圖鑑顯示），只有文字不同（「覺醒」而不是「超級進化」）。
+
+| 項目 | 設定 |
+|---|---|
+| 資料 | `js/data/custom-awaken.js`：`G.AWAKEN`，dex = 30000 + 原編號（40001～40008，跟超級型態的 30000+base 同一個公式），`mega: true, awaken: true, base`；登記進 `G.MEGA_BY_BASE[1000x]` 和 `G.DEX_BY`。**不**放進 `G.CUSTOM`／`G.CUSTOM_BY`（不是另一隻角色：不能選成夥伴、「其他」分頁不另開一格，而是顯示在原角色的頁面裡）。名字（es／zh／en）與所有新字串也在這個檔 |
+| 精靈圖 | `tools/custom_sprites/make_awaken.py`（`python3 -I`，從 `assets/pokemon/1000x/` 產生 `assets/pokemon/4000x/` 與 `js/data/sprites-awaken.js`）：每格四周各加 4 px（原圖邊界只有 1～6 px，光點放不下）、錨點同步 +4；依角色換色（色相轉／固定色相／低飽和像素染色／暗部染色）、最亮的 1/4 像素再亮 8%、外框染成角色的深色；輪廓外 1～4 px 的環帶放 5～7 個光點（dot／plus／star），每格的種子不同所以會閃。全部逐像素，沒有模糊。預覽在 `tools/custom_sprites/out_awaken/preview.png`（.gitignore） |
+| 外觀 | 熊貓：黑毛變深靛紫＋金色星光；地瓜球：橘金色＋青色電光；迪迪：冰藍色＋水珠；英雄：粉紅變紅橙＋火金星光；高速婆婆：淡紫幽靈色＋白紫光點；湯姆貓：深藍近黑＋紅色火花；利卡：毒綠色＋紫色毒泡；傑利鼠：粉紅妖精色＋白粉星光 |
+| 數值 | 跟超級進化完全一樣：HP／攻擊 ×1.3、速度 ×1.1（`G.Evo.MEGA_BOOST`），到本局結束；`stats6-custom.js` 的 4000x = 原本的四項 ×1.2（跟 `fetch_stats6.py` 對沒資料的超級型態一樣）；`custom-awaken.js` 的 hp／spd+8／atk×1.15／bst+100 只是顯示用（跟 mega.js 一樣，實際加成走 MEGA_BOOST） |
+| 覺醒特性 | `megaability.js ABIL_OF`：熊貓 適應力（adapt）、地瓜球 **電氣引擎**（新：電屬性 +30%、全招式冷卻 ×0.9）、迪迪 大力士（hugepower）、英雄 **遲來的勇氣**（新：`courage` 0.4，`dmgK` 乘 1 + 0.4×(1 − hp/maxHp)）、高速婆婆 加速（speedboost）、湯姆貓 踩影（shadowtag）、利卡 夢魘（baddreams）、傑利鼠 妖精皮膚（pixilate） |
+| 專屬招式 | 開局就學會（`pl.startMoveId`），覺醒後 `m.mega` → 傷害 ×1.3、冷卻 ×0.85，招式欄前綴「覺醒」。`moves.js` 的 `only: 1000x` 只在發招式時用（POOL 排除），不會再拿 `pl.dex` 比對，所以 dex 變 4000x 沒影響 |
+| 文字分流 | `evo.js`：`awk(dex)`＝`G.DEX_BY[dex].awaken`；卡片標籤「覺醒」、副標「{x} 可以覺醒了！」、提示「正在覺醒／覺醒成 {x}」、「先不要」說明、HUD 圓鈕「覺醒」；暫停選單的 `#pause-mega`（run-ui.js，靜態文字「超級進化」）由 `evo.js drawHud` 在原創角色時改成「覺醒」（只在文字變了才改 DOM）。`megaability.js apply` 的提示「覺醒特性：…」；`hud.js` 招式說明列「覺醒招式：傷害 +30%、冷卻 -15%」 |
+| 圖鑑 | `menu.js showCustom` 加 `megaBox(dex)`＋`wireMega`；`megaBox` 若全部是 awaken → 標題「覺醒」、「遊戲中 Lv.35 起可以覺醒（原創角色的超級進化）」、圖＋名字＋覺醒特性說明 |
+| 組隊 | 跟超級一樣：myState 送 `pl.dex`（40005），隊友 `evolveTo(40005, true)` 只換外觀，`G.DEX_BY[40005]` 有登記、圖從 `assets/pokemon/40005/` 載 |
+| 載入順序 | dev.html：`sprites-awaken.js` 在 `sprites-mega.js` 後；`custom-awaken.js` 在 `stats6-custom.js` 後（要有 `G.CUSTOM_BY`、`G.MEGA_BY_BASE`、`G.SPRITE_META`、`G.I18n`） |
+
+測試：`scratchpad/awaken/test_awaken.js`（8 隻：Lv.35 → 視窗 → 覺醒 → dex 4000x、atk/HP ×1.30、特性、專屬招式仍會打且 `dmgK` 含 1.3）、`coop_awaken.js`（房主覺醒，隊友看到 40005）、`dex_shot.js`（圖鑑「其他」頁的覺醒區塊，中／英）。連接埠要改成自己的伺服器。
+
+待主人決定：覺醒特性的選擇（尤其兩個新的：電氣引擎、遲來的勇氣）；覺醒型態要不要順便換屬性（目前不換）；進化視窗的大標題仍是「進化！」。

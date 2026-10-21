@@ -25,3 +25,4 @@ docs/CONTACTOS_CREADORES.md
 # 原創角色的原始素材（有版權，不進 git）與產生器預覽圖
 tools/custom_sprites/src/
 assets/pokemon/*/preview.png
+tools/custom_sprites/out_awaken/

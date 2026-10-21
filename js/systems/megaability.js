@@ -30,7 +30,10 @@ G.MegaAb = (() => {
     refrigerate: { name: 'Piel Helada',     desc: 'Movimientos de Hielo y Normal +30%.', types: ['ice', 'normal'], k: 1.3 },
     fairyaura:   { name: 'Aura Feérica',    desc: 'Movimientos de Hada +35%.', types: ['fairy'], k: 1.35 },
     deltastream: { name: 'Ráfaga Delta',    desc: 'Movimientos de Dragón y Volador +30%.', types: ['dragon', 'flying'], k: 1.3 },
-    baddreams:   { name: 'Mal Sueño',       desc: 'Los enemigos cercanos pierden vida cada segundo y van más lentos.', sand: true, tag: 0.15 }
+    baddreams:   { name: 'Mal Sueño',       desc: 'Los enemigos cercanos pierden vida cada segundo y van más lentos.', sand: true, tag: 0.15 },
+    // Despertar de los personajes originales (2026-10-21, custom-awaken.js): dos propias.
+    voltengine:  { name: 'Motor Eléctrico', desc: 'Movimientos Eléctricos +30% y todos se recargan un 10% antes.', types: ['electric'], k: 1.3, cd: 0.9 },
+    courage:     { name: 'Valor Tardío',    desc: 'Cuanta menos vida te queda, más daño haces (hasta +40%).', courage: 0.4 }
   };
   // Pokémon base -> habilidad Mega (data/mega.js: las 39).
   const ABIL_OF = {
@@ -40,7 +43,12 @@ G.MegaAb = (() => {
     319: 'toughclaws', 604: 'adapt', 6: 'toughclaws', 691: 'adapt', 362: 'refrigerate', 560: 'intimidate',
     142: 'toughclaws', 208: 'sandstream', 248: 'sandstream', 227: 'toughclaws', 115: 'parental',
     780: 'sheerforce', 718: 'guard', 719: 'guard', 150: 'sheerforce', 978: 'adapt', 491: 'baddreams',
-    380: 'guard', 381: 'sheerforce', 384: 'deltastream', 807: 'speedboost'
+    380: 'guard', 381: 'sheerforce', 384: 'deltastream', 807: 'speedboost',
+    // Personajes originales al despertar (custom-awaken.js): Panda (Pregunta Curiosa es Normal, como él),
+    // Pollito, Didi (puñetazos), Héroe (miedoso que al final se atreve), Turbo Abuela (cada vez más rápida),
+    // Tom (atrapa a los ratones), Lika (pesadilla), Jerry (Sartenazo es Normal; él, Hada).
+    10001: 'adapt', 10002: 'voltengine', 10003: 'hugepower', 10004: 'courage', 10005: 'speedboost',
+    10006: 'shadowtag', 10007: 'baddreams', 10008: 'pixilate'
   };
   const of = base => ABIL[ABIL_OF[base]] || ABIL.sheerforce;
 
@@ -55,7 +63,7 @@ G.MegaAb = (() => {
     // Movimiento inicial despertado.
     const m = pl.moves.find(x => x.id === pl.startMoveId);
     if (m) m.mega = true;
-    G.Spawner.say(G.I18n.f('Habilidad Mega: {x}', G.T(a.name)) + ' — ' + G.T(a.desc), 4, true);
+    G.Spawner.say(G.I18n.f(pl.mon && pl.mon.awaken ? 'Habilidad despierta: {x}' : 'Habilidad Mega: {x}', G.T(a.name)) + ' — ' + G.T(a.desc), 4, true);
   }
 
   /** Multiplicador de daño de un golpe (Combat.hit). */
@@ -66,6 +74,7 @@ G.MegaAb = (() => {
     if (a.dmg) k *= a.dmg;
     if (a.types && a.types.includes(m.type)) k *= a.k;
     if (a.stab && pl.mon && pl.mon.types.includes(m.type)) k *= a.stab;
+    if (a.courage && pl.maxHp > 0) k *= 1 + a.courage * G.U.clamp(1 - pl.hp / pl.maxHp, 0, 1);   // Valor Tardío: según la vida que falta
     return k;
   }
   /** Amor Filial: ¿este golpe pega otra vez? */
