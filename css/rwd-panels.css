@@ -416,6 +416,7 @@
     box-shadow: 0 -8px 10px -4px rgba(5, 8, 16, .6);
   }
   .pn-train [data-apply] { min-height: 44px; min-width: 110px; }
+  .pn-train .tr-item { scroll-margin-bottom: 64px; } .pn-train .tr-item:last-of-type { margin-bottom: 10px; }   /* (2026-10-21: la fila fija de «Aplicar» tapaba el último desplegable) */
   .pn-train > .pn-col:nth-child(3) > .set-h { margin-top: 4px !important; font-size: 16px; }
   .pn-train [data-q] { position: sticky; top: 0; z-index: 1; min-height: 42px; }
   .pn-train [data-list] { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }

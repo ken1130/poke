@@ -4,7 +4,13 @@
  */
 G.MODNEWS = [
   { d: '2026-10-21', title: { zh: '組隊連線與手機版面修正', en: 'Co-op and phone layout fixes' },
+    chg: [
+      { zh: "暫停畫面：能力值下面多了「招式」：每個招式的物理／特殊標籤和目前等級（進化了會有 ★）", en: "Pause: below your stats, your moves are listed with their class (physical / special) and each one's level (★ if evolved)." },
+    ],
     fix: [
+      { zh: "大老二：中文介面的「Pass」改成「跳過」", en: "Big Two: “Pass” is now “跳過” in Chinese." },
+      { zh: "提示框（卡克隆商店說明等）在樓層頭目還活著時不再跳出來：之前會蓋在阿爾宙斯身上", en: "Tips (Kecleon's shop, etc.) no longer pop up while a floor boss is alive: they covered Arceus." },
+      { zh: "網球、排球：「再來一局」會等 3 秒，不再蓋住「誰獲勝」的字。手機暫停畫面：能力值不用捲動就看得完；練功房：最後一個道具下拉選單不再被「套用」列蓋住", en: "Tennis and volleyball: “Play again” waits 3 s so it doesn't cover the winner banner. Pause on phones: the stats fit without scrolling; training room: the last item dropdown is no longer hidden under “Apply”." },
       { zh: "派對廣場：上方那條列（球場、比分、「離開比賽」）在手機上會壓住血條和時鐘，在電腦上壓到時鐘下面那行：現在移到下面一點", en: "Party Plaza: the top strip (court, score, “Leave match”) covered the HP bar and clock on phones, and the line under the clock on desktop. It now sits lower." },
       { zh: "守護大壯：「立刻開始第 N 波」按鈕會壓住大字提示和大壯本人：現在放在下方招式欄上面", en: "Guard Dazhuang: the “Start the wave now” button covered the big notice and Dazhuang. It is now at the bottom, above the moves." },
       { zh: "如果存檔裡沒有選夥伴，回到首頁時畫面會壞掉：現在會自動選你擁有的第一隻", en: "If the save ended up with no partner selected, returning to the menu broke the screen; it now picks the first one you own." },

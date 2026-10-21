@@ -6,7 +6,12 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
-  { d: '2026-10-21', title: ['Arreglos del grupo y del móvil', 'Co-op and phone fixes'], fix: [
+  { d: '2026-10-21', title: ['Arreglos del grupo y del móvil', 'Co-op and phone fixes'], chg: [
+    ["Pausa: debajo de tus estadísticas salen tus movimientos con su clase (físico / especial) y el nivel de cada uno (★ si está evolucionado).", "Pause: below your stats, your moves are listed with their class (physical / special) and each one's level (★ if evolved)."],
+  ], fix: [
+    ["Gran Dos: «Pass» se dice «跳過» en chino.", "Big Two: “Pass” is now “跳過” in Chinese."],
+    ["Las ayudas (la de la tienda de Kecleon, etc.) ya no salen mientras hay un jefe del piso vivo: tapaban a Arceus.", "Tips (Kecleon's shop, etc.) no longer pop up while a floor boss is alive: they covered Arceus."],
+    ["Tenis y voleibol: «Otra partida» espera 3 s para no tapar el cartel de quién gana. Pausa en el móvil: las estadísticas caben sin desplazar; sala de entrenamiento: el último desplegable de objetos ya no queda bajo «Aplicar».", "Tennis and volleyball: “Play again” waits 3 s so it doesn't cover the winner banner. Pause on phones: the stats fit without scrolling; training room: the last item dropdown is no longer hidden under “Apply”."],
     ["Zona de fiesta: la tira de arriba (pista, marcador, «Dejar el partido») tapaba la barra de vida y el reloj en el móvil, y la línea de debajo del reloj en el ordenador. Ahora va más abajo.", "Party Plaza: the top strip (court, score, “Leave match”) covered the HP bar and clock on phones, and the line under the clock on desktop. It now sits lower."],
     ["Proteger a Dazhuang: el botón «Empezar la oleada ya» tapaba el aviso grande y a Dazhuang. Ahora está abajo, encima de los movimientos.", "Guard Dazhuang: the “Start the wave now” button covered the big notice and Dazhuang. It is now at the bottom, above the moves."],
     ["Si el guardado se quedaba sin compañero elegido, al volver al menú se rompía la pantalla; ahora se elige el primero que tengas.", "If the save ended up with no partner selected, returning to the menu broke the screen; it now picks the first one you own."],

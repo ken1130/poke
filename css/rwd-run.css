@@ -150,7 +150,7 @@ body:has(#scr-over:not(.hidden)) #scr-shop { display: none !important; }
   #scr-pause .pause-l > h2 { font-size: 22px; }
   #scr-pause .sub { font-size: 13px; }
   .pause-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 8px; }
-  .pause-stats > div { font-size: 12.5px; padding: 4px 8px; }
+  .pause-stats > div { font-size: 12px; padding: 3px 7px; }   /* (2026-10-21: un poco más apretado, hay más filas) */
   .pause-stats-title { font-size: 14px; }
 }
 

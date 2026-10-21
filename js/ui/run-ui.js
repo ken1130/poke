@@ -417,7 +417,13 @@ G.RunUI = (() => {
       rows.push(['Piso', 'B' + (G.Floors.floor + 1) + 'F · ' + G.T(th.name)]);
       for (const g of G.RunGoals.summary()) rows.push([G.T('Reto') + ': ' + G.T(g.name), g.prog]);
     }
-    box.innerHTML = rows.map(([k, v]) => `<div><span>${G.T(k)}</span><b>${v}</b></div>`).join('');
+    let html = rows.map(([k, v]) => `<div><span>${G.T(k)}</span><b>${v}</b></div>`).join('');
+    // Movimientos (2026-10-21, el dueño: «aquí también la clase y a qué nivel está cada uno»): nombre, chip
+    // físico/especial (stats6.js) y nivel; evolucionado, con ★.
+    const best = pl.k6 && pl.k6.best;
+    const mv = (pl.moves || []).map(m => `<div class="pm"><span>${G.T(m.name)}${G.Stats6 ? ' ' + G.Stats6.chip(m, best) : ''}</span><b>Lv.${m.lvl}${m.evolved ? ' ★' : ''}</b></div>`);
+    if (mv.length) html += `<div class="pause-sec">${G.T('Movimientos')}</div>` + mv.join('');
+    box.innerHTML = html;
   }
 
   function showPause(coop = false) {

@@ -1011,6 +1011,10 @@ a.btn { text-decoration: none; display: inline-block; color: var(--ink); }
 .pause-stats > div { display: flex; justify-content: space-between; gap: 6px; background: rgba(5, 10, 30, .35); border-radius: 6px; padding: 4px 8px; font-size: 13px; }
 .pause-stats span { color: var(--muted, #b8c4dc); }
 .pause-stats b { color: #fff; white-space: nowrap; }
+/* Movimientos en la pausa (2026-10-21): título a lo ancho y filas con el chip físico/especial. */
+.pause-stats .pause-sec { grid-column: 1 / -1; background: none; padding: 6px 0 0; color: var(--gold, #ffd23f); font-weight: 700; justify-content: flex-start; }
+.pause-stats .pm span { color: #e8eefc; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.pause-stats .pm .tag-chip { font-size: 10px; padding: 1px 5px; }
 @media (max-height: 520px) {
   .pause-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px 6px; margin-bottom: 6px; }
   .pause-stats > div { padding: 1px 6px; font-size: 11px; }

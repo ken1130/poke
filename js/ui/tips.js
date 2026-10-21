@@ -57,6 +57,7 @@ G.Tips = (() => {
   function tick(dt) {
     const playing = G.Game.state === 'playing' && !['scr-levelup', 'scr-pause', 'scr-item', 'scr-bond', 'scr-sbox', 'scr-boon', 'scr-relic', 'scr-shop', 'scr-roul', 'scr-pkpick', 'scr-fclear'].some(G.UI.isOpen);
     if (!playing) { if (cur) { box.style.display = 'none'; } return; }
+    if (G.Floors.floorBoss && G.Floors.floorBoss()) { if (cur) box.style.display = 'none'; return; }   // (2026-10-21: con el jefe del piso vivo tapaba al jefe)
     const pl = G.Game.player, run = G.Modes.run;
     if (run === 'stage' && G.Stages.goal) { once('stage'); once('stage-' + G.Stages.goal); }
     if (run === 'tower') once('tower');

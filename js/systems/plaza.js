@@ -1006,7 +1006,7 @@ G.Plaza = (() => {
     const me = meId(), h = hereOf(pl);
     for (const k in lastMatch) {
       const m = lastMatch[k];
-      if (!m.sides || m.sides[me] == null || now() - m.at > 60) continue;
+      if (!m.sides || m.sides[me] == null || now() - m.at > 60 || now() - m.at < 3.2) continue;   // (<3,2 s: que no tape el cartel de quién gana)
       if ((games[k] && games[k].phase !== 'over') || lobbies[k]) continue;
       if (h === k || insideZone(k, pl)) return k;
     }
