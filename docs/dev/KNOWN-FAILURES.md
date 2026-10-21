@@ -446,3 +446,10 @@
 - **原因**：33% 召喚的兩隻小頭目走 `spawnBossNow` → `G.GmaxFoe.maybe`，沒排除 `lordMinion`；極巨招式的減益直接寫 `pl.lordSlowT` 等欄位，不經 `applyCurse` 的上限。
 - **修法**：`maybe` 排除 `lordMinion`；上限抽成 `G.Floors.canCurse(pl, key)`，`gmaxfoe.js` 也用。
 - **以後怎麼避免**：寫同一個玩家狀態欄位的地方不只一處時，把限制抽成共用函式，不要各自判斷。
+
+## 47. 測試腳本裡呼叫 `G.I18n.set('zh')` 會把整頁重新載入（2026-10-21）
+
+- **症狀**：Playwright 腳本在 `startRun()` 後 `G.Game.player` 變成 null（`Cannot set properties of null (setting 'god')`），主控台沒有任何錯誤。
+- **原因**：`i18n.js` 的 `set(l)` 是「存語言後 `location.reload()`」，不是只換字典；頁面重載後遊戲回到首頁。
+- **修法**：測試不要呼叫它（預設就是繁中）；要換語言就在 `goto` 前設 localStorage 或用網址參數。
+- **以後怎麼避免**：測試裡呼叫沒看過的 API 前先 grep 它的實作；「player 突然變 null 但沒錯誤」八成是頁面被重載了。

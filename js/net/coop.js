@@ -571,6 +571,7 @@ G.Coop = (() => {
       // Piso del tesoro (2026-10-16): faltaba aquí y el invitado se quedaba en el mapa viejo con sus enemigos.
       case 'ftr': G.Floors.onNet(ev); break;
       case 'lst': case 'ldb': case 'ltp': G.Floors.onNet(ev); break;   // Arceus: escudo/invulnerable y maldiciones (2026-10-19)
+      case 'l2s': case 'l2p': case 'l2c': case 'l2r': case 'l2w': G.Floors.onNet(ev); break;   // Señor del Mundo Distorsión, B10F (2026-10-21)
       case 'sbox': api.sbox && api.sbox(); break;
       case 'fbox': api.fbox && api.fbox(); break;
       case 'ms': api.milestone && api.milestone(ev[1]); break;            // hito de tiempo (boons.js)

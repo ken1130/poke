@@ -38,6 +38,9 @@
  *   ['fl', semilla, piso, tema, peligrosa]   bajada
  *   ['fclr', t]                              mazmorra superada (premio para todos)
  *   ['fcn']                                  el anfitrión sigue jugando (sin fin)
+ *   ['l2s', id, oculto] ['l2p', [[id,x,y]...], dur] ['l2c', id, porJugador] ['l2r', aviso, dur] ['l2w']
+ *                                            Señor del Mundo Distorsión (B10F, 2026-10-21): se desvanece,
+ *                                            grietas, Mundo Distorsión (controles al revés) y victoria
  * El ataque combinado lo hace cada uno (su daño va al anfitrión como cualquier golpe) y
  * los demás sólo ven el efecto (['cb', ...]).
  */
@@ -54,6 +57,9 @@ G.Floors = (() => {
   // otro sitio de la run (rift.js lo quita de los legendarios). Antes, uno al azar de esta lista.
   const LORD_DEX = 493;
   const LORDS = [150, 384, 487, 483, 484, 249, 250, 382, 383, 644, 643, 716, 717, 800, 890];   // (por si faltara su sprite)
+  // Segundo señor escondido (2026-10-21, para los que ya arrasan): en B10F (índice 9, modo sin fin)
+  // el Señor del Mundo Distorsión, Giratina (o Dialga/Palkia si faltara su sprite). Números en LORD2.
+  const LORD2_FLOOR = 9, LORD2_DEX = 487, LORD2_ALT = [483, 484];
 
   /*
    * Temas de piso. safe: ruta segura. Multiplicadores (1 si no está):
@@ -96,6 +102,8 @@ G.Floors = (() => {
     cleared = false; endless = false; clearPending = false; clearT = 0; dangerRuns = 0; fireDefs = null;
     treasure = null; treasureT = 0; treasureUsed = false; treasureBanner = 0; treasureWarn = false; restPending = false;
     lordUltT = 0; lordDebT = 0; lordCast = null; lordUltN = 0; lordDebN = 0; lstT = 0; lordView = { id: 0, sh: 0, inv: 0 };
+    bossLord2 = false; lord2Done = false; lord2Ph = 0; l2 = null; portals = []; portalSeq = 0;
+    rwWarnT = 0; rwDur = 0; darkT = 0; winBanner = 0; relicPending = false;
     const el = document.getElementById('scr-fclear');
     if (el) el.classList.add('hidden');
   }
@@ -119,6 +127,11 @@ G.Floors = (() => {
   /** Anfitrión: elige quién será el jefe del piso (para precargar su sprite). */
   function pickBossDex() {
     const lord = floor === LAST && !cleared;
+    if (isLord2Floor()) {
+      if (G.SPRITE_META[LORD2_DEX] && G.DEX_BY[LORD2_DEX]) return LORD2_DEX;
+      const ok = LORD2_ALT.filter(d => G.SPRITE_META[d] && G.DEX_BY[d]);
+      if (ok.length) return G.U.pick(ok);
+    }
     if (lord) {
       if (G.SPRITE_META[LORD_DEX] && G.DEX_BY[LORD_DEX]) return LORD_DEX;
       const ok = LORDS.filter(d => G.SPRITE_META[d] && G.DEX_BY[d]);
@@ -132,29 +145,32 @@ G.Floors = (() => {
   }
 
   function spawnFloorBoss(live) {
-    const t = T(), lord = floor === LAST && !cleared;
+    const t = T(), lord = floor === LAST && !cleared, lord2 = isLord2Floor();
     const slots = G.Enemies.BOSS_SLOTS, slot = slots[Math.min(slots.length - 1, floor)];
     // Más duro que un jefe normal de su hueco (×1,3); el Señor ×1,2 del último hueco más su
     // suelo de vida (×2,5 del de jefe); sin fin (B6F+): +10 % por piso.
     // (2026-10-19, V3.1 «el jefe final con más vida»: el Señor ×1,2 → ×1,5 y su suelo ×2,5 → ×3.)
-    const hpMul = lord ? LORD.hpMul : floor > LAST ? 1.3 * (1 + 0.1 * (floor - LAST)) : 1.3;
+    // (2026-10-21: el Señor del Mundo Distorsión, B10F: lo de Arceus más el +10 % por piso del sin fin.)
+    const hpMul = lord2 ? LORD2.hpMul * (1 + 0.1 * (floor - LAST)) : lord ? LORD.hpMul : floor > LAST ? 1.3 * (1 + 0.1 * (floor - LAST)) : 1.3;
     const def = G.Enemies.bossFor(bossDex || pickBossDex(), slot, hpMul);
     const n = G.Game.everyone().length;
     const near = live.slice().sort((a, b) => G.U.dist2(a.x, a.y, cx(live), cy(live)) - G.U.dist2(b.x, b.y, cx(live), cy(live)))[0];
     const e = G.Spawner.spawnBossNow(near, t, def, e => {
-      const minHp = Math.round(G.Enemies.bossFloor(t) * (lord ? LORD.hpFloor : 1.6) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1));
+      const minHp = Math.round(G.Enemies.bossFloor(t) * (lord2 ? LORD2.hpFloor : lord ? LORD.hpFloor : 1.6) * G.Coop.scaleHp(n) * (n > 1 ? 1.4 : 1));
       if (e.maxHp < minHp) e.maxHp = e.hp = minHp;
       if (lord) G.Spawner.dpsFloor(e, LORD.dpsSec);       // y que aguante LORD.dpsSec s de vuestro daño (spawner.js)
-      e.dmg *= lord ? 1.3 : 1.15;
-      e.floorBoss = floor + 1; e.lord = lord;
+      if (lord2) G.Spawner.dpsFloor(e, LORD2.dpsSec);
+      e.dmg *= lord || lord2 ? 1.3 : 1.15;
+      e.floorBoss = floor + 1; e.lord = lord; e.lord2 = lord2;
     });
     if (!e) return;
     bossId = e.id; bossState = 'alive'; lordPh = 0;
     // Escudo Divino (enemy.js hurt): sobre la vida ya definitiva (después de la escala del piso).
     if (lord) e.lordShield = Math.round(e.maxHp * LORD.shield0);
     if (lord) { lordUltT = LORD.ultFirst; lordDebT = LORD.debFirst; lordCast = null; lordUltN = 0; lordDebN = 0; lstT = 0; lordTpT = LORD.tpEvery; lordTp = null; }
-    if (G.Coop.active) G.Coop.broadcast(['fbs', e.id, floor, lord ? 1 : 0]);
-    announceBoss(e.id, lord);
+    if (lord2) lord2Init();
+    if (G.Coop.active) G.Coop.broadcast(['fbs', e.id, floor, lord2 ? 2 : lord ? 1 : 0]);
+    announceBoss(e.id, lord2 ? 2 : lord ? 1 : 0);
   }
   /*
    * Combate final por fases (2026-10-17): Arceus empieza solo; al 66 % de vida llama a unos élite
@@ -319,9 +335,9 @@ G.Floors = (() => {
     lordTpT = 1;                                                // no había sitio: otra vez dentro de 1 s
   }
   /** Todos: estallido donde estaba, aro donde aparece. Los invitados ('ltp') además lo colocan ya (sin deslizarse). */
-  function teleFx(e, x, y) {
-    G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#fff6d0', 24, 260);
-    G.FX.ring(x, y, 10, LORD.tpR + 30, '#fff6d0', 0.45, 5);
+  function teleFx(e, x, y, col = '#fff6d0') {
+    G.FX.burst(e.x, e.y - e.bodyH * 0.5, col, 24, 260);
+    G.FX.ring(x, y, 10, LORD.tpR + 30, col, 0.45, 5);
     if (G.Camera.sees(x, y, 60) || G.Camera.sees(e.x, e.y, 60)) G.Audio.sfx('rift');
   }
   function castStep(e, dt, live) {
@@ -369,12 +385,261 @@ G.Floors = (() => {
     G.Audio.sfx('error');
   }
 
+  // ---------------- Señor del Mundo Distorsión (B10F, 2026-10-21) ----------------
+  /*
+   * Segundo señor escondido, para los que ya pasan a Arceus sin despeinarse: en B10F (modo sin fin,
+   * índice 9) sale Giratina en vez del jefe del piso. Vida: la de Arceus más el +10 % por piso del sin
+   * fin, suelo ×3 del de jefe y al menos LORD2.dpsSec s del daño del equipo (un veterano solo, ~70 s).
+   * Lo decide el anfitrión; todo lo que se ve va por G.Hazards ('hz'), G.Spawner.say y los eventos l2*.
+   *
+   *   Garra Umbría     cada sfEvery s se desvanece sfVanish s (invulnerable, casi invisible: enemy.js
+   *                    draw, y no choca: combat.js) y bajo un jugador al azar aparece una marca oscura
+   *                    (zona de G.Hazards); al acabar reaparece encima y la marca estalla (dmg × sfK).
+   *                    Enfurecido: cada sfEveryRage s y dos marcas (cae en la primera).
+   *   Grietas          cada portEvery s, portN (+1 por jugador de más, máx. 4) grietas alrededor durante
+   *                    portDur s; cada portEach s sale de cada una un salvaje Fantasma/Siniestro (la
+   *                    mitad, élite), como mucho portMax vivos. Un jugador encima portClose s la cierra.
+   *                    Son «guardianes» (lordMinion): caen con él.
+   *   Mundo Distorsión al 50 % (y luego cada rwEvery s): aviso de rwWarn s con icono encima de tu
+   *                    Pokémon y después, rwDur s, el mapa se oscurece salvo alrededor tuyo (game.js
+   *                    drawDark) y los controles van al revés (player.js l2MirrorT, como la poción).
+   *   Furia            al 25 %: +25 % de velocidad, +15 % de daño y las Garras dobles.
+   *   Al caer          caen sus guardianes y se cierran las grietas; +coins monedas (del grupo), todos
+   *                    eligen una reliquia (relics.js) y el logro «lord2» (progress.js). Luego, las
+   *                    escaleras de siempre (B11F...).
+   */
+  const LORD2 = { hpMul: 1.5, hpFloor: 3.0, dpsSec: 70, coins: 500,
+                  sfFirst: 6, sfEvery: 11, sfEveryRage: 8, sfVanish: 1.2, sfR: 110, sfK: 1.5,
+                  portFirst: 10, portEvery: 24, portN: 2, portDur: 10, portEach: 2.5, portD0: 200, portD1: 340, portR: 48, portClose: 2, portMax: 12,
+                  rwAt: 0.5, rwWarn: 2, rwDur: 6, rwEvery: 30,
+                  rageAt: 0.25, rageSpd: 1.25, rageDmg: 1.15 };
+  const L2_COL = '#b08cff', L2_DARK = '#9a70ff';
+  let bossLord2 = false, lord2Done = false, lord2Ph = 0, l2 = null, portals = [], portalSeq = 0;
+  let rwWarnT = 0, rwDur = 0, darkT = 0, winBanner = 0, relicPending = false;
+  const isLord2Floor = () => normal() && floor === LORD2_FLOOR && !lord2Done;
+  function lord2Init() {
+    bossLord2 = true; lord2Ph = 0; portals = [];
+    l2 = { sfT: LORD2.sfFirst, sf: null, portT: LORD2.portFirst, rwT: 0, sentHide: 0, defs: null };
+  }
+  /** Anfitrión, cada fotograma con él vivo. */
+  function lord2Tick(e, dt, live) {
+    const L = LORD2, f = e.hp / e.maxHp;
+    if (lord2Ph < 1 && f <= L.rwAt) { lord2Ph = 1; l2.rwT = 0.5; }
+    if (lord2Ph < 2 && f <= L.rageAt) {
+      lord2Ph = 2;
+      e.spd *= L.rageSpd; e.dmg *= L.rageDmg;
+      G.Spawner.say('¡El Señor del Mundo Distorsión se enfurece! Dos Garras Umbrías a la vez', 3.2);
+      G.Audio.sfx('legend'); G.Camera.kick(1.2);
+      G.FX.ring(e.x, e.y, 20, 300, L2_COL, 0.8, 8);
+    }
+    if (l2.sf) sfStep(e, dt);
+    else if ((l2.sfT -= dt) <= 0) sfStart(e, live);
+    portalTick(e, dt, live);
+    if (lord2Ph >= 1 && !l2.sf && (l2.rwT -= dt) <= 0) {
+      l2.rwT = L.rwEvery;
+      if (G.Coop.active) G.Coop.broadcast(['l2r', L.rwWarn, L.rwDur]);
+      reverseWorld(L.rwWarn, L.rwDur);
+      G.Spawner.say('¡El Mundo Distorsión se invierte en 2 s! Los controles irán al revés', 2.4);
+    }
+    // Oculto o no, para los demás (sólo cuando cambia).
+    const hide = e.l2hide ? 1 : 0;
+    if (hide !== l2.sentHide) { l2.sentHide = hide; if (G.Coop.active) G.Coop.broadcast(['l2s', e.id, hide]); }
+  }
+  /** Un sitio libre cerca de (x, y) donde quepa él (si no, el propio punto). */
+  function spotNear(x, y, e) {
+    const r = Math.max(12, e.r || 16);
+    if (!G.World.isFree || G.World.isFree(x, y, r)) return { x, y };
+    for (let k = 0; k < 14; k++) {
+      const a = Math.random() * 6.2832, d = 30 + Math.random() * 50, px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
+      if (G.World.isFree(px, py, r)) return { x: px, y: py };
+    }
+    return { x, y };
+  }
+  function sfStart(e, live) {
+    const L = LORD2, n = lord2Ph >= 2 ? 2 : 1;
+    const targets = G.U.pickN(live, Math.min(n, live.length));
+    while (targets.length < n) targets.push(targets[0]);
+    const marks = targets.map((p, i) => {
+      const a = Math.random() * 6.2832, d = i && targets[0] === p ? 100 : 0;      // (solo: la segunda, al lado)
+      return spotNear(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, e);
+    });
+    l2.sf = { t: L.sfVanish, marks };
+    e.l2hide = true; e.lordInv = true; e.rootT = Math.max(e.rootT || 0, L.sfVanish + 0.1);
+    G.FX.burst(e.x, e.y - e.bodyH * 0.5, '#6a48c0', 30, 240);
+    G.FX.sp('shadow', 'ghost', e.x, e.y - e.bodyH * 0.5, { life: 0.5, scale: 2, frameRate: 8 });
+    for (const m of marks) G.Hazards.add({ kind: 'zone', x: m.x, y: m.y, r: L.sfR, delay: L.sfVanish, dmg: e.dmg * L.sfK, type: 'ghost', color: L2_DARK });
+    G.Spawner.say(n > 1 ? '¡Se desvanece! Dos Garras Umbrías: ¡muévete!' : '¡El Señor del Mundo Distorsión se desvanece! Garra Umbría: ¡sal de la marca!', 2.4);
+    G.Audio.sfx('rift');
+  }
+  function sfStep(e, dt) {
+    if ((l2.sf.t -= dt) > 0) return;
+    const m = l2.sf.marks[0];
+    if (G.Coop.active) G.Coop.broadcast(['ltp', e.id, Math.round(m.x), Math.round(m.y), 1]);
+    teleFx(e, m.x, m.y, L2_COL);
+    e.x = m.x; e.y = m.y;
+    e.l2hide = false; e.lordInv = false; l2.sf = null;
+    l2.sfT = lord2Ph >= 2 ? LORD2.sfEveryRage : LORD2.sfEvery;
+  }
+  /** Anfitrión: abre grietas, saca salvajes de ellas y las cierra si alguien se queda encima. */
+  function portalTick(e, dt, live) {
+    const L = LORD2;
+    if (!portals.length) {
+      if ((l2.portT -= dt) > 0) return;
+      l2.portT = L.portEvery;
+      const n = Math.min(4, L.portN + Math.max(0, live.length - 1)), list = [];
+      for (let i = 0; i < n; i++) {
+        const base = i / n * 6.2832 + Math.random() * 0.6;
+        for (let k = 0; k < 14; k++) {
+          const a = base + G.U.rand(-0.4, 0.4), d = G.U.rand(L.portD0, L.portD1);
+          const x = e.x + Math.cos(a) * d, y = e.y + Math.sin(a) * d * 0.8;
+          if (G.World.isFree(x, y, 30)) { list.push([++portalSeq, Math.round(x), Math.round(y)]); break; }
+        }
+      }
+      if (!list.length) { l2.portT = 3; return; }
+      if (G.Coop.active) G.Coop.broadcast(['l2p', list, L.portDur]);
+      openPortals(list, L.portDur);
+      G.Spawner.say('¡Grietas al Mundo Distorsión! Ponte encima 2 s para cerrarlas', 3.2);
+      return;
+    }
+    for (const p of portals.slice()) {
+      if ((p.spawnT -= dt) <= 0) { p.spawnT = L.portEach; spawnFromPortal(p); }
+      if (p.stand >= L.portClose) { if (G.Coop.active) G.Coop.broadcast(['l2c', p.id, 1]); closePortal(p.id, true); }
+    }
+  }
+  function spawnFromPortal(p) {
+    const t = T();
+    if (G.EnemyMgr.all().filter(m => m.lordMinion && !m.dead).length >= LORD2.portMax) return;
+    if (!l2.defs) l2.defs = [...G.Enemies.hordeDefs('ghost', t), ...G.Enemies.hordeDefs('dark', t)];
+    const m = G.Spawner.spawnAt(p.x + G.U.rand(-16, 16), p.y + G.U.rand(-10, 10), t, l2.defs.length ? G.U.pick(l2.defs) : null);
+    if (!m) return;
+    m.lordMinion = true;
+    if (!m.elite && Math.random() < 0.5) { m.makeElite(G.Enemy.rollAffixes(t)); G.Spawner.dpsFloor(m, 1.5); }
+    G.FX.burst(p.x, p.y - 10, L2_DARK, 10, 140);
+    if (G.Camera.sees(p.x, p.y, 60)) G.Audio.sfx('rift');
+  }
+  /** Todos. */
+  function openPortals(list, dur) {
+    portals = list.map(([id, x, y]) => ({ id, x, y, t: 0, dur, stand: 0, spawnT: 0.6 }));
+    for (const p of portals) { G.FX.ring(p.x, p.y, 6, 90, L2_COL, 0.6, 5); G.FX.burst(p.x, p.y - 8, '#6a48c0', 18, 180); }
+    G.Audio.sfx('surge');
+  }
+  function closePortal(id, byPlayer) {
+    const i = portals.findIndex(p => p.id === id);
+    if (i < 0) return;
+    const p = portals[i];
+    portals.splice(i, 1);
+    G.FX.ring(p.x, p.y, 60, 4, '#e8deff', 0.4, 4);
+    G.FX.burst(p.x, p.y - 8, '#e8deff', 20, 200);
+    if (byPlayer) { G.Spawner.say('¡Grieta cerrada!', 1.6, true); if (G.Camera.sees(p.x, p.y, 80)) G.Audio.sfx('break'); }
+  }
+  /** Todos: el aviso; a los `warn` s empieza el Mundo Distorsión (lord2Local). */
+  function reverseWorld(warn, dur) { rwWarnT = warn; rwDur = dur; G.Audio.sfx('error'); }
+  /** Cada fotograma, en todos los ordenadores: grietas (tiempo y quién está encima), aviso y oscuridad. */
+  function lord2Local(dt) {
+    if (portals.length) {
+      const pls = G.Game.everyone().filter(p => !p.dead), R = LORD2.portR;
+      for (let i = portals.length - 1; i >= 0; i--) {
+        const p = portals[i];
+        p.t += dt;
+        if (p.t >= p.dur) { closePortal(p.id, false); continue; }
+        const on = pls.some(q => G.U.dist2(q.x, q.y, p.x, p.y) < R * R);
+        p.stand = on ? p.stand + dt : Math.max(0, p.stand - dt * 2);
+      }
+    }
+    if (rwWarnT > 0 && (rwWarnT -= dt) <= 0) {
+      darkT = rwDur;
+      const pl = G.Game.player;
+      if (pl && !pl.dead) pl.l2MirrorT = rwDur;
+      G.Audio.sfx('legend'); G.Camera.kick(0.8);
+      G.Spawner.say('¡MUNDO DISTORSIÓN! Izquierda es derecha, arriba es abajo', 2.6, true);
+    }
+    if (darkT > 0) darkT -= dt;
+  }
+  /** Anfitrión: ha caído. */
+  function lord2Down() {
+    if (G.Coop.active) G.Coop.broadcast(['l2w']);
+    lord2Win();
+  }
+  /** Todos: celebración, premio y la reliquia (cuando se pueda abrir la ventana). */
+  function lord2Win() {
+    lord2Done = true; bossLord2 = false;
+    while (portals.length) closePortal(portals[0].id, false);
+    darkT = 0; rwWarnT = 0;
+    const pl = G.Game.player;
+    if (pl) pl.l2MirrorT = 0;
+    winBanner = performance.now() + 6000;
+    G.Progress.event('lord2');
+    if (authority() && pl) pl.coins = (pl.coins || 0) + LORD2.coins;
+    if (pl) {
+      for (const col of [L2_COL, '#e8deff', '#ffd23f', '#7fe0ff']) G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, col, 26, 300);
+      G.FX.ring(pl.x, pl.y, 8, 260, L2_COL, 0.9, 8);
+      G.Camera.kick(1.4);
+    }
+    G.Audio.sfx('legend');
+    G.Spawner.say('', 0, true);
+    relicPending = true;
+  }
+  /** Lo que se ve de él y de sus grietas (drawAir). */
+  function drawLord2(ctx, e, now) {
+    if (e && !e.l2hide && G.Camera.sees(e.x, e.y, 300)) {
+      // Jirones de sombra que giran a su alrededor (en píxeles).
+      const cy = e.y - e.bodyH * 0.5, R = Math.max(e.r * 1.7, 40);
+      ctx.save();
+      for (let i = 0; i < 10; i++) {
+        const a = i / 10 * 6.2832 - now * 1.1, x = Math.round(e.x + Math.cos(a) * R), y = Math.round(cy + Math.sin(a) * R * 0.75);
+        ctx.fillStyle = i % 2 ? L2_COL : '#5c48aa';
+        ctx.fillRect(x - 2, y, 5, 1); ctx.fillRect(x, y - 2, 1, 5); ctx.fillRect(x - 1, y - 1, 3, 3);
+      }
+      ctx.restore();
+    }
+    const march = Math.floor(now * 12);
+    for (const p of portals) {
+      if (!G.Camera.sees(p.x, p.y, 120)) continue;
+      const k = Math.min(1, p.t / 0.5), left = Math.max(0, p.dur - p.t);
+      ctx.save();
+      ctx.fillStyle = '#120424'; ctx.globalAlpha = 0.66; G.VFX.oval(ctx, p.x, p.y, 46 * k, 30 * k);
+      ctx.fillStyle = '#5c48aa'; ctx.globalAlpha = 0.66; G.VFX.oval(ctx, p.x, p.y, 30 * k, 19 * k);
+      ctx.fillStyle = p.stand > 0 ? '#ffffff' : '#c890ff'; ctx.globalAlpha = 1;
+      G.VFX.dashOval(ctx, p.x, p.y, 48, 32, march, 3, 3);
+      if (p.stand > 0) G.VFX.dashOval(ctx, p.x, p.y, 54, 37, -march, 2, 4);
+      G.VFX.draw(ctx, 'hole', 'ghost', p.x, p.y - 8, { scale: 1 + k, frame: Math.floor(now * 6) % 4 });
+      if (Math.random() < 0.08) G.FX.sp('shadow', 'ghost', p.x + G.U.rand(-20, 20), p.y - 4, { vy: -40, life: 0.6, frameRate: 8 });
+      ctx.textAlign = 'center'; ctx.font = F(800, 10);
+      outlined(ctx, p.stand > 0 ? G.I18n.f('Cerrando… {x} s', Math.max(0, LORD2.portClose - p.stand).toFixed(1)) : G.T('Grieta') + ' · ' + Math.ceil(left) + ' s', p.x, p.y - 48, p.stand > 0 ? '#ffffff' : '#d8c8ff', 3);
+      ctx.restore();
+    }
+    // Mundo Distorsión: icono y cuenta atrás encima de tu Pokémon.
+    const me = G.Game.player;
+    if (me && !me.dead && (rwWarnT > 0 || me.l2MirrorT > 0) && G.Camera.sees(me.x, me.y, 100)) {
+      const y = me.y - me.bodyH - 34 - Math.abs(Math.sin(now * 6)) * 3;
+      ctx.save();
+      G.VFX.draw(ctx, 'flip', 'void', me.x, y, { scale: 1.5, alpha: rwWarnT > 0 && Math.sin(now * 14) < 0 ? 0.66 : 1 });
+      ctx.textAlign = 'center'; ctx.font = F(800, 11);
+      outlined(ctx, rwWarnT > 0 ? G.I18n.f('¡Controles al revés en {x}!', Math.ceil(rwWarnT)) : G.I18n.f('¡Controles al revés! {x}', Math.ceil(me.l2MirrorT)), me.x, y - 16, rwWarnT > 0 ? '#ffd23f' : '#d8c8ff', 3);
+      ctx.restore();
+    }
+  }
+  /** game.js (encima del clima, debajo del HUD): el mapa a oscuras salvo alrededor tuyo, por escalones. */
+  function drawDark(ctx, w, h) {
+    if (darkT <= 0) return;
+    const k = Math.min(1, darkT / 0.5, (rwDur - darkT + 0.05) / 0.5);
+    const r0 = Math.min(w, h) * 0.17, r1 = Math.max(w, h) * 0.55, N = 5;
+    ctx.save();
+    ctx.fillStyle = '#08021a';
+    for (let i = 0; i < N; i++) {
+      const r = r0 + (r1 - r0) * i / (N - 1);
+      ctx.globalAlpha = 0.18 * k;
+      ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.ellipse(w / 2, h / 2, r, r * 0.8, 0, 0, 6.2832); ctx.fill('evenodd');
+    }
+    ctx.restore();
+  }
+
   const cx = l => l.reduce((s, p) => s + p.x, 0) / l.length;
   const cy = l => l.reduce((s, p) => s + p.y, 0) / l.length;
 
   /** Todos: el cartel grande del jefe del piso. */
   function announceBoss(id, lord) {
-    bossId = id; bossState = 'alive'; bossLord = !!lord;
+    bossId = id; bossState = 'alive'; bossLord = lord === 1; bossLord2 = lord === 2;
     const e = G.EnemyMgr.get(id);
     bossBanner = { lord, name: e ? e.name : '', until: performance.now() + 3600 };
     G.Spawner.say('', 0, true);          // (el cartel grande ya lo dice; que no se pisen)
@@ -497,6 +762,12 @@ G.Floors = (() => {
       G.Game.openChoice(G.Rest.show);
     }
     if (treasure) { treasureTick(dt); return; }
+    lord2Local(dt);
+    // La reliquia del Señor del Mundo Distorsión (cada uno la suya, como en la torre).
+    if (relicPending && me && !me.dead && (G.Game.state === 'playing' || G.Game.state === 'held')) {
+      relicPending = false;
+      G.Relics.offer();
+    }
     if (!authority()) return;
     if (clearPending && G.Game.player && !G.Game.player.dead && (G.Game.state === 'playing' || G.Game.state === 'held')) {
       clearPending = false;
@@ -508,12 +779,13 @@ G.Floors = (() => {
     // --- jefe del piso ---
     if (bossState === 'wait') {
       if (!bossDex && T() >= bossAt - 25) { bossDex = pickBossDex(); G.Sprites.preload([bossDex]); }
-      if (!warned && T() >= bossAt - WARN) { warned = true; G.Spawner.say(G.T(floor === LAST && !cleared ? '¡El Señor del Laberinto se acerca! (10 s)' : '¡El jefe del piso llega en 10 s!'), 3); }
+      if (!warned && T() >= bossAt - WARN) { warned = true; G.Spawner.say(G.T(isLord2Floor() ? '¡El Señor del Mundo Distorsión se acerca! (10 s)' : floor === LAST && !cleared ? '¡El Señor del Laberinto se acerca! (10 s)' : '¡El jefe del piso llega en 10 s!'), 3); }
       if (T() >= bossAt && graceT <= 0) spawnFloorBoss(live);
     } else if (bossState === 'alive') {
       const e = G.EnemyMgr.get(bossId);
-      if (!e || e.dead) { if (bossLord) lordMinionsDown(); bossDown(live); }
+      if (!e || e.dead) { if (bossLord || bossLord2) lordMinionsDown(); if (bossLord2) lord2Down(); bossDown(live); }
       else if (bossLord) { lordPhases(e, live); lordTick(e, dt, live); }
+      else if (bossLord2) lord2Tick(e, dt, live);
     }
     if (!stairs.length) return;
     // A más de 100 m de todos (te has ido lejos): se vuelven a poner cerca (2026-10-16:
@@ -565,6 +837,8 @@ G.Floors = (() => {
     theme = THEMES[th0] ? th0 : 'std'; route = danger ? 'danger' : 'safe';
     arriveT = T(); bossAt = arriveT + NEXT_BOSS; bossState = 'wait'; bossId = 0; bossDex = 0; warned = false; bossLord = false;
     stairsAt = null; promptT = 0; bossBanner = null; fireDefs = null;
+    bossLord2 = false; l2 = null; portals = []; rwWarnT = 0; darkT = 0; winBanner = 0;
+    if (G.Game.player) G.Game.player.l2MirrorT = 0;
     if (danger) dangerRuns++;
     G.Progress.event('floor', { n: n + 1 });             // B2F = 2
     if (G.RunGoals) G.RunGoals.onEvent('route', { danger: !!danger, n });
@@ -863,13 +1137,19 @@ G.Floors = (() => {
       case 'st2': setStairs(ev[1], ev[2], ev[3], ev[4], ev[5], ev[6], !!ev[7]); break;
       case 'fl': descend(ev[1], ev[2], ev[3], ev[4]); break;
       case 'ftr': enterTreasure(ev[1], ev[2], ev[3], ev[4], ev[5]); break;
-      case 'fbs': floor = ev[2]; announceBoss(ev[1], !!ev[3]); break;
+      case 'fbs': floor = ev[2]; announceBoss(ev[1], ev[3] === true ? 1 : (ev[3] | 0)); break;    // (ev[3]: 1 Arceus, 2 Giratina; antes true/false)
       case 'fclr': onClear(ev[1]); break;
       case 'fcn': endless = true; G.Spawner.say('¡Sigue la aventura! Modo sin fin: los pisos se endurecen', 3.4, true); break;
       case 'cb': comboFx(ev[1], ev[2], ev[3], ev[4]); break;
       case 'lst': lordView = { id: ev[1], sh: (ev[2] || 0) / 100, inv: ev[3] ? 1 : 0 }; break;     // escudo/invulnerable de Arceus
-      case 'ltp': { const e = G.EnemyMgr.get(ev[1]); if (e) { teleFx(e, ev[2], ev[3]); e.x = ev[2]; e.y = ev[3]; if (e.net && e.net.buf) e.net.buf.length = 0; } break; }   // teletransporte (2026-10-21)
+      case 'ltp': { const e = G.EnemyMgr.get(ev[1]); if (e) { teleFx(e, ev[2], ev[3], ev[4] ? L2_COL : undefined); e.x = ev[2]; e.y = ev[3]; e.l2hide = false; if (e.net && e.net.buf) e.net.buf.length = 0; } break; }   // teletransporte (2026-10-21; ev[4]: Giratina)
       case 'ldb': applyCurse(ev[1], ev[2], ev[3], ev[4], ev[5]); break;                             // maldición de Arceus
+      // Señor del Mundo Distorsión (2026-10-21)
+      case 'l2s': { const e = G.EnemyMgr.get(ev[1]); if (e) e.l2hide = !!ev[2]; break; }          // se desvanece / reaparece
+      case 'l2p': openPortals(ev[1], ev[2]); break;                                                 // grietas
+      case 'l2c': closePortal(ev[1], !!ev[2]); break;
+      case 'l2r': reverseWorld(ev[1], ev[2]); break;                                                // Mundo Distorsión (aviso y luego al revés)
+      case 'l2w': lord2Win(); break;                                                                // ha caído: premio para todos
     }
   }
 
@@ -945,14 +1225,15 @@ G.Floors = (() => {
     // Corona sobre el jefe del piso.
     const e = floorBoss();
     if (e && bossLord && G.Camera.sees(e.x, e.y, 300)) drawLordAura(ctx, e, now);
-    if (e && G.Camera.sees(e.x, e.y, 120)) {
-      const img = G.Tiles.propSprite(0, 'crown', bossLord ? 1 : 0), kk = 2;
+    if (bossLord2 || portals.length || rwWarnT > 0 || darkT > 0) drawLord2(ctx, bossLord2 ? e : null, now);
+    if (e && G.Camera.sees(e.x, e.y, 120) && !e.l2hide) {
+      const img = G.Tiles.propSprite(0, 'crown', bossLord || bossLord2 ? 1 : 0), kk = 2;
       const y = e.y - e.bodyH - 18 - Math.abs(Math.sin(now * 3)) * 3;
       ctx.save();
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, Math.round(e.x - img.width * kk / 2), Math.round(y - img.height * kk), img.width * kk, img.height * kk);
       ctx.textAlign = 'center'; ctx.font = F(800, 11);
-      outlined(ctx, G.T(bossLord ? 'Señor del Laberinto' : 'Jefe del piso'), e.x, y - img.height * kk - 4, bossLord ? '#ffb0ff' : '#ffd23f', 3);
+      outlined(ctx, G.T(bossLord2 ? 'Señor del Mundo Distorsión' : bossLord ? 'Señor del Laberinto' : 'Jefe del piso'), e.x, y - img.height * kk - 4, bossLord2 ? L2_COL : bossLord ? '#ffb0ff' : '#ffd23f', 3);
       ctx.restore();
     }
   }
@@ -1049,7 +1330,7 @@ G.Floors = (() => {
       let st = null, col = '#cfd8ea';
       if (fm < 1) { st = G.I18n.f('Exp. y monedas ×{x}', fm === 0.5 ? '0.5' : '0.25'); col = '#ff8a96'; }
       else if (stairs.length) { st = G.T('Escaleras abiertas'); col = '#9fc8ff'; }
-      else if (bossState === 'alive') { st = G.T(bossLord ? 'Señor del Laberinto: ¡véncelo!' : 'Jefe del piso: ¡véncelo!'); col = '#ffd23f'; }
+      else if (bossState === 'alive') { st = G.T(bossLord2 ? 'Señor del Mundo Distorsión: ¡véncelo!' : bossLord ? 'Señor del Laberinto: ¡véncelo!' : 'Jefe del piso: ¡véncelo!'); col = bossLord2 ? L2_COL : '#ffd23f'; }
       else if (bossState === 'wait' && T() < bossAt) st = G.I18n.f('Jefe del piso en {x}', G.U.mmss(Math.max(0, bossAt - T())));
       ctx.font = Fh(800, 12);
       const w1 = ctx.measureText(txt).width;
@@ -1067,6 +1348,7 @@ G.Floors = (() => {
                 route ? G.T(route === 'danger' ? 'Llegaste por la ruta peligrosa.' : 'Llegaste por la ruta segura.') : '',
                 G.T('Mazmorra de 5 pisos: vence al jefe de cada piso para abrir dos escaleras (ruta segura o peligrosa). En B5F espera el Señor del Laberinto.'),
                 G.T('Con las escaleras abiertas el piso deja de endurecerse; si os quedáis más de 3 min, experiencia y monedas ×0,5 (5 min: ×0,25).'),
+                endless && !lord2Done ? G.T('En B10F (modo sin fin) espera el Señor del Mundo Distorsión: Giratina.') : '',
                 age >= 0 ? G.I18n.f('Escaleras abiertas hace {x}', G.U.mmss(age)) : ''] }));
     }
     if (G.Coop.active && !G.PvP.on && pl && !pl.dead) {
@@ -1115,10 +1397,13 @@ G.Floors = (() => {
       const left = (clearBanner - performance.now()) / 1000;
       big(G.T('¡MAZMORRA SUPERADA!'), G.I18n.f('Tiempo: {x} · +300 monedas · ticket ×10', G.U.mmss(clearT)), '#ffe14d', '#fff3c8', Math.min(1, left, (6 - left) * 3), yb);
       if (G.Coop.active && !G.Coop.isHost) { ctx.font = Fh(700, 11); outlined(ctx, G.T('El anfitrión decide: terminar o seguir'), w / 2, yb + 40, '#cfe4ff', 3); }
+    } else if (winBanner && performance.now() < winBanner) {
+      const left = (winBanner - performance.now()) / 1000;
+      big(G.T('¡MUNDO DISTORSIÓN PACIFICADO!'), G.I18n.f('+{x} monedas · todos elegís una reliquia', LORD2.coins), L2_COL, '#e8deff', Math.min(1, left, (6 - left) * 3), yb);
     } else if (bossBanner && performance.now() < bossBanner.until) {
       const left = (bossBanner.until - performance.now()) / 1000;
-      big(G.T(bossBanner.lord ? '¡SEÑOR DEL LABERINTO!' : '¡JEFE DEL PISO!'), G.T(bossBanner.name) + ' · ' + G.T('Véncelo para abrir las escaleras'),
-          bossBanner.lord ? '#ffb0ff' : '#ffd23f', '#ffe9c8', Math.min(1, left, (3.6 - left) * 3), yb);
+      big(G.T(bossBanner.lord === 2 ? '¡SEÑOR DEL MUNDO DISTORSIÓN!' : bossBanner.lord ? '¡SEÑOR DEL LABERINTO!' : '¡JEFE DEL PISO!'), G.T(bossBanner.name) + ' · ' + G.T('Véncelo para abrir las escaleras'),
+          bossBanner.lord === 2 ? L2_COL : bossBanner.lord ? '#ffb0ff' : '#ffd23f', '#ffe9c8', Math.min(1, left, (3.6 - left) * 3), yb);
     } else if (promptT > 0 && stairs.length) {
       big(G.T('¡Las escaleras al siguiente piso ya están abiertas!'),
           stairsLabel(stairs[0]) + '  /  ' + stairsLabel(stairs[1]) + ' — ' + G.T('todo el grupo sobre la misma 2 s'),
@@ -1156,8 +1441,10 @@ G.Floors = (() => {
     ctx.restore();
   }
 
-  return { reset, update, onNet, scaleEnemy, canCurse, graceMul, get inGrace() { return graceT > 0; }, drawable, drawAir, drawHud, drawComboRow, drawFade, fireCombo, comboFx, descend,
-           diffTime, holdBoss, pickDef, biomeAt, pickClear, floorBoss, THEMES, LAST,
+  return { reset, update, onNet, scaleEnemy, canCurse, graceMul, get inGrace() { return graceT > 0; }, drawable, drawAir, drawHud, drawComboRow, drawFade, drawDark, fireCombo, comboFx, descend,
+           diffTime, holdBoss, pickDef, biomeAt, pickClear, floorBoss, THEMES, LAST, LORD2_FLOOR,
+           /** Señor del Mundo Distorsión (B10F): vivo ahora (hud.js) / ya vencido en esta run (game.js resumen). */
+           get lord2() { return bossLord2; }, get lord2Done() { return lord2Done; }, get portals() { return portals; }, get dark() { return darkT; },
            get floor() { return floor; }, get coinMul() { return coinMul(); },
            /** Compatibilidad: la primera escalera (tips.js). Todas: stairsAll. */
            get stairs() { return stairs[0] || null; }, get stairsAll() { return stairs; },

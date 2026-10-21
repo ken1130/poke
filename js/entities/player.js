@@ -509,7 +509,8 @@ G.Player = class Player {
     // --- movimiento con colisiones ---
     // (En cooperativo la pausa no para el juego: sólo te quedas quieto.)
     let [ax, ay] = this.frozen || this.sleepT > 0 ? [0, 0] : G.Input.axis();      // (sleepT: Descanso)
-    if (this.reversed) { ax = -ax; ay = -ay; }        // poción del revés (loot.js)
+    if (this.l2MirrorT > 0) this.l2MirrorT -= dt;     // Mundo Distorsión de Giratina (floors.js)
+    if (this.reversed || this.l2MirrorT > 0) { ax = -ax; ay = -ay; }        // poción del revés (loot.js) / Mundo Distorsión
     // Confusión (Enfado, moves.js): la dirección se tuerce un poco, a vaivén.
     if (this.confuseT > 0) {
       this.confuseT -= dt;

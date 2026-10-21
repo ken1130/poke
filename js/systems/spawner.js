@@ -128,9 +128,9 @@ G.Spawner = (() => {
     return Math.random() < SHINY_RATE;
   }
 
-  function spawnOne(pl, t, angle, at) {
-    // Piso «en llamas» (floors.js): casi todos de tipo Fuego.
-    const def = (!at && G.Floors.pickDef()) || G.U.pick(G.Enemies.bagAt(t));
+  function spawnOne(pl, t, angle, at, def0) {
+    // Piso «en llamas» (floors.js): casi todos de tipo Fuego. def0: uno concreto (grietas de Giratina).
+    const def = def0 || (!at && G.Floors.pickDef()) || G.U.pick(G.Enemies.bagAt(t));
     const pt = at || freePoint(pl, angle == null ? Math.random() * 6.2832 : angle, isFlyer(def));
     if (!pt) return null;
     const shiny = rollShiny(def.dex);
@@ -314,8 +314,8 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  /** Uno normal en (x, y) (casa de monstruos, dungeon.js). */
-  function spawnAt(x, y, t) { return spawnOne(null, t, null, [x, y]); }
+  /** Uno normal en (x, y) (casa de monstruos, dungeon.js). def: uno concreto (floors.js, grietas de Giratina). */
+  function spawnAt(x, y, t, def) { return spawnOne(null, t, null, [x, y], def || null); }
 
   return { noteDmg, teamDps, dpsFloor, reset, update, ahead, burst, spawnBossNow, spawnAt, tickBanner, banner, say, rate, SHINY_RATE, CAP,
            debugForceShiny(n = 1) { forceShiny = n; }, debugNoEase(v = true) { noEase = v; } };

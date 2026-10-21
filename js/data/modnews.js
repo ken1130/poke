@@ -4,6 +4,9 @@
  */
 G.MODNEWS = [
   { d: '2026-10-21', title: { zh: '組隊連線與手機版面修正', en: 'Co-op and phone layout fixes' },
+    new: [
+      { zh: "給已經很強的玩家的第二個隱藏頭目：B10F（無盡模式）有「異界之主 騎拉帝納」等著你。牠會消失再出現，用「影子突襲」打在某位玩家身上（地上先出現黑色印記）；會開出「異界裂口」，不斷跑出幽靈與惡屬性小精靈（站在裂口上 2 秒就能關閉）；血量 50% 時發動「反轉世界」（預告 2 秒，之後 6 秒畫面變暗、方向全部顛倒）；25% 時暴怒，影子突襲一次兩道。牠至少撐得住你們隊伍約 70 秒的輸出。打倒後：+500 金幣、每個人選一件遺物、成就「迷宮之外」，迷宮繼續往下", en: "A second hidden lord for those who already crush everything: on B10F (endless) waits Giratina, Lord of the Distortion World. It vanishes and reappears with a Shadow Force on a player (a mark on the ground first), opens rifts that keep spawning Ghost and Dark monsters (stand on one for 2 s to close it), at 50% it flips the Distortion World (2 s warning, then 6 s of darkness with reversed controls) and at 25% it rages with two Shadow Forces at once. It lasts at least ~70 s of your team’s damage. On defeat: +500 coins, a relic for everyone, the “Beyond the labyrinth” achievement, and the dungeon goes on." },
+    ],
     fix: [
       { zh: "派對廣場：上方那條列（球場、比分、「離開比賽」）在手機上會壓住血條和時鐘，在電腦上壓到時鐘下面那行：現在移到下面一點", en: "Party Plaza: the top strip (court, score, “Leave match”) covered the HP bar and clock on phones, and the line under the clock on desktop. It now sits lower." },
       { zh: "守護大壯：「立刻開始第 N 波」按鈕會壓住大字提示和大壯本人：現在放在下方招式欄上面", en: "Guard Dazhuang: the “Start the wave now” button covered the big notice and Dazhuang. It is now at the bottom, above the moves." },

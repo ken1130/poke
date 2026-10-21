@@ -1046,7 +1046,8 @@
       let alpha = this.dead ? G.U.clamp(this.fade / 0.5, 0, 1) : 1;
       if (alpha <= 0) return;
       // Sigiloso (2026-10-16): de lejos, casi transparente y parpadeando.
-      const sneak = this.has('stealth') && !this.dead ? Enemy.sneakAlpha(this) : 1;
+      // (l2hide: Giratina desvanecido con la Garra Umbría, floors.js: casi invisible, también su aura.)
+      const sneak = (this.has('stealth') && !this.dead ? Enemy.sneakAlpha(this) : 1) * (this.l2hide && !this.dead ? 0.1 : 1);
       alpha *= sneak;
       const raging = !this.dead && (this.raging || !!(this.net && this.net.st & 8));
 
@@ -1065,7 +1066,7 @@
       if (raging && sneak > 0.5) Enemy.rageSteam(this);
       if ((this.boss || this.shiny || gold) && !this.dead) {
         ctx.save();
-        ctx.globalAlpha = (gold && !this.boss ? 0.32 : 0.22) + Math.sin(this.bob * 0.5) * 0.06;
+        ctx.globalAlpha = ((gold && !this.boss ? 0.32 : 0.22) + Math.sin(this.bob * 0.5) * 0.06) * sneak;
         ctx.fillStyle = this.ai && this.ai.fury ? '#ff4a4a' : this.shiny ? '#9ae6ff' : gold ? '#ffd23f' : '#ffd95e';
         ctx.beginPath(); ctx.ellipse(this.x, this.y, this.r * 1.6, this.r * 0.6, 0, 0, 6.2832); ctx.fill();
         ctx.restore();

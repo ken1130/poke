@@ -584,6 +584,14 @@ G.VFX = (() => {
       P.outline();
     } },
     // Punta de la lengua de Lika (mira a la derecha), con su surco en medio.
+    // 2026-10-21: Mundo Distorsión de Giratina (floors.js): dos flechas opuestas = controles al revés.
+    flip: { w: 13, h: 9, gen(P) {
+      for (let x = 3; x <= 11; x++) P.set(x, 2, 'l');
+      P.set(2, 2, 'w'); P.set(3, 1, 'l'); P.set(3, 3, 'l'); P.set(4, 0, 'm'); P.set(4, 4, 'm');
+      for (let x = 1; x <= 9; x++) P.set(x, 6, 'l');
+      P.set(10, 6, 'w'); P.set(9, 5, 'l'); P.set(9, 7, 'l'); P.set(8, 4, 'm'); P.set(8, 8, 'm');
+      P.outline();
+    } },
     ttip: { w: 10, h: 8, dir: true, gen(P) {
       rows(P, ['..........', '.mmmmm....', 'mllllllm..', 'lwwllllmm.', 'dddddllmm.', 'mllllllmm.', '.mmmmmmm..']);
       P.outline();
