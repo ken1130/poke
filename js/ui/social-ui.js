@@ -410,7 +410,7 @@
       if (room.mode !== 'party') return;
       const o = G.Social.partyOf(room), host = room.isHost;
       const maxCpu = Math.max(0, G.Social.MAX_PLAYERS - ms.length), cpu = Math.min(o.cpu, maxCpu);
-      const g = G.Party.game(o.game);
+      const g = G.Party.game(o.game), world = !!(g && g.world);   // (2026-10-21: zona de fiesta, patata, balón prisionero: sin mesa ni asientos)
       const chips = G.Party.games().filter(d => !d.soon).map(d =>   // (los «próximamente» no se enseñan)
  `<button class="chip lp-game ${d.id === o.game && !d.soon ? 'on' : ''}" data-pg="${d.id}" ${host && !d.soon ? '' : 'disabled'}>
           ${G.T(d.name)}${d.soon ? ` <small class="lp-soon">${G.T('Próximamente')}</small>` : ''}</button>`).join('');
@@ -420,7 +420,7 @@
         <div class="row lp-cpu"><span>${G.T('Jugadores CPU')}</span>
           <button class="btn small" data-pcpu="-1" ${host && cpu > 0 ? '' : 'disabled'}>−</button><b translate="no">${cpu}</b>
           <button class="btn small" data-pcpu="1" ${host && cpu < maxCpu ? '' : 'disabled'}>+</button>
-          <span class="sub" style="margin:0">${G.I18n.f('En la mesa: {x}', (ms.length + cpu) + '/' + G.Social.MAX_PLAYERS)}</span>${back}</div>${teamsHTML(o, g, ms, cpu, host)}`;
+          <span class="sub" style="margin:0">${world ? G.T('las CPU completan lo que falte') : G.I18n.f('En la mesa: {x}', (ms.length + cpu) + '/' + G.Social.MAX_PLAYERS)}</span>${back}</div>${world ? '' : teamsHTML(o, g, ms, cpu, host)}`;
       if (box.dataset.html !== h) {
         box.innerHTML = h; box.dataset.html = h;
         box.querySelectorAll('[data-pg]').forEach(b => { b.onclick = () => { const r = G.Social.room; if (r && r.isHost) { G.Audio.sfx('click'); G.Social.setParty(Object.assign(G.Social.partyOf(r), { game: b.dataset.pg })); } }; });

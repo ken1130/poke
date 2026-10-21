@@ -15,6 +15,7 @@ G.MODNEWS = [
       { zh: "暫停畫面：能力值下面多了「招式」：每個招式的物理／特殊標籤和目前等級（進化了會有 ★）", en: "Pause: below your stats, your moves are listed with their class (physical / special) and each one's level (★ if evolved)." },
     ],
     fix: [
+      { zh: "房間的派對模式：選派對遊戲區、燙手山芋、躲避球時不再顯示牌桌座位（那是牌桌遊戲才有的）", en: "Room, party mode: with Party Plaza, Hot Potato or Dodgeball the card table and seats no longer show (those are only for the card games)." },
       { zh: "大老二：中文介面的「Pass」改成「跳過」", en: "Big Two: “Pass” is now “跳過” in Chinese." },
       { zh: "提示框（卡克隆商店說明等）在樓層頭目還活著時不再跳出來：之前會蓋在阿爾宙斯身上", en: "Tips (Kecleon's shop, etc.) no longer pop up while a floor boss is alive: they covered Arceus." },
       { zh: "網球、排球：「再來一局」會等 3 秒，不再蓋住「誰獲勝」的字。手機暫停畫面：能力值不用捲動就看得完；練功房：最後一個道具下拉選單不再被「套用」列蓋住", en: "Tennis and volleyball: “Play again” waits 3 s so it doesn't cover the winner banner. Pause on phones: the stats fit without scrolling; training room: the last item dropdown is no longer hidden under “Apply”." },
