@@ -423,7 +423,9 @@ G.MenuUI = (() => {
   function wireMega(box) {
     box.querySelectorAll('[data-mega]').forEach(el => {
       const d = +el.dataset.mega;
-      el.appendChild(G.UI.spriteCanvas(d, 76, 64, { scale: 2, lively: true }));
+      // Las formas anchas (alas, capa: Despertar de Jerry) no caben en 76 px: el lienzo crece hasta 128.
+      const m = G.Sprites.animMeta(d, 'Idle');
+      el.appendChild(G.UI.spriteCanvas(d, Math.max(76, Math.min(128, m ? m.w * 2 : 76)), 64, { scale: 2, lively: true }));
       el.insertAdjacentHTML('beforeend', `<small>${G.T(G.DEX_BY[d].name)}</small>`);
     });
   }
