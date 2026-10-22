@@ -72,9 +72,51 @@ ok(T.playable(id(GRASS, 5), W(), GRASS) && !T.playable(id(WATER, 5), W(), GRASS)
 {
   const st = table([[id(FIRE, T.DRAW2), id(FIRE, 1), id(FIRE, 2)], [id(ELEC, 2), id(ELEC, 3)], [id(ELEC, 4), id(ELEC, 5)]], id(FIRE, 8), FIRE);
   T.act(st, 0, { type: 'play', card: id(FIRE, T.DRAW2) });
-  ok(st.hands[1].length === 4 && st.turn === 2, '+2: roba 2 y pierde el turno');
-  // No se acumula: el 3º no puede responder con otro +2 sobre el robo (ya no es su turno el del 2º).
-  ok(!T.act(st, 1, { type: 'play', card: id(ELEC, 2) }).ok, 'el castigado no juega');
+  ok(st.hands[1].length === 2 && st.turn === 1 && st.pend === 2 && st.pendK === 'd2', '+2: queda pendiente y le toca al siguiente');
+  ok(!T.act(st, 1, { type: 'play', card: id(ELEC, 2) }).ok, 'con +2 pendiente no vale una carta normal');
+  ok(T.act(st, 1, { type: 'draw' }).ok && st.hands[1].length === 4 && st.turn === 2 && st.pend === 0, '+2: roba 2 y pierde el turno');
+  ok(st.ev.some(e => e.k === 'draw' && e.seat === 1 && e.n === 2 && e.stack === 2), 'suceso de robo acumulado');
+}
+// --- Acumular +2 / +4 (2026-10-22) ---
+{
+  const h0 = [id(FIRE, T.DRAW2), id(FIRE, 1)], h1 = [id(WATER, T.DRAW2), id(WATER, 1), id(WATER, 2)], h2 = [W4(), id(ELEC, 5), id(ELEC, 6)], h3 = [id(GRASS, 1), id(GRASS, 2)];
+  const st = table([h0, h1, h2, h3], id(FIRE, 8), FIRE);
+  T.act(st, 0, { type: 'play', card: id(FIRE, T.DRAW2) });
+  ok(T.legal(st, 1).join() === String(id(WATER, T.DRAW2)), '+2 pendiente: sólo vale otro +2 (de cualquier tipo)');
+  ok(T.act(st, 1, { type: 'play', card: id(WATER, T.DRAW2) }).ok && st.pend === 4 && st.turn === 2 && st.hands[1].length === 2, '+2 sobre +2: suma 4');
+  ok(!T.act(st, 2, { type: 'play', card: W4() }).ok, '+4 acumulado sin tipo no vale');
+  ok(T.act(st, 2, { type: 'play', card: W4(), color: GRASS }).ok && st.pend === 8 && st.pendK === 'd4' && st.color === GRASS && st.turn === 3, '+4 sobre +2: suma 8');
+  ok(T.act(st, 3, { type: 'draw' }).ok && st.hands[3].length === 10 && st.pend === 0 && st.turn === 0, 'quien no puede acumular roba todo (8) y pierde el turno');
+  ok(T.act(st, 0, { type: 'play', card: id(FIRE, 1) }).ok === false && T.act(st, 0, { type: 'draw' }).ok, 'después se sigue con el tipo elegido');
+  // +2 sobre +4: NO vale.
+  const s2 = table([[W4(), id(FIRE, 1), id(FIRE, 3)], [id(GRASS, T.DRAW2), W4(1), id(WATER, 4)], [id(ELEC, 2), id(ELEC, 3)]], id(FIRE, 8), FIRE);
+  T.act(s2, 0, { type: 'play', card: W4(), color: GRASS });
+  ok(s2.pend === 4 && s2.pendK === 'd4' && s2.hands[1].length === 3, '+4: queda pendiente');
+  const r = T.act(s2, 1, { type: 'play', card: id(GRASS, T.DRAW2) });
+  ok(!r.ok && /\+4/.test(r.err), '+2 sobre +4 no vale (' + r.err + ')');
+  ok(T.legal(s2, 1).join() === String(W4(1)), '+4 pendiente: sólo otro +4');
+  ok(T.act(s2, 1, { type: 'play', card: W4(1), color: WATER }).ok && s2.pend === 8 && s2.turn === 2, '+4 sobre +4: suma 8');
+  // Se acaba el tiempo con robo pendiente: roba todo.
+  const tm = T.timeoutMove(s2.phase);
+  ok(T.act(s2, 2, tm).ok && s2.hands[2].length === 10 && s2.pend === 0 && s2.turn === 0, 'tiempo agotado: roba lo acumulado');
+  // CPU: acumula si puede (+2 antes que +4); si no, roba.
+  const ctx = { top: id(FIRE, T.DRAW2), color: FIRE, phase: 'play', drawn: -1, nextCount: 6, prevCount: 6, n: 3, pend: 2, pendK: 'd2' };
+  ok(T.cpuMove([id(WATER, T.DRAW2), W4(), id(FIRE, 3)], ctx).card === id(WATER, T.DRAW2), 'CPU: +2 sobre +2');
+  const m4 = T.cpuMove([W4(), id(FIRE, 3), id(WATER, 3), id(WATER, 4)], ctx);
+  ok(m4.card === W4() && m4.color === WATER, 'CPU: +4 sobre +2 (tipo que más tiene)');
+  ok(T.cpuMove([id(FIRE, 3), id(FIRE, 5)], ctx).type === 'draw', 'CPU: sin +2/+4 roba lo acumulado');
+  ok(T.cpuMove([id(WATER, T.DRAW2), id(FIRE, 3)], Object.assign({}, ctx, { pendK: 'd4', pend: 4 })).type === 'draw', 'CPU: no echa +2 sobre +4');
+  // Vista del jugador (legalView) igual que el anfitrión.
+  ok(T.legalView([id(WATER, T.DRAW2), W4(), id(FIRE, 3)], { top: id(FIRE, T.DRAW2), color: FIRE, phase: 'play', pend: 2, pendK: 'd2' }, -1).length === 2, 'legalView con +2 pendiente');
+}
+// --- Avisar antes (2026-10-22): con 2 cartas, también fuera de tu turno ---
+{
+  const st = table([[id(FIRE, 3), id(FIRE, 4)], [id(FIRE, 1), id(FIRE, 2)], [id(WATER, 3), id(WATER, 4), id(WATER, 5)]], id(FIRE, 8), FIRE, 2);
+  ok(T.act(st, 0, { type: 'call' }).ok && st.called[0] && st.lastCall.seat === 0, 'con 2 cartas, fuera de turno: puede avisar');
+  ok(!T.act(st, 2, { type: 'call' }).ok, 'con 3 cartas no');
+  st.turn = 0;
+  ok(T.act(st, 0, { type: 'play', card: id(FIRE, 3) }).ok && st.hands[0].length === 1 && st.called[0] && st.vuln === -1, 'avisó antes: al quedarse con 1 no se le puede pillar');
+  ok(!T.act(st, 1, { type: 'catch' }).ok, 'nadie a quien pillar');
 }
 // --- Ditto ---
 {
@@ -88,7 +130,7 @@ ok(T.playable(id(GRASS, 5), W(), GRASS) && !T.playable(id(WATER, 5), W(), GRASS)
 {
   const st = table([[W4(), id(FIRE, 1), id(FIRE, 2)], [id(ELEC, 2), id(ELEC, 3)], [id(WATER, 2), id(WATER, 3)]], id(FIRE, 8), FIRE);
   ok(T.act(st, 0, { type: 'play', card: W4(), color: WATER }).ok, '+4 aunque tengas del tipo (sin desafío)');
-  ok(st.hands[1].length === 6 && st.turn === 2 && st.color === WATER, '+4: roba 4, pierde turno, tipo elegido');
+  ok(T.act(st, 1, { type: 'draw' }).ok && st.hands[1].length === 6 && st.turn === 2 && st.color === WATER, '+4: roba 4, pierde turno, tipo elegido');
 }
 // --- primera carta ---
 {
@@ -223,7 +265,7 @@ ok(T.playable(id(GRASS, 5), W(), GRASS) && !T.playable(id(WATER, 5), W(), GRASS)
 }
 // --- partidas sólo de CPU ---
 {
-  let done = 0, maxMoves = 0, bad = 0, pens = 0, penEv = 0;
+  let done = 0, maxMoves = 0, bad = 0, pens = 0, penEv = 0, stacks = 0, bigDraw = 0;
   for (let g = 0; g < 400; g++) {
     const rng = rngOf(1000 + g), np = 2 + (g % 3);
     const st = T.newRound(np, rng);
@@ -231,11 +273,13 @@ ok(T.playable(id(GRASS, 5), W(), GRASS) && !T.playable(id(WATER, 5), W(), GRASS)
     while (!st.over && guard++ < 5000) {
       const seat = st.turn, nx = T.nextSeat(st, seat), pv = T.nextSeat(st, seat, -1);
       let a = T.cpuMove(st.hands[seat], { top: st.discard[st.discard.length - 1], color: st.color, phase: st.phase, drawn: st.drawn,
-        nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n });
+        nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n, pend: st.pend, pendK: st.pendK });
+      if (st.pend > 0 && a.type === 'play') stacks++;
       if (g % 5 === 0 && seat === 0 && a.call) { delete a.call; pens++; }   // el asiento 0 "se olvida" de avisar, para probar el castigo
       const r = T.act(st, seat, a);
       if (!r.ok) { bad++; break; }
       penEv += st.ev.filter(e => e.k === 'pen').length;
+      if (st.ev.some(e => e.k === 'draw' && e.stack >= 4)) bigDraw++;
       const total = st.hands.flat().length + st.deck.length + st.discard.length;
       if (total !== 108) { bad++; break; }
     }
@@ -244,7 +288,8 @@ ok(T.playable(id(GRASS, 5), W(), GRASS) && !T.playable(id(WATER, 5), W(), GRASS)
   ok(done === 400, 'las 400 partidas de CPU terminan (' + done + ')');
   ok(bad === 0, 'sin jugadas rechazadas ni cartas perdidas (' + bad + ')');
   ok(penEv > 0, 'hubo castigos por no avisar (' + penEv + ')');
-  console.log('partidas CPU:', done, '· jugadas máx.', maxMoves, '· olvidos', pens, '· castigos', penEv);
+  ok(stacks > 20 && bigDraw > 10, 'las CPU acumulan +2/+4 y alguien roba 4 o más acumulados (' + stacks + ' / ' + bigDraw + ')');
+  console.log('partidas CPU:', done, '· jugadas máx.', maxMoves, '· olvidos', pens, '· castigos', penEv, '· acumulados', stacks, '· robos ≥4', bigDraw);
 }
 // --- CPU fuera de turno (registro de party.js): avisa con retraso, a veces se olvida, y pilla a los humanos ---
 {
@@ -334,7 +379,7 @@ const TEAMS = [0, 1, 0, 1];
       if (guard === 5999) console.log('2v2 sin acabar', g, st.hands.map(h => h.length).join('/'), 'mazo', st.deck.length, 'desc', st.discard.length);
       if (st.teams[nx] === st.teams[seat] || st.teams[pv] === st.teams[seat]) { bad++; break; }   // compañeros enfrente
       const a = T.cpuMove(st.hands[seat], Object.assign({ top: st.discard[st.discard.length - 1], color: st.color, phase: st.phase, drawn: st.drawn,
-        nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n }, T.teamCtx(st, seat)));
+        nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n, pend: st.pend, pendK: st.pendK }, T.teamCtx(st, seat)));
       if (g % 6 === 0 && seat === 1 && a.call) delete a.call;   // el asiento 1 "se olvida" de avisar
       const r = T.act(st, seat, a);
       if (!r.ok) { bad++; break; }

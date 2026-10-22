@@ -82,6 +82,116 @@ G.PartyGameUI = (() => {
     flashT = setTimeout(() => el.classList.add('hidden'), 1800);
   }
 
+  // ---------------- «¡Te toca!» bien visible (2026-10-22, pedido del dueño: «好幾次換到我都不知道») ----------------
+  // Lo usan los tres juegos de cartas. Al pasar el turno a ti: cartel grande en el centro, sonido,
+  // vibración (móvil) y, si la pestaña está escondida, el título parpadea. Mientras es tu turno: tu
+  // zona con borde dorado que late (.pt-mine) y una barra de tiempo grande encima de la mano.
+  let titleT = 0, titleWas = '';
+  function titleStop() {
+    if (!titleT) return;
+    clearInterval(titleT); titleT = 0;
+    if (titleWas) document.title = titleWas;
+  }
+  function titleFlash() {
+    if (titleT || !document.hidden) return;
+    titleWas = document.title;
+    let k = 0;
+    titleT = setInterval(() => {
+      if (!document.hidden) { titleStop(); return; }
+      document.title = ++k % 2 ? '▶ ' + G.T('¡Te toca en la mesa de cartas!') : titleWas;
+    }, 900);
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) titleStop(); });
+
+  /** meSel: selector de tu zona (.b2-me / .tc-me / .vb-me). mine: puedes jugar ahora. */
+  function turnCue(v, c, mine, meSel) {
+    const root = $('pt-body'), me = root.querySelector(meSel);
+    if (me) {
+      me.classList.toggle('pt-mine', mine);
+      let bar = me.querySelector('.pt-tbar');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.className = 'pt-tbar hidden';
+        bar.innerHTML = '<i></i><b translate="no"></b>';
+        me.appendChild(bar);
+      }
+    }
+    const p = v.pub;
+    // Sólo cuando el turno PASA a ti (no cada vez que vuelve a ser «jugable» dentro del mismo turno).
+    const turnKey = v.round + ':' + p.turn;
+    if (p.turn !== v.you || v.res) c.cueKey = '';
+    const fresh = mine && c.cueKey !== turnKey;
+    if (mine) c.cueKey = turnKey;
+    if (!mine) { titleStop(); return; }
+    if (!fresh) return;
+    G.Audio.sfx('heal');
+    try { if (navigator.vibrate) navigator.vibrate([140, 70, 140]); } catch (e) { /* sin vibración */ }
+    titleFlash();
+    let ban = root.querySelector('.pt-yt');
+    if (ban) ban.remove();
+    ban = document.createElement('div');
+    ban.className = 'pt-yt';
+    ban.innerHTML = `<b>${esc(G.T('¡Te toca!'))}</b><span>${esc(G.T('Es tu turno en la mesa: elige tu jugada.'))}</span>`;
+    root.appendChild(ban);
+    setTimeout(() => ban.remove(), 1700);
+  }
+  /** Barra de tiempo grande sobre tu mano (cada 200 ms, desde el tick de cada juego). */
+  function turnBar(v, mine, meSel) {
+    const me = $('pt-body').querySelector(meSel), bar = me && me.querySelector('.pt-tbar');
+    if (!bar) return;
+    const on = mine && v.left > 0 && v.turnMs > 0 && !v.res;
+    bar.classList.toggle('hidden', !on);
+    if (!on) return;
+    const left = Math.max(0, v.left - (Date.now() - v.at));
+    bar.style.setProperty('--p', Math.min(1, left / v.turnMs).toFixed(3));
+    bar.classList.toggle('urgent', left < 8000);
+    bar.querySelector('b').textContent = G.I18n.f('Te quedan {x} s para jugar', Math.ceil(left / 1000));
+  }
+
+  /** Flecha «le toca» encima del cuadro de quien juega (todos los juegos; el tuyo dice «¡Te toca!»). */
+  function seatArrows(v) {
+    const p = v.pub, root = $('pt-body');
+    root.querySelectorAll('[data-seat]').forEach(el => {
+      const who = el.querySelector(':scope > .b2-who');
+      if (!who) return;
+      const j = +el.dataset.seat, on = p.turn === j && !v.res;
+      let a = who.querySelector('.pt-arrow');
+      if (!on) { if (a) a.remove(); return; }
+      if (!a) { a = document.createElement('span'); a.className = 'pt-arrow'; who.appendChild(a); }
+      a.classList.toggle('me', j === v.you);
+      a.textContent = G.T(j === v.you ? '¡Te toca!' : 'Le toca jugar');
+    });
+  }
+
+  // ---------------- la última jugada se queda a la vista antes del resultado (2026-10-22) ----------------
+  // Pedido del dueño: «剩最後一張要顯示他出甚麼牌，太快跳到結算畫面了». Al acabar la ronda, la mesa sigue
+  // ~2,5 s con la jugada final y el cartel «¡出完了！»; luego sale la pantalla de resultados. Si entras
+  // con la ronda ya acabada (recarga), sale directa.
+  const FIN_MS = 2600;
+  /** true = todavía no enseñes los resultados. */
+  function holdResults(v, c) {
+    const root = $('pt-body');
+    if (!v.res) { c.liveRound = v.round; c.finKey = ''; const f = root.querySelector('.pt-fin'); if (f) f.remove(); return false; }
+    if (c.liveRound !== v.round) return false;
+    const key = v.sid + ':' + v.round;
+    if (c.finKey !== key) {
+      c.finKey = key; c.finAt = Date.now();
+      const yt = root.querySelector('.pt-yt');
+      if (yt) yt.remove();      // que no tape la última carta
+      const w = v.pub.winner, s = w >= 0 ? v.seats[w] : null;
+      const f = document.createElement('div');
+      f.className = 'pt-fin';
+      f.innerHTML = `<b>${esc(G.T('¡Se acabaron sus cartas!'))}</b>` + (s ? `<span translate="no">${esc(w === v.you ? G.T('¡Has echado tu última carta!') : G.I18n.f('{x} ha echado su última carta', seatName(s)))}</span>` : '');
+      root.appendChild(f);
+      G.Audio.sfx('confirm');
+      setTimeout(() => { if (cur === c && G.Party.view) render(G.Party.view); }, FIN_MS + 40);
+    }
+    if (Date.now() - c.finAt < FIN_MS) return true;
+    const f = root.querySelector('.pt-fin');
+    if (f) f.remove();
+    return false;
+  }
+
   function rules() {
     const v = G.Party.view;
     const id = v ? v.game : 'bigtwo';
@@ -104,6 +214,7 @@ G.PartyGameUI = (() => {
     teamBar(v);
     R.update(v, cur);
     decorTeams(v);
+    seatArrows(v);
   }
 
   // ---------------- 2 contra 2 (2026-10-17): lo común a los juegos con equipos ----------------
@@ -483,8 +594,8 @@ G.PartyGameUI = (() => {
         requestAnimationFrame(() => RB.layoutHand(c));
       }
       root.querySelector('.b2-table').classList.toggle('myturn', myTurn);
-      // Te toca
-      if (p.turn === v.you && c.turnWas !== v.you && !v.res) { G.Audio.sfx('shake'); }
+      // Te toca (2026-10-22: cartel, sonido, vibración, borde y barra de tiempo; turnCue)
+      turnCue(v, c, myTurn, '.b2-me');
       c.turnWas = p.turn;
       RB.buttons(v, c);
       RB.results(v, c);
@@ -495,6 +606,8 @@ G.PartyGameUI = (() => {
     tick(v, c) {
       const root = $('pt-body'), p = v.pub;
       if (!root.querySelector('.b2-table')) return;
+      const me = v.seats[v.you];
+      turnBar(v, p.turn === v.you && !v.res && !(me.auto || me.afk), '.b2-me');
       const left = Math.max(0, v.left - (Date.now() - v.at));
       const frac = v.turnMs ? left / v.turnMs : 0;
       root.querySelectorAll('[data-seat]').forEach(el => {
@@ -517,7 +630,8 @@ G.PartyGameUI = (() => {
      */
     results(v, c) {
       const box = $('pt-body').querySelector('.b2-res');
-      if (!v.res) { box.classList.add('hidden'); box.innerHTML = ''; c.resKey = ''; clearInterval(c.countT); return; }
+      if (!v.res) { holdResults(v, c); box.classList.add('hidden'); box.innerHTML = ''; c.resKey = ''; clearInterval(c.countT); return; }
+      if (holdResults(v, c)) return;      // la última jugada, un momento a la vista
       const key = v.sid + ':' + v.round + ':' + (G.Party.isHost ? 1 : 0);
       if (key === c.resKey) return;
       c.resKey = key;
@@ -589,5 +703,5 @@ G.PartyGameUI = (() => {
   // Se engancha al cargar (G.Party ya existe: se carga antes).
   wire();
 
-  return { open, close, flash, rules, RENDER, teamResults, mateOf, mateHand, teamName };
+  return { open, close, flash, rules, RENDER, teamResults, mateOf, mateHand, teamName, turnCue, turnBar, holdResults };
 })();

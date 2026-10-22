@@ -470,7 +470,7 @@
       tbl.classList.toggle('myturn', mine);
       root.querySelector('.vb-me').classList.toggle('dead', !alive);
       if (!mine && c.target) R.closeTarget();
-      if (mine && c.turnWas !== v.you) G.Audio.sfx('shake');
+      UI.turnCue(v, c, mine, '.vb-me');      // (2026-10-22) cartel, sonido, vibración, borde y barra de tiempo
       c.turnWas = p.turn;
       R.overlays(v, c);
       R.results(v, c);
@@ -694,6 +694,8 @@
     tick(v, c) {
       const root = body(), p = v.pub;
       if (!root.querySelector('.vb-table')) return;
+      const meS = v.seats[v.you];
+      UI.turnBar(v, p.turn === v.you && p.alive[v.you] && !v.res && !(meS.auto || meS.afk), '.vb-me');
       const el = Date.now() - v.at;
       const acting = p.phase === 'favor' && p.favor ? p.favor.to : p.turn;
       let left = Math.max(0, v.left - el), total = v.turnMs;

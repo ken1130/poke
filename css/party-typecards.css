@@ -251,3 +251,53 @@
   .tc-center { gap: 22px; }
 }
 .tc-hand .tcc.no { cursor: not-allowed; }   /* (2026-10-19: no se pueden elegir) */
+
+/* ---------- 2026-10-22: quién juega, robo acumulado, «¡Última carta!» grande, «¡Se puede pillar!» ---------- */
+.tc-opp.on > .b2-who .b2-av { animation: tcon 1s ease-in-out infinite; }
+@keyframes tcon { 50% { box-shadow: 0 5px 0 rgba(0,0,0,.35), 0 0 30px 10px rgba(255, 210, 63, .85); } }
+.tc-next { padding: 3px 12px; border-radius: 999px; background: rgba(255, 210, 63, .92); color: #3a2400; font: 800 15px var(--font); white-space: nowrap; box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+.tc-next.hidden { display: none; }
+.tc-stack { position: absolute; z-index: 4; left: 50%; top: -6px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+.tc-stack.hidden { display: none; }
+.tc-stack b { font: 900 44px/1 var(--font); color: #fff; padding: 2px 16px 4px; border-radius: 14px; background: linear-gradient(#ff5a4a, #b8141a); border: 3px solid #fff;
+  box-shadow: 0 4px 0 #5a0a0a, 0 0 24px 6px rgba(255, 60, 60, .55); }
+.tc-stack span { margin-top: 3px; padding: 1px 10px; border-radius: 8px; background: rgba(0,0,0,.65); color: #fff; font: 800 14px var(--font); white-space: nowrap; }
+.tc-stack.pop b { animation: tcstk .45s cubic-bezier(.2, 1.8, .5, 1); }
+@keyframes tcstk { from { transform: scale(1.9); } }
+.tc-drawb.stk { background: radial-gradient(circle at 50% 35%, #ff7a6a, #c01818 70%); }
+.myturn .tc-drawb.stk:not([disabled]) { animation: b2glow 1.2s infinite; }
+.tc-cap em { font-style: normal; color: #fff; background: #d61e1e; border-radius: 8px; padding: 0 8px; margin-left: 10px; font-weight: 800; }
+/* Se le puede pillar: cinta roja encima de su cuadro (además del botón «¡Te pillé!»). */
+.tc-cango { position: absolute; z-index: 6; left: 50%; top: -30px; transform: translateX(-50%) rotate(-4deg); padding: 3px 12px; border-radius: 10px; white-space: nowrap;
+  background: #fff; color: #d61e1e; border: 3px solid #d61e1e; font: 900 17px var(--font); box-shadow: 0 3px 0 rgba(0,0,0,.4); pointer-events: none; animation: b2pulse .6s infinite; }
+.pos-left .tc-cango { left: 8px; transform: rotate(-4deg); } .pos-right .tc-cango { left: auto; right: 8px; transform: rotate(4deg); }
+.pos-top .tc-cango { left: auto; top: 50%; right: calc(100% + 8px); transform: translateY(-50%) rotate(-4deg); }
+.tc-cango.hidden { display: none; }
+.tc-opp.vuln .pt-arrow { display: none; }
+.tc-catch { font-size: 20px; min-height: 52px; padding: 6px 20px; }
+.tc-callb.danger { box-shadow: 0 5px 0 #7a0c0c, 0 0 0 6px rgba(255, 255, 255, .85), 0 0 30px 10px rgba(255, 60, 60, .8); }
+/* Cartel grande de «¡Última carta!» para todos. */
+.tc-callfx { position: absolute; z-index: 18; left: 50%; top: 38%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 12px; pointer-events: none;
+  padding: 8px 26px 8px 10px; border-radius: 20px; background: linear-gradient(#ff5a4a, #c01818); border: 4px solid #fff; color: #fff;
+  box-shadow: 0 6px 0 #5a0a0a, 0 0 50px 16px rgba(255, 70, 50, .6); animation: tccfx 2s ease-out forwards; }
+.tc-cfav { width: 84px; height: 76px; border-radius: 14px; background: linear-gradient(160deg, #ffd36a, #f39a2c); border: 3px solid #fff; display: flex; align-items: center; justify-content: center; }
+.tc-cfav canvas { width: 76px; height: 68px; image-rendering: pixelated; }
+.tc-cft b { display: block; font: 900 44px/1.05 var(--font); text-shadow: 0 3px 0 rgba(0,0,0,.35); white-space: nowrap; }
+.tc-cft span { display: block; font: 800 16px var(--font); color: #ffe9c9; white-space: nowrap; }
+@keyframes tccfx { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3) rotate(-8deg); } 12% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(2deg); }
+  20% { transform: translate(-50%, -50%) scale(1) rotate(0); } 82% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(.95); } }
+@media (max-height: 520px) {
+  .tc-next { font-size: 12px; padding: 1px 8px; }
+  .tc-stack { top: 50%; left: 2px; transform: translateY(-50%); }   /* (.tc-mid) a la izquierda del mazo */
+  .tc-stack b { font-size: 28px; padding: 0 10px 2px; }
+  .tc-stack span { display: none; }
+  .tc-cap b:has(+ em) { display: none; }
+  .tc-cap em { margin-left: 0; }
+  .tc-cango { font-size: 13px; top: -24px; padding: 1px 8px; }
+  .tc-catch { font-size: 16px; min-height: 44px; padding: 4px 12px; }
+  .tc-cfav { width: 56px; height: 50px; }
+  .tc-cfav canvas { width: 50px; height: 44px; }
+  .tc-cft b { font-size: 30px; }
+  .tc-cft span { font-size: 13px; }
+  .tc-callfx { padding: 5px 16px 5px 6px; gap: 8px; }
+}

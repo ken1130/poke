@@ -3,6 +3,15 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-22', title: { zh: '牌桌：輪到你更醒目、+2/+4 可以疊加、「最後一張」更清楚', en: 'Card tables: a clear “your turn”, stackable +2/+4 and a clearer “Last card!”' },
+    new: [
+      { zh: "小精靈屬性牌：+2、+4 可以疊加了！別人出 +2 給你，你可以接 +2 或 +4；別人出 +4，只能接 +4（+4 上面不能疊 +2）。張數一路累加（中間會顯示大大的「+N」），第一個接不了的人要全部抽走並跳過回合。電腦也會疊。", en: "Type cards: +2 and +4 now stack. When hit by a +2 you can answer with another +2 or a +4; when hit by a +4, only with another +4. It all adds up (big “+N” in the middle) and whoever can't answer draws everything and loses their turn. CPUs stack too." },
+    ],
+    chg: [
+      { zh: "大老二、小精靈屬性牌、頑皮雷彈：輪到你時畫面中間會跳出大大的「輪到你了！」並有音效（手機會震動；分頁在背景時標題會閃），你的手牌區會有金色外框在閃，手牌上方有一條大的倒數計時條（顯示剩幾秒）；正在出牌的人頭上有「輪到他」箭頭。", en: "Big Two, type cards and Naughty Voltorb: when it's your turn a big “Your turn!” banner pops up with a sound (phones vibrate; if the tab is in the background, the title flashes), your hand area gets a flashing gold frame and a big countdown bar above your hand. An arrow marks whoever is playing." },
+      { zh: "小精靈屬性牌：方向旁邊會顯示「下一位：誰」。手上剩 2 張就可以先喊「最後一張」（不用等輪到你），喊的時候所有人畫面中間都會跳出大大的「最後一張！」。有人忘了喊，他頭上會出現「可以抓！」，中間那行也會提示快按「抓到了！」。", en: "Type cards: next to the table direction you now see who plays next. “Last card!” can be called as soon as you have 2 cards, on your turn or not, and a big banner shows it to everyone. Above whoever forgot to call, “Catch them!” appears, plus a notice in the middle line." },
+      { zh: "大老二、小精靈屬性牌：最後一手出完不會馬上跳結算，牌會留在桌上約 2.5 秒並顯示「出完了！」，看清楚他出了什麼再進結算畫面。", en: "Big Two and type cards: the final play stays on the table for about 2.5 s with an “Out of cards!” banner before the results screen." },
+    ] },
   { d: '2026-10-21', title: { zh: '原創角色覺醒、組隊連線與手機版面修正', en: 'Awakening for the original characters, co-op and phone layout fixes' },
     new: [
       { zh: "覺醒：8 隻原創角色（熊貓、地瓜球、迪迪、英雄、高速婆婆、湯姆貓、利卡、傑利鼠）不會進化，所以 Lv.35 起可以「覺醒」，跟超級進化一樣：換成覺醒型態（換色＋光點氣場）、HP 與攻擊 +30%、速度 +10%、每隻有自己的覺醒特性（熊貓 適應力、地瓜球 電氣引擎、迪迪 大力士、英雄 遲來的勇氣、高速婆婆 加速、湯姆貓 踩影、利卡 夢魘、傑利鼠 妖精皮膚），專屬招式也覺醒（傷害 +30%、冷卻 -15%）。在跟超級進化同一個視窗選（或之後按 M）；圖鑑「其他」分頁的角色頁會顯示覺醒型態", en: "Awakening: the 8 original characters (Panda, Sweet Potato Ball, Didi, Hero, Turbo Granny, Tom, Licker, Jerry) cannot evolve, so from Lv. 35 they can awaken, just like a Mega Evolution: an awakened form (recolor + aura), HP and attack +30%, speed +10%, an awakened ability each (Panda Adaptability, Sweet Potato Ball Volt Engine, Didi Huge Power, Hero Late Courage, Turbo Granny Speed Boost, Tom Shadow Tag, Licker Bad Dreams, Jerry Pixilate) and their exclusive move awakened (damage +30%, recharge -15%). Chosen in the same window as a Mega (or later with M); the character's page in the “Other” tab shows the awakened form" },

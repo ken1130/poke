@@ -12,6 +12,9 @@
  *     «¡Última carta!» abajo a la derecha;
  *   - al acabar, pantalla de victoria (cinta, puntos contando, monedas y Poké Balls que
  *     vuelan; sólo CSS). Tocar salta la animación.
+ *   - (2026-10-22, pedidos del dueño) robo acumulado de +2/+4 con su contador grande en el centro;
+ *     «¡Última carta!» con cartel grande para todos; «¡Se puede pillar!» encima de quien no avisó;
+ *     «después juega: …» junto al sentido de la mesa. El aviso de turno es el común (UI.turnCue).
  * Lógica y reglas: js/systems/party/typecards.js. Estilos: css/party-typecards.css.
  */
 (() => {
@@ -108,6 +111,7 @@
       case 'skip': return G.I18n.f('{x} pierde el turno en las cartas de tipos', nm(e.seat));
       case 'rev': return G.T('¡Cambia el sentido de la mesa!');
       case 'draw': return e.why ? G.I18n.f('{x} roba {x} cartas y pierde el turno', nm(e.seat), e.n) : G.I18n.f('{x} roba una carta del mazo de tipos', nm(e.seat));
+      case 'stack': return G.I18n.f('¡Robo acumulado: {x} cartas para {x}!', e.n, nm(e.seat));
       case 'pick': return G.I18n.f('{x} elige el tipo de la mesa: {x}', nm(e.seat), typeName(e.color));
       case 'call': return G.I18n.f('¡{x} avisa de su última carta!', nm(e.seat));
       case 'pen': return e.by >= 0 ? G.I18n.f('¡{x} pilla a {x} sin avisar: roba 2 cartas!', nm(e.by), nm(e.seat)) : G.I18n.f('{x} no avisó de su última carta: roba 2 cartas', nm(e.seat));
@@ -130,8 +134,8 @@
         'Doble golpe +2: el siguiente roba 2 cartas y pierde el turno.',
         'Ditto ★: puedes echarlo siempre y eliges el tipo con el que se sigue.',
         'Poder de Mewtwo +4: eliges el tipo, y el siguiente roba 4 cartas y pierde el turno. Se puede echar siempre (sin regla de desafío).',
-        'Los +2 y +4 no se acumulan: quien los recibe roba y pierde el turno.',
-        'Cuando te quede 1 carta pulsa «¡Última carta!» (o antes, en tu turno con 2 cartas): todos oyen el aviso. Mientras no avises, los demás pueden pulsar «¡Te pillé!» hasta que el siguiente juegue o robe; si te pillan, o si no avisaste a tiempo, robas 2. Gana quien pulse primero.',
+        'Los +2 y +4 se acumulan: si te echan un +2 puedes contestar con otro +2 o con un +4; si te echan un +4, sólo con otro +4 (un +2 sobre un +4 no vale). Se suma todo y el primero que no contesta roba todas las cartas acumuladas y pierde el turno.',
+        'Cuando te quede 1 carta pulsa «¡Última carta!» (también antes, en cuanto tengas 2 cartas, sea o no tu turno): todos lo ven y lo oyen. Mientras no avises, los demás ven «¡Se puede pillar!» y pueden pulsar «¡Te pillé!» hasta que el siguiente juegue o robe; si te pillan, o si no avisaste a tiempo, robas 2. Gana quien pulse primero.',
         'Las CPU avisan con un poco de retraso y a veces se les olvida: ¡atento para pillarlas!',
         'Con «Juego automático» la CPU juega por ti hasta que lo quites.',
         'Primera carta: si es Poder de Mewtwo vuelve al mazo; si es Ditto, el primero elige el tipo; Somnífero, Ida y vuelta y Doble golpe afectan al primer jugador.',
@@ -154,6 +158,7 @@
         const j = (v.you + k) % n;
         opp += `<div class="tc-opp pos-${pl[k - 1]}" data-seat="${j}">${whoHTML(false)}
           <div class="tc-fanw"><div class="b2-fan tc-fan"></div><span class="b2-cnt tc-cnt" translate="no"></span></div>
+          <span class="tc-cango hidden">${esc(G.T('¡Se puede pillar!'))}</span>
           <button class="tc-catch hidden" data-tc="catch">${esc(G.T('¡Te pillé!'))}</button>
         </div>`;
       }
@@ -172,7 +177,9 @@
             <div class="tc-side">
               <div class="tc-type"></div>
               <div class="tc-dir"></div>
+              <div class="tc-next"></div>
             </div>
+            <div class="tc-stack hidden"><b translate="no"></b><span></span></div>
           </div>
         </div>
         <div class="tc-cap"></div>
@@ -287,11 +294,11 @@
       if (p.phase === 'pick') { R.openPick(-1); return; }
       const hand = v.priv.hand, n = v.seats.length;
       const nx = TC().nextSeat({ n, dir: p.dir }, v.you), pv = TC().nextSeat({ n, dir: p.dir }, v.you, -1);
-      const m = TC().cpuMove(hand, Object.assign({ top: p.top, color: p.color, phase: p.phase, drawn: v.priv.drawn, nextCount: p.counts[nx], prevCount: p.counts[pv], n },
+      const m = TC().cpuMove(hand, Object.assign({ top: p.top, color: p.color, phase: p.phase, drawn: v.priv.drawn, nextCount: p.counts[nx], prevCount: p.counts[pv], n, pend: p.pend, pendK: p.pendK },
         TC().teamCtx({ teams: v.teams, counts: p.counts, lastCol: p.lastCol }, v.you)));
       if (m.type !== 'play') {
         G.Audio.sfx('error');
-        UI.flash(G.T(p.phase === 'drawn' ? 'La carta robada no te conviene: quédatela.' : 'No tienes ninguna carta que valga: roba una.'));
+        UI.flash(p.pend > 0 ? G.I18n.f('No tienes con qué acumular: roba las {x} cartas.', p.pend) : G.T(p.phase === 'drawn' ? 'La carta robada no te conviene: quédatela.' : 'No tienes ninguna carta que valga: roba una.'));
         const pile = q('.tc-pile');
         if (pile) { pile.classList.remove('nudge'); void pile.offsetWidth; pile.classList.add('nudge'); }
         return;
@@ -336,7 +343,7 @@
       }
       // ---- voz de «¡Última carta!» (una vez por aviso; al entrar a mitad no suena la de antes) ----
       const lc = p.lastCall, ck = v.round + ':' + (lc ? lc.seq : 0);
-      if (c.callKey != null && ck !== c.callKey && lc) { R.voice(v, lc.seat); window.__tcVoice = (window.__tcVoice || 0) + 1; }
+      if (c.callKey != null && ck !== c.callKey && lc) { R.voice(v, lc.seat); R.callFx(v, lc.seat); window.__tcVoice = (window.__tcVoice || 0) + 1; }
       c.callKey = ck;
       // ---- jugadores (rivales y tú) ----
       root.querySelectorAll('.tc-table [data-seat]').forEach(el => {
@@ -355,7 +362,9 @@
         el.querySelector('.tc-cnt').textContent = nC;
         el.classList.toggle('few', nC <= 2 && !v.res);
         el.classList.toggle('vuln', p.vuln === j && !v.res);
-        el.querySelector('.tc-catch').classList.toggle('hidden', p.vuln !== j || !!v.res || UI.mateOf(v, v.you, j));   // al compañero no se le pilla
+        const canCatch = p.vuln === j && !v.res && !UI.mateOf(v, v.you, j);   // al compañero no se le pilla
+        el.querySelector('.tc-catch').classList.toggle('hidden', !canCatch);
+        el.querySelector('.tc-cango').classList.toggle('hidden', !canCatch);
       });
       const auto = !!(meS.auto || meS.afk);
       root.querySelector('.tc-me').classList.toggle('mine', mine);
@@ -367,9 +376,12 @@
       const cap = root.querySelector('.tc-cap');
       let capT;
       if (v.res) capT = G.I18n.f('¡{x} se queda sin cartas y gana!', seatName(v.seats[p.winner]));
+      else if (mine && p.pend > 0) capT = G.I18n.f(p.pendK === 'd4' ? '¡Te caen {x} cartas! Echa un +4 para pasarlas, o róbalas.' : '¡Te caen {x} cartas! Echa un +2 o un +4 para pasarlas, o róbalas.', p.pend);
       else if (mine) capT = G.T(p.phase === 'pick' ? 'La primera carta es Ditto: elige el tipo' : p.phase === 'drawn' ? 'Has robado una carta que vale: échala o quédatela.' : 'Te toca: echa una carta del mismo tipo o número, o roba una.');
       else capT = G.I18n.f('Es el turno de {x} en las cartas de tipos', seatName(v.seats[p.turn]));
-      cap.innerHTML = `<b>${esc(capT)}</b>${c.evText && !v.res ? `<span>${esc(c.evText)}</span>` : ''}`;
+      // Alguien se ha quedado con 1 sin avisar: que se vea que se le puede pillar.
+      const vj = p.vuln, catchT = vj >= 0 && vj !== v.you && !v.res && !UI.mateOf(v, v.you, vj) ? G.I18n.f('¡{x} no ha avisado de su última carta: pulsa «¡Te pillé!»!', seatName(v.seats[vj])) : '';
+      cap.innerHTML = `<b>${esc(capT)}</b>${catchT ? `<em>${esc(catchT)}</em>` : c.evText && !v.res ? `<span>${esc(c.evText)}</span>` : ''}`;
       cap.classList.toggle('mine', mine);
       cap.classList.toggle('hidden', !!v.res);
       const pKey = p.top + '/' + p.under.join(',') + '/' + key + '/' + (portraits.size);
@@ -387,6 +399,20 @@
       table.classList.toggle('ccw', p.dir !== 1);
       root.querySelector('.tc-type').innerHTML = p.color >= 0 ? `<i class="tc-dot t${p.color}"></i>${esc(G.I18n.f('Tipo en mesa: {x}', typeName(p.color)))}` : esc(G.T('Tipo por elegir'));
       root.querySelector('.tc-dir').textContent = (p.dir === 1 ? '↻ ' : '↺ ') + G.T(p.dir === 1 ? 'Sentido horario de la mesa' : 'Sentido antihorario de la mesa');
+      // Quién juega después (2026-10-22: «輪到誰要提示一下，明確一點»).
+      const nx = !v.res && p.turn >= 0 ? T.nextSeat({ n, dir: p.dir }, p.turn) : -1;
+      const nxEl = root.querySelector('.tc-next');
+      nxEl.classList.toggle('hidden', nx < 0);
+      if (nx >= 0) nxEl.textContent = G.I18n.f('Después juega: {x}', nx === v.you ? G.T('Tú (cartas de tipos)') : seatName(v.seats[nx]));
+      // Robo acumulado de +2/+4 (2026-10-22).
+      const stk = root.querySelector('.tc-stack');
+      stk.classList.toggle('hidden', !(p.pend > 0) || !!v.res);
+      if (p.pend > 0) {
+        stk.querySelector('b').textContent = '+' + p.pend;
+        stk.querySelector('span').textContent = G.I18n.f('acumulado para {x}', p.turn === v.you ? G.T('Tú (cartas de tipos)') : seatName(v.seats[p.turn]));
+        if (c.stackWas !== p.pend) { stk.classList.remove('pop'); void stk.offsetWidth; stk.classList.add('pop'); }
+      }
+      c.stackWas = p.pend;
       root.querySelector('.tc-deckn').textContent = p.deck;
       if (c.dirWas && c.dirWas !== p.dir) { const arc = root.querySelector('.tc-arc'); arc.classList.remove('flip'); void arc.offsetWidth; arc.classList.add('flip'); }
       c.dirWas = p.dir;
@@ -404,23 +430,26 @@
       }
       // ---- botones ----
       const db = root.querySelector('[data-tc="drawbtn"]'), pb = root.querySelector('[data-tc="play"]');
-      db.textContent = G.T(p.phase === 'drawn' && mine ? 'Quedarme la carta' : 'Robar una carta');
+      db.textContent = mine && p.pend > 0 ? G.I18n.f('Robar {x} cartas', p.pend) : G.T(p.phase === 'drawn' && mine ? 'Quedarme la carta' : 'Robar una carta');
+      db.classList.toggle('stk', mine && p.pend > 0);
       db.disabled = !mine;
       pb.disabled = !mine || p.phase === 'pick' || (p.phase !== 'drawn' && !ok.includes(c.sel));
       root.querySelector('.tc-pile').classList.toggle('can', mine && p.phase !== 'drawn');
       root.querySelector('[data-tc="hint"]').disabled = !mine;
       root.querySelector('.tc-table').classList.toggle('myturn', mine);
       const cnt = v.priv.hand.length;
-      const canCall = !v.res && !v.priv.called && (cnt === 1 || (p.turn === v.you && cnt === 2 && p.phase !== 'pick'));
+      // (2026-10-22) Con 2 cartas se puede avisar antes, también fuera de tu turno.
+      const canCall = !v.res && !v.priv.called && (cnt === 1 || cnt === 2);
       const callB = root.querySelector('[data-tc="call"]');
       callB.disabled = !canCall;
-      callB.classList.toggle('urgent', canCall);
+      callB.classList.toggle('urgent', canCall && (cnt === 1 || p.turn === v.you));
+      callB.classList.toggle('danger', canCall && p.vuln === v.you);
       callB.classList.toggle('done', !!v.priv.called && cnt <= 2 && !v.res);
       callB.textContent = G.T(v.priv.called && cnt <= 2 ? '¡Avisado!' : '¡Última carta!');
       // Ditto de primera: elegir tipo.
       if (mine && p.phase === 'pick' && c.pickFor == null) R.openPick(-1);
       if (c.pickFor != null && (!mine || (c.pickFor < 0 && p.phase !== 'pick'))) R.closePick();
-      if (mine && c.turnWas !== v.you) G.Audio.sfx('shake');
+      UI.turnCue(v, c, mine, '.tc-me');
       c.turnWas = p.turn;
       R.results(v, c);
       R.tick(v, c);
@@ -438,6 +467,7 @@
         else if (e.k === 'pen') { R.flyDraw(v, e.seat, e.n); R.badge(v, e.seat, '+' + e.n, 'bad'); G.Audio.sfx('hurt'); G.UI.toast(evText(v, e), 2600); }
         else if (e.k === 'skip') R.badge(v, e.seat, G.T('¡Turno perdido!'), 'skip');
         else if (e.k === 'call') R.badge(v, e.seat, G.T('¡Última carta!'), 'call');
+        else if (e.k === 'stack') { R.badge(v, e.seat, '+' + e.n, 'bad'); G.Audio.sfx('surge'); }
         else if (e.k === 'rev') G.Audio.sfx('select');
       }
       if (txt) c.evText = txt;
@@ -460,6 +490,20 @@
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(u);
       } catch (e) { /* sin voz: sólo el efecto */ }
+    },
+
+    /** Cartel grande «¡Última carta!» en el centro para todos (2026-10-22: «喊出最後一張要大點提示»). */
+    callFx(v, seat) {
+      const tbl = q('.tc-table'), s = v.seats[seat];
+      if (!tbl || !s) return;
+      const old = tbl.querySelector('.tc-callfx');
+      if (old) old.remove();
+      const el = document.createElement('div');
+      el.className = 'tc-callfx';
+      el.innerHTML = `<div class="tc-cfav"></div><div class="tc-cft"><b>${esc(G.T('¡Última carta!'))}</b><span translate="no">${esc(seat === v.you ? G.T('Has avisado de tu última carta') : G.I18n.f('{x} avisa de su última carta', seatName(s)))}</span></div>`;
+      el.querySelector('.tc-cfav').appendChild(G.UI.spriteCanvas(s.dex, 96, 86, { scale: 3, hero: true, shiny: !!s.shiny }));
+      tbl.appendChild(el);
+      setTimeout(() => el.remove(), 2000);
     },
 
     seatEl(v, j) { return q(`.tc-table [data-seat="${j}"] .b2-who`); },
@@ -497,6 +541,8 @@
     tick(v, c) {
       const root = body(), p = v.pub;
       if (!root.querySelector('.tc-table')) return;
+      const meS = v.seats[v.you];
+      UI.turnBar(v, p.turn === v.you && !v.res && !(meS.auto || meS.afk), '.tc-me');
       const left = Math.max(0, v.left - (Date.now() - v.at));
       const frac = v.turnMs ? left / v.turnMs : 0;
       root.querySelectorAll('.tc-table [data-seat]').forEach(el => {
@@ -516,7 +562,8 @@
     results(v, c) {
       const box = q('.tc-res');
       if (!box) return;
-      if (!v.res) { box.classList.add('hidden'); box.innerHTML = ''; c.resKey = ''; clearInterval(c.countT); return; }
+      if (!v.res) { UI.holdResults(v, c); box.classList.add('hidden'); box.innerHTML = ''; c.resKey = ''; clearInterval(c.countT); return; }
+      if (UI.holdResults(v, c)) return;      // la última carta, un momento a la vista (2026-10-22)
       const key = v.sid + ':' + v.round + ':' + (G.Party.isHost ? 1 : 0);
       if (key === c.resKey) return;
       c.resKey = key;
