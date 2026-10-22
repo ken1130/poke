@@ -1061,6 +1061,9 @@ G.Game = (() => {
     // La red se atiende siempre (también con las cartas de nivel abiertas).
     if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick(dt);
 
+    // El destello de pantalla se apaga con el tiempo real (2026-10-22, vídeo del dueño: al salir de la sala misteriosa
+    // en grupo justo cuando el anfitrión subía de nivel, el destello blanco se quedaba congelado ~20 s con todo en pausa).
+    if (flashT > 0) flashT -= real;
     if (pl && state !== 'ui') { render(); hudDirty = true; }
     else {
       Backdrop.render(ctx, w, h, dpr, dt);
@@ -1075,7 +1078,6 @@ G.Game = (() => {
 
   function update(dt) {
     const coop = G.Coop.active;
-    if (flashT > 0) flashT -= dt;
     // Tras caer, deja que se vea la animación de Faint antes del resumen.
     // (En la arena de la grieta no: allí caer sólo te echa de vuelta.)
     if (pl.dead && !coop && !G.Rift.inArena) {

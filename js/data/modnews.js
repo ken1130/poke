@@ -13,6 +13,7 @@ G.MODNEWS = [
       { zh: "守護大壯：神器賣掉後，這波結束就會補貨（另外每 5 分鐘照樣換一個）", en: "Guard Dazhuang: a sold artifact is restocked when the wave ends (it still changes every 5 min)." }
     ],
     fix: [
+      { zh: "組隊時，從神秘房間出來（或任何畫面閃光）的瞬間剛好有人升級、選卡或暫停，畫面會一直白到繼續遊戲（主人朋友錄的影片：白了約 20 秒）：現在閃光照樣會消失", en: "In co-op, leaving a mystery room (or any screen flash) right as the game paused —someone levelling up, choosing or pausing— left the screen white until it resumed. The flash now fades anyway." },
       { zh: "守護大壯：左上角顯示的是一般局內金幣，但商店扣的是你的商店錢包，所以買東西時左上的數字不會變（看起來像沒扣錢）；現在這個模式左上直接顯示商店錢包", en: "Guard Dazhuang: the top-left showed the run's coins while the shop charges your wallet, so the number didn't drop when buying; in this mode it now shows the wallet." },
       { zh: "守護大壯組隊：隊友快速連點兩下「購買」時，有時會買到兩次（兩個幫手、升兩級）：現在一次點擊只會買一次", en: "Guard Dazhuang in co-op: if a guest tapped “Buy” twice very fast, it sometimes bought twice (two helpers, two upgrades). Now it's one purchase per tap." },
       { zh: "守護大壯：連點兩下（或連續送出兩次）不會再扣兩次錢；等房主確認時，商品會顯示「購買中…」", en: "Guard Dazhuang: a double tap (or two quick requests) no longer charges twice; while the host confirms, the item shows “Buying…”." },
