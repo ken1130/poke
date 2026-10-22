@@ -523,8 +523,10 @@ G.Guard = (() => {
     if (!on()) return;
     if (ev[1] === 'fx') { stompFx(); return; }
     if (ev[1] === 'poor') { G.Spawner.say(G.I18n.f('Faltan monedas: cuesta {x}', ev[2]), 2, true); G.Audio.sfx('error'); return; }
-    if (ev[1] === 'g') { pending.delete(ev[2]); applyPersonal(G.Game.player, ev[2]); return; }
-    if (ev[1] === 'ok') { pending.delete(ev[2]); return; }
+    // (2026-10-22: no se suelta del todo al contestar: con la respuesta en < 0,1 s, el 2.º toque de un doble toque
+    // volvía a comprar — dos ayudantes por uno. Queda BUY_GAP s más, como en solitario.)
+    if (ev[1] === 'g') { gap(ev[2]); applyPersonal(G.Game.player, ev[2]); return; }
+    if (ev[1] === 'ok') { gap(ev[2]); return; }
     if (ev[1] === 'inc' || ev[1] === 'refund') {
       wallet += Math.max(0, +ev[2] || 0);
       if (ev[1] === 'refund') { pending.delete(ev[3]); G.Spawner.say('Alguien lo compró antes: te devolvemos las monedas', 2.4, true); }
@@ -636,6 +638,7 @@ G.Guard = (() => {
    */
   const pending = new Map();                                 // clave -> performance.now() de la compra
   const PENDING_MAX = 3, BUY_GAP = 0.35;
+  const gap = key => pending.set(key, performance.now() - (PENDING_MAX - BUY_GAP) * 1000);
   const busy = key => { const t = pending.get(key); if (t == null) return false; if (performance.now() - t > PENDING_MAX * 1000) { pending.delete(key); return false; } return true; };
   /** Comprar (cualquiera). */
   function buy(key) {

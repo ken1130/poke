@@ -1,5 +1,6 @@
 /* ============ lang-v31-guard.js — «Proteger a Dazhuang» (guard.js, 2026-10-16) ============ */
 G.I18n.add({
+  'Se gastan en los puestos de alrededor de Dazhuang. Lo que no gastes se suma a tus Pokémonedas al acabar.': '在大壯周圍的攤位使用；沒花完的結束時會加進你的金幣。',
   'Proteger a Dazhuang': '守護大壯',
   'Dazhuang': '大壯',
   '50 oleadas van a por Dazhuang: protégelo. Cada 5, un jefe; cada 10, una emboscada. Entre oleadas, 60 s para comprar en sus puestos (objetos, artefacto, pociones, mascotas y ayudantes, y mejoras para él).':
@@ -67,6 +68,7 @@ G.I18n.add({
   '¡Dazhuang en peligro!': '大壯危險！',
 }, 'zh');
 G.I18n.add({
+  'Se gastan en los puestos de alrededor de Dazhuang. Lo que no gastes se suma a tus Pokémonedas al acabar.': 'Spent at the stalls around Dazhuang. Whatever you don’t spend is added to your coins at the end.',
   'Proteger a Dazhuang': 'Guard Dazhuang',
   'Dazhuang': 'Dazhuang',
   '50 oleadas van a por Dazhuang: protégelo. Cada 5, un jefe; cada 10, una emboscada. Entre oleadas, 60 s para comprar en sus puestos (objetos, artefacto, pociones, mascotas y ayudantes, y mejoras para él).':

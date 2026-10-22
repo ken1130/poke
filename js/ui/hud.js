@@ -125,7 +125,10 @@ G.HUD = (() => {
       const big = !touch;
       const cx0 = big ? px + 48 + 168 + 8 : bx, cy0 = big ? py + 13 : py + 34, ch = big ? 19 : 15;
       ctx.font = F(800, big ? 12 : 11);
-      const txt = String(Math.floor(pl.coins || 0));
+      // Proteger a Dazhuang (2026-10-22, el dueño: «comprar no descuenta»): aquí iban las monedas de la run, y la
+      // tienda cobra de tu monedero (guard.js wallet), así que el número no bajaba al comprar. En ese modo, el monedero.
+      const gdW = G.Modes.run === 'guard' && G.Guard ? Math.floor(G.Guard.wallet || 0) : null;
+      const txt = String(gdW != null ? gdW : Math.floor(pl.coins || 0));
       const tw = ctx.measureText(txt).width + (big ? 30 : 24);
       roundRect(ctx, cx0, cy0, tw, ch, big ? 9 : 7);
       G.HUD.coinEnd = cx0 + tw;             // floors.js pone la barra del ataque combinado a su derecha
@@ -134,7 +137,9 @@ G.HUD = (() => {
       G.Icons.draw(ctx, 'coin', cx0 + (big ? 4 : 3), cy0 + 2, big ? 15 : 11);
       ctx.textAlign = 'left'; ctx.fillStyle = '#ffe14d';
       ctx.fillText(txt, cx0 + (big ? 22 : 17), cy0 + (big ? 14 : 11.5));
-      tapInfo(cx0, cy0, tw, ch, 'coins', () => ({ title: G.I18n.f('Monedas de esta run: {x}', Math.floor(pl.coins || 0)), color: '#ffd23f',
+      if (gdW != null) tapInfo(cx0, cy0, tw, ch, 'coins', () => ({ title: G.I18n.f('Tus monedas: {x}', gdW), color: '#ffd23f',
+        lines: [G.T('Se gastan en los puestos de alrededor de Dazhuang. Lo que no gastes se suma a tus Pokémonedas al acabar.')] }));
+      else tapInfo(cx0, cy0, tw, ch, 'coins', () => ({ title: G.I18n.f('Monedas de esta run: {x}', Math.floor(pl.coins || 0)), color: '#ffd23f',
         lines: [G.T('Se gastan en la tienda de Kecleon (pociones, objetos, mejoras...) y en su ruleta.'),
                 G.T('Lo que no gastes se suma a tus Pokémonedas al acabar la run.')] }));
       if (big) leftRight = cx0 + tw; else bx += tw + 5;

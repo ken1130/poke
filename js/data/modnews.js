@@ -13,6 +13,8 @@ G.MODNEWS = [
       { zh: "守護大壯：神器賣掉後，這波結束就會補貨（另外每 5 分鐘照樣換一個）", en: "Guard Dazhuang: a sold artifact is restocked when the wave ends (it still changes every 5 min)." }
     ],
     fix: [
+      { zh: "守護大壯：左上角顯示的是一般局內金幣，但商店扣的是你的商店錢包，所以買東西時左上的數字不會變（看起來像沒扣錢）；現在這個模式左上直接顯示商店錢包", en: "Guard Dazhuang: the top-left showed the run's coins while the shop charges your wallet, so the number didn't drop when buying; in this mode it now shows the wallet." },
+      { zh: "守護大壯組隊：隊友快速連點兩下「購買」時，有時會買到兩次（兩個幫手、升兩級）：現在一次點擊只會買一次", en: "Guard Dazhuang in co-op: if a guest tapped “Buy” twice very fast, it sometimes bought twice (two helpers, two upgrades). Now it's one purchase per tap." },
       { zh: "守護大壯：連點兩下（或連續送出兩次）不會再扣兩次錢；等房主確認時，商品會顯示「購買中…」", en: "Guard Dazhuang: a double tap (or two quick requests) no longer charges twice; while the host confirms, the item shows “Buying…”." },
       { zh: "守護大壯組隊：地圖另一邊的怪在隊友畫面上會停在出生點，走近時突然跳過去或滑過去（看起來在亂飛）。現在每一隻都會正常移動", en: "Guard Dazhuang in co-op: enemies on the far side froze where they spawned and then jumped or slid across the map when you got closer. Now they all move smoothly." },
       { zh: "守護大壯：小地圖下方清單和畫面邊緣箭頭不會再指向幾百、幾千公尺外的泉水、祭壇、寶箱；只顯示 30 公尺左右以內的東西（大壯和攤位一定會顯示）", en: "Guard Dazhuang: the list under the minimap and the edge arrows no longer point at springs, altars or chests hundreds or thousands of meters away; only things within ~30 m (Dazhuang and his stalls always)." },
