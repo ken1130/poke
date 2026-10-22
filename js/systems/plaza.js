@@ -823,6 +823,10 @@ G.Plaza = (() => {
             tx = best.x + (c.x - best.x) / d * 70; ty = best.y + (c.y - best.y) / d * 70;
           } else if (bd < 150 * 150 && Math.random() < dt * 1.1) throwBomb(p.id, Math.atan2(best.y - c.y, best.x - c.x));
         }
+      } else if (g.phase === 'play' && g.bomb && g.bomb.ft <= 0 && g.bomb.from === p.id) {
+        // Su propia bomba en el suelo (falló el tiro): si explota, cae él → a recogerla (2026-10-22, el dueño:
+        // «la tira y luego no la recoge, parece tonta»; antes huía de ella como de la de otro).
+        tx = g.bomb.x; ty = g.bomb.y; sp = CPU_CHASE * lvK;
       } else if (g.phase === 'play' && g.bomb && g.bomb.ft <= 0 && G.U.dist2(g.bomb.x, g.bomb.y, c.x, c.y) < 90 * 90 && g.bomb.from !== p.id) {
         // La bomba en el suelo y cerca: que la coja otro… salvo que quede poca mecha para el que la tiró.
         tx = c.x + (c.x - g.bomb.x); ty = c.y + (c.y - g.bomb.y);
