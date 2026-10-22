@@ -430,15 +430,17 @@ G.HUD = (() => {
     // PK: hacia el centro de la zona segura si estás fuera o cerca del borde (2026-10-16).
     const zi = G.PvP.zoneInfo && G.PvP.zoneInfo();
     if (zi && zi.t > zi.from - 30 && Math.hypot(pl.x, pl.y) > zi.R - 140) edgeArrow(ctx, w, h, pl, 0, 0, '#ff5f6d', '#ffd0d4', '#3a0a10', '#ffb0b8', 'Zona segura');
-    const box = !G.Dungeon.inRoom && G.Pickups.all().find(p => (p.kind === 'sbox' || p.kind === 'fbox') && G.Loot.visible(p));      // (dentro de una sala, no)
+    const gdFar = p => G.Modes.run === 'guard' && G.U.dist2(p.x, p.y, pl.x, pl.y) > GUARD_NEAR * GUARD_NEAR;    // (guard: lo lejano, no)
+    const box = !G.Dungeon.inRoom && G.Pickups.all().find(p => (p.kind === 'sbox' || p.kind === 'fbox') && G.Loot.visible(p) && !gdFar(p));      // (dentro de una sala, no)
     if (box) edgeArrow(ctx, w, h, pl, box.x, box.y - 20, '#7fe0ff', '#e6fbff', '#0a2a3a', '#bff3ff', 'DISCO DE MOVIMIENTOS');
     if (!G.Dungeon.inRoom && !G.PvP.arena) {
       for (const s of G.Dungeon.sites) {
+        if (gdFar(s)) continue;
         if (s.type === 'shop' && (s.state === 'open' || s.state === 'free')) edgeArrow(ctx, w, h, pl, s.x, s.y - 20, '#5fcf8a', '#d8ffe6', '#0a2a18', '#b8f5cc', 'Tienda de Kecleon');
         else if (s.type === 'mhouse' && s.state === 'idle') edgeArrow(ctx, w, h, pl, s.x, s.y - 20, '#b98aff', '#efe2ff', '#22103a', '#e2d0ff', 'Sala misteriosa');
       }
       const en = G.Encounters.marker();        // encuentro (encounters.js)
-      if (en && !en.noArrow) edgeArrow(ctx, w, h, pl, en.x, en.y - 20, en.col, '#ffffff', '#1a1a2a', en.col, en.name);
+      if (en && !en.noArrow && !gdFar(en)) edgeArrow(ctx, w, h, pl, en.x, en.y - 20, en.col, '#ffffff', '#1a1a2a', en.col, en.name);
       // «Proteger a Dazhuang» (guard.js): hacia él si no se ve.
       const gm = G.Guard && G.Guard.markers();
       if (gm && !gm.dz.dead) {
@@ -1051,8 +1053,10 @@ G.HUD = (() => {
       if (zn.t < zn.to) { ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.arc(zx, zy, zn.R1 * k, 0, 6.2832); ctx.stroke(); }
       ctx.restore();
     }
+    const gdMap = G.Modes.run === 'guard';
     for (const p of G.Pickups.all()) {
       if ((p.kind === 'sbox' || p.kind === 'fbox' || p.kind === 'potion' || p.kind === 'egg') && !G.Loot.visible(p)) continue;
+      if (gdMap && G.U.dist2(p.x, p.y, pl.x, pl.y) > GUARD_NEAR * GUARD_NEAR) continue;      // (guard: lo de muy lejos, no)
       if (p.kind === 'sbox' || p.kind === 'fbox') icon('sbox', p.x, p.y, true, blink);
       else if (p.kind === 'egg') icon('egg', p.x, p.y, true);
       else if (p.kind === 'potion') icon('potion', p.x, p.y, true);
@@ -1063,7 +1067,7 @@ G.HUD = (() => {
     if (rift) icon('rift', rift.x, rift.y, true, blink);
     const door = G.Dungeon.roomDoor;
     if (door) icon('shop', door.x, door.y, false);
-    for (const s of G.Dungeon.sites) icon(s.type, s.x, s.y, true, blink);
+    for (const s of G.Dungeon.sites) icon(s.type, s.x, s.y, !gdMap, blink);
     { const en = G.Encounters.marker(); if (en) { const q = at(en.x, en.y, !inside); if (q) MM_ICON.enc(ctx, q[0], q[1], blink, en.col); } }
     for (const st of G.Floors.stairsAll) icon(st.route === 'danger' ? 'stairsD' : 'stairs', st.x, st.y, true);
     { const gm = G.Guard && G.Guard.markers();          // «Proteger a Dazhuang»: él (siempre, en el borde si hace falta) y sus puestos
@@ -1156,6 +1160,7 @@ G.HUD = (() => {
     ctx.restore();
   }
 
+  const GUARD_NEAR = 1000;      // «Proteger a Dazhuang»: lo más lejos que se señala (~30 m: hasta donde salen las oleadas)
   function drawMinimapList(ctx, w, pl, right, top, max = 6, short = false) {
     const rows = [];
     if (G.Modes.run === 'training' || G.Modes.run === 'plaza') return 0;     // sala de entrenamiento / zona de fiesta: no hay nada a lo que ir
@@ -1164,7 +1169,15 @@ G.HUD = (() => {
       for (const o of list) { if (!fn(o)) continue; const d = G.U.dist2(o.x, o.y, pl.x, pl.y); if (d < bd) { bd = d; best = o; } }
       return best;
     };
-    const add = (o, name, col, ic) => { if (o) rows.push({ o, name, col, ic, d: G.U.dist(o.x, o.y, pl.x, pl.y) }); };
+    // «Proteger a Dazhuang» (2026-10-22, el dueño: «sale algo a miles de metros»): todo pasa junto a él;
+    // en la lista sólo lo que esté a menos de GUARD_NEAR (y Dazhuang y sus puestos, siempre).
+    const gd = G.Modes.run === 'guard';
+    const add = (o, name, col, ic, always) => {
+      if (!o) return;
+      const d = G.U.dist(o.x, o.y, pl.x, pl.y);
+      if (gd && !always && d > GUARD_NEAR) return;
+      rows.push({ o, name, col, ic, d });
+    };
     const pk = G.Pickups.all();
     // Dentro de la tienda o de una sala: la salida (y sólo lo que haya dentro).
     if (G.Dungeon.roomDoor) add(G.Dungeon.roomDoor, 'Salida', '#7dffb0', 'shop');
@@ -1188,7 +1201,7 @@ G.HUD = (() => {
     }
     { const en = G.Encounters.marker(); if (en) add(en, en.name, en.col, 'enc'); }
     { const gm = G.Guard && G.Guard.markers();
-      if (gm) { add(gm.dz, 'Dazhuang', '#ffd27a', 'guard'); add(near(gm.stalls, () => true), 'Puestos', '#9fe0b0', 'shop'); } }
+      if (gm) { add(gm.dz, 'Dazhuang', '#ffd27a', 'guard', true); add(near(gm.stalls, () => true), 'Puestos', '#9fe0b0', 'shop', true); } }
     add(near(G.EnemyMgr.all(), e => e.boss && !e.dead), 'Jefe', '#ff5f6d', 'boss');
     add(near(G.EnemyMgr.all(), e => e.elite && !e.boss && !e.dead), 'Élite', '#ffb84d', 'elite');
     if (!rows.length) return 0;

@@ -3,6 +3,20 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-22', title: { zh: '守護大壯：圍牆、技能合體、錢和怪多一點', en: 'Guard Dazhuang: wall, move fusion, more coins and enemies' },
+    new: [
+      { zh: "守護大壯：大壯周圍多了一圈石牆。從外面來的怪要先打破擋在前面的那一段牆才能過去（每段牆有自己的血量，被打過會出現小血條）；玩家、招式和幫手可以直接越過。每波結束整圈修好。大壯升級新增「強化圍牆」（每級 +30%，共 5 級，180 金幣）", en: "Guard Dazhuang: a stone wall now rings Dazhuang. Enemies coming from outside must break the section in front of them to get through (each section has its own HP; a small bar shows once it is damaged); players, moves and helpers go over it. The whole wall is rebuilt after every wave. New upgrade “Reinforced Wall” (+30% per level, 5 levels, 180 coins)." },
+      { zh: "守護大壯：道具商店新增「技能合體」（320 金幣）：一次連結，把單獨的招式合成一格同時發動。這個模式沒有裂縫也沒有傳說，以前完全沒辦法合體", en: "Guard Dazhuang: the item stall sells “Move Fusion” (320 coins): a bond that merges loose moves into one slot that fires them together. With no rift or legendaries in this mode, you could never fuse moves before." }
+    ],
+    chg: [
+      { zh: "守護大壯：錢多一點（開局 100 → 150；每波 15＋3×波數 → 25＋4×波數；打倒一隻 1＋波數/8 → 2＋波數/6），每波的怪多 25%。價格不變", en: "Guard Dazhuang: more coins (start 100 → 150; per wave 15 + 3 × wave → 25 + 4 × wave; per defeat 1 + wave / 8 → 2 + wave / 6) and 25% more enemies per wave. Prices stay the same." },
+      { zh: "守護大壯：神器賣掉後，這波結束就會補貨（另外每 5 分鐘照樣換一個）", en: "Guard Dazhuang: a sold artifact is restocked when the wave ends (it still changes every 5 min)." }
+    ],
+    fix: [
+      { zh: "守護大壯：連點兩下（或連續送出兩次）不會再扣兩次錢；等房主確認時，商品會顯示「購買中…」", en: "Guard Dazhuang: a double tap (or two quick requests) no longer charges twice; while the host confirms, the item shows “Buying…”." },
+      { zh: "守護大壯組隊：地圖另一邊的怪在隊友畫面上會停在出生點，走近時突然跳過去或滑過去（看起來在亂飛）。現在每一隻都會正常移動", en: "Guard Dazhuang in co-op: enemies on the far side froze where they spawned and then jumped or slid across the map when you got closer. Now they all move smoothly." },
+      { zh: "守護大壯：小地圖下方清單和畫面邊緣箭頭不會再指向幾百、幾千公尺外的泉水、祭壇、寶箱；只顯示 30 公尺左右以內的東西（大壯和攤位一定會顯示）", en: "Guard Dazhuang: the list under the minimap and the edge arrows no longer point at springs, altars or chests hundreds or thousands of meters away; only things within ~30 m (Dazhuang and his stalls always)." }
+    ] },
   { d: '2026-10-21', title: { zh: '原創角色覺醒、組隊連線與手機版面修正', en: 'Awakening for the original characters, co-op and phone layout fixes' },
     new: [
       { zh: "覺醒：8 隻原創角色（熊貓、地瓜球、迪迪、英雄、高速婆婆、湯姆貓、利卡、傑利鼠）不會進化，所以 Lv.35 起可以「覺醒」，跟超級進化一樣：換成覺醒型態（換色＋光點氣場）、HP 與攻擊 +30%、速度 +10%、每隻有自己的覺醒特性（熊貓 適應力、地瓜球 電氣引擎、迪迪 大力士、英雄 遲來的勇氣、高速婆婆 加速、湯姆貓 踩影、利卡 夢魘、傑利鼠 妖精皮膚），專屬招式也覺醒（傷害 +30%、冷卻 -15%）。在跟超級進化同一個視窗選（或之後按 M）；圖鑑「其他」分頁的角色頁會顯示覺醒型態", en: "Awakening: the 8 original characters (Panda, Sweet Potato Ball, Didi, Hero, Turbo Granny, Tom, Licker, Jerry) cannot evolve, so from Lv. 35 they can awaken, just like a Mega Evolution: an awakened form (recolor + aura), HP and attack +30%, speed +10%, an awakened ability each (Panda Adaptability, Sweet Potato Ball Volt Engine, Didi Huge Power, Hero Late Courage, Turbo Granny Speed Boost, Tom Shadow Tag, Licker Bad Dreams, Jerry Pixilate) and their exclusive move awakened (damage +30%, recharge -15%). Chosen in the same window as a Mega (or later with M); the character's page in the “Other” tab shows the awakened form" },
