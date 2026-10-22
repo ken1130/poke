@@ -133,3 +133,25 @@ G.I18n.add({
   '¡Están atacando a Dazhuang!': 'Dazhuang is under attack!',
   '¡Dazhuang en peligro!': 'Dazhuang in danger!',
 });
+
+// 2026-10-22: muralla, fusión de movimientos, compra única y artefacto que se repone (guard.js)
+G.I18n.add({
+  'Fusión de movimientos': '技能合體',
+  'Un vínculo: eliges movimientos sueltos y se juntan en un solo hueco que los lanza a la vez (hasta 5).': '一次連結：選幾個單獨的招式合成一格，同時發動（一組最多 5 招）。',
+  'Tienes un vínculo sin usar': '還有一次連結沒用',
+  'Necesitas dos movimientos sueltos': '需要兩個單獨的招式',
+  'Comprando…': '購買中…',
+  'Muralla reforzada': '強化圍牆',
+  'Los tramos de la muralla de Dazhuang aguantan +30 % (se levanta entera al acabar cada oleada).': '大壯周圍的圍牆耐久 +30%（每波結束會整圈修好）。',
+  'Artefacto vendido: hay otro al acabar la oleada o en {x}.': '神器賣完了：這波結束或 {x} 後補貨。',
+}, 'zh');
+G.I18n.add({
+  'Fusión de movimientos': 'Move Fusion',
+  'Un vínculo: eliges movimientos sueltos y se juntan en un solo hueco que los lanza a la vez (hasta 5).': 'One bond: pick loose moves and they merge into one slot that fires them all at once (up to 5).',
+  'Tienes un vínculo sin usar': 'You have an unused bond',
+  'Necesitas dos movimientos sueltos': 'You need two loose moves',
+  'Comprando…': 'Buying…',
+  'Muralla reforzada': 'Reinforced Wall',
+  'Los tramos de la muralla de Dazhuang aguantan +30 % (se levanta entera al acabar cada oleada).': 'Dazhuang’s wall sections take +30% more (the whole wall is rebuilt after every wave).',
+  'Artefacto vendido: hay otro al acabar la oleada o en {x}.': 'Artifact sold: a new one arrives when the wave ends or in {x}.',
+});

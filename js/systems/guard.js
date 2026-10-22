@@ -12,6 +12,7 @@
  * #scr-shop, con sus estilos de escritorio y de móvil): objetos, artefacto (cambia cada 5 min),
  * pociones, mascotas y ayudantes (los ayudantes se quedan junto a Dazhuang y disparan), y mejoras
  * de Dazhuang (vida, escudo y su contraataque). Monedas: por derrotado y por oleada.
+ * Muralla (2026-10-22): un anillo de tramos de piedra que los enemigos tienen que romper (ver WALL_*).
  *
  * Grupo: lo decide todo el anfitrión (oleadas, enemigos, vida de Dazhuang, ayudantes, artículos)
  * y lo manda en ['gd','s',{...}] varias veces por segundo. Comprar: ['gd','b',clave] al anfitrión,
@@ -34,11 +35,26 @@ G.Guard = (() => {
   const STALL_R = 170;           // puestos alrededor de Dazhuang
   const OPEN_R = 70, FIGHT_OPEN_R = 38, CLOSE_R = 110;
   const VT = w => 20 + w * 28;   // «minuto» de la run equivalente a la oleada w (la 50 ≈ 24 min)
-  const COUNT = w => Math.round(6 + w * 0.8);           // enemigos por oleada (solo; en grupo × scaleRate)
-  const AMBUSH_N = w => 5 + Math.floor(w / 5);
-  const WAVE_COINS = w => 15 + 3 * w, KILL_COINS = w => 1 + Math.floor(w / 8), START_COINS = 100;
+  // (2026-10-22, hoja del dueño «un poco más de dinero y de enemigos»: oleadas ×1,25; antes 6 + 0,8 × w,
+  // monedas 15 + 3 × w por oleada, 1 + w / 8 por derrota y 100 al empezar. Los precios no cambian.)
+  const COUNT = w => Math.round((6 + w * 0.8) * 1.25);  // enemigos por oleada (solo; en grupo × scaleRate)
+  const AMBUSH_N = w => 6 + Math.floor(w / 4);
+  const WAVE_COINS = w => 25 + 4 * w, KILL_COINS = w => 2 + Math.floor(w / 6), START_COINS = 150;
   const HELPER_MAX = 4;
-  const UP_MAX = { hp: 8, sh: 5, atk: 8 };
+  const UP_MAX = { hp: 8, sh: 5, atk: 8, wall: 5 };
+  /*
+   * Muralla (2026-10-22, el dueño: «un muro alrededor de Dazhuang que los enemigos tengan que romper»).
+   * WALL_N tramos en una elipse (WALL_RX × WALL_RY) alrededor de él, por dentro de los puestos. Los
+   * enemigos que vienen de fuera no la cruzan: se quedan pegados al tramo que tienen delante y le pegan
+   * (e.dmg × WALL_K cada WALL_CD s). Roto el tramo, hay hueco. Los jugadores, los disparos y los ayudantes
+   * pasan por encima. Al acabar cada oleada se levanta entera. Vida de cada tramo: WALL_HP_K × la vida
+   * máxima de Dazhuang × (1 + 0,3 × mejora «Muralla»). Todo lo decide el anfitrión (va en ['gd','s']).
+   */
+  const WALL_N = 20, WALL_RX = 152, WALL_RY = 114, WALL_BAND = 0.08;
+  const WALL_HP_K = 0.16, WALL_K = 1.0, WALL_CD = 1.0, WALL_FACE = 14;
+  // Vínculo (2026-10-22, «añadir fusión de movimientos a la tienda»): aquí no hay grieta ni legendarios,
+  // y sin ellos nunca se fusionaba nada. Lo personal, como el de la grieta (game.js offerBond).
+  const BOND_PRICE = 320;
   const POTS = ['heal', 'giant', 'fury', 'star', 'lucky', 'dzheal'];
   const POT_PRICE = { heal: 25, giant: 45, fury: 45, star: 60, lucky: 35, dzheal: 60 };
   const ITEM_PRICE = { 1: 60, 2: 100, 3: 160 }, ART_PRICE = 700, ART_EVERY = 300;
@@ -46,7 +62,7 @@ G.Guard = (() => {
   // (2026-10-20, hoja V3.2 «los artículos no suben de precio»): todo a precio fijo, sin subir con la oleada
   // ni con lo que ya hayas comprado (antes: ayudante 160 + 120 por cada uno; mejoras 90/110/90 × nivel).
   const HELP_PRICE = () => 260;
-  const UP_PRICE = { hp: 200, sh: 220, atk: 200 };
+  const UP_PRICE = { hp: 200, sh: 220, atk: 200, wall: 180 };
   // Copia de spawner.js (no se exportan): resistencia extra, daño y experiencia de los normales.
   const hpK = t => 3.3 + Math.min(1.7, t / 420), DMG_K = 2.4, XP_K = 5.6;
 
@@ -87,7 +103,7 @@ G.Guard = (() => {
   let strayT = STRAY_EVERY, strayPos = new Map(), strays = [];
 
   function reset() {
-    S = null; waveIds = new Set(); spawnQ = []; spawnT = 0; ambushT = null; netT = 0; nearK = null; skip = null;
+    S = null; waveIds = new Set(); spawnQ = []; spawnT = 0; ambushT = null; netT = 0; nearK = null; skip = null; pending.clear();
     strayT = STRAY_EVERY; strayPos = new Map(); strays = [];
     helperAnims.clear(); dzAnim = null; flashT = 0;
     closePanel(true); showNext(false);
@@ -100,8 +116,9 @@ G.Guard = (() => {
     for (let i = 0; i < 20 && !G.World.isFree(x, y, 30); i++) { x = pl.x + G.U.rand(-120, 120); y = pl.y + G.U.rand(-140, 0); }
     S = { wave: 0, phase: 'prep', prepT: FIRST_PREP, left: 0, won: false,
           dz: { x, y, r: 30, hp: 1, mhp: 1, sh: 0, msh: 0, dead: false, level: 1, _vx: 0, _vy: 0, bodyH: 60 },
-          up: { hp: 0, sh: 0, atk: 0 }, helpers: [], items: [], gear: [], art: null, artT: ART_EVERY };
+          up: { hp: 0, sh: 0, atk: 0, wall: 0 }, helpers: [], items: [], gear: [], art: null, artT: ART_EVERY, walls: [] };
     stalls();
+    buildWalls();
     G.Sprites.preload([DZ_DEX]);
     dzAnim = new G.Sprites.Animator(DZ_DEX, DZ_K, false);
     if (authority()) {
@@ -121,7 +138,7 @@ G.Guard = (() => {
     const ANG = [168, 212, 328, 12, 90];        // grados (y hacia abajo): objetos, artefacto, pociones, mascotas, mejoras
     S.stalls = KINDS.map((k, i) => {
       const a = ANG[i] * Math.PI / 180;
-      return { k, x: Math.round(S.dz.x + Math.cos(a) * STALL_R * 1.1), y: Math.round(S.dz.y + Math.sin(a) * STALL_R * 0.75 + (i === 4 ? 30 : 0)) };
+      return { k, x: Math.round(S.dz.x + Math.cos(a) * STALL_R * 1.1), y: Math.round(S.dz.y + Math.sin(a) * STALL_R * 0.75 + (i === 4 ? 62 : 0)) };   // (el de abajo, por fuera de la muralla)
     });
   }
 
@@ -133,6 +150,83 @@ G.Guard = (() => {
     S.dz.msh = Math.round(S.dz.mhp * 0.12 * S.up.sh);
     S.dz.hp = full ? S.dz.mhp : Math.max(1, Math.round(S.dz.mhp * ratio));
     if (full) S.dz.sh = S.dz.msh;
+    wallHp(full);
+  }
+
+  // ---------------- muralla (ver WALL_* arriba) ----------------
+
+  /** Los WALL_N tramos: del ángulo a0 al a1 de la elipse (puntos x0,y0 → x1,y1; centro x,y). */
+  function buildWalls() {
+    S.walls = [];
+    for (let i = 0; i < WALL_N; i++) S.walls.push({ i, hp: 1, mhp: 1 });
+    wallGeom();
+    wallHp(true);
+  }
+  function wallGeom() {
+    const dz = S.dz, T = 6.2832 / WALL_N;
+    for (const w of S.walls) {
+      w.x0 = dz.x + Math.cos(w.i * T) * WALL_RX; w.y0 = dz.y + Math.sin(w.i * T) * WALL_RY;
+      w.x1 = dz.x + Math.cos((w.i + 1) * T) * WALL_RX; w.y1 = dz.y + Math.sin((w.i + 1) * T) * WALL_RY;
+      w.x = (w.x0 + w.x1) / 2; w.y = (w.y0 + w.y1) / 2;
+      w.cv = null;                                  // dibujo guardado (wallCanvas)
+    }
+  }
+  /** Vida de los tramos. full: todos enteros (también los rotos); si no, cada uno conserva su %. */
+  function wallHp(full) {
+    if (!S.walls || !S.walls.length) return;
+    const m = Math.round(S.dz.mhp * WALL_HP_K * (1 + 0.3 * (S.up.wall || 0)));
+    for (const w of S.walls) {
+      const k = w.mhp > 1 ? w.hp / w.mhp : 1;
+      w.hp = full ? m : w.hp > 0 ? Math.max(1, Math.round(m * k)) : 0;
+      w.mhp = m;
+    }
+  }
+  /** Tramo que hay en la dirección de (x, y) vista desde Dazhuang. */
+  function wallAt(x, y) {
+    let t = Math.atan2((y - S.dz.y) / WALL_RY, (x - S.dz.x) / WALL_RX);
+    if (t < 0) t += 6.2832;
+    return S.walls[Math.min(WALL_N - 1, Math.floor(t / 6.2832 * WALL_N))];
+  }
+  /**
+   * Anfitrión (o solitario), después de mover a los enemigos: los de fuera no pasan los tramos en pie
+   * (se quedan a su borde, del lado de fuera) y les pegan. `e._gIn`: ya está dentro (emboscada, o entró
+   * por un hueco); `e._wallT`: último golpe a la muralla (pullStrays no lo cuenta como atascado).
+   */
+  function wallBlock(dt) {
+    const dz = S.dz, now = performance.now();
+    for (const e of G.EnemyMgr.all()) {
+      if (e.dead || e.remote || !e.goal) continue;               // sólo los de las oleadas
+      const ex = e.x - dz.x, ey = e.y - dz.y, r = Math.hypot(ex, ey);
+      if (r < 1) continue;
+      const q = Math.hypot(ex / WALL_RX, ey / WALL_RY), Re = r / q;   // Re: radio de la elipse en esa dirección
+      if (e._gIn == null) e._gIn = q < 1;
+      if (e.jump) { if (q < 1 - WALL_BAND) e._gIn = true; continue; }    // los que saltan, por encima
+      const stop = Re + e.r * 0.6 + 6;
+      if (e._gIn) { if (r > stop + 30) e._gIn = false; continue; }
+      const w = wallAt(e.x, e.y);
+      if (!w || w.hp <= 0) { if (q < 1 - WALL_BAND) e._gIn = true; continue; }
+      if (r >= stop) continue;
+      e.x = dz.x + ex / r * stop; e.y = dz.y + ey / r * stop;   // pegado a la muralla, por fuera
+      e._wallT = now;
+      if ((e._wcd = (e._wcd || 0) - dt) > 0) continue;
+      e._wcd = WALL_CD;
+      if (e.dmg <= 0) continue;
+      w.hp = Math.max(0, w.hp - e.dmg * WALL_K);
+      if (e.anim && !e.anim.busy()) e.anim.play('Attack', { speed: 1.4 });
+      wallHitFx(w, e.x, e.y);
+      if (w.hp <= 0) { wallBreakFx(w); if (G.Coop.active) G.Coop.broadcast(['gd', 'wb', w.i]); sendState(true); }
+    }
+  }
+  function wallHitFx(w, x, y) {
+    if (!G.Camera.sees(w.x, w.y, 40)) return;
+    for (let i = 0; i < 3; i++) G.FX.px(G.U.lerp(x, w.x, 0.6) + G.U.rand(-8, 8), w.y - G.U.rand(4, WALL_FACE), i % 2 ? '#b8ab96' : '#6d6153', { vx: G.U.rand(-60, 60), vy: G.U.rand(-90, -30), life: 0.35 });
+  }
+  function wallBreakFx(w) {
+    w.cv = null;
+    if (!G.Camera.sees(w.x, w.y, 80)) return;
+    G.FX.burst(w.x, w.y - 8, '#a89a84', 16, 160);
+    G.FX.burst(w.x, w.y - 4, '#5b5047', 10, 110);
+    G.Audio.sfx('break');
   }
 
   function rollWares() {
@@ -237,11 +331,14 @@ G.Guard = (() => {
     G.Pickups.pullAll();                          // lo del suelo, para vosotros
     if (w >= WAVES) { win(); return; }
     S.phase = 'prep'; S.prepT = PREP;
-    recalc(true);
+    recalc(true);                                 // (también levanta la muralla entera)
     rollWares();
+    // Artefacto (2026-10-22, «que se reponga»): si se vendió, al acabar la oleada hay otro.
+    if (!S.art) { S.art = G.Items.rollArt(); S.artT = ART_EVERY; }
     G.Spawner.say(G.I18n.f('¡Oleada {x} superada! +{x} monedas · {x} s para prepararos', w, WAVE_COINS(w), PREP), 3.6);
     G.Audio.sfx('legend');
     G.FX.ring(S.dz.x, S.dz.y, 10, 140, '#7dffb0', 0.7, 5);
+    G.FX.ring(S.dz.x, S.dz.y, 20, WALL_RX + 20, '#c2b49c', 0.6, 4);    // la muralla, otra vez en pie
     sendState(true);
   }
 
@@ -313,6 +410,7 @@ G.Guard = (() => {
     if ((strayT -= dt) > 0) return;
     strayT = STRAY_EVERY;
     for (const e of strays) {
+      if (e._wallT && performance.now() - e._wallT < 1500) continue;     // está rompiendo la muralla: ya llegará
       const last = strayPos.get(e.id);
       const stuck = last && G.U.dist2(last[0], last[1], e.x, e.y) < 40 * 40;
       const far = G.U.dist2(e.x, e.y, S.dz.x, S.dz.y) > STRAY_FAR * STRAY_FAR;
@@ -411,7 +509,8 @@ G.Guard = (() => {
   function pack() {
     return { w: S.wave, ph: S.phase, pt: Math.round(S.prepT * 10) / 10, l: S.left, x: Math.round(S.dz.x), y: Math.round(S.dz.y),
              hp: Math.round(S.dz.hp), mhp: S.dz.mhp, sh: Math.round(S.dz.sh), msh: S.dz.msh, up: S.up,
-             hl: S.helpers.map(h => [h.dex, Math.round(h.x), Math.round(h.y)]), it: S.items, gr: S.gear, art: S.art, at: Math.round(S.artT) };
+             hl: S.helpers.map(h => [h.dex, Math.round(h.x), Math.round(h.y)]), it: S.items, gr: S.gear, art: S.art, at: Math.round(S.artT),
+             wl: S.walls.map(w => Math.ceil(w.hp)), wm: S.walls.length ? S.walls[0].mhp : 1 };
   }
   function sendState(now) {
     if (!G.Coop.active || !G.Coop.isHost || !S) return;
@@ -424,13 +523,24 @@ G.Guard = (() => {
     if (!on()) return;
     if (ev[1] === 'fx') { stompFx(); return; }
     if (ev[1] === 'poor') { G.Spawner.say(G.I18n.f('Faltan monedas: cuesta {x}', ev[2]), 2, true); G.Audio.sfx('error'); return; }
-    if (ev[1] === 'g') { applyPersonal(G.Game.player, ev[2]); return; }
-    if (ev[1] === 'inc' || ev[1] === 'refund') { wallet += Math.max(0, +ev[2] || 0); if (ev[1] === 'refund') G.Spawner.say('Alguien lo compró antes: te devolvemos las monedas', 2.4, true); return; }
+    if (ev[1] === 'g') { pending.delete(ev[2]); applyPersonal(G.Game.player, ev[2]); return; }
+    if (ev[1] === 'ok') { pending.delete(ev[2]); return; }
+    if (ev[1] === 'inc' || ev[1] === 'refund') {
+      wallet += Math.max(0, +ev[2] || 0);
+      if (ev[1] === 'refund') { pending.delete(ev[3]); G.Spawner.say('Alguien lo compró antes: te devolvemos las monedas', 2.4, true); }
+      return;
+    }
+    if (ev[1] === 'wb') { const w = S && S.walls[+ev[2]]; if (w) { w.hp = 0; wallBreakFx(w); } return; }
     if (ev[1] !== 's' || !S) return;
     const d = ev[2];
     if (d.hp < S.dz.hp) flashT = 0.12;
     Object.assign(S, { wave: d.w, phase: d.ph, prepT: d.pt, left: d.l, up: d.up, items: d.it || [], gear: d.gr || [], art: d.art, artT: d.at });
-    if (S.dz.x !== d.x || S.dz.y !== d.y) { S.dz.x = d.x; S.dz.y = d.y; stalls(); }
+    if (S.dz.x !== d.x || S.dz.y !== d.y) { S.dz.x = d.x; S.dz.y = d.y; stalls(); wallGeom(); }
+    if (d.wl) S.walls.forEach((w, i) => {
+      const hp = d.wl[i] || 0;
+      if ((w.hp > 0) !== (hp > 0)) w.cv = null;
+      w.hp = hp; w.mhp = d.wm || 1;
+    });
     Object.assign(S.dz, { hp: d.hp, mhp: d.mhp, sh: d.sh, msh: d.msh, dead: d.ph === 'lost' });
     S.helpers = (d.hl || []).map(([dex, x, y]) => ({ dex, x, y }));
     S.won = d.ph === 'won';
@@ -462,16 +572,24 @@ G.Guard = (() => {
   const UP_INFO = {
     hp:  { name: 'Barriga reforzada', desc: '+25 % de vida máxima para Dazhuang.', icon: 'heart' },
     sh:  { name: 'Escudo de siesta', desc: 'Dazhuang empieza cada oleada con un escudo (+12 % de su vida por nivel).', icon: 'shield' },
-    atk: { name: 'Pisotón', desc: 'El contraataque de Dazhuang hace +35 % de daño, llega más lejos y a más enemigos.', icon: 'fist' }
+    atk: { name: 'Pisotón', desc: 'El contraataque de Dazhuang hace +35 % de daño, llega más lejos y a más enemigos.', icon: 'fist' },
+    wall: { name: 'Muralla reforzada', desc: 'Los tramos de la muralla de Dazhuang aguantan +30 % (se levanta entera al acabar cada oleada).', icon: 'rockyhelmet' }
   };
 
   /** Todos los artículos de un puesto: { key, name, desc, price, icon|sprite|item, tier, host, why } */
   function wares(k, pl) {
     const m = pm(), out = [];
     if (!S) return out;
-    if (k === 'item') for (const id of S.items) {
-      const it = G.Items.BY[id];
-      if (it) out.push({ key: 'item:' + id, name: it.name, desc: it.desc, item: id, tier: it.tier, price: Math.round(ITEM_PRICE[it.tier || 1] * m) });
+    if (k === 'item') {
+      for (const id of S.items) {
+        const it = G.Items.BY[id];
+        if (it) out.push({ key: 'item:' + id, name: it.name, desc: it.desc, item: id, tier: it.tier, price: Math.round(ITEM_PRICE[it.tier || 1] * m) });
+      }
+      // Vínculo: une dos movimientos sueltos (o añade uno al grupo) y se lanzan a la vez. Siempre a la venta.
+      const opt = pl && pl.bondOptions ? pl.bondOptions() : null;
+      out.push({ key: 'bond', name: 'Fusión de movimientos', desc: 'Un vínculo: eliges movimientos sueltos y se juntan en un solo hueco que los lanza a la vez (hasta 5).',
+                 icon: 'bond', price: Math.round(BOND_PRICE * m),
+                 why: pl && pl.bonds > 0 ? 'Tienes un vínculo sin usar' : !opt ? 'Necesitas dos movimientos sueltos' : null });
     }
     if (k === 'art' && S.art && G.Items.BY[S.art]) {
       const it = G.Items.BY[S.art];
@@ -498,7 +616,7 @@ G.Guard = (() => {
                  why: S.helpers.length >= HELPER_MAX ? G.I18n.f('Máximo {x} ayudantes', HELPER_MAX) : null,
                  note: G.I18n.f('Ayudantes: {x}/{x}', S.helpers.length, HELPER_MAX) });
     }
-    if (k === 'up') for (const id of ['hp', 'sh', 'atk']) {
+    if (k === 'up') for (const id of ['hp', 'sh', 'atk', 'wall']) {
       const lv = S.up[id], u = UP_INFO[id];
       out.push({ key: 'up:' + id, name: u.name, desc: u.desc, icon: u.icon, price: Math.round(UP_PRICE[id] * m), host: true,
                  note: G.I18n.f('Nivel {x}/{x}', lv, UP_MAX[id]), why: lv >= UP_MAX[id] ? 'Nivel máximo' : null });
@@ -510,15 +628,30 @@ G.Guard = (() => {
     return null;
   }
 
+  /*
+   * Una compra por toque (2026-10-22, hoja: «sólo una compra cada vez»): mientras el anfitrión no contesta
+   * ('g' lo personal, 'ok' lo de Dazhuang, 'refund' si ya no estaba) ese artículo queda «Comprando…» y no se
+   * vuelve a cobrar; si no contesta en PENDING_MAX s, se suelta. En solitario, un toque doble en < BUY_GAP s
+   * cuenta como uno.
+   */
+  const pending = new Map();                                 // clave -> performance.now() de la compra
+  const PENDING_MAX = 3, BUY_GAP = 0.35;
+  const busy = key => { const t = pending.get(key); if (t == null) return false; if (performance.now() - t > PENDING_MAX * 1000) { pending.delete(key); return false; } return true; };
   /** Comprar (cualquiera). */
   function buy(key) {
     const pl = G.Game.player, w = wareByKey(key, pl);
-    if (!w || w.why) return;
+    if (!w || w.why || busy(key)) return;
     if (wallet < w.price) { G.Spawner.say(G.I18n.f('Faltan monedas: cuesta {x}', w.price), 2, true); G.Audio.sfx('error'); return; }
     wallet -= w.price;                                       // pagas tú (tu monedero)
     G.Audio.sfx('coin');
-    if (authority()) hostBuy(key, null, w.price);
-    else G.Coop.request(['gd', 'b', key, w.price]);
+    if (authority()) {
+      pending.set(key, performance.now() - (PENDING_MAX - BUY_GAP) * 1000);   // (sólo frena el toque doble)
+      hostBuy(key, null, w.price);
+    } else {
+      pending.set(key, performance.now());
+      G.Coop.request(['gd', 'b', key, w.price]);
+    }
+    panelKey = '';
   }
   /** Anfitrión: cobra y aplica (lo de Dazhuang aquí; lo personal, en el ordenador de quien compra). */
   function hostBuy(key, from, paid) {
@@ -526,12 +659,12 @@ G.Guard = (() => {
     const w = wareByKey(key, buyer || host);
     if (!w || (w.why && w.host)) {                           // ya no estaba (u otro lo compró antes): se devuelve lo pagado
       const back = Math.max(0, paid | 0);
-      if (from) G.Coop.sendTo(from, ['gd', 'refund', back]); else wallet += back;
+      if (from) G.Coop.sendTo(from, ['gd', 'refund', back, key]); else wallet += back;
       return;
     }
     if (key.startsWith('item:')) S.items = S.items.filter(id => 'item:' + id !== key);
     if (key.startsWith('art:')) S.art = null;
-    if (w.host) applyHost(key);
+    if (w.host) { applyHost(key); if (from) G.Coop.sendTo(from, ['gd', 'ok', key]); }
     else if (from) G.Coop.sendTo(from, ['gd', 'g', key]);
     else applyPersonal(host, key);
     sendState(true);
@@ -551,7 +684,8 @@ G.Guard = (() => {
       if (S.up[id] < UP_MAX[id]) S.up = Object.assign({}, S.up, { [id]: S.up[id] + 1 });
       recalc(false);
       if (id === 'sh') dz.sh = dz.msh;
-      G.FX.ring(dz.x, dz.y, 8, 110, '#7fe0ff', 0.6, 4);
+      if (id === 'wall') for (const w of S.walls) w.cv = null;
+      G.FX.ring(dz.x, dz.y, 8, id === 'wall' ? WALL_RX + 10 : 110, id === 'wall' ? '#c2b49c' : '#7fe0ff', 0.6, 4);
     }
     G.Audio.sfx('legend');
   }
@@ -567,6 +701,7 @@ G.Guard = (() => {
       G.Companion.gotEgg(pl);
       if (pl.egg) pl.egg.from = (pl.kills || 0) - G.Companion.KILLS;          // eclosiona ya
     } else if (key === 'pet:candy') G.Companion.addLevels(pl, 3);
+    else if (key === 'bond') pl.bonds = (pl.bonds || 0) + 1;                // game.js lo ve y abre la elección (offerBond)
     else if (key.startsWith('gear:')) G.Companion.addGear(pl, key.slice(5));
   }
 
@@ -620,7 +755,7 @@ G.Guard = (() => {
     if (!panelK || !S) return;
     const pl = G.Game.player, coins = Math.floor(wallet);
     const list = wares(panelK, pl);
-    const key = panelK + ':' + coins + ':' + JSON.stringify(list.map(w => [w.key, w.price, w.why, w.note])) + ':' + S.wave + ':' + S.phase;
+    const key = panelK + ':' + coins + ':' + JSON.stringify(list.map(w => [w.key, w.price, w.why, w.note, busy(w.key)])) + ':' + S.wave + ':' + S.phase;
     if (key === panelKey) return;
     panelKey = key;
     const scr = $('scr-shop');
@@ -631,7 +766,7 @@ G.Guard = (() => {
     tabs.querySelectorAll('[data-gtab]').forEach(b => { b.onclick = () => { panelK = b.dataset.gtab; panelKey = ''; G.Audio.sfx('select'); refreshPanel(); }; });
     const box = $('shop-list');
     box.innerHTML = '';
-    if (!list.length) box.innerHTML = `<p class="sub" style="grid-column:1/-1;margin:8px">${G.T(panelK === 'art' ? 'El artefacto de este turno ya se ha vendido. Vuelve cuando cambie.' : 'No queda nada en este puesto. Se repone al acabar la oleada.')}</p>`;
+    if (!list.length) box.innerHTML = `<p class="sub" style="grid-column:1/-1;margin:8px">${(panelK === 'art' ? G.I18n.f('Artefacto vendido: hay otro al acabar la oleada o en {x}.', G.U.mmss(Math.max(0, S.artT))) : G.T('No queda nada en este puesto. Se repone al acabar la oleada.'))}</p>`;
     for (const w of list) {
       const can = coins >= w.price && !w.why;
       const row = document.createElement('div');
@@ -640,10 +775,10 @@ G.Guard = (() => {
       row.innerHTML = `<div class="ico">${iconHtml(w)}</div>` +
         `<div class="txt"><div class="chips">${chips}</div><b>${G.T(w.name)}</b><small>${G.T(w.desc || '')}</small></div>` +
         `<div class="act"><span class="price ${can || w.why ? '' : 'poor'}">${G.Icons.html('coin', 14)} ${w.price}</span>` +
-        `<div class="row" style="gap:4px">` + (w.why ? `<span class="owned">${G.T(w.why)}</span>` : `<button class="btn small gold" data-gbuy="${w.key}" ${can ? '' : 'disabled'}>${G.T('Comprar')}</button>`) + '</div></div>';
+        `<div class="row" style="gap:4px">` + (w.why ? `<span class="owned">${G.T(w.why)}</span>` : busy(w.key) ? `<span class="owned">${G.T('Comprando…')}</span>` : `<button class="btn small gold" data-gbuy="${w.key}" ${can ? '' : 'disabled'}>${G.T('Comprar')}</button>`) + '</div></div>';
       box.appendChild(row);
     }
-    box.querySelectorAll('[data-gbuy]').forEach(b => { b.onclick = () => buy(b.dataset.gbuy); });
+    box.querySelectorAll('[data-gbuy]').forEach(b => { b.onclick = () => { b.disabled = true; buy(b.dataset.gbuy); }; });
   }
 
   // ---------------- botón «Empezar la oleada» ----------------
@@ -685,6 +820,7 @@ G.Guard = (() => {
   function update(dt, pl) {
     if (!on() || !S || !pl) { if (panelK) closePanel(); if (nextBtn) nextBtn.classList.add('hidden'); return; }
     hpAlerts(dt, pl);
+    if (authority() && S.phase === 'fight') wallBlock(dt);
     if (flashT > 0) flashT -= dt;
     if (counterFx > 0) counterFx -= dt;
     if (dzAnim) { dzAnim.loop(S.dz.dead ? 'Faint' : counterFx > 0 ? 'Attack' : 'Idle'); dzAnim.update(dt); }
@@ -737,10 +873,90 @@ G.Guard = (() => {
     ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x, y, Math.round(w * G.U.clamp(k, 0, 1)), 1);
   }
 
+  /*
+   * Muralla en píxeles (2026-10-22): cada tramo, una tira de bloques de piedra a lo largo de su cuerda,
+   * de atrás adelante (los de más abajo tapan a los de más arriba: en los lados se ve la parte de arriba
+   * y en el de delante, la cara con ladrillos). Se guarda dibujado por estado: 0 entero, 1 agrietado
+   * (< 66 %), 2 muy roto (< 33 %), 3 escombros.
+   */
+  const WP = 2, WALL_T = 10;                                 // píxel y grosor
+  const WALL_PAL = { out: '#221a16', face: '#8e8170', faceD: '#776b5c', mort: '#4b4139', cap: '#c4b7a0', capL: '#e0d5bf', crack: '#2a211c', moss: '#6a8f4c', rub: '#7d7262', rubD: '#544a40' };
+  const wallStage = w => (w.hp <= 0 ? 3 : w.hp < w.mhp * 0.33 ? 2 : w.hp < w.mhp * 0.66 ? 1 : 0);
+  function wallCanvas(w, st) {
+    const PAD = 6, H = WALL_FACE + 6;
+    const minX = Math.floor(Math.min(w.x0, w.x1) - WALL_T / 2 - PAD), maxX = Math.ceil(Math.max(w.x0, w.x1) + WALL_T / 2 + PAD);
+    const minY = Math.floor(Math.min(w.y0, w.y1) - H - PAD), maxY = Math.ceil(Math.max(w.y0, w.y1) + PAD);
+    const cv = document.createElement('canvas');
+    cv.width = maxX - minX; cv.height = maxY - minY;
+    const c = cv.getContext('2d');
+    const px = (x, y, col, ww = WP, hh = WP) => { c.fillStyle = col; c.fillRect(Math.round((x - minX) / WP) * WP, Math.round((y - minY) / WP) * WP, ww, hh); };
+    const len = Math.hypot(w.x1 - w.x0, w.y1 - w.y0), n = Math.max(2, Math.ceil(len / WP));
+    const hsh = (a, b) => G.U.hash(a, b, 7 + w.i);
+    if (st === 3) {                                          // escombros: piedras sueltas por el suelo
+      for (let k = 0; k <= n; k += 3) {
+        const t = k / n, x = w.x0 + (w.x1 - w.x0) * t, y = w.y0 + (w.y1 - w.y0) * t;
+        const r = hsh(k, 1);
+        if (r < 0.45) continue;
+        const sz = r > 0.85 ? 3 : 2;
+        const ox = (hsh(k, 2) - 0.5) * 12, oy = (hsh(k, 3) - 0.5) * 8;
+        px(x + ox - WP, y + oy - WP, WALL_PAL.out, (sz + 1) * WP, (sz + 1) * WP);
+        px(x + ox, y + oy - WP, r > 0.7 ? WALL_PAL.rub : WALL_PAL.rubD, sz * WP, sz * WP);
+        px(x + ox, y + oy - WP, WALL_PAL.capL, WP, WP);
+      }
+      return { cv, x: minX, y: minY };
+    }
+    // De atrás (y menor) adelante.
+    const pts = [];
+    for (let k = 0; k <= n; k++) { const t = k / n; pts.push([w.x0 + (w.x1 - w.x0) * t, w.y0 + (w.y1 - w.y0) * t, k]); }
+    pts.sort((a, b) => a[1] - b[1]);
+    const lowOf = k => (st === 2 && hsh(Math.floor(k / 4), 9) < 0.45 ? 6 : st === 1 && hsh(Math.floor(k / 5), 9) < 0.2 ? 2 : 0);
+    // Primero el borde oscuro de todo el tramo (un píxel alrededor); luego, encima, piedra.
+    for (const [x, y, k] of pts) px(x - WALL_T / 2 - WP, y - WALL_FACE + lowOf(k) - 4 - WP, WALL_PAL.out, WALL_T + 2 * WP, WALL_FACE - lowOf(k) + 4 + 2 * WP);
+    for (const [x, y, k] of pts) {
+      const low = lowOf(k);                                  // almenas rotas (estados 1 y 2): a trozos, más baja
+      const top = y - WALL_FACE + low;
+      for (let dx = -WALL_T / 2; dx < WALL_T / 2; dx += WP) {
+        const wx = Math.round((x + dx) / WP) * WP;
+        // cara: ladrillos de 12 × 6 con argamasa, a filas alternas
+        for (let yy = top; yy < y; yy += WP) {
+          const row = Math.floor((y - yy) / 6), inRow = Math.round(y - yy) % 6;
+          const mort = inRow === 0 || ((wx + (row % 2) * 6) % 12 + 12) % 12 === 0;
+          let col = mort ? WALL_PAL.mort : hsh(Math.floor(wx / 12) + row * 31, row) < 0.3 ? WALL_PAL.faceD : WALL_PAL.face;
+          if (!mort && row === 0 && hsh(wx, 5) < 0.18) col = WALL_PAL.moss;            // musgo al pie
+          px(wx, yy, col);
+        }
+        px(wx, top - 4, WALL_PAL.cap, WP, 4);                                           // parte de arriba
+        px(wx, top - 4, WALL_PAL.capL);
+      }
+    }
+    // Grietas (1 y 2): zigzags oscuros por la cara.
+    const cracks = st === 1 ? 2 : st === 2 ? 4 : 0;
+    for (let j = 0; j < cracks; j++) {
+      const t = 0.15 + 0.7 * hsh(j, 11), x0 = w.x0 + (w.x1 - w.x0) * t, y0 = w.y0 + (w.y1 - w.y0) * t;
+      let cx = x0, cy = y0 - WALL_FACE + 2;
+      for (let q = 0; q < 5; q++) { px(cx, cy, WALL_PAL.crack); cy += WP; cx += (hsh(j, q) < 0.5 ? -WP : WP); }
+    }
+    return { cv, x: minX, y: minY };
+  }
+
   function drawables() {
     if (!on() || !S) return [];
     const out = [];
     const dz = S.dz;
+    for (const w of S.walls) {
+      out.push({ y: Math.max(w.y0, w.y1) - 2, draw(ctx) {
+        const st = wallStage(w);
+        if (!w.cv || w.cvSt !== st) { w.cv = wallCanvas(w, st); w.cvSt = st; }
+        ctx.drawImage(w.cv.cv, w.cv.x, w.cv.y);
+        // Vida del tramo: sólo si está tocado, pequeña y medio transparente.
+        if (w.hp > 0 && w.hp < w.mhp && S.phase === 'fight') {
+          const k = w.hp / w.mhp;
+          ctx.globalAlpha = 0.8;
+          bar(ctx, w.x - 11, Math.min(w.y0, w.y1) - WALL_FACE - 14, 22, 2, k, k > 0.5 ? '#c4b7a0' : k > 0.25 ? '#ffb44a' : '#ff5f6d');
+          ctx.globalAlpha = 1;
+        }
+      } });
+    }
     out.push({ y: dz.y, draw(ctx) {
       G.Sprites.drawShadow(ctx, DZ_DEX, dz.x, dz.y, DZ_K);
       if (dzAnim) dzAnim.draw(ctx, dz.x, dz.y, { flash: flashT > 0, softFlash: true, tint: 'dark-body' });   // Machamp negro (sprites.js)

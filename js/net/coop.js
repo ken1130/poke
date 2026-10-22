@@ -219,11 +219,16 @@ G.Coop = (() => {
    * no sale es que no ha cambiado (NO se borra: eso va con los eventos 'ed' / 'eg').
    */
   const Q = 2, REFRESH = 1.0, NEAR_FAST = 520;     // (520: toda la pantalla, cada vez)
+  const NEAR_GUARD = 2600;
   function enemyDelta(m) {
     const now = clock(), sent = m.sent || (m.sent = new Map());
     m.frameN = (m.frameN || 0) + 1;
     const ox = Math.round(m.pl.x / 8) * 8, oy = Math.round(m.pl.y / 8) * 8;
-    const r2n = NEAR * NEAR, rf2 = NEAR_FAST * NEAR_FAST;
+    // «Proteger a Dazhuang» (2026-10-22, «en grupo los enemigos vuelan por el mapa»): con 950 los que venían por
+    // el otro lado se quedaban quietos donde salieron y, al acercarte, saltaban o se deslizaban de golpe hasta su
+    // sitio. Allí todo pasa a menos de ~1000 de Dazhuang: se mandan todos (los lejanos, 1 de cada 4 veces).
+    const nearR = G.Modes.run === 'guard' ? NEAR_GUARD : NEAR;
+    const r2n = nearR * nearR, rf2 = NEAR_FAST * NEAR_FAST;
     const full = [], move = [], hps = [], seen = new Set();
     let refreshes = 6;                // como mucho tantas "repeticiones de seguridad" por mensaje (no todas a la vez)
     for (const e of G.EnemyMgr.all()) {
