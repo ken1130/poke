@@ -19,10 +19,15 @@
  *     Somnífero / Doble golpe / Ida y vuelta se aplican al primer jugador (ver newRound).
  *   - En tu turno echas una carta del tipo actual, o con el mismo número/símbolo, o un
  *     comodín. Si no, robas 1; si la que robas vale, puedes echarla ya (o quedártela).
- *   - No se acumulan los +2/+4 (reglas oficiales): quien los recibe roba y pierde el turno.
+ *   - Se acumulan los +2/+4 (2026-10-22, pedido del dueño): el +2 / +4 no hace robar en el acto;
+ *     deja st.pend cartas pendientes (st.pendK = 'd2' | 'd4') y le toca al siguiente. Con un +2
+ *     pendiente puedes contestar con otro +2 (suma 2) o con un +4 (suma 4, eliges tipo); con un +4
+ *     pendiente sólo con otro +4 (el +2 sobre el +4 NO vale). Quien no puede o no quiere, roba
+ *     todo lo acumulado y pierde el turno (botón robar / se acaba el tiempo). La CPU acumula si puede.
+ *     Si el que echa el +2/+4 se queda sin cartas, el siguiente roba lo acumulado igualmente.
  *   - El Poder de Mewtwo se puede echar siempre (sin la regla del "desafío").
- *   - "¡Última carta!": al quedarte con 1 carta tienes que avisar (también antes, en tu turno
- *     con 2 cartas). En cuanto te quedas con 1 sin avisar (st.vuln), cualquier otro puede pulsar
+ *   - "¡Última carta!": al quedarte con 1 carta tienes que avisar (también antes, con 2 cartas,
+ *     en tu turno o fuera de él: 2026-10-22). En cuanto te quedas con 1 sin avisar (st.vuln), cualquier otro puede pulsar
  *     "¡Te pillé!" hasta que el siguiente juegue o robe; vale lo primero que llegue al anfitrión
  *     (avisar o pillar). Si te pillan, o el siguiente hace su jugada sin que hayas avisado,
  *     robas 2. Cada aviso deja st.lastCall = { seat, seq } (la voz suena una vez en cada pantalla).
@@ -34,7 +39,7 @@
  *     de los dos rivales (la mano del compañero no cuenta). No se puede pillar al compañero.
  *
  * Estado (sólo lo tiene el anfitrión): { n, hands, deck, discard, color, dir, turn, phase,
- *   drawn, called[], vuln, over, winner, moves, tseq, ev[], start }.
+ *   drawn, called[], vuln, over, winner, moves, tseq, ev[], start, pend, pendK }.
  *   phase: 'play' (normal) | 'drawn' (has robado una que vale: echarla o quedártela) |
  *          'pick' (la primera carta era Ditto: el primero elige el tipo).
  *   moves: sube con cada acción; tseq: sube sólo cuando cambia el turno (para el reloj).
@@ -60,13 +65,21 @@
   const sym = id => SYM[CARDS[id].v];
   const valid = id => Number.isInteger(id) && id >= 0 && id < N;
 
-  /** ¿Se puede echar `id` sobre `top` con el tipo actual `color`? */
-  function playable(id, top, color) {
+  /** ¿Se puede echar `id` sobre `top` con el tipo actual `color`? Con robo acumulado pendiente
+   *  (pend > 0), sólo lo que acumula: +2 sobre +2, +4 sobre +2 o +4. */
+  function playable(id, top, color, pend, pendK) {
     const a = CARDS[id];
+    if (pend > 0) return stackable(id, pendK);
     if (a.v >= WILD) return true;
     if (color >= 0 && a.c === color) return true;
     const t = top >= 0 ? CARDS[top] : null;
     return !!t && t.v < WILD && t.v === a.v;
+  }
+
+  /** ¿Acumula sobre lo pendiente? +2 sólo sobre +2; +4 sobre los dos. */
+  function stackable(id, pendK) {
+    const v = CARDS[id].v;
+    return v === WILD4 || (v === DRAW2 && pendK === 'd2');
   }
 
   // ---------------- baraja ----------------
@@ -106,7 +119,7 @@
     if (opts.first != null) { deck.splice(deck.indexOf(opts.first), 1); }
     const hands = Array.from({ length: n }, () => deck.splice(deck.length - 7, 7));
     const st = { n, hands, deck, discard: [], color: -1, dir: 1, turn: 0, phase: 'play', drawn: -1,
-                 called: Array(n).fill(false), vuln: -1, vulnSeq: 0, lastCall: null, callSeq: 0, over: false, winner: -1, moves: 0, tseq: 0, ev: [], start: 0,
+                 called: Array(n).fill(false), pend: 0, pendK: '', vuln: -1, vulnSeq: 0, lastCall: null, callSeq: 0, over: false, winner: -1, moves: 0, tseq: 0, ev: [], start: 0,
                  teams: Array.isArray(opts.teams) && opts.teams.length === n ? opts.teams.slice() : null, lastCol: Array(n).fill(-1) };
     Object.defineProperty(st, 'rng', { value: rng, enumerable: false, writable: true });
     const start = opts.start != null ? opts.start : Math.floor(rng() * n);
@@ -148,13 +161,13 @@
     if (st.over || seat !== st.turn || st.phase === 'pick') return [];
     const top = st.discard[st.discard.length - 1];
     if (st.phase === 'drawn') return playable(st.drawn, top, st.color) ? [st.drawn] : [];
-    return st.hands[seat].filter(id => playable(id, top, st.color));
+    return st.hands[seat].filter(id => playable(id, top, st.color, st.pend, st.pendK));
   }
   /** Lo mismo desde la vista de un jugador (su mano + lo público). */
   function legalView(hand, pub, drawn) {
     if (pub.over || pub.phase === 'pick') return [];
     if (pub.phase === 'drawn') return drawn >= 0 && playable(drawn, pub.top, pub.color) ? [drawn] : [];
-    return hand.filter(id => playable(id, pub.top, pub.color));
+    return hand.filter(id => playable(id, pub.top, pub.color, pub.pend, pub.pendK));
   }
 
   /** Castigo por no avisar de la última carta (si está pendiente). */
@@ -181,8 +194,8 @@
     // --- fuera de turno: avisar y pillar ---
     if (t === 'call') {
       const h = st.hands[seat].length;
-      const pre = seat === st.turn && h === 2 && st.phase !== 'pick';
-      if (h !== 1 && !pre) return { ok: false, err: 'Sólo puedes avisar con una carta (o con dos, en tu turno).' };
+      // (2026-10-22, pedido del dueño) Con 2 cartas se puede avisar antes, también fuera de tu turno.
+      if (h !== 1 && h !== 2) return { ok: false, err: 'Sólo puedes avisar con una o dos cartas en la mano.' };
       if (st.called[seat]) return { ok: false, err: 'Ya has avisado de tu última carta.' };
       st.called[seat] = true;
       if (st.vuln === seat) st.vuln = -1;
@@ -219,6 +232,15 @@
       if (st.phase === 'drawn') return { ok: false, err: 'Ya has robado: echa esa carta o quédatela.' };
       st.ev = [];
       penalize(st, -1);
+      if (st.pend > 0) {
+        // Robo acumulado: te llevas todo y pierdes el turno.
+        const got = drawTo(st, seat, st.pend);
+        st.ev.push({ k: 'draw', seat, n: got, why: st.pendK || 'd2', stack: st.pend });
+        st.pend = 0; st.pendK = '';
+        st.moves++;
+        endTurn(st, nextSeat(st, seat));
+        return { ok: true };
+      }
       if (st.phase === 'pick') { st.color = mostColor(hand); st.phase = 'play'; st.ev.push({ k: 'pick', seat, color: st.color }); }
       const got = drawTo(st, seat, 1);
       st.ev.push({ k: 'draw', seat, n: got });
@@ -243,7 +265,7 @@
     const id = Number(a.card);
     if (!valid(id) || !hand.includes(id)) return { ok: false, err: 'Esa carta no es tuya.' };
     if (st.phase === 'drawn' && id !== st.drawn) return { ok: false, err: 'Sólo puedes echar la carta que acabas de robar.' };
-    if (!playable(id, top, st.color)) return { ok: false, err: 'Esa carta no vale: tiene que ser del mismo tipo o número.' };
+    if (!playable(id, top, st.color, st.pend, st.pendK)) return { ok: false, err: st.pend > 0 ? (st.pendK === 'd4' ? 'Sobre un +4 sólo puedes echar otro +4, o robar las cartas acumuladas.' : 'Sobre un +2 sólo puedes echar otro +2 o un +4, o robar las cartas acumuladas.') : 'Esa carta no vale: tiene que ser del mismo tipo o número.' };
     const cd = CARDS[id];
     let color = cd.c;
     if (cd.v >= WILD) {
@@ -271,12 +293,18 @@
       if (st.n === 2) { st.ev.push({ k: 'skip', seat: nextSeat(st, seat) }); to = seat; }
       else to = nextSeat(st, seat);
     } else if (cd.v === DRAW2 || cd.v === WILD4) {
-      const got = drawTo(st, to, cd.v === DRAW2 ? 2 : 4);
-      st.ev.push({ k: 'draw', seat: to, n: got, why: cd.v === DRAW2 ? 'd2' : 'd4' });
-      st.ev.push({ k: 'skip', seat: to });
-      to = nextSeat(st, to);
+      // Se acumula (2026-10-22): el siguiente contesta con otro +2/+4 o roba todo.
+      st.pend = (st.pend || 0) + (cd.v === DRAW2 ? 2 : 4);
+      st.pendK = cd.v === DRAW2 ? 'd2' : 'd4';
+      st.ev.push({ k: 'stack', seat: to, n: st.pend, by: seat });
     }
     if (!hand.length) {
+      if (st.pend > 0) {
+        // Acaba con +2/+4: el siguiente roba lo acumulado igualmente (cuenta para los puntos).
+        const got = drawTo(st, to, st.pend);
+        st.ev.push({ k: 'draw', seat: to, n: got, why: st.pendK, stack: st.pend });
+        st.pend = 0; st.pendK = '';
+      }
       st.over = true; st.winner = seat; st.turn = -1; st.vuln = -1; st.tseq++;
       if (st.teams) st.winTeam = st.teams[seat];
       st.ev.push({ k: 'win', seat });
@@ -332,6 +360,16 @@
   function cpuMove(hand, ctx) {
     const lean = ctx.duo ? ctx.mateColor : -1;
     if (ctx.phase === 'pick') return { type: 'color', color: mostColor(hand, Math.random, lean) };
+    if (ctx.pend > 0) {
+      // Robo acumulado: si puede, acumula (antes el +2, que vale menos; el +4 si no hay otra).
+      const st2 = hand.filter(id => stackable(id, ctx.pendK));
+      if (!st2.length) return { type: 'draw' };
+      const best = st2.find(id => CARDS[id].v === DRAW2) ?? st2[0];
+      const out = { type: 'play', card: best };
+      if (CARDS[best].v === WILD4) out.color = mostColor(hand.filter(x => x !== best), Math.random, lean);
+      if (hand.length === 2) out.call = true;
+      return out;
+    }
     const ok = ctx.phase === 'drawn'
       ? (playable(ctx.drawn, ctx.top, ctx.color) ? [ctx.drawn] : [])
       : hand.filter(id => playable(id, ctx.top, ctx.color));
@@ -377,10 +415,11 @@
   }
 
   /** Se acabó el tiempo: con la carta robada, quedársela; si no, robar 1 y pasar. */
+  // (Con robo acumulado, 'draw' se lo lleva todo.)
   function timeoutMove(phase) { return phase === 'drawn' ? { type: 'keep' } : { type: 'draw', pass: true }; }
 
   const TC = { TYPES, CARDS, N, SKIP, REV, DRAW2, WILD, WILD4, SYM, card, isWild, isAction, points, sym, playable, sortHand,
-               newRound, act, legal, legalView, results, cpuMove, timeoutMove, mostColor, nextSeat, teamCtx, mates };
+               newRound, act, legal, legalView, stackable, results, cpuMove, timeoutMove, mostColor, nextSeat, teamCtx, mates };
   if (typeof module !== 'undefined' && module.exports) module.exports = TC;
   if (root && root.G) root.G.TypeCards = TC;
 })(typeof window !== 'undefined' ? window : globalThis);

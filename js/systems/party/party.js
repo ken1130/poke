@@ -88,7 +88,7 @@ G.Party = (() => {
     cpu: (st, seat) => {
       const nx = T().nextSeat(st, seat), pv = T().nextSeat(st, seat, -1);
       const m = T().cpuMove(st.hands[seat], Object.assign({ top: st.discard[st.discard.length - 1], color: st.color, phase: st.phase, drawn: st.drawn,
-        nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n }, T().teamCtx(st, seat)));
+        nextCount: st.hands[nx].length, prevCount: st.hands[pv].length, n: st.n, pend: st.pend, pendK: st.pendK }, T().teamCtx(st, seat)));
       delete m.call;       // la CPU avisa después, con un poco de retraso (react), y a veces se le olvida
       return m;
     },
@@ -124,13 +124,13 @@ G.Party = (() => {
         if (p.phase === 'pick') return { ok: false, err: 'Primero elige el tipo de la mesa.' };
         if (!v.priv.hand.includes(a.card)) return { ok: false, err: 'Esa carta no es tuya.' };
         if (p.phase === 'drawn' && a.card !== v.priv.drawn) return { ok: false, err: 'Sólo puedes echar la carta que acabas de robar.' };
-        if (!T().playable(a.card, p.top, p.color)) return { ok: false, err: 'Esa carta no vale: tiene que ser del mismo tipo o número.' };
+        if (!T().playable(a.card, p.top, p.color, p.pend, p.pendK)) return { ok: false, err: p.pend > 0 ? (p.pendK === 'd4' ? 'Sobre un +4 sólo puedes echar otro +4, o robar las cartas acumuladas.' : 'Sobre un +2 sólo puedes echar otro +2 o un +4, o robar las cartas acumuladas.') : 'Esa carta no vale: tiene que ser del mismo tipo o número.' };
       }
       return { ok: true };
     },
     priv: (st, seat) => Object.assign({ hand: st.hands[seat].slice(), drawn: st.turn === seat && st.phase === 'drawn' ? st.drawn : -1, called: !!st.called[seat] }, mateHand(st, seat)),
     pub: st => ({ counts: st.hands.map(h => h.length), turn: st.over ? -1 : st.turn, top: st.discard[st.discard.length - 1],
-                  under: st.discard.slice(-4, -1), color: st.color, dir: st.dir, phase: st.phase, deck: st.deck.length,
+                  under: st.discard.slice(-4, -1), color: st.color, dir: st.dir, phase: st.phase, deck: st.deck.length, pend: st.pend || 0, pendK: st.pendK || '',
                   called: st.called.map((c, i) => c && st.hands[i].length === 1), lastCall: st.lastCall, vuln: st.vuln >= 0 && !st.called[st.vuln] && st.hands[st.vuln].length === 1 ? st.vuln : -1,
                   ev: st.ev, moves: st.moves, over: st.over, winner: st.winner,
                   lastCol: st.teams && st.lastCol ? st.lastCol.slice() : undefined }),
