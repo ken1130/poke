@@ -1497,6 +1497,7 @@ G.Plaza = (() => {
     key += '|' + G.I18n.lang;
     if (key === lastKey) return;
     lastKey = key;
+    hud.classList.toggle('pz-ingame', playing === 'potato');   // (móvil, patata en juego: la tira se hace pequeña y se aparta, plaza.css)
     hud.innerHTML = top + html;
     hud.querySelectorAll('[data-pz]').forEach(b => {
       b.onclick = e => {

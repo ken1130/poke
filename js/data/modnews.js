@@ -3,6 +3,10 @@
  * Cada texto va ya en su idioma: { zh, en }.
  */
 G.MODNEWS = [
+  { d: '2026-10-28', title: { zh: '手機版燙手山芋畫面調整', en: 'Hot Potato phone layout' },
+    fix: [
+      { zh: "手機版燙手山芋：上方的提示和「離開比賽」框會擋住場地上面三分之一：比賽中改成右下角丟出鈕旁邊的小框，不在場地裡", en: "Hot Potato on phones: the top box (notice and “Leave match”) covered the top third of the circle. During the match it becomes a small box at the bottom right, next to the throw button, outside the circle." }
+    ] },
   { d: '2026-10-22', title: { zh: '守護大壯：圍牆、技能合體、錢和怪多一點', en: 'Guard Dazhuang: wall, move fusion, more coins and enemies' },
     new: [
       { zh: "守護大壯：大壯周圍多了一圈石牆。從外面來的怪要先打破擋在前面的那一段牆才能過去（每段牆有自己的血量，被打過會出現小血條）；玩家、招式和幫手可以直接越過。每波結束整圈修好。大壯升級新增「強化圍牆」（每級 +30%，共 5 級，180 金幣）", en: "Guard Dazhuang: a stone wall now rings Dazhuang. Enemies coming from outside must break the section in front of them to get through (each section has its own HP; a small bar shows once it is damaged); players, moves and helpers go over it. The whole wall is rebuilt after every wave. New upgrade “Reinforced Wall” (+30% per level, 5 levels, 180 coins)." },

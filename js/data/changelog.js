@@ -6,6 +6,9 @@
  * Cada línea en español y en inglés.
  */
 G.CHANGELOG = [
+  { d: '2026-10-28', title: ['Patata caliente en el móvil', 'Hot Potato on phones'], fix: [
+    ["Patata caliente en el móvil: el recuadro de arriba (aviso y «Dejar el partido») tapaba el tercio de arriba del círculo. Durante la partida pasa a una cajita abajo a la derecha, junto al botón de lanzar, fuera del círculo.", "Hot Potato on phones: the top box (notice and “Leave match”) covered the top third of the circle. During the match it becomes a small box at the bottom right, next to the throw button, outside the circle."]
+  ] },
   { d: '2026-10-22', title: ['Proteger a Dazhuang: muralla, fusión de movimientos y más monedas', 'Guard Dazhuang: wall, move fusion and more coins'], new: [
     ["Proteger a Dazhuang: una muralla de piedra rodea a Dazhuang. Los enemigos que vienen de fuera tienen que romper el tramo que tienen delante para pasar (cada tramo tiene su vida; una barrita sale cuando está tocado); los jugadores, los disparos y los ayudantes pasan por encima. Al acabar cada oleada se levanta entera. Mejora nueva «Muralla reforzada» (+30 % por nivel, 5 niveles, 180 monedas).", "Guard Dazhuang: a stone wall now rings Dazhuang. Enemies coming from outside must break the section in front of them to get through (each section has its own HP; a small bar shows once it is damaged); players, shots and helpers go over it. The whole wall is rebuilt after every wave. New upgrade “Reinforced Wall” (+30% per level, 5 levels, 180 coins)."],
     ["Proteger a Dazhuang: el puesto de objetos vende «Fusión de movimientos» (320 monedas): un vínculo para juntar movimientos sueltos en un hueco que los lanza a la vez. Antes, sin grieta ni legendarios, aquí nunca se podía fusionar.", "Guard Dazhuang: the item stall sells “Move Fusion” (320 coins): a bond that merges loose moves into one slot that fires them together. Before, with no rift or legendaries in this mode, you could never fuse moves."]
